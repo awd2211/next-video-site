@@ -28,9 +28,20 @@ export const videoService = {
     return response.data
   },
 
-  searchVideos: async (query: string, page?: number): Promise<PaginatedResponse<Video>> => {
+  searchVideos: async (
+    query: string,
+    params?: {
+      page?: number
+      page_size?: number
+      category_id?: number
+      country_id?: number
+      year?: number
+      min_rating?: number
+      sort_by?: string
+    }
+  ): Promise<PaginatedResponse<Video>> => {
     const response = await api.get('/search', {
-      params: { q: query, page },
+      params: { q: query, ...params },
     })
     return response.data
   },
