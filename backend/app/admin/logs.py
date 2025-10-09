@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Depends, Query, Request
+from fastapi.responses import StreamingResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, desc, or_
 from sqlalchemy.orm import selectinload
@@ -7,6 +8,8 @@ from app.models.admin import OperationLog, AdminUser
 from app.utils.dependencies import get_current_admin_user
 from datetime import datetime, timedelta
 import json
+import csv
+import io
 
 router = APIRouter()
 
@@ -255,3 +258,81 @@ async def get_available_actions(
     )
     actions = [row[0] for row in result.all()]
     return {"actions": actions}
+
+
+@router.get("/operations/export")
+async def export_logs(
+    module: str = Query(None),
+    action: str = Query(None),
+    admin_user_id: int = Query(None),
+    search: str = Query(""),
+    start_date: str = Query(None),
+    end_date: str = Query(None),
+    db: AsyncSession = Depends(get_db),
+    current_admin: AdminUser = Depends(get_current_admin_user),
+):
+    """导出操作日志为CSV文件"""
+    # 构建查询（与列表API相同的逻辑）
+    query = select(OperationLog).options(
+        selectinload(OperationLog.admin_user)
+    )
+
+    if module:
+        query = query.filter(OperationLog.module == module)
+    if action:
+        query = query.filter(OperationLog.action == action)
+    if admin_user_id:
+        query = query.filter(OperationLog.admin_user_id == admin_user_id)
+    if search:
+        query = query.filter(
+            or_(
+                OperationLog.description.ilike(f"%{search}%"),
+                OperationLog.ip_address.ilike(f"%{search}%"),
+            )
+        )
+    if start_date:
+        start_datetime = datetime.fromisoformat(start_date.replace('Z', '+00:00'))
+        query = query.filter(OperationLog.created_at >= start_datetime)
+    if end_date:
+        end_datetime = datetime.fromisoformat(end_date.replace('Z', '+00:00'))
+        query = query.filter(OperationLog.created_at <= end_datetime)
+
+    # 获取数据（限制最多导出10000条）
+    query = query.order_by(desc(OperationLog.created_at)).limit(10000)
+    result = await db.execute(query)
+    logs = result.scalars().all()
+
+    # 创建CSV
+    output = io.StringIO()
+    writer = csv.writer(output)
+
+    # 写入表头
+    writer.writerow([
+        'ID', '管理员用户名', '管理员邮箱', '模块', '操作',
+        '描述', 'IP地址', '请求方法', '请求URL', '创建时间'
+    ])
+
+    # 写入数据
+    for log in logs:
+        writer.writerow([
+            log.id,
+            log.admin_user.username if log.admin_user else '',
+            log.admin_user.email if log.admin_user else '',
+            log.module,
+            log.action,
+            log.description,
+            log.ip_address or '',
+            log.request_method or '',
+            log.request_url or '',
+            log.created_at.strftime('%Y-%m-%d %H:%M:%S'),
+        ])
+
+    # 返回CSV文件
+    output.seek(0)
+    return StreamingResponse(
+        iter([output.getvalue()]),
+        media_type="text/csv",
+        headers={
+            "Content-Disposition": f"attachment; filename=operation_logs_{datetime.utcnow().strftime('%Y%m%d_%H%M%S')}.csv"
+        }
+    )

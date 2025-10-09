@@ -23,6 +23,7 @@ import {
   EyeOutlined,
   ReloadOutlined,
   BarChartOutlined,
+  DownloadOutlined,
 } from '@ant-design/icons'
 import axios from '@/utils/axios'
 import dayjs from 'dayjs'
@@ -149,6 +150,55 @@ const Logs = () => {
     setAdminUserId(undefined)
     setDateRange(undefined)
     setPage(1)
+  }
+
+  const handleExport = () => {
+    // 构建导出URL
+    const params = new URLSearchParams()
+    if (search) params.append('search', search)
+    if (module) params.append('module', module)
+    if (action) params.append('action', action)
+    if (adminUserId) params.append('admin_user_id', adminUserId.toString())
+    if (dateRange) {
+      params.append('start_date', dateRange[0])
+      params.append('end_date', dateRange[1])
+    }
+
+    // 获取token
+    const token = localStorage.getItem('adminToken')
+    if (!token) {
+      message.error('请先登录')
+      return
+    }
+
+    // 创建一个临时的a标签下载
+    const exportUrl = `/api/v1/admin/logs/operations/export?${params.toString()}`
+    const link = document.createElement('a')
+    link.href = `${import.meta.env.VITE_API_BASE_URL || 'http://localhost:8001'}${exportUrl}`
+    link.download = `operation_logs_${new Date().getTime()}.csv`
+
+    // 使用fetch下载文件
+    fetch(link.href, {
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    })
+      .then(response => response.blob())
+      .then(blob => {
+        const url = window.URL.createObjectURL(blob)
+        const a = document.createElement('a')
+        a.href = url
+        a.download = `operation_logs_${new Date().getTime()}.csv`
+        document.body.appendChild(a)
+        a.click()
+        window.URL.revokeObjectURL(url)
+        document.body.removeChild(a)
+        message.success('导出成功')
+      })
+      .catch(error => {
+        console.error('Export error:', error)
+        message.error('导出失败')
+      })
   }
 
   const columns = [
@@ -327,6 +377,13 @@ const Logs = () => {
               onClick={() => setStatsVisible(true)}
             >
               查看统计
+            </Button>
+            <Button
+              type="primary"
+              icon={<DownloadOutlined />}
+              onClick={handleExport}
+            >
+              导出CSV
             </Button>
             <Button
               danger

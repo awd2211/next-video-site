@@ -5,6 +5,7 @@ from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
 from app.config import settings
+from app.middleware.operation_log import OperationLogMiddleware
 from app.api import auth, videos, users, categories, search
 from app.admin import (
     videos as admin_videos,
@@ -47,6 +48,9 @@ app.add_middleware(
 
 # GZip compression
 app.add_middleware(GZipMiddleware, minimum_size=1000)
+
+# Operation log middleware (before routes)
+app.add_middleware(OperationLogMiddleware)
 
 # Public API routes
 app.include_router(auth.router, prefix=f"{settings.API_V1_PREFIX}/auth", tags=["Authentication"])
