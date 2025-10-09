@@ -20,6 +20,8 @@ class AdminLogin(BaseModel):
     """Admin login schema"""
     username: str
     password: str
+    captcha_id: str = Field(..., description="Captcha ID")
+    captcha_code: str = Field(..., min_length=4, max_length=4, description="Captcha code")
 
 
 class TokenResponse(BaseModel):

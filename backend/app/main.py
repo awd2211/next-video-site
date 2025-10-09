@@ -6,7 +6,7 @@ from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
 from app.config import settings
 from app.middleware.operation_log import OperationLogMiddleware
-from app.api import auth, videos, users, categories, search, comments, ratings, favorites, history, actors, directors
+from app.api import auth, videos, users, categories, search, comments, ratings, favorites, history, actors, directors, captcha
 from app.admin import (
     videos as admin_videos,
     users as admin_users,
@@ -58,6 +58,7 @@ app.add_middleware(OperationLogMiddleware)
 
 # Public API routes
 app.include_router(auth.router, prefix=f"{settings.API_V1_PREFIX}/auth", tags=["Authentication"])
+app.include_router(captcha.router, prefix=f"{settings.API_V1_PREFIX}/captcha", tags=["Captcha"])
 app.include_router(videos.router, prefix=f"{settings.API_V1_PREFIX}/videos", tags=["Videos"])
 app.include_router(users.router, prefix=f"{settings.API_V1_PREFIX}/users", tags=["Users"])
 app.include_router(categories.router, prefix=f"{settings.API_V1_PREFIX}/categories", tags=["Categories"])

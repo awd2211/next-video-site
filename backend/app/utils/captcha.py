@@ -1,0 +1,76 @@
+"""
+Captcha generation and validation utilities
+"""
+import uuid
+import io
+from typing import Tuple
+from captcha.image import ImageCaptcha
+from app.utils.cache import get_redis
+from app.config import settings
+
+
+class CaptchaManager:
+    """Manage captcha generation and validation"""
+
+    def __init__(self):
+        self.image_captcha = ImageCaptcha(width=160, height=60)
+        self.captcha_expire_seconds = 300  # 5 minutes
+
+    async def generate_captcha(self) -> Tuple[str, bytes]:
+        """
+        Generate a new captcha
+
+        Returns:
+            Tuple[str, bytes]: (captcha_id, image_bytes)
+        """
+        # Generate random captcha text (4 characters)
+        import random
+        import string
+        captcha_text = ''.join(random.choices(string.digits + string.ascii_uppercase, k=4))
+
+        # Generate captcha ID
+        captcha_id = str(uuid.uuid4())
+
+        # Store captcha text in Redis with expiration
+        redis_client = await get_redis()
+        cache_key = f"captcha:{captcha_id}"
+        await redis_client.setex(cache_key, self.captcha_expire_seconds, captcha_text)
+
+        # Generate captcha image
+        image = self.image_captcha.generate(captcha_text)
+        image_bytes = image.read()
+
+        return captcha_id, image_bytes
+
+    async def validate_captcha(self, captcha_id: str, user_input: str) -> bool:
+        """
+        Validate a captcha
+
+        Args:
+            captcha_id: The captcha ID
+            user_input: User's input
+
+        Returns:
+            bool: True if valid, False otherwise
+        """
+        if not captcha_id or not user_input:
+            return False
+
+        redis_client = await get_redis()
+        cache_key = f"captcha:{captcha_id}"
+
+        # Get stored captcha text
+        stored_text = await redis_client.get(cache_key)
+
+        if not stored_text:
+            return False
+
+        # Delete captcha after validation (one-time use)
+        await redis_client.delete(cache_key)
+
+        # Compare (case-insensitive)
+        return stored_text.decode('utf-8').upper() == user_input.upper()
+
+
+# Singleton instance
+captcha_manager = CaptchaManager()

@@ -1,17 +1,49 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Form, Input, Button, Card, message } from 'antd'
-import { UserOutlined, LockOutlined } from '@ant-design/icons'
+import { Form, Input, Button, Card, message, Space } from 'antd'
+import { UserOutlined, LockOutlined, SafetyOutlined, ReloadOutlined } from '@ant-design/icons'
 import axios from 'axios'  // Use native axios for login, not the intercepted instance
 
 const Login = () => {
   const navigate = useNavigate()
   const [loading, setLoading] = useState(false)
+  const [captchaId, setCaptchaId] = useState('')
+  const [captchaUrl, setCaptchaUrl] = useState('')
+  const [captchaLoading, setCaptchaLoading] = useState(false)
+
+  // Load captcha on component mount
+  useEffect(() => {
+    loadCaptcha()
+  }, [])
+
+  const loadCaptcha = async () => {
+    setCaptchaLoading(true)
+    try {
+      const response = await axios.get('/api/v1/captcha/', {
+        responseType: 'blob',
+      })
+
+      // Get captcha ID from response headers
+      const id = response.headers['x-captcha-id']
+      setCaptchaId(id)
+
+      // Create object URL for the image
+      const imageUrl = URL.createObjectURL(response.data)
+      setCaptchaUrl(imageUrl)
+    } catch (error) {
+      message.error('加载验证码失败')
+    } finally {
+      setCaptchaLoading(false)
+    }
+  }
 
   const onFinish = async (values: any) => {
     setLoading(true)
     try {
-      const response = await axios.post('/api/v1/auth/admin/login', values)
+      const response = await axios.post('/api/v1/auth/admin/login', {
+        ...values,
+        captcha_id: captchaId,
+      })
 
       // Save tokens to localStorage
       localStorage.setItem('admin_access_token', response.data.access_token)
@@ -26,6 +58,8 @@ const Login = () => {
       }, 100)
     } catch (error: any) {
       message.error(error.response?.data?.detail || '登录失败，请检查用户名和密码')
+      // Reload captcha on error
+      loadCaptcha()
     } finally {
       setLoading(false)
     }
@@ -74,6 +108,51 @@ const Login = () => {
               placeholder="密码"
               size="large"
             />
+          </Form.Item>
+
+          <Form.Item
+            name="captcha_code"
+            rules={[
+              { required: true, message: '请输入验证码！' },
+              { len: 4, message: '验证码为4位字符！' }
+            ]}
+          >
+            <Space.Compact style={{ width: '100%' }}>
+              <Input
+                prefix={<SafetyOutlined style={{ color: '#bfbfbf' }} />}
+                placeholder="验证码"
+                size="large"
+                maxLength={4}
+                style={{ width: '60%' }}
+              />
+              <div
+                style={{
+                  width: '40%',
+                  height: 40,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  border: '1px solid #d9d9d9',
+                  borderRadius: '0 6px 6px 0',
+                  cursor: 'pointer',
+                  position: 'relative',
+                  overflow: 'hidden',
+                }}
+                onClick={loadCaptcha}
+              >
+                {captchaLoading ? (
+                  <ReloadOutlined spin style={{ fontSize: 20, color: '#1890ff' }} />
+                ) : captchaUrl ? (
+                  <img
+                    src={captchaUrl}
+                    alt="验证码"
+                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                  />
+                ) : (
+                  <span style={{ color: '#bfbfbf' }}>加载中...</span>
+                )}
+              </div>
+            </Space.Compact>
           </Form.Item>
 
           <Form.Item>

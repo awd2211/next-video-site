@@ -34,4 +34,11 @@ export const videoService = {
     })
     return response.data
   },
+
+  getRecommendedVideos: async (page: number = 1, pageSize: number = 6): Promise<PaginatedResponse<Video>> => {
+    const response = await api.get('/videos/recommended', {
+      params: { page, page_size: pageSize },
+    })
+    return response.data
+  },
 }
