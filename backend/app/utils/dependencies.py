@@ -27,8 +27,13 @@ async def get_current_user(
     if payload is None or payload.get("type") != "access":
         raise credentials_exception
 
-    user_id: int = payload.get("sub")
-    if user_id is None:
+    user_id_str = payload.get("sub")
+    if user_id_str is None:
+        raise credentials_exception
+
+    try:
+        user_id = int(user_id_str)
+    except (ValueError, TypeError):
         raise credentials_exception
 
     result = await db.execute(select(User).filter(User.id == user_id))
@@ -66,8 +71,13 @@ async def get_current_admin_user(
     if payload is None or payload.get("type") != "access" or payload.get("is_admin") != True:
         raise credentials_exception
 
-    admin_id: int = payload.get("sub")
-    if admin_id is None:
+    admin_id_str = payload.get("sub")
+    if admin_id_str is None:
+        raise credentials_exception
+
+    try:
+        admin_id = int(admin_id_str)
+    except (ValueError, TypeError):
         raise credentials_exception
 
     result = await db.execute(select(AdminUser).filter(AdminUser.id == admin_id))
@@ -105,8 +115,13 @@ def get_optional_user(
     if payload is None:
         return None
 
-    user_id: int = payload.get("sub")
-    if user_id is None:
+    user_id_str = payload.get("sub")
+    if user_id_str is None:
+        return None
+
+    try:
+        user_id = int(user_id_str)
+    except (ValueError, TypeError):
         return None
 
     result = db.execute(select(User).filter(User.id == user_id))

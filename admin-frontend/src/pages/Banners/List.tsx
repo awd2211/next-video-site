@@ -5,7 +5,6 @@ import {
   Table,
   Button,
   Space,
-  Tag,
   Modal,
   Form,
   Input,
@@ -21,7 +20,6 @@ import {
   PlusOutlined,
   EditOutlined,
   DeleteOutlined,
-  EyeOutlined,
   UploadOutlined,
 } from '@ant-design/icons'
 import axios from '@/utils/axios'
@@ -68,7 +66,7 @@ const BannersList = () => {
   }
 
   // Fetch banners
-  const { data, isLoading, refetch } = useQuery({
+  const { data, isLoading } = useQuery({
     queryKey: ['banners', page, pageSize],
     queryFn: async () => {
       const response = await axios.get(

@@ -1,5 +1,6 @@
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import { App as AntApp } from 'antd'
+import { useEffect, useState } from 'react'
 import AdminLayout from './layouts/AdminLayout'
 import Login from './pages/Login'
 import Dashboard from './pages/Dashboard'
@@ -13,9 +14,31 @@ import OperationLogs from './pages/Logs'
 import BannersList from './pages/Banners/List'
 import AnnouncementsList from './pages/Announcements/List'
 
-function App() {
-  const isAuthenticated = !!localStorage.getItem('admin_access_token')
+// Protected Route Component
+function ProtectedRoute({ children }: { children: React.ReactNode }) {
+  const location = useLocation()
+  const [isAuthenticated, setIsAuthenticated] = useState(false)
+  const [isChecking, setIsChecking] = useState(true)
 
+  useEffect(() => {
+    // Check authentication whenever location changes
+    const checkAuth = () => {
+      const token = localStorage.getItem('admin_access_token')
+      setIsAuthenticated(!!token)
+      setIsChecking(false)
+    }
+
+    checkAuth()
+  }, [location]) // Re-check when location changes
+
+  if (isChecking) {
+    return <div>Loading...</div>
+  }
+
+  return isAuthenticated ? <>{children}</> : <Navigate to="/login" replace />
+}
+
+function App() {
   return (
     <AntApp>
       <BrowserRouter>
@@ -24,7 +47,9 @@ function App() {
         <Route
           path="/"
           element={
-            isAuthenticated ? <AdminLayout /> : <Navigate to="/login" replace />
+            <ProtectedRoute>
+              <AdminLayout />
+            </ProtectedRoute>
           }
         >
           <Route index element={<Dashboard />} />

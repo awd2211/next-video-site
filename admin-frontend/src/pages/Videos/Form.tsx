@@ -12,10 +12,9 @@ import {
   Col,
   message,
   Space,
-  Upload,
   Spin,
 } from 'antd'
-import { PlusOutlined, SaveOutlined, ArrowLeftOutlined } from '@ant-design/icons'
+import { SaveOutlined, ArrowLeftOutlined } from '@ant-design/icons'
 import { useQuery } from '@tanstack/react-query'
 import axios from '@/utils/axios'
 import dayjs from 'dayjs'

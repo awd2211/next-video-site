@@ -2,11 +2,9 @@ import { useParams } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { videoService } from '@/services/videoService'
 import VideoPlayer from '@/components/VideoPlayer'
-import { useState } from 'react'
 
 const VideoDetail = () => {
   const { id } = useParams<{ id: string }>()
-  const [currentTime, setCurrentTime] = useState(0)
 
   const { data: video, isLoading } = useQuery({
     queryKey: ['video', id],
@@ -29,7 +27,7 @@ const VideoDetail = () => {
         <VideoPlayer
           src={video.video_url || ''}
           poster={video.backdrop_url || video.poster_url}
-          onTimeUpdate={setCurrentTime}
+          onTimeUpdate={(time) => console.log('Current time:', time)}
           onEnded={() => console.log('Video ended')}
         />
       </div>

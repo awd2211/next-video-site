@@ -6,7 +6,6 @@ import {
   InputNumber,
   Button,
   Switch,
-  Select,
   message,
   Tabs,
   Space,
@@ -14,11 +13,10 @@ import {
   List,
   Tag,
 } from 'antd'
-import { SaveOutlined, SendOutlined, DeleteOutlined, PlusOutlined } from '@ant-design/icons'
+import { SaveOutlined, SendOutlined, DeleteOutlined } from '@ant-design/icons'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import axios from '@/utils/axios'
 
-const { Option } = Select
 const { TabPane } = Tabs
 
 const EmailConfig = () => {

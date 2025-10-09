@@ -137,7 +137,6 @@ const CommentsList = () => {
     mutationFn: async (commentIds: number[]) => {
       await axios.delete('/api/v1/admin/comments/batch', {
         data: { comment_ids: commentIds },
-        headers: { Authorization: `Bearer ${token}` },
       })
     },
     onSuccess: () => {

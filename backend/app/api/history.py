@@ -1,0 +1,188 @@
+from fastapi import APIRouter, Depends, HTTPException, status, Query
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select, func, and_
+from sqlalchemy.orm import selectinload
+from app.database import get_db
+from app.models.user_activity import WatchHistory
+from app.models.user import User
+from app.models.video import Video
+from app.schemas.user_activity import (
+    WatchHistoryCreate,
+    WatchHistoryUpdate,
+    WatchHistoryResponse,
+    PaginatedWatchHistoryResponse,
+)
+from app.utils.dependencies import get_current_active_user
+
+router = APIRouter()
+
+
+@router.post("/", response_model=WatchHistoryResponse, status_code=status.HTTP_201_CREATED)
+async def create_or_update_watch_history(
+    history_data: WatchHistoryCreate,
+    current_user: User = Depends(get_current_active_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Record or update watch history for a video.
+    If history exists, update it; otherwise create new.
+    """
+    # Verify video exists
+    video_result = await db.execute(select(Video).where(Video.id == history_data.video_id))
+    video = video_result.scalar_one_or_none()
+    if not video:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Video not found"
+        )
+
+    # Check if history exists
+    existing_result = await db.execute(
+        select(WatchHistory).where(
+            and_(
+                WatchHistory.user_id == current_user.id,
+                WatchHistory.video_id == history_data.video_id
+            )
+        )
+    )
+    existing_history = existing_result.scalar_one_or_none()
+
+    if existing_history:
+        # Update existing history
+        existing_history.watch_duration = history_data.watch_duration
+        existing_history.last_position = history_data.last_position
+        existing_history.is_completed = 1 if history_data.is_completed else 0
+        history = existing_history
+    else:
+        # Create new history
+        history = WatchHistory(
+            user_id=current_user.id,
+            video_id=history_data.video_id,
+            watch_duration=history_data.watch_duration,
+            last_position=history_data.last_position,
+            is_completed=1 if history_data.is_completed else 0
+        )
+        db.add(history)
+
+        # Update video view count (only for new history)
+        video.view_count += 1
+
+    await db.commit()
+    await db.refresh(history)
+    await db.refresh(history, ["video"])
+
+    return WatchHistoryResponse.model_validate(history)
+
+
+@router.get("/", response_model=PaginatedWatchHistoryResponse)
+async def get_watch_history(
+    page: int = Query(1, ge=1),
+    page_size: int = Query(20, ge=1, le=100),
+    current_user: User = Depends(get_current_active_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Get current user's watch history"""
+    # Count total
+    count_query = select(func.count()).where(WatchHistory.user_id == current_user.id)
+    total_result = await db.execute(count_query)
+    total = total_result.scalar()
+
+    # Get paginated history with video details
+    query = (
+        select(WatchHistory)
+        .where(WatchHistory.user_id == current_user.id)
+        .options(selectinload(WatchHistory.video))
+        .order_by(WatchHistory.updated_at.desc())
+        .offset((page - 1) * page_size)
+        .limit(page_size)
+    )
+
+    result = await db.execute(query)
+    history_items = result.scalars().all()
+
+    items = [WatchHistoryResponse.model_validate(item) for item in history_items]
+
+    return PaginatedWatchHistoryResponse(
+        total=total,
+        page=page,
+        page_size=page_size,
+        items=items
+    )
+
+
+@router.get("/{video_id}", response_model=WatchHistoryResponse)
+async def get_video_watch_history(
+    video_id: int,
+    current_user: User = Depends(get_current_active_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Get watch history for a specific video"""
+    query = (
+        select(WatchHistory)
+        .where(
+            and_(
+                WatchHistory.user_id == current_user.id,
+                WatchHistory.video_id == video_id
+            )
+        )
+        .options(selectinload(WatchHistory.video))
+    )
+
+    result = await db.execute(query)
+    history = result.scalar_one_or_none()
+
+    if not history:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Watch history not found"
+        )
+
+    return WatchHistoryResponse.model_validate(history)
+
+
+@router.delete("/{video_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_watch_history(
+    video_id: int,
+    current_user: User = Depends(get_current_active_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Delete watch history for a specific video"""
+    result = await db.execute(
+        select(WatchHistory).where(
+            and_(
+                WatchHistory.user_id == current_user.id,
+                WatchHistory.video_id == video_id
+            )
+        )
+    )
+    history = result.scalar_one_or_none()
+
+    if not history:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Watch history not found"
+        )
+
+    await db.delete(history)
+    await db.commit()
+
+    return None
+
+
+@router.delete("/", status_code=status.HTTP_204_NO_CONTENT)
+async def clear_watch_history(
+    current_user: User = Depends(get_current_active_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Clear all watch history for current user"""
+    result = await db.execute(
+        select(WatchHistory).where(WatchHistory.user_id == current_user.id)
+    )
+    history_items = result.scalars().all()
+
+    for item in history_items:
+        await db.delete(item)
+
+    await db.commit()
+
+    return None

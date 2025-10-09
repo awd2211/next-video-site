@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react'
+import React, { useEffect, useRef } from 'react'
 import videojs from 'video.js'
 import 'video.js/dist/video-js.css'
 import './VideoPlayer.css'
@@ -20,7 +20,6 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
 }) => {
   const videoRef = useRef<HTMLDivElement>(null)
   const playerRef = useRef<any>(null)
-  const [isFullscreen, setIsFullscreen] = useState(false)
 
   useEffect(() => {
     // Initialize Video.js player
@@ -77,19 +76,19 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
             break
           case 'ArrowLeft':
             e.preventDefault()
-            player.currentTime(player.currentTime() - 5)
+            player.currentTime((player.currentTime() || 0) - 5)
             break
           case 'ArrowRight':
             e.preventDefault()
-            player.currentTime(player.currentTime() + 5)
+            player.currentTime((player.currentTime() || 0) + 5)
             break
           case 'ArrowUp':
             e.preventDefault()
-            player.volume(Math.min(1, player.volume() + 0.1))
+            player.volume(Math.min(1, (player.volume() || 0) + 0.1))
             break
           case 'ArrowDown':
             e.preventDefault()
-            player.volume(Math.max(0, player.volume() - 0.1))
+            player.volume(Math.max(0, (player.volume() || 0) - 0.1))
             break
           case 'f':
             e.preventDefault()
@@ -115,7 +114,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
           case '9':
             e.preventDefault()
             const percent = parseInt(e.key) * 10
-            player.currentTime((player.duration() * percent) / 100)
+            player.currentTime(((player.duration() || 0) * percent) / 100)
             break
         }
       })
@@ -123,7 +122,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
       // Time update
       player.on('timeupdate', () => {
         if (onTimeUpdate) {
-          onTimeUpdate(player.currentTime())
+          onTimeUpdate(player.currentTime() || 0)
         }
       })
 
@@ -134,9 +133,11 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
         }
       })
 
-      // Fullscreen change
+      // Fullscreen change tracking
       player.on('fullscreenchange', () => {
-        setIsFullscreen(player.isFullscreen())
+        // Track fullscreen state changes if needed
+        const isFullscreen = player.isFullscreen() || false
+        console.log('Fullscreen:', isFullscreen)
       })
 
       // Quality selector (if multiple sources)
@@ -149,6 +150,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
       class TheaterButton extends Button {
         constructor(player: any, options: any) {
           super(player, options)
+          // @ts-ignore - videojs Button type is incomplete
           this.controlText('Theater Mode')
         }
 

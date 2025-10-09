@@ -86,9 +86,9 @@ async def login(
     user.last_login_at = datetime.utcnow()
     await db.commit()
 
-    # Create tokens
-    access_token = create_access_token({"sub": user.id})
-    refresh_token = create_refresh_token({"sub": user.id})
+    # Create tokens (sub must be string per JWT spec)
+    access_token = create_access_token({"sub": str(user.id)})
+    refresh_token = create_refresh_token({"sub": str(user.id)})
 
     return {
         "access_token": access_token,
@@ -124,9 +124,9 @@ async def admin_login(
     admin_user.last_login_at = datetime.utcnow()
     await db.commit()
 
-    # Create tokens with admin flag
-    access_token = create_access_token({"sub": admin_user.id, "is_admin": True})
-    refresh_token = create_refresh_token({"sub": admin_user.id, "is_admin": True})
+    # Create tokens with admin flag (sub must be string per JWT spec)
+    access_token = create_access_token({"sub": str(admin_user.id), "is_admin": True})
+    refresh_token = create_refresh_token({"sub": str(admin_user.id), "is_admin": True})
 
     return {
         "access_token": access_token,
@@ -166,8 +166,8 @@ async def refresh_token(
             detail="User not found or inactive",
         )
 
-    # Create new tokens
-    token_payload = {"sub": user_id}
+    # Create new tokens (sub must be string per JWT spec)
+    token_payload = {"sub": str(user_id)}
     if is_admin:
         token_payload["is_admin"] = True
 

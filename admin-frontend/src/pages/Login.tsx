@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Form, Input, Button, Card, message } from 'antd'
 import { UserOutlined, LockOutlined } from '@ant-design/icons'
-import axios from '@/utils/axios'
+import axios from 'axios'  // Use native axios for login, not the intercepted instance
 
 const Login = () => {
   const navigate = useNavigate()
@@ -12,11 +12,18 @@ const Login = () => {
     setLoading(true)
     try {
       const response = await axios.post('/api/v1/auth/admin/login', values)
+
+      // Save tokens to localStorage
       localStorage.setItem('admin_access_token', response.data.access_token)
       localStorage.setItem('admin_refresh_token', response.data.refresh_token)
-      localStorage.setItem('admin_user', JSON.stringify(response.data.user))
+
       message.success('登录成功！')
-      navigate('/')
+
+      // Use navigate instead of window.location.href to avoid page reload
+      // This ensures localStorage is properly set before navigation
+      setTimeout(() => {
+        navigate('/')
+      }, 100)
     } catch (error: any) {
       message.error(error.response?.data?.detail || '登录失败，请检查用户名和密码')
     } finally {

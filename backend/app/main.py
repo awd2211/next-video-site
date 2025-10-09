@@ -6,7 +6,7 @@ from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
 from app.config import settings
 from app.middleware.operation_log import OperationLogMiddleware
-from app.api import auth, videos, users, categories, search
+from app.api import auth, videos, users, categories, search, comments, ratings, favorites, history, actors, directors
 from app.admin import (
     videos as admin_videos,
     users as admin_users,
@@ -19,6 +19,11 @@ from app.admin import (
     email_config as admin_email,
     banners as admin_banners,
     announcements as admin_announcements,
+    tags as admin_tags,
+    countries as admin_countries,
+    categories as admin_categories,
+    actors as admin_actors,
+    directors as admin_directors,
 )
 
 # Initialize rate limiter
@@ -59,6 +64,12 @@ app.include_router(categories.router, prefix=f"{settings.API_V1_PREFIX}/categori
 app.include_router(categories.countries_router, prefix=f"{settings.API_V1_PREFIX}/countries", tags=["Countries"])
 app.include_router(categories.tags_router, prefix=f"{settings.API_V1_PREFIX}/tags", tags=["Tags"])
 app.include_router(search.router, prefix=f"{settings.API_V1_PREFIX}/search", tags=["Search"])
+app.include_router(comments.router, prefix=f"{settings.API_V1_PREFIX}/comments", tags=["Comments"])
+app.include_router(ratings.router, prefix=f"{settings.API_V1_PREFIX}/ratings", tags=["Ratings"])
+app.include_router(favorites.router, prefix=f"{settings.API_V1_PREFIX}/favorites", tags=["Favorites"])
+app.include_router(history.router, prefix=f"{settings.API_V1_PREFIX}/history", tags=["Watch History"])
+app.include_router(actors.router, prefix=f"{settings.API_V1_PREFIX}/actors", tags=["Actors"])
+app.include_router(directors.router, prefix=f"{settings.API_V1_PREFIX}/directors", tags=["Directors"])
 
 # Admin API routes
 app.include_router(admin_videos.router, prefix=f"{settings.API_V1_PREFIX}/admin/videos", tags=["Admin - Videos"])
@@ -72,6 +83,11 @@ app.include_router(admin_upload.router, prefix=f"{settings.API_V1_PREFIX}/admin/
 app.include_router(admin_email.router, prefix=f"{settings.API_V1_PREFIX}/admin/email", tags=["Admin - Email"])
 app.include_router(admin_banners.router, prefix=f"{settings.API_V1_PREFIX}/admin/banners", tags=["Admin - Banners"])
 app.include_router(admin_announcements.router, prefix=f"{settings.API_V1_PREFIX}/admin/announcements", tags=["Admin - Announcements"])
+app.include_router(admin_tags.router, prefix=f"{settings.API_V1_PREFIX}/admin/tags", tags=["Admin - Tags"])
+app.include_router(admin_countries.router, prefix=f"{settings.API_V1_PREFIX}/admin/countries", tags=["Admin - Countries"])
+app.include_router(admin_categories.router, prefix=f"{settings.API_V1_PREFIX}/admin/categories", tags=["Admin - Categories"])
+app.include_router(admin_actors.router, prefix=f"{settings.API_V1_PREFIX}/admin/actors", tags=["Admin - Actors"])
+app.include_router(admin_directors.router, prefix=f"{settings.API_V1_PREFIX}/admin/directors", tags=["Admin - Directors"])
 
 
 @app.get("/")

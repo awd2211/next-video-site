@@ -3,7 +3,7 @@ import { message } from 'antd'
 
 // Create axios instance with default config
 const axiosInstance = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL || 'http://localhost:8001',
+  baseURL: import.meta.env.VITE_API_BASE_URL || '',  // Use relative path to leverage Vite proxy
   timeout: 30000,
   headers: {
     'Content-Type': 'application/json',
