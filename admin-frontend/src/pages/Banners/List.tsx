@@ -38,6 +38,34 @@ const BannersList = () => {
   const [editingBanner, setEditingBanner] = useState<any>(null)
   const [form] = Form.useForm()
   const queryClient = useQueryClient()
+  const [uploading, setUploading] = useState(false)
+  const [imageUrl, setImageUrl] = useState<string>('')
+
+  // Handle image upload
+  const handleUpload = async (options: any) => {
+    const { file, onSuccess, onError } = options
+    const formData = new FormData()
+    formData.append('file', file)
+
+    setUploading(true)
+    try {
+      const response = await axios.post('/api/v1/admin/banners/banners/upload-image', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      })
+      const url = response.data.image_url
+      setImageUrl(url)
+      form.setFieldsValue({ image_url: url })
+      message.success('图片上传成功')
+      onSuccess(response.data, file)
+    } catch (error: any) {
+      message.error(error.response?.data?.detail || '上传失败')
+      onError(error)
+    } finally {
+      setUploading(false)
+    }
+  }
 
   // Fetch banners
   const { data, isLoading, refetch } = useQuery({
@@ -105,6 +133,7 @@ const BannersList = () => {
 
   const handleEdit = (banner: any) => {
     setEditingBanner(banner)
+    setImageUrl(banner.image_url || '')
     form.setFieldsValue({
       ...banner,
       date_range: banner.start_date && banner.end_date
@@ -118,6 +147,7 @@ const BannersList = () => {
     setModalVisible(false)
     setEditingBanner(null)
     form.resetFields()
+    setImageUrl('')
   }
 
   const handleSubmit = async () => {
@@ -300,12 +330,36 @@ const BannersList = () => {
           </Form.Item>
 
           <Form.Item
-            label="图片URL"
+            label="图片"
             name="image_url"
-            rules={[{ required: true, message: '请输入图片URL' }]}
+            rules={[{ required: true, message: '请上传或输入图片URL' }]}
             extra="建议尺寸：1920x600"
           >
-            <Input placeholder="https://example.com/banner.jpg" />
+            <Space direction="vertical" style={{ width: '100%' }}>
+              <Upload
+                name="file"
+                customRequest={handleUpload}
+                listType="picture-card"
+                showUploadList={false}
+                accept="image/jpeg,image/jpg,image/png,image/webp"
+              >
+                {imageUrl ? (
+                  <img src={imageUrl} alt="banner" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                ) : (
+                  <div>
+                    {uploading ? <div>上传中...</div> : <><UploadOutlined /><div>上传图片</div></>}
+                  </div>
+                )}
+              </Upload>
+              <Input
+                placeholder="或直接输入图片URL: https://example.com/banner.jpg"
+                value={imageUrl}
+                onChange={(e) => {
+                  setImageUrl(e.target.value)
+                  form.setFieldsValue({ image_url: e.target.value })
+                }}
+              />
+            </Space>
           </Form.Item>
 
           <Form.Item label="链接URL" name="link_url">

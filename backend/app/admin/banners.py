@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, UploadFile, File
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, update, delete, desc, func
 from pydantic import BaseModel
@@ -7,7 +7,9 @@ from datetime import datetime
 from app.database import get_db
 from app.models.user import AdminUser
 from app.models.content import Banner, BannerStatus
-from app.admin.auth import get_current_admin_user
+from app.utils.dependencies import get_current_admin_user
+from app.utils.minio_client import minio_client
+import io
 
 router = APIRouter()
 
@@ -199,3 +201,37 @@ async def update_banner_sort_order(
     await db.commit()
 
     return {"message": "Banner sort order updated"}
+
+
+@router.post("/banners/upload-image")
+async def upload_banner_image(
+    file: UploadFile = File(...),
+    db: AsyncSession = Depends(get_db),
+    current_admin: AdminUser = Depends(get_current_admin_user),
+):
+    """上传Banner图片"""
+    # 验证文件类型
+    allowed_types = ["image/jpeg", "image/jpg", "image/png", "image/webp"]
+    if file.content_type not in allowed_types:
+        raise HTTPException(
+            status_code=400,
+            detail="不支持的图片格式，仅支持 JPG, PNG, WEBP"
+        )
+
+    try:
+        # 生成文件名
+        ext = file.filename.split(".")[-1]
+        object_name = f"banners/banner_{int(datetime.utcnow().timestamp())}.{ext}"
+
+        # 上传到 MinIO
+        file_content = await file.read()
+        image_url = minio_client.upload_image(
+            io.BytesIO(file_content),
+            object_name,
+            file.content_type,
+        )
+
+        return {"image_url": image_url, "message": "图片上传成功"}
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"上传失败: {str(e)}")
