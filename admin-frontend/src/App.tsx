@@ -1,4 +1,5 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
+import { App as AntApp } from 'antd'
 import AdminLayout from './layouts/AdminLayout'
 import Login from './pages/Login'
 import Dashboard from './pages/Dashboard'
@@ -16,7 +17,8 @@ function App() {
   const isAuthenticated = !!localStorage.getItem('admin_access_token')
 
   return (
-    <BrowserRouter>
+    <AntApp>
+      <BrowserRouter>
       <Routes>
         <Route path="/login" element={<Login />} />
         <Route
@@ -39,6 +41,7 @@ function App() {
         </Route>
       </Routes>
     </BrowserRouter>
+    </AntApp>
   )
 }
 

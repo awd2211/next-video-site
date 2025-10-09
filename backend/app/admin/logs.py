@@ -4,7 +4,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, desc, or_
 from sqlalchemy.orm import selectinload
 from app.database import get_db
-from app.models.admin import OperationLog, AdminUser
+from app.models.admin import OperationLog
+from app.models.user import AdminUser
 from app.utils.dependencies import get_current_admin_user
 from datetime import datetime, timedelta
 import json

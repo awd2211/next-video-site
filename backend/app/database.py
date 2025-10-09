@@ -44,6 +44,9 @@ AsyncSessionLocal = async_sessionmaker(
     autoflush=False,
 )
 
+# Alias for compatibility
+async_session_maker = AsyncSessionLocal
+
 # Sync engine for Alembic migrations
 sync_engine = create_engine(
     settings.DATABASE_URL_SYNC,
@@ -91,11 +94,11 @@ def get_pool_status():
     """获取连接池状态信息"""
     pool_obj = async_engine.pool
     return {
-        "pool_size": pool_obj.size(),
-        "checked_in": pool_obj.checkedin(),
-        "checked_out": pool_obj.checkedout(),
-        "overflow": pool_obj.overflow(),
-        "total_connections": pool_obj.size() + pool_obj.overflow(),
+        "pool_size": pool_obj.size(),  # type: ignore
+        "checked_in": pool_obj.checkedin(),  # type: ignore
+        "checked_out": pool_obj.checkedout(),  # type: ignore
+        "overflow": pool_obj.overflow(),  # type: ignore
+        "total_connections": pool_obj.size() + pool_obj.overflow(),  # type: ignore
     }
 
 

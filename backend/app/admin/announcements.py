@@ -7,7 +7,7 @@ from datetime import datetime
 from app.database import get_db
 from app.models.content import Announcement
 from app.models.user import AdminUser
-from app.admin.auth import get_current_admin_user
+from app.utils.dependencies import get_current_admin_user
 from pydantic import BaseModel
 
 router = APIRouter()
