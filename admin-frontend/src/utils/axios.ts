@@ -3,7 +3,7 @@ import { message } from 'antd'
 
 // Create axios instance with default config
 const axiosInstance = axios.create({
-  baseURL: '/api',
+  baseURL: import.meta.env.VITE_API_BASE_URL || 'http://localhost:8001',
   timeout: 30000,
   headers: {
     'Content-Type': 'application/json',

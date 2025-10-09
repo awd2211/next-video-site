@@ -11,7 +11,7 @@ const Login = () => {
   const onFinish = async (values: any) => {
     setLoading(true)
     try {
-      const response = await axios.post('/api/v1/auth/admin/login', values)
+      const response = await axios.post('/v1/auth/admin/login', values)
       localStorage.setItem('admin_access_token', response.data.access_token)
       localStorage.setItem('admin_refresh_token', response.data.refresh_token)
       localStorage.setItem('admin_user', JSON.stringify(response.data.user))
