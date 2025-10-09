@@ -101,7 +101,7 @@ async def get_current_superadmin(
     return current_admin
 
 
-def get_optional_user(
+async def get_current_user_optional(
     credentials: Optional[HTTPAuthorizationCredentials] = Depends(HTTPBearer(auto_error=False)),
     db: AsyncSession = Depends(get_db),
 ) -> Optional[User]:
@@ -112,7 +112,7 @@ def get_optional_user(
     token = credentials.credentials
     payload = decode_token(token)
 
-    if payload is None:
+    if payload is None or payload.get("type") != "access":
         return None
 
     user_id_str = payload.get("sub")
@@ -124,7 +124,7 @@ def get_optional_user(
     except (ValueError, TypeError):
         return None
 
-    result = db.execute(select(User).filter(User.id == user_id))
+    result = await db.execute(select(User).filter(User.id == user_id))
     user = result.scalar_one_or_none()
 
     return user if user and user.is_active else None
