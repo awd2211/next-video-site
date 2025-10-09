@@ -1,0 +1,189 @@
+import { useState } from 'react'
+import { Upload, Progress, message, Button } from 'antd'
+import { UploadOutlined, PauseCircleOutlined, PlayCircleOutlined } from '@ant-design/icons'
+import axios from '@/utils/axios'
+import type { UploadFile } from 'antd/es/upload/interface'
+
+interface ChunkedUploaderProps {
+  videoId?: number
+  uploadType: 'video' | 'poster' | 'backdrop'
+  onUploadComplete?: (url: string) => void
+  accept?: string
+  maxSize?: number // MB
+}
+
+const ChunkedUploader = ({
+  videoId,
+  uploadType,
+  onUploadComplete,
+  accept,
+  maxSize = 2048, // Default 2GB
+}: ChunkedUploaderProps) => {
+  const [uploading, setUploading] = useState(false)
+  const [paused, setPaused] = useState(false)
+  const [progress, setProgress] = useState(0)
+  const [uploadId, setUploadId] = useState<string>()
+  const [fileList, setFileList] = useState<UploadFile[]>([])
+  const [currentFile, setCurrentFile] = useState<File>()
+
+  const CHUNK_SIZE = 5 * 1024 * 1024 // 5MB
+
+  const initUpload = async (file: File) => {
+    const response = await axios.post(
+      '/api/v1/admin/upload/init-multipart',
+      {
+        filename: file.name,
+        file_size: file.size,
+        file_type: file.type,
+      }
+    )
+    return response.data
+  }
+
+  const uploadChunk = async (
+    uploadId: string,
+    chunk: Blob,
+    chunkIndex: number,
+    totalChunks: number
+  ) => {
+    const formData = new FormData()
+    formData.append('upload_id', uploadId)
+    formData.append('chunk_index', chunkIndex.toString())
+    formData.append('total_chunks', totalChunks.toString())
+    formData.append('file', chunk)
+
+    const response = await axios.post('/api/v1/admin/upload/upload-chunk', formData)
+    return response.data
+  }
+
+  const completeUpload = async (uploadId: string) => {
+    const response = await axios.post(
+      '/api/v1/admin/upload/complete-multipart',
+      {
+        upload_id: uploadId,
+        video_id: videoId,
+        upload_type: uploadType,
+      }
+    )
+    return response.data
+  }
+
+  const cancelUpload = async (uploadId: string) => {
+    await axios.delete(`/api/v1/admin/upload/cancel-upload/${uploadId}`)
+  }
+
+  const handleUpload = async (file: File) => {
+    try {
+      setUploading(true)
+      setPaused(false)
+      setProgress(0)
+      setCurrentFile(file)
+
+      // Check file size
+      const maxSizeBytes = maxSize * 1024 * 1024
+      if (file.size > maxSizeBytes) {
+        message.error(`文件大小不能超过 ${maxSize}MB`)
+        setUploading(false)
+        return
+      }
+
+      // Initialize upload
+      const initData = await initUpload(file)
+      const newUploadId = initData.upload_id
+      setUploadId(newUploadId)
+
+      // Calculate chunks
+      const totalChunks = Math.ceil(file.size / CHUNK_SIZE)
+
+      // Upload chunks
+      for (let i = 0; i < totalChunks; i++) {
+        // Check if paused
+        while (paused) {
+          await new Promise((resolve) => setTimeout(resolve, 100))
+        }
+
+        const start = i * CHUNK_SIZE
+        const end = Math.min(start + CHUNK_SIZE, file.size)
+        const chunk = file.slice(start, end)
+
+        const chunkData = await uploadChunk(newUploadId, chunk, i, totalChunks)
+        setProgress(chunkData.progress)
+      }
+
+      // Complete upload
+      const result = await completeUpload(newUploadId)
+      message.success('上传完成')
+      setProgress(100)
+      onUploadComplete?.(result.url)
+      setFileList([])
+    } catch (error: any) {
+      message.error(error.response?.data?.detail || '上传失败')
+      if (uploadId) {
+        await cancelUpload(uploadId)
+      }
+    } finally {
+      setUploading(false)
+      setPaused(false)
+      setUploadId(undefined)
+      setCurrentFile(undefined)
+    }
+  }
+
+  const handlePauseResume = () => {
+    setPaused(!paused)
+  }
+
+  const handleCancel = async () => {
+    if (uploadId) {
+      await cancelUpload(uploadId)
+      message.info('上传已取消')
+    }
+    setUploading(false)
+    setPaused(false)
+    setProgress(0)
+    setUploadId(undefined)
+    setCurrentFile(undefined)
+    setFileList([])
+  }
+
+  return (
+    <div>
+      <Upload
+        beforeUpload={(file) => {
+          handleUpload(file)
+          return false
+        }}
+        fileList={fileList}
+        onChange={({ fileList }) => setFileList(fileList)}
+        accept={accept}
+        maxCount={1}
+        disabled={uploading}
+      >
+        <Button icon={<UploadOutlined />} disabled={uploading}>
+          选择文件
+        </Button>
+      </Upload>
+
+      {uploading && (
+        <div style={{ marginTop: 16 }}>
+          <Progress percent={Math.round(progress)} status={paused ? 'exception' : 'active'} />
+          <div style={{ marginTop: 8 }}>
+            <Button
+              size="small"
+              icon={paused ? <PlayCircleOutlined /> : <PauseCircleOutlined />}
+              onClick={handlePauseResume}
+              style={{ marginRight: 8 }}
+            >
+              {paused ? '继续' : '暂停'}
+            </Button>
+            <Button size="small" danger onClick={handleCancel}>
+              取消
+            </Button>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
+export default ChunkedUploader

@@ -3,7 +3,7 @@ import { Table, Button, Space, Tag, Input, Select, message } from 'antd'
 import { PlusOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons'
 import { useNavigate } from 'react-router-dom'
 import { useState } from 'react'
-import axios from 'axios'
+import axios from '@/utils/axios'
 
 const VideoList = () => {
   const navigate = useNavigate()
@@ -14,9 +14,7 @@ const VideoList = () => {
   const { data, isLoading, refetch } = useQuery({
     queryKey: ['admin-videos', page, search, status],
     queryFn: async () => {
-      const token = localStorage.getItem('admin_access_token')
       const response = await axios.get('/api/v1/admin/videos', {
-        headers: { Authorization: `Bearer ${token}` },
         params: { page, page_size: 20, search, status },
       })
       return response.data
@@ -25,10 +23,7 @@ const VideoList = () => {
 
   const handleDelete = async (id: number) => {
     try {
-      const token = localStorage.getItem('admin_access_token')
-      await axios.delete(`/api/v1/admin/videos/${id}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      })
+      await axios.delete(`/api/v1/admin/videos/${id}`)
       message.success('Video deleted successfully')
       refetch()
     } catch (error: any) {

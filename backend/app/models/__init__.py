@@ -5,6 +5,7 @@ from app.models.comment import Comment, Rating
 from app.models.user_activity import Favorite, WatchHistory
 from app.models.admin import Role, Permission, RolePermission, OperationLog
 from app.models.content import Banner, Recommendation, Announcement, Report
+from app.models.settings import SystemSettings
 
 __all__ = [
     "User",
@@ -31,4 +32,5 @@ __all__ = [
     "Recommendation",
     "Announcement",
     "Report",
+    "SystemSettings",
 ]

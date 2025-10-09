@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status, UploadFile, File
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, desc, or_
 from typing import Optional
@@ -8,7 +8,10 @@ from app.models.video import Video, VideoCategory, VideoTag, VideoActor, VideoDi
 from app.models.user import AdminUser
 from app.schemas.video import VideoDetailResponse, VideoCreate, VideoUpdate, PaginatedResponse
 from app.utils.dependencies import get_current_admin_user
+from app.utils.minio_client import minio_client
+from app.utils.cache import Cache
 from slugify import slugify
+import io
 
 router = APIRouter()
 
@@ -124,6 +127,12 @@ async def admin_create_video(
     await db.commit()
     await db.refresh(new_video)
 
+    # 清除相关缓存
+    await Cache.delete_pattern("trending_videos:*")
+    await Cache.delete_pattern("featured_videos:*")
+    await Cache.delete_pattern("recommended_videos:*")
+    await Cache.delete_pattern("search_results:*")
+
     return new_video
 
 
@@ -182,6 +191,12 @@ async def admin_update_video(
     await db.commit()
     await db.refresh(video)
 
+    # 清除相关缓存
+    await Cache.delete_pattern("trending_videos:*")
+    await Cache.delete_pattern("featured_videos:*")
+    await Cache.delete_pattern("recommended_videos:*")
+    await Cache.delete_pattern("search_results:*")
+
     return video
 
 
@@ -200,6 +215,12 @@ async def admin_delete_video(
 
     await db.delete(video)
     await db.commit()
+
+    # 清除相关缓存
+    await Cache.delete_pattern("trending_videos:*")
+    await Cache.delete_pattern("featured_videos:*")
+    await Cache.delete_pattern("recommended_videos:*")
+    await Cache.delete_pattern("search_results:*")
 
     return None
 
@@ -224,4 +245,136 @@ async def admin_update_video_status(
 
     await db.commit()
 
+    # 清除相关缓存
+    await Cache.delete_pattern("trending_videos:*")
+    await Cache.delete_pattern("featured_videos:*")
+    await Cache.delete_pattern("recommended_videos:*")
+    await Cache.delete_pattern("search_results:*")
+
     return {"message": "Status updated successfully"}
+
+
+@router.post("/{video_id}/upload-video")
+async def admin_upload_video_file(
+    video_id: int,
+    file: UploadFile = File(...),
+    db: AsyncSession = Depends(get_db),
+    current_admin: AdminUser = Depends(get_current_admin_user),
+):
+    """Admin: Upload video file"""
+    result = await db.execute(select(Video).filter(Video.id == video_id))
+    video = result.scalar_one_or_none()
+
+    if not video:
+        raise HTTPException(status_code=404, detail="Video not found")
+
+    # 验证文件类型
+    allowed_types = ["video/mp4", "video/avi", "video/mkv", "video/mov", "video/flv"]
+    if file.content_type not in allowed_types:
+        raise HTTPException(status_code=400, detail=f"不支持的视频格式，仅支持 MP4, AVI, MKV, MOV, FLV")
+
+    try:
+        # 生成文件名
+        ext = file.filename.split(".")[-1]
+        object_name = f"videos/video_{video_id}_{int(datetime.utcnow().timestamp())}.{ext}"
+
+        # 上传到 MinIO
+        file_content = await file.read()
+        video_url = minio_client.upload_video(
+            io.BytesIO(file_content),
+            object_name,
+            file.content_type,
+        )
+
+        # 更新视频记录
+        video.video_url = video_url
+        await db.commit()
+
+        return {"video_url": video_url, "message": "视频上传成功"}
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"上传失败: {str(e)}")
+
+
+@router.post("/{video_id}/upload-poster")
+async def admin_upload_poster(
+    video_id: int,
+    file: UploadFile = File(...),
+    db: AsyncSession = Depends(get_db),
+    current_admin: AdminUser = Depends(get_current_admin_user),
+):
+    """Admin: Upload video poster/cover"""
+    result = await db.execute(select(Video).filter(Video.id == video_id))
+    video = result.scalar_one_or_none()
+
+    if not video:
+        raise HTTPException(status_code=404, detail="Video not found")
+
+    # 验证文件类型
+    allowed_types = ["image/jpeg", "image/jpg", "image/png", "image/webp"]
+    if file.content_type not in allowed_types:
+        raise HTTPException(status_code=400, detail="不支持的图片格式，仅支持 JPG, PNG, WEBP")
+
+    try:
+        # 生成文件名
+        ext = file.filename.split(".")[-1]
+        object_name = f"posters/poster_{video_id}_{int(datetime.utcnow().timestamp())}.{ext}"
+
+        # 上传到 MinIO
+        file_content = await file.read()
+        poster_url = minio_client.upload_image(
+            io.BytesIO(file_content),
+            object_name,
+            file.content_type,
+        )
+
+        # 更新视频记录
+        video.poster_url = poster_url
+        await db.commit()
+
+        return {"poster_url": poster_url, "message": "海报上传成功"}
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"上传失败: {str(e)}")
+
+
+@router.post("/{video_id}/upload-backdrop")
+async def admin_upload_backdrop(
+    video_id: int,
+    file: UploadFile = File(...),
+    db: AsyncSession = Depends(get_db),
+    current_admin: AdminUser = Depends(get_current_admin_user),
+):
+    """Admin: Upload video backdrop image"""
+    result = await db.execute(select(Video).filter(Video.id == video_id))
+    video = result.scalar_one_or_none()
+
+    if not video:
+        raise HTTPException(status_code=404, detail="Video not found")
+
+    # 验证文件类型
+    allowed_types = ["image/jpeg", "image/jpg", "image/png", "image/webp"]
+    if file.content_type not in allowed_types:
+        raise HTTPException(status_code=400, detail="不支持的图片格式")
+
+    try:
+        # 生成文件名
+        ext = file.filename.split(".")[-1]
+        object_name = f"backdrops/backdrop_{video_id}_{int(datetime.utcnow().timestamp())}.{ext}"
+
+        # 上传到 MinIO
+        file_content = await file.read()
+        backdrop_url = minio_client.upload_image(
+            io.BytesIO(file_content),
+            object_name,
+            file.content_type,
+        )
+
+        # 更新视频记录
+        video.backdrop_url = backdrop_url
+        await db.commit()
+
+        return {"backdrop_url": backdrop_url, "message": "背景图上传成功"}
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"上传失败: {str(e)}")

@@ -28,12 +28,13 @@ class Settings(BaseSettings):
     # CORS
     BACKEND_CORS_ORIGINS: List[str] = ["http://localhost:3000", "http://localhost:5173"]
 
-    # File Storage
-    MINIO_ENDPOINT: str = "localhost:9000"
-    MINIO_ACCESS_KEY: str
-    MINIO_SECRET_KEY: str
+    # File Storage (MinIO)
+    MINIO_ENDPOINT: str = "localhost:9002"
+    MINIO_ACCESS_KEY: str = "minioadmin"
+    MINIO_SECRET_KEY: str = "minioadmin"
     MINIO_BUCKET: str = "videos"
     MINIO_SECURE: bool = False
+    MINIO_PUBLIC_URL: str = "http://localhost:9002"
 
     # Elasticsearch
     ELASTICSEARCH_URL: str = "http://localhost:9200"
@@ -48,8 +49,15 @@ class Settings(BaseSettings):
 
     # Upload
     MAX_UPLOAD_SIZE: int = 5368709120  # 5GB
-    ALLOWED_VIDEO_EXTENSIONS: List[str] = [".mp4", ".avi", ".mkv", ".mov", ".flv"]
-    ALLOWED_IMAGE_EXTENSIONS: List[str] = [".jpg", ".jpeg", ".png", ".webp"]
+    ALLOWED_VIDEO_EXTENSIONS: str = ".mp4,.avi,.mkv,.mov,.flv"
+    ALLOWED_IMAGE_EXTENSIONS: str = ".jpg,.jpeg,.png,.webp"
+
+    # Email (optional)
+    SMTP_HOST: str = ""
+    SMTP_PORT: int = 587
+    SMTP_USER: str = ""
+    SMTP_PASSWORD: str = ""
+    SMTP_FROM: str = ""
 
     class Config:
         env_file = ".env"

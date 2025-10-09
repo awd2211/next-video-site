@@ -4,6 +4,8 @@ from sqlalchemy import select, or_, func
 from app.database import get_db
 from app.models.video import Video, VideoStatus
 from app.schemas.video import VideoListResponse, PaginatedResponse
+from app.utils.cache import Cache
+import hashlib
 
 router = APIRouter()
 
@@ -15,7 +17,16 @@ async def search_videos(
     page_size: int = Query(20, ge=1, le=100),
     db: AsyncSession = Depends(get_db),
 ):
-    """Search videos by title"""
+    """Search videos by title (cached for 5 minutes)"""
+    # 生成缓存键（使用查询参数的哈希）
+    query_hash = hashlib.md5(f"{q}:{page}:{page_size}".encode()).hexdigest()
+    cache_key = f"search_results:{query_hash}"
+
+    # 尝试从缓存获取
+    cached = await Cache.get(cache_key)
+    if cached is not None:
+        return cached
+
     search_pattern = f"%{q}%"
     query = select(Video).filter(
         Video.status == VideoStatus.PUBLISHED,
@@ -38,9 +49,14 @@ async def search_videos(
     result = await db.execute(query)
     videos = result.scalars().all()
 
-    return {
+    response = {
         "total": total,
         "page": page,
         "page_size": page_size,
-        "items": videos,
+        "items": [VideoListResponse.model_validate(v) for v in videos],
     }
+
+    # 缓存5分钟
+    await Cache.set(cache_key, response, ttl=300)
+
+    return response

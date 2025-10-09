@@ -1,5 +1,7 @@
+import VideoForm from './Form'
+
 const VideoEdit = () => {
-  return <div>Video Edit page - Full form implementation needed</div>
+  return <VideoForm />
 }
 
 export default VideoEdit

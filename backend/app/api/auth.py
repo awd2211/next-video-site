@@ -1,7 +1,9 @@
 from datetime import datetime
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
+from slowapi import Limiter
+from slowapi.util import get_remote_address
 from app.database import get_db
 from app.models.user import User, AdminUser
 from app.schemas.auth import UserRegister, UserLogin, AdminLogin, TokenResponse, RefreshTokenRequest
@@ -16,10 +18,13 @@ from app.utils.security import (
 from app.utils.dependencies import get_current_user, get_current_admin_user
 
 router = APIRouter()
+limiter = Limiter(key_func=get_remote_address)
 
 
 @router.post("/register", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
+@limiter.limit("5/minute")  # 限制注册频率
 async def register(
+    request: Request,
     user_data: UserRegister,
     db: AsyncSession = Depends(get_db),
 ):
@@ -55,7 +60,9 @@ async def register(
 
 
 @router.post("/login", response_model=TokenResponse)
+@limiter.limit("10/minute")  # 限制登录频率，防止暴力破解
 async def login(
+    request: Request,
     credentials: UserLogin,
     db: AsyncSession = Depends(get_db),
 ):
@@ -91,7 +98,9 @@ async def login(
 
 
 @router.post("/admin/login", response_model=TokenResponse)
+@limiter.limit("5/minute")  # 更严格的管理员登录限制
 async def admin_login(
+    request: Request,
     credentials: AdminLogin,
     db: AsyncSession = Depends(get_db),
 ):
