@@ -1,6 +1,7 @@
 import { useParams, Link } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { videoService } from '@/services/videoService'
+import { recommendationService } from '@/services/recommendationService'
 import VideoPlayer from '@/components/VideoPlayer'
 import CommentSection from '@/components/CommentSection'
 import RatingStars from '@/components/RatingStars'
@@ -26,10 +27,11 @@ const VideoDetail = () => {
     enabled: !!video,
   })
 
-  // Fetch recommended videos
-  const { data: recommendedData } = useQuery({
-    queryKey: ['recommended-videos'],
-    queryFn: () => videoService.getRecommendedVideos(1, 6),
+  // Fetch similar videos (intelligent recommendations based on this video)
+  const { data: similarVideos } = useQuery({
+    queryKey: ['similar-videos', id],
+    queryFn: () => recommendationService.getSimilarVideos(Number(id), 6),
+    enabled: !!id,
   })
 
   // Resume from last position when video loads
@@ -157,13 +159,13 @@ const VideoDetail = () => {
         <CommentSection videoId={Number(id)} />
       </div>
 
-      {/* Recommended Videos */}
-      {recommendedData && recommendedData.items && recommendedData.items.length > 0 && (
+      {/* Similar Videos - Intelligent Recommendations */}
+      {similarVideos && similarVideos.length > 0 && (
         <div className="mb-6">
-          <h2 className="text-2xl font-bold mb-4">Recommended for You</h2>
+          <h2 className="text-2xl font-bold mb-4">相似推荐</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-            {recommendedData.items.map((recommendedVideo) => (
-              <VideoCard key={recommendedVideo.id} video={recommendedVideo} />
+            {similarVideos.map((similarVideo) => (
+              <VideoCard key={similarVideo.id} video={similarVideo} />
             ))}
           </div>
         </div>
