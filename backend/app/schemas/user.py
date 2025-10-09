@@ -21,6 +21,12 @@ class UserUpdate(BaseModel):
     avatar: Optional[str] = None
 
 
+class PasswordChange(BaseModel):
+    """Password change schema"""
+    old_password: str
+    new_password: str
+
+
 class UserResponse(UserBase):
     """User response schema"""
     id: int

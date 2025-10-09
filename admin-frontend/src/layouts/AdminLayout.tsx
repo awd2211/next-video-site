@@ -12,6 +12,7 @@ import {
   LogoutOutlined,
   PictureOutlined,
   SoundOutlined,
+  TeamOutlined,
 } from '@ant-design/icons'
 
 const { Header, Content, Sider } = Layout
@@ -59,6 +60,16 @@ const AdminLayout = () => {
       key: '/announcements',
       icon: <SoundOutlined />,
       label: 'Announcements',
+    },
+    {
+      key: '/actors',
+      icon: <TeamOutlined />,
+      label: 'Actors',
+    },
+    {
+      key: '/directors',
+      icon: <TeamOutlined />,
+      label: 'Directors',
     },
     {
       key: '/statistics',

@@ -6,10 +6,11 @@ from app.database import get_db
 from app.models.user import User
 from app.models.user_activity import Favorite
 from app.models.video import Video
-from app.schemas.user import UserResponse, UserUpdate
+from app.schemas.user import UserResponse, UserUpdate, PasswordChange
 from app.schemas.video import VideoListResponse, PaginatedResponse
 from app.utils.dependencies import get_current_active_user
 from app.utils.cache import Cache
+from app.utils.security import verify_password, get_password_hash
 
 router = APIRouter()
 
@@ -38,6 +39,27 @@ async def update_current_user_profile(
     await db.refresh(current_user)
 
     return current_user
+
+
+@router.post("/me/change-password")
+async def change_password(
+    password_data: PasswordChange,
+    current_user: User = Depends(get_current_active_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Change user password"""
+    # Verify old password
+    if not verify_password(password_data.old_password, current_user.hashed_password):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Incorrect old password",
+        )
+
+    # Update password
+    current_user.hashed_password = get_password_hash(password_data.new_password)
+    await db.commit()
+
+    return {"message": "Password changed successfully"}
 
 
 @router.get("/me/favorites", response_model=PaginatedResponse)
