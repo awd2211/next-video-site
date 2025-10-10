@@ -25,6 +25,18 @@
 #### [邮件系统](./features/email-system.md)
 SMTP邮件发送和模板管理
 
+#### [字幕管理系统](./features/subtitle-management.md) 🆕
+多语言字幕支持 (SRT/VTT/ASS)、AI自动生成、在线编辑
+
+#### [视频加密系统](./features/video-encryption.md) 🆕
+HLS AES-128加密防盗链 + 完整安全方案
+
+#### [企业级DRM](./features/drm-integration.md) 🆕
+Widevine/PlayReady/FairPlay多DRM集成指南
+
+#### [开源视频解码方案对比](./features/video-decoder-comparison.md) 🆕
+FFmpeg/dav1d/libvpx/WebCodecs等主流解码方案全面对比
+
 ---
 
 ### 🛠️ 开发指南
@@ -50,7 +62,11 @@ SMTP邮件发送和模板管理
 |---------|----------|
 | 了解视频转码如何工作 | [视频转码系统](./features/video-transcoding/) |
 | 实现视频hover预览 | [视频悬停预览](./features/video-transcoding/hover-preview.md) |
-| 配置GPU加速 | [GPU加速指南](./features/video-transcoding/gpu-acceleration.md) ⚠️ 待创建 |
+| 配置GPU加速 | [GPU加速指南](./features/video-transcoding/gpu-acceleration.md) |
+| 添加视频字幕 | [字幕管理系统](./features/subtitle-management.md) 🆕 |
+| 加密保护视频 | [视频加密系统](./features/video-encryption.md) 🆕 |
+| 集成DRM保护 | [企业级DRM](./features/drm-integration.md) 🆕 |
+| 选择解码方案 | [开源解码方案对比](./features/video-decoder-comparison.md) 🆕 |
 | 搭建开发环境 | [开发环境配置](./guides/dev-setup.md) |
 | 运行项目 | [快速开始](./guides/quick-start.md) |
 | 查看进度 | [开发进度](./status/progress.md) |
@@ -65,14 +81,17 @@ docs/
 │
 ├── features/                    # 功能设计文档
 │   ├── video-transcoding/       # 视频转码系统(完整)
-│   │   ├── README.md            # 转码系统总览
+│   │   ├── README.md            # 转码系统总览 ✅
 │   │   ├── hover-preview.md     # 视频悬停预览 ✅
-│   │   ├── architecture.md      # 系统架构 (待创建)
-│   │   ├── gpu-acceleration.md  # GPU加速 (待创建)
-│   │   ├── upload-workflow.md   # 边上传边转码 (待创建)
-│   │   ├── database-schema.md   # 数据库设计 (待创建)
-│   │   ├── ffmpeg-commands.md   # FFmpeg命令 (待创建)
-│   │   └── cost-estimation.md   # 成本估算 (待创建)
+│   │   ├── architecture.md      # 系统架构 ✅
+│   │   ├── gpu-acceleration.md  # GPU加速 ✅
+│   │   ├── upload-workflow.md   # 边上传边转码 ✅
+│   │   └── database-schema.md   # 数据库设计 ✅
+│   │
+│   ├── subtitle-management.md   # 字幕管理系统 ✅ 🆕
+│   ├── video-encryption.md      # 视频加密系统 ✅ 🆕
+│   ├── drm-integration.md       # 企业级DRM ✅ 🆕
+│   ├── video-decoder-comparison.md  # 开源解码方案对比 ✅ 🆕
 │   │
 │   ├── RECOMMENDATION_SYSTEM.md # 推荐系统
 │   ├── SEARCH_ENHANCEMENT.md    # 搜索增强
@@ -101,15 +120,25 @@ docs/
 
 ## ⚡ 新增特性 (最近更新)
 
+### 2025-10-10
+
+🔐 **视频安全与解码系统文档** (🆕 今日新增)
+- [字幕管理系统](./features/subtitle-management.md) - 多语言字幕、AI生成、在线编辑
+- [视频加密系统](./features/video-encryption.md) - HLS AES-128加密防盗链完整方案
+- [企业级DRM](./features/drm-integration.md) - Widevine/PlayReady/FairPlay集成指南
+- [开源解码方案对比](./features/video-decoder-comparison.md) - FFmpeg/Google/VideoLAN等主流方案全面对比
+
 ### 2025-10-09
 
-✨ **视频悬停预览功能**
-- 鼠标hover自动播放10秒预览
-- YouTube/Netflix风格体验
-- 完整实现文档: [hover-preview.md](./features/video-transcoding/hover-preview.md)
+✨ **视频转码系统文档**
+- [视频悬停预览](./features/video-transcoding/hover-preview.md) - YouTube/Netflix风格预览
+- [系统架构](./features/video-transcoding/architecture.md) - 完整并行转码架构
+- [GPU加速](./features/video-transcoding/gpu-acceleration.md) - NVIDIA NVENC硬件加速
+- [上传工作流](./features/video-transcoding/upload-workflow.md) - 边上传边转码
+- [数据库设计](./features/video-transcoding/database-schema.md) - 完整Schema
 
 ✨ **文档重组**
-- 创建专业docs目录
+- 创建专业docs目录结构
 - 按功能/指南/状态分类
 - 改善文档可维护性
 
@@ -141,6 +170,6 @@ docs/
 
 ---
 
-**最后更新**: 2025-10-09
-**文档版本**: 2.0.0
+**最后更新**: 2025-10-10
+**文档版本**: 2.1.0
 **平台完成度**: 95%

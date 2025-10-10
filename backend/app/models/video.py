@@ -1,4 +1,5 @@
-from sqlalchemy import Column, Integer, String, Text, Float, DateTime, ForeignKey, Boolean, Enum
+from sqlalchemy import Column, Integer, String, Text, Float, DateTime, ForeignKey, Boolean, Enum, BigInteger
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.sql import func
 from sqlalchemy.orm import relationship
 from app.database import Base
@@ -120,6 +121,13 @@ class Video(Base):
     poster_url = Column(String(500), nullable=True)
     backdrop_url = Column(String(500), nullable=True)
 
+    # AV1 support (新增)
+    av1_master_url = Column(Text, nullable=True, comment='AV1 HLS master playlist URL')
+    av1_resolutions = Column(JSONB, default={}, comment='AV1分辨率URL映射')
+    is_av1_available = Column(Boolean, default=False, index=True, comment='是否有AV1版本')
+    av1_file_size = Column(BigInteger, nullable=True, comment='AV1文件总大小(字节)')
+    h264_file_size = Column(BigInteger, nullable=True, comment='H.264文件大小(对比用)')
+
     # Metadata
     release_year = Column(Integer, nullable=True, index=True)
     release_date = Column(DateTime(timezone=True), nullable=True)
@@ -165,6 +173,20 @@ class Video(Base):
     favorites = relationship("Favorite", back_populates="video", cascade="all, delete-orphan")
     watch_history = relationship("WatchHistory", back_populates="video", cascade="all, delete-orphan")
     reports = relationship("Report", back_populates="video", cascade="all, delete-orphan")
+
+    @property
+    def compression_ratio(self) -> float:
+        """计算AV1相对H.264的压缩率"""
+        if self.h264_file_size and self.av1_file_size and self.h264_file_size > 0:
+            return round((1 - self.av1_file_size / self.h264_file_size) * 100, 2)
+        return 0.0
+
+    @property
+    def best_video_url(self) -> str:
+        """返回最佳视频URL (优先AV1)"""
+        if self.is_av1_available and self.av1_master_url:
+            return self.av1_master_url
+        return self.video_url or ''
 
 
 # Association tables
