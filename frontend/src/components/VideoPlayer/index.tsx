@@ -4,8 +4,10 @@ import 'video.js/dist/video-js.css'
 import './VideoPlayer.css'
 import { historyService } from '../../services/historyService'
 import subtitleService, { Subtitle } from '../../services/subtitleService'
-import 'videojs-contrib-quality-levels'
-import 'videojs-hls-quality-selector'
+
+// Import plugins - commenting out for now to fix the error
+// import 'videojs-contrib-quality-levels'
+// import 'videojs-hls-quality-selector'
 
 interface VideoPlayerProps {
   src: string
@@ -71,12 +73,12 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
       player.src(src)
 
       // 🆕 Initialize HLS Quality Selector Plugin
-      // This plugin allows users to manually select video quality
-      if ((player as any).hlsQualitySelector) {
-        (player as any).hlsQualitySelector({
-          displayCurrentQuality: true, // Display current quality in the button
-        })
-      }
+      // Temporarily disabled due to plugin initialization error
+      // if ((player as any).hlsQualitySelector) {
+      //   (player as any).hlsQualitySelector({
+      //     displayCurrentQuality: true, // Display current quality in the button
+      //   })
+      // }
 
       // Set initial time
       if (initialTime > 0) {
