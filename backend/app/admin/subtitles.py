@@ -236,15 +236,28 @@ async def upload_subtitle_file(
     # 临时实现:保存到本地
     import os
     from pathlib import Path
+    from app.utils.subtitle_converter import SubtitleConverter
 
     upload_dir = Path("/tmp/subtitles")
     upload_dir.mkdir(parents=True, exist_ok=True)
 
-    file_path = upload_dir / f"video_{video_id}_{language}.{file_ext}"
-    with open(file_path, "wb") as f:
+    # 保存原始文件
+    original_file_path = upload_dir / f"video_{video_id}_{language}.{file_ext}"
+    with open(original_file_path, "wb") as f:
         f.write(content)
 
-    file_url = str(file_path)
+    # 🆕 如果是SRT格式,自动转换为VTT (Video.js原生支持VTT)
+    if file_ext == 'srt':
+        try:
+            vtt_file_path = SubtitleConverter.srt_file_to_vtt_file(original_file_path)
+            file_url = str(vtt_file_path)
+            file_ext = 'vtt'
+            logger.info(f"✅ SRT字幕已转换为VTT: {file_url}")
+        except Exception as e:
+            logger.error(f"❌ SRT转VTT失败: {str(e)}")
+            file_url = str(original_file_path)
+    else:
+        file_url = str(original_file_path)
 
     logger.info(f"✅ 字幕文件已上传: {file_url}")
 

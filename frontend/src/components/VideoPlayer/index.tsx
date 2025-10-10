@@ -3,15 +3,17 @@ import videojs from 'video.js'
 import 'video.js/dist/video-js.css'
 import './VideoPlayer.css'
 import { historyService } from '../../services/historyService'
+import subtitleService, { Subtitle } from '../../services/subtitleService'
 
 interface VideoPlayerProps {
   src: string
   poster?: string
-  videoId?: number // 🆕 用于保存观看进度
+  videoId?: number // 🆕 用于保存观看进度和加载字幕
   onTimeUpdate?: (currentTime: number) => void
   onEnded?: () => void
   initialTime?: number
   autoSaveProgress?: boolean // 🆕 是否自动保存进度 (默认true)
+  enableSubtitles?: boolean // 🆕 是否启用字幕加载 (默认true)
 }
 
 const VideoPlayer: React.FC<VideoPlayerProps> = ({
@@ -22,10 +24,12 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
   onEnded,
   initialTime = 0,
   autoSaveProgress = true,
+  enableSubtitles = true,
 }) => {
   const videoRef = useRef<HTMLDivElement>(null)
   const playerRef = useRef<any>(null)
   const [lastSavedTime, setLastSavedTime] = useState(0)
+  const [subtitles, setSubtitles] = useState<Subtitle[]>([])
   const progressSaveIntervalRef = useRef<NodeJS.Timeout | null>(null)
 
   useEffect(() => {
@@ -122,6 +126,21 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
             e.preventDefault()
             const percent = parseInt(e.key) * 10
             player.currentTime(((player.duration() || 0) * percent) / 100)
+            break
+          case 'c':
+            e.preventDefault()
+            // 切换字幕显示
+            const tracks = player.textTracks()
+            let subtitleTrack = null
+            for (let i = 0; i < tracks.length; i++) {
+              if (tracks[i].kind === 'subtitles') {
+                subtitleTrack = tracks[i]
+                break
+              }
+            }
+            if (subtitleTrack) {
+              subtitleTrack.mode = subtitleTrack.mode === 'showing' ? 'hidden' : 'showing'
+            }
             break
         }
       })
@@ -244,6 +263,77 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
     }
   }, [videoId, autoSaveProgress, lastSavedTime])
 
+  // 🆕 加载字幕
+  useEffect(() => {
+    if (!videoId || !enableSubtitles || !playerRef.current) {
+      return
+    }
+
+    const loadSubtitles = async () => {
+      try {
+        const response = await subtitleService.getVideoSubtitles(videoId)
+        const subtitleList = response.subtitles
+
+        if (subtitleList.length === 0) {
+          console.log('该视频没有字幕')
+          return
+        }
+
+        setSubtitles(subtitleList)
+
+        const player = playerRef.current
+        if (!player) return
+
+        // 添加字幕轨道
+        subtitleList.forEach((subtitle, index) => {
+          // 转换格式: SRT → VTT (Video.js只支持VTT)
+          const subtitleUrl = subtitle.file_url.endsWith('.srt')
+            ? convertSrtToVtt(subtitle.file_url)
+            : subtitle.file_url
+
+          player.addRemoteTextTrack(
+            {
+              kind: 'subtitles',
+              src: subtitleUrl,
+              srclang: subtitle.language,
+              label: subtitle.language_name,
+              default: subtitle.is_default,
+            },
+            false // 不自动添加到DOM
+          )
+
+          console.log(
+            `✅ 字幕已加载: ${subtitle.language_name} (${subtitle.language})`
+          )
+        })
+
+        // 如果有默认字幕,启用字幕显示
+        const hasDefault = subtitleList.some(s => s.is_default)
+        if (hasDefault) {
+          // 自动显示字幕
+          const tracks = player.textTracks()
+          for (let i = 0; i < tracks.length; i++) {
+            const track = tracks[i]
+            if (track.kind === 'subtitles' && track.default) {
+              track.mode = 'showing'
+            }
+          }
+        }
+      } catch (error) {
+        console.error('加载字幕失败:', error)
+      }
+    }
+
+    loadSubtitles()
+  }, [videoId, enableSubtitles])
+
+  // 辅助函数: SRT转VTT URL (如果需要)
+  const convertSrtToVtt = (srtUrl: string): string => {
+    // 如果后端支持自动转换,直接替换扩展名
+    // 否则需要客户端转换或后端提供转换API
+    return srtUrl.replace('.srt', '.vtt')
+  }
+
   useEffect(() => {
     const player = playerRef.current
 
@@ -261,8 +351,15 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
 
       {/* Keyboard shortcuts hint */}
       <div className="keyboard-shortcuts-hint text-xs text-gray-400 mt-2">
-        <p>Keyboard shortcuts: Space/K = Play/Pause | ← → = Seek | ↑ ↓ = Volume | F = Fullscreen | M = Mute | 0-9 = Jump to %</p>
+        <p>Keyboard shortcuts: Space/K = Play/Pause | ← → = Seek | ↑ ↓ = Volume | F = Fullscreen | M = Mute | 0-9 = Jump to % | C = Toggle Subtitles</p>
       </div>
+
+      {/* Subtitle info */}
+      {subtitles.length > 0 && (
+        <div className="subtitle-info text-xs text-gray-500 mt-1">
+          <p>Available subtitles: {subtitles.map(s => s.language_name).join(', ')}</p>
+        </div>
+      )}
     </div>
   )
 }
