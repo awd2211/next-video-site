@@ -66,36 +66,6 @@ async def list_videos(
     }
 
 
-@router.get("/{video_id}", response_model=VideoDetailResponse)
-async def get_video(
-    video_id: int,
-    db: AsyncSession = Depends(get_db),
-):
-    """Get video details with eagerly loaded relationships"""
-    # 使用selectinload预加载所有关联数据，避免N+1查询问题
-    result = await db.execute(
-        select(Video)
-        .options(
-            selectinload(Video.country),
-            selectinload(Video.video_categories),
-            selectinload(Video.video_tags),
-            selectinload(Video.video_actors),
-            selectinload(Video.video_directors),
-        )
-        .filter(Video.id == video_id, Video.status == VideoStatus.PUBLISHED)
-    )
-    video = result.scalar_one_or_none()
-
-    if not video:
-        raise HTTPException(status_code=404, detail="Video not found")
-
-    # Increment view count (should be done asynchronously in production)
-    video.view_count += 1
-    await db.commit()
-
-    return video
-
-
 @router.get("/trending", response_model=PaginatedResponse)
 async def get_trending_videos(
     page: int = Query(1, ge=1),
@@ -247,6 +217,36 @@ async def get_recommended_videos(
     await Cache.set(cache_key, response, ttl=900)
 
     return response
+
+
+@router.get("/{video_id}", response_model=VideoDetailResponse)
+async def get_video(
+    video_id: int,
+    db: AsyncSession = Depends(get_db),
+):
+    """Get video details with eagerly loaded relationships"""
+    # 使用selectinload预加载所有关联数据，避免N+1查询问题
+    result = await db.execute(
+        select(Video)
+        .options(
+            selectinload(Video.country),
+            selectinload(Video.video_categories),
+            selectinload(Video.video_tags),
+            selectinload(Video.video_actors),
+            selectinload(Video.video_directors),
+        )
+        .filter(Video.id == video_id, Video.status == VideoStatus.PUBLISHED)
+    )
+    video = result.scalar_one_or_none()
+
+    if not video:
+        raise HTTPException(status_code=404, detail="Video not found")
+
+    # Increment view count (should be done asynchronously in production)
+    video.view_count += 1
+    await db.commit()
+
+    return video
 
 
 @router.get("/{video_id}/download")
