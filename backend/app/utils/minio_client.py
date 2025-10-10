@@ -213,6 +213,26 @@ class MinIOClient:
             print(f"Error generating presigned URL: {e}")
             raise
 
+    def get_object_size(self, object_name: str) -> int:
+        """
+        获取对象文件大小
+
+        Args:
+            object_name: 对象名称
+
+        Returns:
+            int: 文件大小(字节)
+
+        Raises:
+            S3Error: 如果对象不存在或获取失败
+        """
+        try:
+            stat = self.client.stat_object(self.bucket_name, object_name)
+            return stat.size
+        except S3Error as e:
+            print(f"Error getting object size: {e}")
+            raise
+
     def delete_file(self, object_name: str) -> bool:
         """
         删除文件

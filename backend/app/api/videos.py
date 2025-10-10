@@ -3,11 +3,15 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, desc
 from sqlalchemy.orm import selectinload
 from typing import Optional
+from datetime import timedelta
 from app.database import get_db
 from app.models.video import Video, VideoStatus
+from app.models.user import User
 from app.schemas.video import VideoListResponse, VideoDetailResponse, PaginatedResponse
 from app.config import settings
 from app.utils.cache import Cache
+from app.utils.dependencies import get_current_user
+from app.utils.minio_client import minio_client
 
 router = APIRouter()
 
@@ -243,3 +247,83 @@ async def get_recommended_videos(
     await Cache.set(cache_key, response, ttl=900)
 
     return response
+
+
+@router.get("/{video_id}/download")
+async def get_video_download_url(
+    video_id: int,
+    quality: str = Query("720p", regex="^(1080p|720p|480p|360p|original)$"),
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Generate a presigned download URL for a video
+
+    Args:
+        video_id: Video ID
+        quality: Video quality (1080p/720p/480p/360p/original)
+        current_user: Current authenticated user
+
+    Returns:
+        {
+            "download_url": "https://minio.../video.mp4?...",
+            "expires_in": 86400,  // seconds
+            "quality": "720p",
+            "file_size": 1024000000  // bytes (optional)
+        }
+
+    Raises:
+        404: Video not found or not published
+        403: User not logged in (handled by dependency)
+    """
+    # Get video
+    result = await db.execute(
+        select(Video).filter(
+            Video.id == video_id,
+            Video.status == VideoStatus.PUBLISHED
+        )
+    )
+    video = result.scalar_one_or_none()
+
+    if not video:
+        raise HTTPException(status_code=404, detail="Video not found")
+
+    # Determine file path based on quality
+    if quality == "original":
+        # Original uploaded file
+        object_name = f"videos/{video_id}/original.mp4"
+    else:
+        # HLS transcoded version - use the highest available quality
+        if video.av1_resolutions and quality in video.av1_resolutions:
+            # Use AV1 if available
+            object_name = f"videos/{video_id}/av1/{quality}/video.mp4"
+        else:
+            # Fallback to H.264
+            object_name = f"videos/{video_id}/h264/{quality}/video.mp4"
+
+    # Generate presigned URL (valid for 24 hours)
+    try:
+        download_url = minio_client.get_presigned_url(
+            object_name=object_name,
+            expires=timedelta(hours=24)
+        )
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to generate download URL: {str(e)}"
+        )
+
+    # Get file size (optional)
+    try:
+        file_size = minio_client.get_object_size(object_name)
+    except:
+        file_size = None
+
+    return {
+        "download_url": download_url,
+        "expires_in": 86400,  # 24 hours in seconds
+        "quality": quality,
+        "file_size": file_size,
+        "video_title": video.title,
+    }
+
