@@ -1,25 +1,32 @@
-import React, { useEffect, useRef } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 import videojs from 'video.js'
 import 'video.js/dist/video-js.css'
 import './VideoPlayer.css'
+import { historyService } from '../../services/historyService'
 
 interface VideoPlayerProps {
   src: string
   poster?: string
+  videoId?: number // 🆕 用于保存观看进度
   onTimeUpdate?: (currentTime: number) => void
   onEnded?: () => void
   initialTime?: number
+  autoSaveProgress?: boolean // 🆕 是否自动保存进度 (默认true)
 }
 
 const VideoPlayer: React.FC<VideoPlayerProps> = ({
   src,
   poster,
+  videoId,
   onTimeUpdate,
   onEnded,
   initialTime = 0,
+  autoSaveProgress = true,
 }) => {
   const videoRef = useRef<HTMLDivElement>(null)
   const playerRef = useRef<any>(null)
+  const [lastSavedTime, setLastSavedTime] = useState(0)
+  const progressSaveIntervalRef = useRef<NodeJS.Timeout | null>(null)
 
   useEffect(() => {
     // Initialize Video.js player
@@ -128,6 +135,14 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
 
       // Video ended
       player.on('ended', () => {
+        // 🆕 视频播放结束时保存进度(标记为已完成)
+        if (videoId && autoSaveProgress) {
+          const duration = player.duration() || 0
+          historyService.updateProgress(videoId, duration, duration, true).catch(err => {
+            console.error('保存完成状态失败:', err)
+          })
+        }
+
         if (onEnded) {
           onEnded()
         }
@@ -173,6 +188,61 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
       }
     }
   }, [src, poster])
+
+  // 🆕 自动保存播放进度 (每10秒)
+  useEffect(() => {
+    if (!videoId || !autoSaveProgress || !playerRef.current) {
+      return
+    }
+
+    const player = playerRef.current
+
+    const saveProgress = async () => {
+      if (!player || player.paused()) {
+        return // 暂停时不保存
+      }
+
+      const currentTime = Math.floor(player.currentTime() || 0)
+      const duration = Math.floor(player.duration() || 0)
+
+      // 至少播放了5秒才保存
+      if (currentTime < 5) {
+        return
+      }
+
+      // 避免频繁保存相同位置
+      if (Math.abs(currentTime - lastSavedTime) < 5) {
+        return
+      }
+
+      try {
+        await historyService.updateProgress(videoId, currentTime, duration)
+        setLastSavedTime(currentTime)
+        console.log(`✅ 进度已保存: ${currentTime}s / ${duration}s`)
+      } catch (error) {
+        console.error('保存进度失败:', error)
+      }
+    }
+
+    // 每10秒保存一次进度
+    progressSaveIntervalRef.current = setInterval(saveProgress, 10000)
+
+    // 播放开始时立即保存一次
+    const handlePlay = () => {
+      saveProgress()
+    }
+
+    player.on('play', handlePlay)
+
+    return () => {
+      if (progressSaveIntervalRef.current) {
+        clearInterval(progressSaveIntervalRef.current)
+      }
+      if (player && !player.isDisposed()) {
+        player.off('play', handlePlay)
+      }
+    }
+  }, [videoId, autoSaveProgress, lastSavedTime])
 
   useEffect(() => {
     const player = playerRef.current

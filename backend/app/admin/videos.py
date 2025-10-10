@@ -10,10 +10,13 @@ from app.schemas.video import VideoDetailResponse, VideoCreate, VideoUpdate, Pag
 from app.utils.dependencies import get_current_admin_user
 from app.utils.minio_client import minio_client
 from app.utils.cache import Cache
+from app.tasks.transcode_av1 import transcode_video_dual_format
 from slugify import slugify
 import io
+import logging
 
 router = APIRouter()
+logger = logging.getLogger(__name__)
 
 
 @router.get("", response_model=PaginatedResponse)
@@ -133,6 +136,15 @@ async def admin_create_video(
     await Cache.delete_pattern("recommended_videos:*")
     await Cache.delete_pattern("search_results:*")
 
+    # 🆕 触发AV1转码任务 (如果有video_url)
+    if new_video.video_url:
+        try:
+            task = transcode_video_dual_format.delay(new_video.id)
+            logger.info(f"✅ AV1转码任务已触发: video_id={new_video.id}, task_id={task.id}")
+        except Exception as e:
+            logger.error(f"❌ 触发AV1转码失败: video_id={new_video.id}, error={str(e)}")
+            # 不阻塞视频创建流程,转码失败只记录日志
+
     return new_video
 
 
@@ -175,6 +187,9 @@ async def admin_update_video(
     actor_ids = update_data.pop("actor_ids", None)
     director_ids = update_data.pop("director_ids", None)
 
+    # 🆕 检测video_url是否更新
+    video_url_updated = "video_url" in update_data and update_data["video_url"] != video.video_url
+
     # Update basic fields
     for field, value in update_data.items():
         setattr(video, field, value)
@@ -196,6 +211,14 @@ async def admin_update_video(
     await Cache.delete_pattern("featured_videos:*")
     await Cache.delete_pattern("recommended_videos:*")
     await Cache.delete_pattern("search_results:*")
+
+    # 🆕 如果video_url更新了,触发AV1转码任务
+    if video_url_updated and video.video_url:
+        try:
+            task = transcode_video_dual_format.delay(video.id)
+            logger.info(f"✅ AV1转码任务已触发(更新): video_id={video.id}, task_id={task.id}")
+        except Exception as e:
+            logger.error(f"❌ 触发AV1转码失败(更新): video_id={video.id}, error={str(e)}")
 
     return video
 

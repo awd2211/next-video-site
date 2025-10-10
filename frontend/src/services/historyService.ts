@@ -57,6 +57,21 @@ export const historyService = {
     }
   },
 
+  // 🆕 快速更新观看进度 (轻量级,用于播放器每10秒同步)
+  updateProgress: async (
+    videoId: number,
+    lastPosition: number,
+    watchDuration?: number,
+    isCompleted?: boolean
+  ): Promise<WatchHistory> => {
+    const response = await api.patch(`/history/${videoId}/progress`, {
+      last_position: lastPosition,
+      watch_duration: watchDuration,
+      is_completed: isCompleted
+    })
+    return response.data
+  },
+
   // 删除观看历史
   deleteHistory: async (videoId: number): Promise<void> => {
     await api.delete(`/history/${videoId}`)

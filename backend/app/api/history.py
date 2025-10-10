@@ -140,6 +140,69 @@ async def get_video_watch_history(
     return WatchHistoryResponse.model_validate(history)
 
 
+@router.patch("/{video_id}/progress", response_model=WatchHistoryResponse)
+async def update_watch_progress(
+    video_id: int,
+    progress_data: WatchHistoryUpdate,
+    current_user: User = Depends(get_current_active_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    快速更新观看进度 (用于播放器每10秒同步)
+
+    这是一个轻量级端点,只更新播放进度,不触发view_count增加
+    """
+    # Check if history exists
+    existing_result = await db.execute(
+        select(WatchHistory).where(
+            and_(
+                WatchHistory.user_id == current_user.id,
+                WatchHistory.video_id == video_id
+            )
+        ).options(selectinload(WatchHistory.video))
+    )
+    existing_history = existing_result.scalar_one_or_none()
+
+    if existing_history:
+        # Update existing history
+        if progress_data.last_position is not None:
+            existing_history.last_position = progress_data.last_position
+        if progress_data.watch_duration is not None:
+            existing_history.watch_duration = progress_data.watch_duration
+        if progress_data.is_completed is not None:
+            existing_history.is_completed = 1 if progress_data.is_completed else 0
+
+        history = existing_history
+    else:
+        # Create new history if doesn't exist
+        # Verify video exists
+        video_result = await db.execute(select(Video).where(Video.id == video_id))
+        video = video_result.scalar_one_or_none()
+        if not video:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Video not found"
+            )
+
+        history = WatchHistory(
+            user_id=current_user.id,
+            video_id=video_id,
+            watch_duration=progress_data.watch_duration or 0,
+            last_position=progress_data.last_position or 0,
+            is_completed=1 if progress_data.is_completed else 0
+        )
+        db.add(history)
+
+        # Only increment view count for new history
+        video.view_count += 1
+
+    await db.commit()
+    await db.refresh(history)
+    await db.refresh(history, ["video"])
+
+    return WatchHistoryResponse.model_validate(history)
+
+
 @router.delete("/{video_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_watch_history(
     video_id: int,
