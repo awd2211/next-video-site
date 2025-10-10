@@ -311,6 +311,109 @@ class AV1Transcoder:
             'savings_percent': round(savings_percent, 2)
         }
 
+    @staticmethod
+    def extract_thumbnail(
+        input_path: Path,
+        output_path: Path,
+        timestamp: float = 5.0,
+        size: str = '1280x720'
+    ) -> Path:
+        """
+        从视频中提取缩略图
+
+        Args:
+            input_path: 输入视频路径
+            output_path: 输出图片路径
+            timestamp: 提取位置(秒), 默认第5秒
+            size: 缩略图尺寸, 默认1280x720
+
+        Returns:
+            输出图片路径
+
+        Example:
+            >>> thumbnail = AV1Transcoder.extract_thumbnail(
+            ...     Path('video.mp4'),
+            ...     Path('thumbnail.jpg'),
+            ...     timestamp=5.0
+            ... )
+        """
+        # 确保输出目录存在
+        output_path.parent.mkdir(parents=True, exist_ok=True)
+
+        # FFmpeg命令
+        cmd = [
+            'ffmpeg', '-y',
+            '-ss', str(timestamp),  # 跳转到指定时间
+            '-i', str(input_path),
+            '-vframes', '1',        # 只提取1帧
+            '-vf', f'scale={size}:force_original_aspect_ratio=decrease,pad={size}:(ow-iw)/2:(oh-ih)/2',
+            '-q:v', '2',            # 高质量 (1-31, 越小越好)
+            str(output_path)
+        ]
+
+        logger.info(f"提取缩略图: {output_path} (时间点: {timestamp}s)")
+        result = subprocess.run(cmd, capture_output=True, text=True)
+
+        if result.returncode != 0:
+            logger.error(f"缩略图提取失败: {result.stderr}")
+            raise Exception(f"缩略图提取失败: {result.stderr}")
+
+        if not output_path.exists():
+            raise Exception(f"缩略图文件未生成: {output_path}")
+
+        logger.info(f"✅ 缩略图已生成: {output_path} ({format_size(output_path.stat().st_size)})")
+        return output_path
+
+    @staticmethod
+    def extract_multiple_thumbnails(
+        input_path: Path,
+        output_dir: Path,
+        count: int = 5,
+        size: str = '1280x720'
+    ) -> List[Path]:
+        """
+        提取多个缩略图 (用于悬停预览/GIF等)
+
+        Args:
+            input_path: 输入视频
+            output_dir: 输出目录
+            count: 提取数量
+            size: 缩略图尺寸
+
+        Returns:
+            缩略图路径列表
+        """
+        # 获取视频时长
+        info = AV1Transcoder.get_video_info(input_path)
+        duration = info['duration']
+
+        if duration < 10:
+            # 视频太短,只提取1张
+            count = 1
+
+        # 均匀分布时间点
+        timestamps = []
+        interval = duration / (count + 1)
+        for i in range(1, count + 1):
+            timestamps.append(interval * i)
+
+        # 提取缩略图
+        thumbnails = []
+        for i, timestamp in enumerate(timestamps):
+            output_path = output_dir / f'thumbnail_{i+1}.jpg'
+            try:
+                thumb = AV1Transcoder.extract_thumbnail(
+                    input_path,
+                    output_path,
+                    timestamp=timestamp,
+                    size=size
+                )
+                thumbnails.append(thumb)
+            except Exception as e:
+                logger.error(f"提取第{i+1}张缩略图失败: {str(e)}")
+
+        return thumbnails
+
 
 def format_size(size_bytes: int) -> str:
     """格式化文件大小"""

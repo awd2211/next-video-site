@@ -83,6 +83,35 @@ def transcode_video_to_av1(self, video_id: int):
         logger.info(f"源视频: {metadata['width']}x{metadata['height']}, "
                    f"时长={source_duration:.1f}s, 编码={metadata['codec']}")
 
+        # 🆕 4.5 生成缩略图 (如果视频没有poster_url)
+        thumbnail_url = None
+        if not video.poster_url or video.poster_url == '':
+            try:
+                logger.info("生成视频缩略图...")
+                thumbnail_path = temp_dir / 'thumbnail.jpg'
+
+                # 从视频第5秒提取 (或10%位置,取较小值)
+                timestamp = min(5.0, source_duration * 0.1)
+
+                AV1Transcoder.extract_thumbnail(
+                    original_path,
+                    thumbnail_path,
+                    timestamp=timestamp,
+                    size='1280x720'
+                )
+
+                # TODO: 上传缩略图到MinIO
+                # thumbnail_url = minio_client.upload_image(thumbnail_path, f'thumbnails/{video_id}.jpg')
+                # 临时: 使用本地路径
+                thumbnail_url = f'/tmp/thumbnails/video_{video_id}.jpg'
+                shutil.copy(thumbnail_path, thumbnail_url)
+
+                logger.info(f"✅ 缩略图已生成: {thumbnail_url}")
+
+            except Exception as e:
+                logger.error(f"生成缩略图失败: {str(e)}")
+                # 缩略图失败不影响转码流程
+
         # 5. 决定目标分辨率 (不超过源分辨率)
         all_resolutions = ['1080p', '720p', '480p', '360p']
         resolution_heights = {'1080p': 1080, '720p': 720, '480p': 480, '360p': 360}
@@ -187,6 +216,11 @@ def transcode_video_to_av1(self, video_id: int):
         video.av1_resolutions = hls_urls
         video.is_av1_available = True
         video.av1_file_size = av1_total_size
+
+        # 🆕 更新缩略图URL (如果生成了)
+        if thumbnail_url:
+            video.poster_url = thumbnail_url
+            logger.info(f"封面已更新: {thumbnail_url}")
 
         db.commit()
         logger.info(f"数据库更新成功: video_id={video_id}")
