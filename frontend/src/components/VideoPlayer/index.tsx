@@ -4,15 +4,7 @@ import 'video.js/dist/video-js.css'
 import './VideoPlayer.css'
 import { historyService } from '../../services/historyService'
 import subtitleService, { Subtitle } from '../../services/subtitleService'
-
-// Import plugins with proper registration
-import 'videojs-contrib-quality-levels'
-import hlsQualitySelectorPlugin from 'videojs-hls-quality-selector'
-
-// Register the quality selector plugin
-if (!videojs.getPlugin('hlsQualitySelector')) {
-  videojs.registerPlugin('hlsQualitySelector', hlsQualitySelectorPlugin)
-}
+import '../../utils/videojs-plugins' // Import plugins (they auto-register)
 
 interface VideoPlayerProps {
   src: string
@@ -78,12 +70,19 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
       player.src(src)
 
       // 🆕 Initialize HLS Quality Selector Plugin
-      // This plugin allows users to manually select video quality
-      if (typeof (player as any).hlsQualitySelector === 'function') {
-        (player as any).hlsQualitySelector({
-          displayCurrentQuality: true, // Display current quality in the button
-        })
-      }
+      // Use setTimeout to ensure plugin is fully registered before calling
+      setTimeout(() => {
+        const currentPlayer = playerRef.current
+        if (currentPlayer && typeof currentPlayer.hlsQualitySelector === 'function') {
+          try {
+            currentPlayer.hlsQualitySelector({
+              displayCurrentQuality: true, // Display current quality in the button
+            })
+          } catch (error) {
+            console.warn('HLS Quality Selector initialization failed:', error)
+          }
+        }
+      }, 0)
 
       // Set initial time
       if (initialTime > 0) {
