@@ -12,6 +12,13 @@ import FolderVideos from './pages/FolderVideos'
 import History from './pages/History'
 import ActorDetail from './pages/ActorDetail'
 import DirectorDetail from './pages/DirectorDetail'
+import SeriesList from './pages/Series/SeriesList'
+import SeriesDetail from './pages/Series/SeriesDetail'
+import HelpCenter from './pages/HelpCenter'
+import ContactUs from './pages/ContactUs'
+import FAQ from './pages/FAQ'
+import PrivacyPolicy from './pages/PrivacyPolicy'
+import TermsOfService from './pages/TermsOfService'
 
 function App() {
   return (
@@ -28,6 +35,13 @@ function App() {
           <Route path="history" element={<History />} />
           <Route path="actor/:id" element={<ActorDetail />} />
           <Route path="director/:id" element={<DirectorDetail />} />
+          <Route path="series" element={<SeriesList />} />
+          <Route path="series/:id" element={<SeriesDetail />} />
+          <Route path="help" element={<HelpCenter />} />
+          <Route path="contact" element={<ContactUs />} />
+          <Route path="faq" element={<FAQ />} />
+          <Route path="privacy" element={<PrivacyPolicy />} />
+          <Route path="terms" element={<TermsOfService />} />
         </Route>
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
