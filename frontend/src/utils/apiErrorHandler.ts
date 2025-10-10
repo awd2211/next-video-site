@@ -91,17 +91,58 @@ export const handleApiError = (error: ApiError): string => {
 }
 
 /**
- * Display error notification (can be replaced with toast library)
+ * Display error notification using toast
  */
 export const showErrorNotification = (message: string) => {
-  // TODO: Replace with proper toast notification library
-  // For now, use browser alert or console
+  // Dynamically import toast to avoid SSR issues
+  import('react-hot-toast').then(({ default: toast }) => {
+    toast.error(message, {
+      duration: 4000,
+      position: 'top-right',
+      style: {
+        background: '#1f2937',
+        color: '#fff',
+      },
+    })
+  })
+  
+  // Also log in development
   if (process.env.NODE_ENV === 'development') {
     console.error('Error:', message)
   }
-  
-  // Could integrate with react-hot-toast, react-toastify, etc.
-  // toast.error(message)
+}
+
+/**
+ * Display success notification using toast
+ */
+export const showSuccessNotification = (message: string) => {
+  import('react-hot-toast').then(({ default: toast }) => {
+    toast.success(message, {
+      duration: 3000,
+      position: 'top-right',
+      style: {
+        background: '#1f2937',
+        color: '#fff',
+      },
+    })
+  })
+}
+
+/**
+ * Display info notification using toast
+ */
+export const showInfoNotification = (message: string) => {
+  import('react-hot-toast').then(({ default: toast }) => {
+    toast(message, {
+      duration: 3000,
+      position: 'top-right',
+      icon: 'ℹ️',
+      style: {
+        background: '#1f2937',
+        color: '#fff',
+      },
+    })
+  })
 }
 
 /**
@@ -125,6 +166,8 @@ export const shouldRetry = (error: ApiError, attemptNumber: number): boolean => 
 export default {
   handleApiError,
   showErrorNotification,
+  showSuccessNotification,
+  showInfoNotification,
   shouldRetry,
   logErrorToService,
 }

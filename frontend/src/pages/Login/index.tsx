@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
+import toast from 'react-hot-toast'
 import api from '@/services/api'
 import { useAuthStore } from '@/store/authStore'
 
@@ -8,12 +9,10 @@ const Login = () => {
   const { setAuth } = useAuthStore()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
-  const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    setError('')
     setLoading(true)
 
     try {
@@ -27,9 +26,13 @@ const Login = () => {
       // Update auth state
       setAuth(user, access_token)
       
-      navigate('/')
+      toast.success(`欢迎回来，${user.username || user.email}！`)
+      
+      // Navigate after a brief delay to show toast
+      setTimeout(() => navigate('/'), 500)
     } catch (err: any) {
-      setError(err.response?.data?.detail || 'Login failed')
+      const errorMessage = err.response?.data?.detail || '登录失败，请检查邮箱和密码'
+      toast.error(errorMessage)
     } finally {
       setLoading(false)
     }
@@ -39,12 +42,6 @@ const Login = () => {
     <div className="min-h-screen bg-gray-900 flex items-center justify-center px-4">
       <div className="max-w-md w-full bg-gray-800 rounded-lg shadow-lg p-8">
         <h1 className="text-3xl font-bold text-center mb-8">Login to VideoSite</h1>
-
-        {error && (
-          <div className="bg-red-500 bg-opacity-10 border border-red-500 text-red-500 rounded p-3 mb-4">
-            {error}
-          </div>
-        )}
 
         <form onSubmit={handleSubmit} className="space-y-6">
           <div>

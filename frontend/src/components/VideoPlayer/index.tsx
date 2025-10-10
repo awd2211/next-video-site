@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react'
 import videojs from 'video.js'
+import toast from 'react-hot-toast'
 import 'video.js/dist/video-js.css'
 import './VideoPlayer.css'
 import './VideoPlayer-YouTube.css'
@@ -615,7 +616,9 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
   const handleCopyVideoUrl = useCallback(() => {
     const url = window.location.href.split('?')[0] // Remove query params
     navigator.clipboard.writeText(url).then(() => {
-      console.log('Video URL copied:', url)
+      toast.success('视频链接已复制', { duration: 2000 })
+    }).catch(() => {
+      toast.error('复制失败，请重试')
     })
   }, [])
 
@@ -625,7 +628,9 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
       const currentTime = Math.floor(player.currentTime() || 0)
       const url = `${window.location.href.split('?')[0]}?t=${currentTime}`
       navigator.clipboard.writeText(url).then(() => {
-        console.log('Video URL with timestamp copied:', url)
+        toast.success(`链接已复制（含时间戳 ${currentTime}秒）`, { duration: 2000 })
+      }).catch(() => {
+        toast.error('复制失败，请重试')
       })
     }
   }, [])
@@ -729,9 +734,16 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
       try {
         await historyService.updateProgress(videoId, currentTime, duration)
         setLastSavedTime(currentTime)
-        console.log(`✅ 进度已保存: ${currentTime}s / ${duration}s`)
+        // 静默保存，不显示 toast（避免干扰观看）
+        if (process.env.NODE_ENV === 'development') {
+          console.log(`✅ 进度已保存: ${currentTime}s / ${duration}s`)
+        }
       } catch (error) {
         console.error('保存进度失败:', error)
+        // 只在失败时显示提示
+        if (process.env.NODE_ENV === 'development') {
+          toast.error('保存进度失败', { duration: 2000 })
+        }
       }
     }
 

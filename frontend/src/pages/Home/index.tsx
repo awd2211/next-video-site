@@ -1,4 +1,5 @@
 import { useQuery, useInfiniteQuery } from '@tanstack/react-query'
+import { Helmet } from 'react-helmet-async'
 import { videoService } from '@/services/videoService'
 import { recommendationService } from '@/services/recommendationService'
 import seriesService from '@/services/seriesService'
@@ -146,6 +147,30 @@ const Home = () => {
 
   return (
     <>
+      {/* SEO Meta Tags for Home Page */}
+      <Helmet>
+        <title>VideoSite - 在线视频平台 | 观看最新最热门视频</title>
+        <meta name="description" content="VideoSite 提供海量高清视频内容，包括电影、电视剧、综艺、纪录片等。立即观看最新最热门的视频！" />
+        <link rel="canonical" href={window.location.origin} />
+        
+        {/* Open Graph */}
+        <meta property="og:type" content="website" />
+        <meta property="og:title" content="VideoSite - 在线视频平台" />
+        <meta property="og:description" content="观看最新最热门的视频内容" />
+        <meta property="og:url" content={window.location.origin} />
+        <meta property="og:site_name" content="VideoSite" />
+        <meta property="og:image" content={`${window.location.origin}/og-image.jpg`} />
+        
+        {/* Twitter Card */}
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:title" content="VideoSite - 在线视频平台" />
+        <meta name="twitter:description" content="观看最新最热门的视频内容" />
+        <meta name="twitter:image" content={`${window.location.origin}/og-image.jpg`} />
+        
+        {/* Keywords */}
+        <meta name="keywords" content="视频,在线视频,电影,电视剧,综艺,纪录片,高清视频,免费视频" />
+      </Helmet>
+
       <BackToTop />
       <div className="space-y-12">
       {/* Hero Carousel */}

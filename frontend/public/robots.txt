@@ -1,0 +1,13 @@
+# https://www.robotstxt.org/robotstxt.html
+User-agent: *
+Allow: /
+
+# Sitemap
+Sitemap: https://yoursite.com/sitemap.xml
+
+# Disallow admin pages
+Disallow: /admin/
+
+# Crawl delay (optional)
+# Crawl-delay: 10
+

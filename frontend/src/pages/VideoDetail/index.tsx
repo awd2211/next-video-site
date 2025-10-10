@@ -1,5 +1,6 @@
 import { useParams, useNavigate } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
+import { Helmet } from 'react-helmet-async'
 import { videoService } from '@/services/videoService'
 import { recommendationService } from '@/services/recommendationService'
 import VideoCard from '@/components/VideoCard'
@@ -78,6 +79,73 @@ const VideoDetail = () => {
 
   return (
     <div className="max-w-7xl mx-auto">
+      {/* SEO Meta Tags */}
+      <Helmet>
+        {/* Basic Meta */}
+        <title>{video.title} - VideoSite</title>
+        <meta name="description" content={video.description || `观看 ${video.title} - VideoSite`} />
+        <link rel="canonical" href={`${window.location.origin}/video/${video.id}`} />
+        
+        {/* Open Graph (Facebook, LinkedIn) */}
+        <meta property="og:type" content="video.other" />
+        <meta property="og:title" content={video.title} />
+        <meta property="og:description" content={video.description || `观看 ${video.title}`} />
+        <meta property="og:image" content={video.poster_url || video.backdrop_url} />
+        <meta property="og:url" content={`${window.location.origin}/video/${video.id}`} />
+        <meta property="og:site_name" content="VideoSite" />
+        <meta property="og:video" content={video.video_url} />
+        {video.duration && <meta property="og:video:duration" content={String(video.duration * 60)} />}
+        
+        {/* Twitter Card */}
+        <meta name="twitter:card" content="player" />
+        <meta name="twitter:title" content={video.title} />
+        <meta name="twitter:description" content={video.description || `观看 ${video.title}`} />
+        <meta name="twitter:image" content={video.poster_url || video.backdrop_url} />
+        <meta name="twitter:player" content={`${window.location.origin}/embed/${video.id}`} />
+        <meta name="twitter:player:width" content="1280" />
+        <meta name="twitter:player:height" content="720" />
+        
+        {/* Additional Meta */}
+        {video.categories && video.categories.length > 0 && (
+          <meta name="keywords" content={video.categories.map(c => c.name).join(', ')} />
+        )}
+      </Helmet>
+
+      {/* Structured Data (Schema.org) */}
+      <script type="application/ld+json">
+        {JSON.stringify({
+          "@context": "https://schema.org",
+          "@type": "VideoObject",
+          "name": video.title,
+          "description": video.description,
+          "thumbnailUrl": video.poster_url || video.backdrop_url,
+          "uploadDate": video.created_at,
+          "duration": video.duration ? `PT${video.duration}M` : undefined,
+          "contentUrl": video.video_url,
+          "embedUrl": `${window.location.origin}/embed/${video.id}`,
+          "interactionStatistic": {
+            "@type": "InteractionCounter",
+            "interactionType": "http://schema.org/WatchAction",
+            "userInteractionCount": video.view_count || 0
+          },
+          "aggregateRating": video.average_rating ? {
+            "@type": "AggregateRating",
+            "ratingValue": video.average_rating,
+            "bestRating": 5,
+            "worstRating": 1
+          } : undefined,
+          "genre": video.categories?.map(c => c.name),
+          "director": video.directors?.map(d => ({
+            "@type": "Person",
+            "name": d.name
+          })),
+          "actor": video.actors?.map(a => ({
+            "@type": "Person",
+            "name": a.name
+          }))
+        })}
+      </script>
+
       {/* Video Player - 自动切换桌面/移动端播放器 */}
       <div className="mb-6">
         <Suspense fallback={
