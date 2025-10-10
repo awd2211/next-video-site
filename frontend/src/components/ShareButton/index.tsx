@@ -14,7 +14,6 @@ interface ShareButtonProps {
 
 const ShareButton: React.FC<ShareButtonProps> = ({
   videoId,
-  videoTitle,
   showLabel = true,
   className = '',
 }) => {

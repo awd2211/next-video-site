@@ -26,6 +26,7 @@ export interface SeriesListItem {
   total_episodes: number
   total_views: number
   total_favorites: number
+  video_count?: number
   is_featured: boolean
   created_at: string
 }
@@ -40,6 +41,7 @@ export interface PaginatedSeriesResponse {
   total: number
   page: number
   page_size: number
+  pages: number
   items: SeriesListItem[]
 }
 

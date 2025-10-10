@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import { lazy, Suspense } from 'react'
 import { ThemeProvider } from './contexts/ThemeContext'
+import ErrorBoundary from './components/ErrorBoundary'
 import Layout from './components/Layout'
 import Home from './pages/Home'
 
@@ -36,35 +37,37 @@ const PageLoader = () => (
 
 function App() {
   return (
-    <ThemeProvider>
-      <BrowserRouter>
-        <Suspense fallback={<PageLoader />}>
-          <Routes>
-          <Route path="/" element={<Layout />}>
-            <Route index element={<Home />} />
-            <Route path="video/:id" element={<VideoDetail />} />
-            <Route path="search" element={<Search />} />
-            <Route path="category/:slug" element={<Category />} />
-            <Route path="profile" element={<Profile />} />
-            <Route path="favorites" element={<Favorites />} />
-            <Route path="favorites/folders/:folderId" element={<FolderVideos />} />
-            <Route path="history" element={<History />} />
-            <Route path="actor/:id" element={<ActorDetail />} />
-            <Route path="director/:id" element={<DirectorDetail />} />
-            <Route path="series" element={<SeriesList />} />
-            <Route path="series/:id" element={<SeriesDetail />} />
-            <Route path="help" element={<HelpCenter />} />
-            <Route path="contact" element={<ContactUs />} />
-            <Route path="faq" element={<FAQ />} />
-            <Route path="privacy" element={<PrivacyPolicy />} />
-            <Route path="terms" element={<TermsOfService />} />
-          </Route>
-          <Route path="/login" element={<Login />} />
-          <Route path="/register" element={<Register />} />
-          </Routes>
-        </Suspense>
-      </BrowserRouter>
-    </ThemeProvider>
+    <ErrorBoundary>
+      <ThemeProvider>
+        <BrowserRouter>
+          <Suspense fallback={<PageLoader />}>
+            <Routes>
+            <Route path="/" element={<Layout />}>
+              <Route index element={<Home />} />
+              <Route path="video/:id" element={<VideoDetail />} />
+              <Route path="search" element={<Search />} />
+              <Route path="category/:slug" element={<Category />} />
+              <Route path="profile" element={<Profile />} />
+              <Route path="favorites" element={<Favorites />} />
+              <Route path="favorites/folders/:folderId" element={<FolderVideos />} />
+              <Route path="history" element={<History />} />
+              <Route path="actor/:id" element={<ActorDetail />} />
+              <Route path="director/:id" element={<DirectorDetail />} />
+              <Route path="series" element={<SeriesList />} />
+              <Route path="series/:id" element={<SeriesDetail />} />
+              <Route path="help" element={<HelpCenter />} />
+              <Route path="contact" element={<ContactUs />} />
+              <Route path="faq" element={<FAQ />} />
+              <Route path="privacy" element={<PrivacyPolicy />} />
+              <Route path="terms" element={<TermsOfService />} />
+            </Route>
+            <Route path="/login" element={<Login />} />
+            <Route path="/register" element={<Register />} />
+            </Routes>
+          </Suspense>
+        </BrowserRouter>
+      </ThemeProvider>
+    </ErrorBoundary>
   )
 }
 

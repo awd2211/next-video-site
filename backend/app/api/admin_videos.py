@@ -1,3 +1,4 @@
+import math
 """
 管理员视频管理 API
 """
@@ -68,6 +69,7 @@ async def list_videos_admin(
         "total": total,
         "page": page,
         "page_size": page_size,
+        "pages": math.ceil(total / page_size) if page_size > 0 else 0,
         "items": videos,
     }
 

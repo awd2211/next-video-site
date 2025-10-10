@@ -21,6 +21,7 @@ export interface Video {
   rating_count: number
   is_featured: boolean
   is_recommended: boolean
+  is_av1_available?: boolean  // Whether AV1 codec version is available
   created_at: string
   published_at?: string
   country?: Country
@@ -80,5 +81,6 @@ export interface PaginatedResponse<T> {
   total: number
   page: number
   page_size: number
+  pages: number
   items: T[]
 }

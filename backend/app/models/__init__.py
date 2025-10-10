@@ -6,6 +6,7 @@ from app.models.user_activity import Favorite, WatchHistory
 from app.models.favorite_folder import FavoriteFolder  # 🆕 收藏夹分组
 from app.models.danmaku import Danmaku, BlockedWord, DanmakuType, DanmakuStatus  # 🆕 弹幕系统
 from app.models.share import VideoShare, SharePlatform  # 🆕 分享系统
+from app.models.series import Series, SeriesType, SeriesStatus  # 🆕 视频系列/专辑
 from app.models.admin import Role, Permission, RolePermission, OperationLog
 from app.models.content import Banner, Recommendation, Announcement, Report
 from app.models.settings import SystemSettings
@@ -34,6 +35,9 @@ __all__ = [
     "DanmakuStatus",  # 🆕 弹幕状态枚举
     "VideoShare",  # 🆕 分享记录
     "SharePlatform",  # 🆕 分享平台枚举
+    "Series",  # 🆕 视频系列/专辑
+    "SeriesType",  # 🆕 系列类型枚举
+    "SeriesStatus",  # 🆕 系列状态枚举
     "Role",
     "Permission",
     "RolePermission",

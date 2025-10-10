@@ -1,17 +1,19 @@
-import { useParams, Link } from 'react-router-dom'
+import { useParams } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { videoService } from '@/services/videoService'
 import { recommendationService } from '@/services/recommendationService'
-import VideoPlayer from '@/components/VideoPlayer'
-import MobileVideoPlayer from '@/components/MobileVideoPlayer'
-import CommentSection from '@/components/CommentSection'
+import VideoCard from '@/components/VideoCard'
 import RatingStars from '@/components/RatingStars'
 import FavoriteButton from '@/components/FavoriteButton'
-import VideoCard from '@/components/VideoCard'
 import ShareButton from '@/components/ShareButton'
 import { useWatchHistory } from '@/hooks/useWatchHistory'
 import { useMobilePlayer } from '@/hooks/useDeviceDetect'
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, lazy, Suspense } from 'react'
+
+// Lazy load heavy components
+const VideoPlayer = lazy(() => import('@/components/VideoPlayer'))
+const MobileVideoPlayer = lazy(() => import('@/components/MobileVideoPlayer'))
+const CommentSection = lazy(() => import('@/components/CommentSection'))
 
 const VideoDetail = () => {
   const { id } = useParams<{ id: string }>()
@@ -62,19 +64,28 @@ const VideoDetail = () => {
     <div className="max-w-7xl mx-auto">
       {/* Video Player - 自动切换桌面/移动端播放器 */}
       <div className="mb-6">
-        {useMobile ? (
-          <MobileVideoPlayer
-            src={video.video_url || ''}
-            poster={video.backdrop_url || video.poster_url}
-            initialTime={0}
-          />
-        ) : (
-          <VideoPlayer
-            src={video.video_url || ''}
-            poster={video.backdrop_url || video.poster_url}
-            initialTime={0}
-          />
-        )}
+        <Suspense fallback={
+          <div className="aspect-video bg-gray-800 rounded-lg flex items-center justify-center">
+            <div className="flex flex-col items-center gap-4">
+              <div className="w-12 h-12 border-4 border-red-600 border-t-transparent rounded-full animate-spin"></div>
+              <p className="text-gray-400">加载播放器...</p>
+            </div>
+          </div>
+        }>
+          {useMobile ? (
+            <MobileVideoPlayer
+              src={video.video_url || ''}
+              poster={video.backdrop_url || video.poster_url}
+              initialTime={0}
+            />
+          ) : (
+            <VideoPlayer
+              src={video.video_url || ''}
+              poster={video.backdrop_url || video.poster_url}
+              initialTime={0}
+            />
+          )}
+        </Suspense>
       </div>
 
       {/* Video Info */}
@@ -169,7 +180,16 @@ const VideoDetail = () => {
       {/* Comments Section */}
       <div className="bg-gray-800 rounded-lg p-6 mb-6">
         <h2 className="text-2xl font-bold mb-6">Comments</h2>
-        <CommentSection videoId={Number(id)} />
+        <Suspense fallback={
+          <div className="flex items-center justify-center py-12">
+            <div className="flex flex-col items-center gap-4">
+              <div className="w-8 h-8 border-4 border-red-600 border-t-transparent rounded-full animate-spin"></div>
+              <p className="text-gray-400">加载评论...</p>
+            </div>
+          </div>
+        }>
+          <CommentSection videoId={Number(id)} />
+        </Suspense>
       </div>
 
       {/* Similar Videos - Intelligent Recommendations */}

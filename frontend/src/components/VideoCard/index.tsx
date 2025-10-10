@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react'
+import { useState, useRef, memo } from 'react'
 import { Link } from 'react-router-dom'
 import { Play, Heart, Plus, Eye, Star } from 'lucide-react'
 import { Video } from '@/types'
@@ -11,7 +11,7 @@ interface VideoCardProps {
   enablePreview?: boolean
 }
 
-const VideoCard: React.FC<VideoCardProps> = ({
+const VideoCard: React.FC<VideoCardProps> = memo(({
   video,
   showQuickActions = true,
   enablePreview = true
@@ -199,7 +199,19 @@ const VideoCard: React.FC<VideoCardProps> = ({
       )}
     </>
   )
-}
+}, (prevProps, nextProps) => {
+  // Custom comparison function for memo
+  // Only re-render if video id or critical props change
+  return (
+    prevProps.video.id === nextProps.video.id &&
+    prevProps.video.view_count === nextProps.video.view_count &&
+    prevProps.video.average_rating === nextProps.video.average_rating &&
+    prevProps.showQuickActions === nextProps.showQuickActions &&
+    prevProps.enablePreview === nextProps.enablePreview
+  )
+})
+
+VideoCard.displayName = 'VideoCard'
 
 // Helper function to format view count
 const formatViewCount = (count: number): string => {

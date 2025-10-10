@@ -2,7 +2,6 @@ import React, { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Link } from 'react-router-dom'
 import notificationService, { Notification } from '@/services/notificationService'
-import Layout from '@/components/Layout'
 import './style.css'
 
 const NotificationsPage: React.FC = () => {
@@ -80,7 +79,7 @@ const NotificationsPage: React.FC = () => {
   const totalPages = data ? Math.ceil(data.total / 20) : 0
 
   return (
-    <Layout>
+    <div className="min-h-screen bg-gray-900 text-white">
       <div className="notifications-page">
         <div className="notifications-container">
           {/* 头部 */}
@@ -225,7 +224,7 @@ const NotificationsPage: React.FC = () => {
           )}
         </div>
       </div>
-    </Layout>
+    </div>
   )
 }
 

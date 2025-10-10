@@ -68,6 +68,7 @@ class SeriesListResponse(BaseModel):
     type: SeriesType
     status: SeriesStatus
     total_episodes: int = 0
+    video_count: Optional[int] = None  # Alias for total_episodes (computed in API)
     total_views: int = 0
     total_favorites: int = 0
     is_featured: bool = False
@@ -103,4 +104,5 @@ class PaginatedSeriesResponse(BaseModel):
     total: int
     page: int
     page_size: int
+    pages: int
     items: List[SeriesListResponse]

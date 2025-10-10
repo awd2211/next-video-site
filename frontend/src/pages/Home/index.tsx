@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useInfiniteQuery } from '@tanstack/react-query'
 import { videoService } from '@/services/videoService'
 import { recommendationService } from '@/services/recommendationService'
 import seriesService from '@/services/seriesService'
@@ -10,21 +10,10 @@ import { VideoCardSkeleton, HeroSkeleton } from '@/components/Skeleton'
 import EmptyState from '@/components/EmptyState'
 import ErrorState from '@/components/ErrorState'
 import BackToTop from '@/components/BackToTop'
-import useInfiniteScroll from '@/hooks/useInfiniteScroll'
-import { useState, useEffect } from 'react'
+import { useEffect, useRef } from 'react'
 import type { Video } from '@/types'
 
 const Home = () => {
-  // State for infinite scroll - Trending
-  const [trendingPage, setTrendingPage] = useState(1)
-  const [allTrendingVideos, setAllTrendingVideos] = useState<Video[]>([])
-  const [hasMoreTrending, setHasMoreTrending] = useState(true)
-
-  // State for infinite scroll - Latest
-  const [latestPage, setLatestPage] = useState(1)
-  const [allLatestVideos, setAllLatestVideos] = useState<Video[]>([])
-  const [hasMoreLatest, setHasMoreLatest] = useState(true)
-
   // Featured videos for hero carousel
   const {
     data: featuredVideos,
@@ -37,28 +26,27 @@ const Home = () => {
     staleTime: 5 * 60 * 1000, // 5分钟缓存
   })
 
-  // Trending videos with infinite scroll
+  // Trending videos with useInfiniteQuery
   const {
     data: trendingData,
     isLoading: trendingLoading,
+    isFetchingNextPage: trendingFetchingNext,
     error: trendingError,
+    hasNextPage: hasMoreTrending,
+    fetchNextPage: fetchNextTrending,
     refetch: refetchTrending
-  } = useQuery({
-    queryKey: ['trending-videos', trendingPage],
-    queryFn: () => videoService.getTrendingVideos({ page: trendingPage, page_size: 12 }),
+  } = useInfiniteQuery({
+    queryKey: ['trending-videos-infinite'],
+    queryFn: ({ pageParam = 1 }) => videoService.getTrendingVideos({ page: pageParam, page_size: 12 }),
+    getNextPageParam: (lastPage) => {
+      // Return next page number if there are more pages
+      return lastPage.page < lastPage.pages ? lastPage.page + 1 : undefined
+    },
+    initialPageParam: 1,
   })
 
-  // Handle trending data updates
-  useEffect(() => {
-    if (trendingData) {
-      if (trendingPage === 1) {
-        setAllTrendingVideos(trendingData.items)
-      } else {
-        setAllTrendingVideos(prev => [...prev, ...trendingData.items])
-      }
-      setHasMoreTrending(trendingData.items.length === 12 && trendingData.page < trendingData.pages)
-    }
-  }, [trendingData, trendingPage])
+  // Flatten all trending videos from pages
+  const allTrendingVideos = trendingData?.pages.flatMap(page => page.items) ?? []
 
   // Personalized recommendations for logged-in users
   const { data: forYouVideos, isLoading: forYouLoading } = useQuery({
@@ -87,49 +75,74 @@ const Home = () => {
     retry: false,
   })
 
-  // Latest videos with infinite scroll
+  // Latest videos with useInfiniteQuery
   const {
     data: latestData,
     isLoading: latestLoading,
+    isFetchingNextPage: latestFetchingNext,
     error: latestError,
+    hasNextPage: hasMoreLatest,
+    fetchNextPage: fetchNextLatest,
     refetch: refetchLatest
-  } = useQuery({
-    queryKey: ['latest-videos', latestPage],
-    queryFn: () => videoService.getVideos({ page: latestPage, page_size: 12, sort_by: 'created_at' }),
+  } = useInfiniteQuery({
+    queryKey: ['latest-videos-infinite'],
+    queryFn: ({ pageParam = 1 }) => videoService.getVideos({ page: pageParam, page_size: 12, sort_by: 'created_at' }),
+    getNextPageParam: (lastPage) => {
+      return lastPage.page < lastPage.pages ? lastPage.page + 1 : undefined
+    },
+    initialPageParam: 1,
   })
 
-  // Handle latest data updates
-  useEffect(() => {
-    if (latestData) {
-      if (latestPage === 1) {
-        setAllLatestVideos(latestData.items)
-      } else {
-        setAllLatestVideos(prev => [...prev, ...latestData.items])
-      }
-      setHasMoreLatest(latestData.items.length === 12 && latestData.page < latestData.pages)
-    }
-  }, [latestData, latestPage])
+  // Flatten all latest videos from pages
+  const allLatestVideos = latestData?.pages.flatMap(page => page.items) ?? []
 
   // Series
   const { data: seriesList, isLoading: seriesLoading } = useQuery({
     queryKey: ['series-list-home'],
-    queryFn: () => seriesService.getSeriesList({ page: 1, page_size: 6 }),
+    queryFn: () => seriesService.getList({ page: 1, page_size: 6 }),
   })
 
-  // Infinite scroll observers
-  const { observerTarget: trendingObserver } = useInfiniteScroll({
-    onLoadMore: () => setTrendingPage(prev => prev + 1),
-    hasMore: hasMoreTrending,
-    isLoading: trendingLoading,
-    threshold: 300
-  })
+  // Intersection observer for infinite scroll - Trending
+  const trendingObserverRef = useRef<HTMLDivElement>(null)
 
-  const { observerTarget: latestObserver } = useInfiniteScroll({
-    onLoadMore: () => setLatestPage(prev => prev + 1),
-    hasMore: hasMoreLatest,
-    isLoading: latestLoading,
-    threshold: 300
-  })
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && hasMoreTrending && !trendingFetchingNext) {
+          fetchNextTrending()
+        }
+      },
+      { rootMargin: '100px' }
+    )
+
+    const currentRef = trendingObserverRef.current
+    if (currentRef) observer.observe(currentRef)
+
+    return () => {
+      if (currentRef) observer.unobserve(currentRef)
+    }
+  }, [hasMoreTrending, trendingFetchingNext, fetchNextTrending])
+
+  // Intersection observer for infinite scroll - Latest
+  const latestObserverRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && hasMoreLatest && !latestFetchingNext) {
+          fetchNextLatest()
+        }
+      },
+      { rootMargin: '100px' }
+    )
+
+    const currentRef = latestObserverRef.current
+    if (currentRef) observer.observe(currentRef)
+
+    return () => {
+      if (currentRef) observer.unobserve(currentRef)
+    }
+  }, [hasMoreLatest, latestFetchingNext, fetchNextLatest])
 
   return (
     <>
@@ -180,11 +193,7 @@ const Home = () => {
         {trendingError ? (
           <ErrorState
             message="无法加载热门视频"
-            onRetry={() => {
-              setTrendingPage(1)
-              setAllTrendingVideos([])
-              refetchTrending()
-            }}
+            onRetry={() => refetchTrending()}
           />
         ) : allTrendingVideos.length > 0 || trendingLoading ? (
           <>
@@ -192,15 +201,15 @@ const Home = () => {
               {allTrendingVideos.map((video) => (
                 <VideoCard key={video.id} video={video} />
               ))}
-              {/* Show loading skeletons while fetching more */}
-              {trendingLoading && [...Array(4)].map((_, i) => (
+              {/* Show loading skeletons while fetching initial data or next page */}
+              {(trendingLoading || trendingFetchingNext) && [...Array(4)].map((_, i) => (
                 <VideoCardSkeleton key={`skeleton-${i}`} />
               ))}
             </div>
             {/* Infinite scroll trigger element */}
             {hasMoreTrending && (
-              <div ref={trendingObserver} className="h-20 flex items-center justify-center mt-8">
-                {trendingLoading && (
+              <div ref={trendingObserverRef} className="h-20 flex items-center justify-center mt-8">
+                {trendingFetchingNext && (
                   <div className="flex items-center gap-2 text-gray-400">
                     <div className="w-5 h-5 border-2 border-red-600 border-t-transparent rounded-full animate-spin"></div>
                     <span>加载更多...</span>
@@ -288,11 +297,7 @@ const Home = () => {
         {latestError ? (
           <ErrorState
             message="无法加载最新视频"
-            onRetry={() => {
-              setLatestPage(1)
-              setAllLatestVideos([])
-              refetchLatest()
-            }}
+            onRetry={() => refetchLatest()}
           />
         ) : allLatestVideos.length > 0 || latestLoading ? (
           <>
@@ -300,15 +305,15 @@ const Home = () => {
               {allLatestVideos.map((video) => (
                 <VideoCard key={video.id} video={video} />
               ))}
-              {/* Show loading skeletons while fetching more */}
-              {latestLoading && [...Array(4)].map((_, i) => (
+              {/* Show loading skeletons while fetching initial data or next page */}
+              {(latestLoading || latestFetchingNext) && [...Array(4)].map((_, i) => (
                 <VideoCardSkeleton key={`skeleton-latest-${i}`} />
               ))}
             </div>
             {/* Infinite scroll trigger element */}
             {hasMoreLatest && (
-              <div ref={latestObserver} className="h-20 flex items-center justify-center mt-8">
-                {latestLoading && (
+              <div ref={latestObserverRef} className="h-20 flex items-center justify-center mt-8">
+                {latestFetchingNext && (
                   <div className="flex items-center gap-2 text-gray-400">
                     <div className="w-5 h-5 border-2 border-red-600 border-t-transparent rounded-full animate-spin"></div>
                     <span>加载更多...</span>

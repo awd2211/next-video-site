@@ -63,4 +63,5 @@ class PaginatedCommentResponse(BaseModel):
     total: int
     page: int
     page_size: int
+    pages: int
     items: List[CommentResponse]

@@ -3,7 +3,7 @@
 @tailwind utilities;
 
 :root {
-  font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Helvetica Neue', sans-serif;
   line-height: 1.5;
   font-weight: 400;
 
@@ -11,49 +11,43 @@
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-}
 
-/* Light mode colors */
-.light {
-  color-scheme: light;
-  --bg-primary: #ffffff;
-  --bg-secondary: #f3f4f6;
-  --bg-tertiary: #e5e7eb;
-  --text-primary: #111827;
-  --text-secondary: #6b7280;
-  --border-color: #d1d5db;
-}
-
-/* Dark mode colors (default) */
-.dark {
-  color-scheme: dark;
-  --bg-primary: #0f1419;
-  --bg-secondary: #1a1f2e;
-  --bg-tertiary: #242933;
-  --text-primary: #f9fafb;
-  --text-secondary: #9ca3af;
-  --border-color: #374151;
+  /* Netflix color system */
+  --netflix-red: #E50914;
+  --netflix-red-dark: #B20710;
+  --netflix-black: #141414;
+  --netflix-gray-dark: #2F2F2F;
+  --netflix-gray-medium: #808080;
+  --netflix-gray-light: #B3B3B3;
+  --netflix-hover: #3F3F3F;
 }
 
 body {
   margin: 0;
   min-width: 320px;
   min-height: 100vh;
-  @apply bg-gray-900 text-white dark:bg-gray-900 dark:text-white light:bg-white light:text-gray-900;
+  background-color: var(--netflix-black);
+  color: white;
   transition: background-color 0.3s ease, color 0.3s ease;
 }
 
 @layer components {
+  /* Netflix style buttons */
   .btn-primary {
-    @apply bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded transition-colors;
+    @apply bg-netflix-red hover:bg-netflix-red-dark text-white font-semibold py-2 px-6 rounded transition-all duration-200;
   }
 
   .btn-secondary {
-    @apply bg-gray-600 hover:bg-gray-700 text-white font-semibold py-2 px-4 rounded transition-colors;
+    @apply bg-netflix-gray-dark hover:bg-netflix-hover text-white font-semibold py-2 px-6 rounded transition-all duration-200;
   }
 
+  /* Netflix style cards */
   .card {
-    @apply bg-gray-800 dark:bg-gray-800 light:bg-white light:border light:border-gray-200 rounded-lg shadow-lg overflow-hidden transition-colors;
+    @apply bg-netflix-card rounded-md shadow-xl overflow-hidden transition-all duration-300;
+  }
+
+  .card:hover {
+    @apply bg-netflix-hover transform scale-105 shadow-2xl;
   }
 }
 

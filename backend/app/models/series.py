@@ -40,8 +40,8 @@ class Series(Base):
     title = Column(String(255), nullable=False, index=True, comment="专辑标题")
     description = Column(Text, nullable=True, comment="专辑描述")
     cover_image = Column(String(500), nullable=True, comment="封面图")
-    type = Column(SQLEnum(SeriesType), nullable=False, default=SeriesType.SERIES, index=True, comment="专辑类型")
-    status = Column(SQLEnum(SeriesStatus), nullable=False, default=SeriesStatus.DRAFT, index=True, comment="发布状态")
+    type = Column(SQLEnum(SeriesType, values_callable=lambda obj: [e.value for e in obj]), nullable=False, default=SeriesType.SERIES, index=True, comment="专辑类型")
+    status = Column(SQLEnum(SeriesStatus, values_callable=lambda obj: [e.value for e in obj]), nullable=False, default=SeriesStatus.DRAFT, index=True, comment="发布状态")
 
     # 统计字段
     total_episodes = Column(Integer, default=0, comment="总集数")

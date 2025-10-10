@@ -72,7 +72,7 @@ const VideoPlayerWithPlaylist: React.FC<VideoPlayerWithPlaylistProps> = ({
   enableSubtitles = true,
   onVideoChange,
 }) => {
-  const [isAutoPlayEnabled, setIsAutoPlayEnabled] = useState(autoPlayEnabled)
+  const [isAutoPlayEnabled] = useState(autoPlayEnabled)
 
   const { handleVideoEnd, playNext, playPrevious, hasNext, hasPrevious } = useAutoPlay({
     currentVideoId: videoId,

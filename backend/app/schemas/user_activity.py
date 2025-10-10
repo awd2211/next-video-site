@@ -29,6 +29,7 @@ class PaginatedFavoriteResponse(BaseModel):
     total: int
     page: int
     page_size: int
+    pages: int
     items: List[FavoriteResponse]
 
 
@@ -54,7 +55,7 @@ class WatchHistoryResponse(BaseModel):
     video_id: int
     watch_duration: int
     last_position: int
-    is_completed: int
+    is_completed: bool
     created_at: datetime
     updated_at: Optional[datetime] = None
 
@@ -69,4 +70,5 @@ class PaginatedWatchHistoryResponse(BaseModel):
     total: int
     page: int
     page_size: int
+    pages: int
     items: List[WatchHistoryResponse]

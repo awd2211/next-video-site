@@ -72,8 +72,8 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
 
       // 🆕 Initialize HLS Quality Selector Plugin
       // This plugin allows users to manually select video quality
-      if (player.hlsQualitySelector) {
-        player.hlsQualitySelector({
+      if ((player as any).hlsQualitySelector) {
+        (player as any).hlsQualitySelector({
           displayCurrentQuality: true, // Display current quality in the button
         })
       }
@@ -142,9 +142,9 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
             // 切换字幕显示
             const tracks = player.textTracks()
             let subtitleTrack = null
-            for (let i = 0; i < tracks.length; i++) {
-              if (tracks[i].kind === 'subtitles') {
-                subtitleTrack = tracks[i]
+            for (let i = 0; i < (tracks as any).length; i++) {
+              if ((tracks as any)[i].kind === 'subtitles') {
+                subtitleTrack = (tracks as any)[i]
                 break
               }
             }
@@ -295,7 +295,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
         if (!player) return
 
         // 添加字幕轨道
-        subtitleList.forEach((subtitle, index) => {
+        subtitleList.forEach((subtitle) => {
           // 转换格式: SRT → VTT (Video.js只支持VTT)
           const subtitleUrl = subtitle.file_url.endsWith('.srt')
             ? convertSrtToVtt(subtitle.file_url)
@@ -322,7 +322,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
         if (hasDefault) {
           // 自动显示字幕
           const tracks = player.textTracks()
-          for (let i = 0; i < tracks.length; i++) {
+          for (let i = 0; i < (tracks as any).length; i++) {
             const track = tracks[i]
             if (track.kind === 'subtitles' && track.default) {
               track.mode = 'showing'

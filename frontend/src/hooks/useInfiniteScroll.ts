@@ -4,7 +4,6 @@ interface UseInfiniteScrollOptions {
   onLoadMore: () => void
   hasMore: boolean
   isLoading: boolean
-  threshold?: number // Distance from bottom in pixels to trigger load (not used with IntersectionObserver)
   rootMargin?: string // Intersection observer root margin
 }
 
@@ -16,7 +15,6 @@ const useInfiniteScroll = ({
   onLoadMore,
   hasMore,
   isLoading,
-  threshold = 300,
   rootMargin = '0px'
 }: UseInfiniteScrollOptions) => {
   const observerTarget = useRef<HTMLDivElement>(null)
@@ -43,7 +41,6 @@ const useInfiniteScroll = ({
     const observer = new IntersectionObserver(handleObserver, {
       root: null, // viewport
       rootMargin,
-      threshold: 0.1 // Trigger when 10% of element is visible
     })
 
     observer.observe(element)

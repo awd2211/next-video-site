@@ -19,4 +19,14 @@ export default defineConfig({
       },
     },
   },
+  build: {
+    // Remove console.log in production
+    minify: 'terser',
+    terserOptions: {
+      compress: {
+        drop_console: true,
+        drop_debugger: true,
+      },
+    },
+  },
 })

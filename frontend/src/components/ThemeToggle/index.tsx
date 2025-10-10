@@ -1,37 +1,41 @@
+import { useState, useEffect } from 'react'
 import { Sun, Moon } from 'lucide-react'
-import { useTheme } from '@/contexts/ThemeContext'
 
-/**
- * ThemeToggle - 主题切换按钮组件
- * 支持深色/浅色模式切换
- */
 const ThemeToggle = () => {
-  const { theme, toggleTheme } = useTheme()
+  const [theme, setTheme] = useState<'light' | 'dark'>('dark')
+
+  useEffect(() => {
+    // 从 localStorage 读取保存的主题
+    const savedTheme = localStorage.getItem('theme') as 'light' | 'dark' | null
+    if (savedTheme) {
+      setTheme(savedTheme)
+      document.documentElement.classList.toggle('light', savedTheme === 'light')
+      document.body.classList.toggle('light', savedTheme === 'light')
+    }
+  }, [])
+
+  const toggleTheme = () => {
+    const newTheme = theme === 'dark' ? 'light' : 'dark'
+    setTheme(newTheme)
+    localStorage.setItem('theme', newTheme)
+
+    // 切换 HTML 和 body 的 light 类
+    document.documentElement.classList.toggle('light', newTheme === 'light')
+    document.body.classList.toggle('light', newTheme === 'light')
+  }
 
   return (
     <button
       onClick={toggleTheme}
-      className="relative p-2 rounded-lg bg-gray-800 dark:bg-gray-700 hover:bg-gray-700 dark:hover:bg-gray-600 transition-colors"
-      aria-label={theme === 'dark' ? '切换到浅色模式' : '切换到深色模式'}
-      title={theme === 'dark' ? '切换到浅色模式' : '切换到深色模式'}
+      className="p-2 rounded-lg hover:bg-gray-700 transition-colors"
+      aria-label="Toggle theme"
+      title={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
     >
-      {/* 图标切换动画 */}
-      <div className="relative w-6 h-6">
-        <Sun
-          className={`absolute inset-0 w-6 h-6 text-yellow-400 transition-all duration-300 ${
-            theme === 'light'
-              ? 'rotate-0 scale-100 opacity-100'
-              : 'rotate-90 scale-0 opacity-0'
-          }`}
-        />
-        <Moon
-          className={`absolute inset-0 w-6 h-6 text-blue-400 transition-all duration-300 ${
-            theme === 'dark'
-              ? 'rotate-0 scale-100 opacity-100'
-              : '-rotate-90 scale-0 opacity-0'
-          }`}
-        />
-      </div>
+      {theme === 'dark' ? (
+        <Sun className="w-5 h-5 text-yellow-400" />
+      ) : (
+        <Moon className="w-5 h-5 text-gray-700" />
+      )}
     </button>
   )
 }

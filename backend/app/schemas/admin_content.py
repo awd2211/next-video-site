@@ -32,6 +32,7 @@ class PaginatedTagResponse(BaseModel):
     total: int
     page: int
     page_size: int
+    pages: int
     items: List[TagResponse]
 
 
@@ -64,6 +65,7 @@ class PaginatedCountryResponse(BaseModel):
     total: int
     page: int
     page_size: int
+    pages: int
     items: List[CountryResponse]
 
 
@@ -108,6 +110,7 @@ class PaginatedCategoryResponse(BaseModel):
     total: int
     page: int
     page_size: int
+    pages: int
     items: List[CategoryResponse]
 
 
@@ -149,6 +152,7 @@ class PaginatedActorAdminResponse(BaseModel):
     total: int
     page: int
     page_size: int
+    pages: int
     items: List[ActorAdminResponse]
 
 
@@ -190,4 +194,5 @@ class PaginatedDirectorAdminResponse(BaseModel):
     total: int
     page: int
     page_size: int
+    pages: int
     items: List[DirectorAdminResponse]

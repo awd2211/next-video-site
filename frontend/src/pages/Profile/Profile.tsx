@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { userService, User, UserUpdate, PasswordChange } from '@/services/userService'
+import { userService, UserUpdate, PasswordChange, User } from '@/services/userService'
 import { historyService } from '@/services/historyService'
 import { favoriteService } from '@/services/favoriteService'
 
@@ -15,7 +15,7 @@ const Profile = () => {
   })
 
   // Fetch user data
-  const { data: user, isLoading } = useQuery({
+  const { data: user, isLoading } = useQuery<User>({
     queryKey: ['current-user'],
     queryFn: userService.getCurrentUser,
   })
@@ -23,13 +23,13 @@ const Profile = () => {
   // Fetch statistics
   const { data: historyData } = useQuery({
     queryKey: ['user-history-stats'],
-    queryFn: () => historyService.getUserHistory(1, 1), // Just to get total count
+    queryFn: () => historyService.getHistory(1, 1), // Just to get total count
     enabled: activeTab === 'stats',
   })
 
   const { data: favoritesData } = useQuery({
     queryKey: ['user-favorites-stats'],
-    queryFn: () => favoriteService.getUserFavorites(1, 1), // Just to get total count
+    queryFn: () => favoriteService.getFavorites(1, 1), // Just to get total count
     enabled: activeTab === 'stats',
   })
 

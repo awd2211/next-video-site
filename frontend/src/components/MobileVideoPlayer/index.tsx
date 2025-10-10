@@ -121,8 +121,8 @@ const MobileVideoPlayer: React.FC<MobileVideoPlayerProps> = ({
 
     player.on('timeupdate', () => {
       const duration = player.duration()
-      if (onTimeUpdate && duration) {
-        onTimeUpdate(player.currentTime(), duration)
+      if (onTimeUpdate && duration !== undefined) {
+        onTimeUpdate(player.currentTime() as number, duration);
       }
     })
 
@@ -210,7 +210,7 @@ const MobileVideoPlayer: React.FC<MobileVideoPlayerProps> = ({
         const seekAmount = (deltaX / window.innerWidth) * duration * 0.3
         const newTime = Math.max(
           0,
-          Math.min(duration, playerRef.current.currentTime() + seekAmount)
+          Math.min(duration!, (playerRef.current.currentTime() as number) + seekAmount)
         )
         playerRef.current.currentTime(newTime)
       }

@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, and_
 from sqlalchemy.orm import selectinload
+import math
 from app.database import get_db
 from app.models.user_activity import Favorite
 from app.models.user import User
@@ -191,6 +192,7 @@ async def get_my_favorites(
         total=total,
         page=page,
         page_size=page_size,
+        pages=math.ceil(total / page_size) if page_size > 0 else 0,
         items=items
     )
 

@@ -6,6 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, and_
 from sqlalchemy.orm import selectinload, joinedload
 from typing import Optional
+import math
 
 from app.database import get_db
 from app.models.series import Series, SeriesType, SeriesStatus, series_videos
@@ -72,11 +73,19 @@ async def get_series_list(
     result = await db.execute(query)
     series_list = result.scalars().all()
 
+    # Build response items with video_count alias
+    items = []
+    for s in series_list:
+        item_dict = SeriesListResponse.model_validate(s).model_dump()
+        item_dict['video_count'] = item_dict['total_episodes']  # Add alias
+        items.append(SeriesListResponse(**item_dict))
+
     response = PaginatedSeriesResponse(
         total=total,
         page=page,
         page_size=page_size,
-        items=[SeriesListResponse.model_validate(s) for s in series_list],
+        pages=math.ceil(total / page_size) if page_size > 0 else 0,
+        items=items,
     )
 
     # 缓存5分钟
@@ -203,7 +212,12 @@ async def get_featured_series(
     )
     series_list = result.scalars().all()
 
-    response = [SeriesListResponse.model_validate(s) for s in series_list]
+    # Build response with video_count alias
+    response = []
+    for s in series_list:
+        item_dict = SeriesListResponse.model_validate(s).model_dump()
+        item_dict['video_count'] = item_dict['total_episodes']  # Add alias
+        response.append(SeriesListResponse(**item_dict))
 
     # 缓存10分钟
     await Cache.set(cache_key, response, ttl=600)

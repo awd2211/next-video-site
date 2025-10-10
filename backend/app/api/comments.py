@@ -3,6 +3,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, and_
 from sqlalchemy.orm import selectinload
 from typing import Optional
+import math
 from app.database import get_db
 from app.models.comment import Comment, CommentStatus
 from app.models.user import User
@@ -172,6 +173,7 @@ async def get_video_comments(
         total=total,
         page=page,
         page_size=page_size,
+        pages=math.ceil(total / page_size) if page_size > 0 else 0,
         items=items
     )
 
@@ -342,6 +344,7 @@ async def get_my_comments(
         total=total,
         page=page,
         page_size=page_size,
+        pages=math.ceil(total / page_size) if page_size > 0 else 0,
         items=items
     )
 

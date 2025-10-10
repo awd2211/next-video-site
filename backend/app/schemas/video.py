@@ -84,6 +84,7 @@ class VideoListResponse(BaseModel):
     average_rating: float
     view_count: int
     created_at: datetime
+    is_av1_available: bool = False  # Whether AV1 codec version is available
 
     class Config:
         from_attributes = True
@@ -170,3 +171,4 @@ class PaginatedResponse(BaseModel):
     page: int
     page_size: int
     items: List[VideoListResponse]
+    pages: int

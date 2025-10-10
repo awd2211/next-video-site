@@ -55,6 +55,7 @@ class PaginatedActorResponse(BaseModel):
     total: int
     page: int
     page_size: int
+    pages: int
     items: List[ActorResponse]
 
 
@@ -63,4 +64,5 @@ class PaginatedDirectorResponse(BaseModel):
     total: int
     page: int
     page_size: int
+    pages: int
     items: List[DirectorResponse]

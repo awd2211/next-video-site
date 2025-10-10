@@ -1,8 +1,8 @@
+import { useCallback } from 'react'
 /**
  * Auto Play Hook
  * Handles automatic video playback when current video ends
  */
-import { useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { PlaylistVideo } from '../components/PlaylistSidebar'
 
