@@ -1,11 +1,13 @@
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { favoriteService, PaginatedFavorites } from '../../services/favoriteService'
+import FavoriteFolderManager from '../../components/FavoriteFolderManager'
 
 const Favorites = () => {
   const [favorites, setFavorites] = useState<PaginatedFavorites | null>(null)
   const [loading, setLoading] = useState(true)
   const [page, setPage] = useState(1)
+  const [showFolders, setShowFolders] = useState(false)
   const pageSize = 20
 
   const loadFavorites = async () => {
@@ -45,9 +47,19 @@ const Favorites = () => {
 
   return (
     <div className="container mx-auto px-4 py-8">
-      <h1 className="text-3xl font-bold mb-6">My Favorites</h1>
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-3xl font-bold">My Favorites</h1>
+        <button
+          onClick={() => setShowFolders(!showFolders)}
+          className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+        >
+          {showFolders ? '查看收藏列表' : '管理收藏夹'}
+        </button>
+      </div>
 
-      {!favorites || favorites.items.length === 0 ? (
+      {showFolders ? (
+        <FavoriteFolderManager />
+      ) : !favorites || favorites.items.length === 0 ? (
         <div className="text-center py-12">
           <p className="text-gray-500 mb-4">You haven't favorited any videos yet.</p>
           <Link to="/" className="text-blue-600 hover:text-blue-800">
@@ -110,7 +122,8 @@ const Favorites = () => {
             </div>
           )}
         </>
-      )}
+      )
+      }
     </div>
   )
 }

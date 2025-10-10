@@ -4,7 +4,7 @@ WebSocket API端点
 """
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect, Depends, Query
 from app.utils.websocket_manager import manager
-from app.utils.security import decode_access_token
+from app.utils.security import decode_token
 from app.models.user import User, AdminUser
 from app.database import SessionLocal
 from sqlalchemy import select
@@ -17,7 +17,7 @@ logger = logging.getLogger(__name__)
 async def get_current_user_from_token(token: str):
     """从token获取当前用户"""
     try:
-        payload = decode_access_token(token)
+        payload = decode_token(token)
         if not payload:
             return None
 

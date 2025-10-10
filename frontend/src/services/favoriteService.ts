@@ -4,6 +4,7 @@ export interface Favorite {
   id: number
   user_id: number
   video_id: number
+  folder_id?: number
   created_at: string
   video: any // VideoListResponse
 }
@@ -17,8 +18,11 @@ export interface PaginatedFavorites {
 
 export const favoriteService = {
   // 添加收藏
-  addFavorite: async (videoId: number): Promise<Favorite> => {
-    const response = await api.post('/favorites/', { video_id: videoId })
+  addFavorite: async (videoId: number, folderId?: number): Promise<Favorite> => {
+    const response = await api.post('/favorites/', {
+      video_id: videoId,
+      folder_id: folderId
+    })
     return response.data
   },
 

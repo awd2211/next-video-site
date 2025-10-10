@@ -8,6 +8,7 @@ import Login from './pages/Login'
 import Register from './pages/Register'
 import Profile from './pages/Profile'
 import Favorites from './pages/Favorites'
+import FolderVideos from './pages/FolderVideos'
 import History from './pages/History'
 import ActorDetail from './pages/ActorDetail'
 import DirectorDetail from './pages/DirectorDetail'
@@ -23,6 +24,7 @@ function App() {
           <Route path="category/:slug" element={<Category />} />
           <Route path="profile" element={<Profile />} />
           <Route path="favorites" element={<Favorites />} />
+          <Route path="favorites/folders/:folderId" element={<FolderVideos />} />
           <Route path="history" element={<History />} />
           <Route path="actor/:id" element={<ActorDetail />} />
           <Route path="director/:id" element={<DirectorDetail />} />

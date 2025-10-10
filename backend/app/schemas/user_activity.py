@@ -7,6 +7,7 @@ from app.schemas.video import VideoListResponse
 class FavoriteCreate(BaseModel):
     """Favorite creation schema"""
     video_id: int = Field(..., gt=0)
+    folder_id: Optional[int] = Field(None, description="Folder ID (None for default folder)")
 
 
 class FavoriteResponse(BaseModel):
@@ -14,6 +15,7 @@ class FavoriteResponse(BaseModel):
     id: int
     user_id: int
     video_id: int
+    folder_id: Optional[int] = None
     created_at: datetime
 
     video: Optional[VideoListResponse] = None
