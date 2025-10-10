@@ -56,6 +56,12 @@ def transcode_video_to_av1(self, video_id: int):
 
         logger.info(f"开始AV1转码: video_id={video_id}, title={video.title}")
 
+        # 🆕 更新转码状态为processing
+        video.transcode_status = 'processing'
+        video.transcode_progress = 0
+        video.transcode_error = None
+        db.commit()
+
         # 2. 创建临时目录
         temp_dir = Path(f'/tmp/av1_transcode_{video_id}')
         temp_dir.mkdir(exist_ok=True, parents=True)
@@ -124,9 +130,14 @@ def transcode_video_to_av1(self, video_id: int):
         logger.info(f"源分辨率: {source_height}p")
         logger.info(f"目标分辨率: {target_resolutions}")
 
+        # 🆕 更新进度: 准备转码
+        video.transcode_progress = 10
+        db.commit()
+
         # 6. 并行转码所有分辨率
         hls_urls = {}
         local_paths = {}
+        completed_count = [0]  # 使用列表以便在闭包中修改
 
         def transcode_resolution(resolution: str):
             """转码单个分辨率"""
@@ -144,6 +155,14 @@ def transcode_video_to_av1(self, video_id: int):
             )
 
             logger.info(f"完成转码 {resolution}")
+
+            # 🆕 更新进度 (10% - 80% 分配给转码)
+            completed_count[0] += 1
+            progress = 10 + int((completed_count[0] / len(target_resolutions)) * 70)
+            video.transcode_progress = progress
+            db.commit()
+            logger.info(f"转码进度: {progress}%")
+
             return resolution, output_dir
 
         # 并行转码
@@ -153,6 +172,10 @@ def transcode_video_to_av1(self, video_id: int):
 
         # 7. 上传到MinIO
         logger.info("上传文件到MinIO...")
+        # 🆕 更新进度: 上传阶段
+        video.transcode_progress = 80
+        db.commit()
+
         for resolution, output_dir in results:
             minio_url = upload_hls_directory(
                 video_id,
@@ -222,6 +245,12 @@ def transcode_video_to_av1(self, video_id: int):
             video.poster_url = thumbnail_url
             logger.info(f"封面已更新: {thumbnail_url}")
 
+        # 🆕 更新转码状态为completed
+        from datetime import datetime as dt
+        video.transcode_status = 'completed'
+        video.transcode_progress = 100
+        video.av1_transcode_at = dt.now()
+
         db.commit()
         logger.info(f"数据库更新成功: video_id={video_id}")
 
@@ -243,11 +272,13 @@ def transcode_video_to_av1(self, video_id: int):
         logger.error(f"AV1转码失败: {str(e)}", exc_info=True)
         db.rollback()
 
-        # 更新任务状态为失败
+        # 🆕 更新任务状态为failed
         try:
             video = db.query(Video).filter(Video.id == video_id).first()
             if video:
                 video.is_av1_available = False
+                video.transcode_status = 'failed'
+                video.transcode_error = str(e)[:500]  # 限制错误信息长度
                 db.commit()
         except:
             pass

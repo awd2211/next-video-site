@@ -24,6 +24,7 @@ from app.admin import (
     categories as admin_categories,
     actors as admin_actors,
     directors as admin_directors,
+    transcode as admin_transcode,
 )
 
 # Initialize rate limiter
@@ -90,6 +91,7 @@ app.include_router(admin_countries.router, prefix=f"{settings.API_V1_PREFIX}/adm
 app.include_router(admin_categories.router, prefix=f"{settings.API_V1_PREFIX}/admin/categories", tags=["Admin - Categories"])
 app.include_router(admin_actors.router, prefix=f"{settings.API_V1_PREFIX}/admin/actors", tags=["Admin - Actors"])
 app.include_router(admin_directors.router, prefix=f"{settings.API_V1_PREFIX}/admin/directors", tags=["Admin - Directors"])
+app.include_router(admin_transcode.router, prefix=f"{settings.API_V1_PREFIX}/admin", tags=["Admin - Transcode"])
 
 
 @app.get("/")

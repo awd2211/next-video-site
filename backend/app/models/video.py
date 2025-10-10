@@ -128,6 +128,13 @@ class Video(Base):
     av1_file_size = Column(BigInteger, nullable=True, comment='AV1文件总大小(字节)')
     h264_file_size = Column(BigInteger, nullable=True, comment='H.264文件大小(对比用)')
 
+    # 🆕 Transcode status tracking
+    transcode_status = Column(String(50), nullable=True, index=True, comment='转码状态: pending, processing, completed, failed')
+    transcode_progress = Column(Integer, default=0, comment='转码进度 0-100')
+    transcode_error = Column(Text, nullable=True, comment='转码错误信息')
+    h264_transcode_at = Column(DateTime(timezone=True), nullable=True, comment='H.264转码完成时间')
+    av1_transcode_at = Column(DateTime(timezone=True), nullable=True, comment='AV1转码完成时间')
+
     # Metadata
     release_year = Column(Integer, nullable=True, index=True)
     release_date = Column(DateTime(timezone=True), nullable=True)
