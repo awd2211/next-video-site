@@ -15,6 +15,7 @@ from app.schemas.comment import (
     UserBrief,
 )
 from app.utils.dependencies import get_current_user, get_current_active_user
+from app.utils.notification_service import NotificationService
 
 router = APIRouter()
 
@@ -39,6 +40,7 @@ async def create_comment(
         )
 
     # Verify parent comment exists if provided
+    parent = None
     if comment_data.parent_id:
         parent_result = await db.execute(
             select(Comment).where(
@@ -46,7 +48,7 @@ async def create_comment(
                     Comment.id == comment_data.parent_id,
                     Comment.video_id == comment_data.video_id
                 )
-            )
+            ).options(selectinload(Comment.user))
         )
         parent = parent_result.scalar_one_or_none()
         if not parent:
@@ -74,6 +76,21 @@ async def create_comment(
 
     # Load user relationship
     await db.refresh(new_comment, ["user"])
+
+    # 🆕 发送通知 (如果是回复评论)
+    if parent and parent.user_id != current_user.id:
+        try:
+            await NotificationService.notify_comment_reply(
+                db=db,
+                target_user_id=parent.user_id,
+                replier_name=current_user.username or current_user.email,
+                reply_content=comment_data.content,
+                video_id=comment_data.video_id,
+                comment_id=new_comment.id,
+            )
+        except Exception as e:
+            # 通知失败不影响评论创建
+            print(f"发送通知失败: {e}")
 
     # Build response
     response_data = CommentResponse.model_validate(new_comment)
