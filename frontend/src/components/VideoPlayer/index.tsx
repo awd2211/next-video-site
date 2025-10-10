@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react'
 import videojs from 'video.js'
+import type Player from 'video.js/dist/types/player'
 import toast from 'react-hot-toast'
 import 'video.js/dist/video-js.css'
 import './VideoPlayer.css'
@@ -36,7 +37,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
   enableSubtitles = true,
 }) => {
   const videoRef = useRef<HTMLDivElement>(null)
-  const playerRef = useRef<any>(null)
+  const playerRef = useRef<Player | null>(null)
   const [lastSavedTime, setLastSavedTime] = useState(0)
   const [subtitles, setSubtitles] = useState<Subtitle[]>([])
   const progressSaveIntervalRef = useRef<NodeJS.Timeout | null>(null)
