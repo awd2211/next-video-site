@@ -4,6 +4,7 @@ from app.models.video import VideoCategory, VideoTag, VideoActor, VideoDirector
 from app.models.comment import Comment, Rating
 from app.models.user_activity import Favorite, WatchHistory
 from app.models.favorite_folder import FavoriteFolder  # 🆕 收藏夹分组
+from app.models.danmaku import Danmaku, BlockedWord, DanmakuType, DanmakuStatus  # 🆕 弹幕系统
 from app.models.admin import Role, Permission, RolePermission, OperationLog
 from app.models.content import Banner, Recommendation, Announcement, Report
 from app.models.settings import SystemSettings
@@ -26,6 +27,10 @@ __all__ = [
     "Favorite",
     "FavoriteFolder",  # 🆕 收藏夹分组
     "WatchHistory",
+    "Danmaku",  # 🆕 弹幕
+    "BlockedWord",  # 🆕 屏蔽词
+    "DanmakuType",  # 🆕 弹幕类型枚举
+    "DanmakuStatus",  # 🆕 弹幕状态枚举
     "Role",
     "Permission",
     "RolePermission",

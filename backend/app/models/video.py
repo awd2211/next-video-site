@@ -180,6 +180,7 @@ class Video(Base):
     favorites = relationship("Favorite", back_populates="video", cascade="all, delete-orphan")
     watch_history = relationship("WatchHistory", back_populates="video", cascade="all, delete-orphan")
     reports = relationship("Report", back_populates="video", cascade="all, delete-orphan")
+    danmaku_list = relationship("Danmaku", back_populates="video", cascade="all, delete-orphan")  # 🆕 弹幕
 
     @property
     def compression_ratio(self) -> float:

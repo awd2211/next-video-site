@@ -30,6 +30,7 @@ class User(Base):
     favorite_folders = relationship("FavoriteFolder", back_populates="user", cascade="all, delete-orphan")  # 🆕 收藏夹分组
     watch_history = relationship("WatchHistory", back_populates="user", cascade="all, delete-orphan")
     reports = relationship("Report", back_populates="user", cascade="all, delete-orphan")
+    danmaku_list = relationship("Danmaku", back_populates="user", cascade="all, delete-orphan")  # 🆕 弹幕
 
 
 class AdminUser(Base):

@@ -6,7 +6,7 @@ from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
 from app.config import settings
 from app.middleware.operation_log import OperationLogMiddleware
-from app.api import auth, videos, users, categories, search, comments, ratings, favorites, favorite_folders, history, actors, directors, captcha, recommendations, notifications, subtitles, websocket
+from app.api import auth, videos, users, categories, search, comments, ratings, favorites, favorite_folders, history, actors, directors, captcha, recommendations, notifications, subtitles, websocket, danmaku
 from app.admin import (
     videos as admin_videos,
     users as admin_users,
@@ -26,6 +26,7 @@ from app.admin import (
     directors as admin_directors,
     transcode as admin_transcode,
     subtitles as admin_subtitles,
+    danmaku as admin_danmaku,
 )
 
 # Initialize rate limiter
@@ -78,6 +79,7 @@ app.include_router(recommendations.router, prefix=f"{settings.API_V1_PREFIX}/rec
 app.include_router(notifications.router, prefix=f"{settings.API_V1_PREFIX}/notifications", tags=["Notifications"])
 app.include_router(subtitles.router, prefix=f"{settings.API_V1_PREFIX}/videos", tags=["Subtitles"])
 app.include_router(websocket.router, prefix=f"{settings.API_V1_PREFIX}", tags=["WebSocket"])
+app.include_router(danmaku.router, prefix=f"{settings.API_V1_PREFIX}/danmaku", tags=["Danmaku"])
 
 # Admin API routes
 app.include_router(admin_videos.router, prefix=f"{settings.API_V1_PREFIX}/admin/videos", tags=["Admin - Videos"])
@@ -98,6 +100,7 @@ app.include_router(admin_actors.router, prefix=f"{settings.API_V1_PREFIX}/admin/
 app.include_router(admin_directors.router, prefix=f"{settings.API_V1_PREFIX}/admin/directors", tags=["Admin - Directors"])
 app.include_router(admin_transcode.router, prefix=f"{settings.API_V1_PREFIX}/admin", tags=["Admin - Transcode"])
 app.include_router(admin_subtitles.router, prefix=f"{settings.API_V1_PREFIX}/admin", tags=["Admin - Subtitles"])
+app.include_router(admin_danmaku.router, prefix=f"{settings.API_V1_PREFIX}/admin/danmaku", tags=["Admin - Danmaku"])
 
 
 @app.get("/")
