@@ -2,11 +2,23 @@
 字幕格式转换工具 - SRT 转 VTT
 
 Video.js原生只支持WebVTT格式,需要将SRT转换为VTT
+
+支持的编码:
+- UTF-8 (推荐)
+- UTF-8 with BOM
+- GBK/GB2312 (中文简体)
+- Big5 (中文繁体)
+- ISO-8859-1 (Latin-1)
+
+支持的格式转换:
+- SRT → VTT ✅
+- VTT → SRT (待实现)
+- ASS → VTT (待实现)
 """
 
 import re
 from pathlib import Path
-from typing import Union
+from typing import Union, Optional
 import logging
 
 logger = logging.getLogger(__name__)
@@ -14,6 +26,44 @@ logger = logging.getLogger(__name__)
 
 class SubtitleConverter:
     """字幕转换器"""
+
+    @staticmethod
+    def detect_encoding(file_path: Union[str, Path]) -> str:
+        """
+        检测文件编码
+
+        Args:
+            file_path: 文件路径
+
+        Returns:
+            检测到的编码 (utf-8, gbk, big5, etc.)
+        """
+        file_path = Path(file_path)
+
+        # 读取文件前4096字节用于检测
+        with open(file_path, 'rb') as f:
+            raw_data = f.read(4096)
+
+        # 检测BOM
+        if raw_data.startswith(b'\xef\xbb\xbf'):
+            return 'utf-8-sig'
+        elif raw_data.startswith(b'\xff\xfe'):
+            return 'utf-16-le'
+        elif raw_data.startswith(b'\xfe\xff'):
+            return 'utf-16-be'
+
+        # 尝试常见编码
+        for encoding in ['utf-8', 'gbk', 'gb2312', 'big5', 'iso-8859-1']:
+            try:
+                raw_data.decode(encoding)
+                logger.info(f"检测到编码: {encoding}")
+                return encoding
+            except (UnicodeDecodeError, LookupError):
+                continue
+
+        # 默认使用UTF-8
+        logger.warning(f"无法检测编码,默认使用UTF-8")
+        return 'utf-8'
 
     @staticmethod
     def srt_to_vtt(srt_content: str) -> str:
@@ -53,26 +103,44 @@ class SubtitleConverter:
     @staticmethod
     def srt_file_to_vtt_file(
         srt_path: Union[str, Path],
-        vtt_path: Union[str, Path] = None
+        vtt_path: Union[str, Path] = None,
+        encoding: Optional[str] = None
     ) -> Path:
         """
-        将SRT文件转换为VTT文件
+        将SRT文件转换为VTT文件 (自动检测编码)
 
         Args:
             srt_path: SRT文件路径
             vtt_path: VTT输出路径 (可选,默认为同名.vtt文件)
+            encoding: 指定编码 (可选,默认自动检测)
 
         Returns:
             VTT文件路径
+
+        Raises:
+            FileNotFoundError: SRT文件不存在
+            UnicodeDecodeError: 编码错误
         """
         srt_path = Path(srt_path)
 
         if not srt_path.exists():
             raise FileNotFoundError(f"SRT文件不存在: {srt_path}")
 
-        # 读取SRT内容
-        with open(srt_path, 'r', encoding='utf-8') as f:
-            srt_content = f.read()
+        # 自动检测编码
+        if encoding is None:
+            encoding = SubtitleConverter.detect_encoding(srt_path)
+            logger.info(f"使用编码: {encoding}")
+
+        # 读取SRT内容 (支持多种编码)
+        try:
+            with open(srt_path, 'r', encoding=encoding, errors='replace') as f:
+                srt_content = f.read()
+        except Exception as e:
+            logger.error(f"读取SRT文件失败: {e}")
+            # Fallback: 使用UTF-8并忽略错误
+            with open(srt_path, 'r', encoding='utf-8', errors='ignore') as f:
+                srt_content = f.read()
+            logger.warning(f"使用UTF-8 fallback读取,部分字符可能丢失")
 
         # 转换为VTT
         vtt_content = SubtitleConverter.srt_to_vtt(srt_content)
@@ -83,12 +151,17 @@ class SubtitleConverter:
         else:
             vtt_path = Path(vtt_path)
 
-        # 写入VTT文件
-        vtt_path.parent.mkdir(parents=True, exist_ok=True)
-        with open(vtt_path, 'w', encoding='utf-8') as f:
-            f.write(vtt_content)
+        # 写入VTT文件 (始终使用UTF-8)
+        try:
+            vtt_path.parent.mkdir(parents=True, exist_ok=True)
+            with open(vtt_path, 'w', encoding='utf-8') as f:
+                f.write(vtt_content)
+        except Exception as e:
+            logger.error(f"写入VTT文件失败: {e}")
+            raise
 
-        logger.info(f"✅ SRT已转换为VTT: {srt_path} -> {vtt_path}")
+        file_size = vtt_path.stat().st_size
+        logger.info(f"✅ SRT已转换为VTT: {srt_path} -> {vtt_path} ({file_size} bytes)")
 
         return vtt_path
 
