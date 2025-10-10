@@ -3,17 +3,20 @@ import { useQuery } from '@tanstack/react-query'
 import { videoService } from '@/services/videoService'
 import { recommendationService } from '@/services/recommendationService'
 import VideoPlayer from '@/components/VideoPlayer'
+import MobileVideoPlayer from '@/components/MobileVideoPlayer'
 import CommentSection from '@/components/CommentSection'
 import RatingStars from '@/components/RatingStars'
 import FavoriteButton from '@/components/FavoriteButton'
 import VideoCard from '@/components/VideoCard'
 import ShareButton from '@/components/ShareButton'
 import { useWatchHistory } from '@/hooks/useWatchHistory'
+import { useMobilePlayer } from '@/hooks/useDeviceDetect'
 import { useEffect, useRef } from 'react'
 
 const VideoDetail = () => {
   const { id } = useParams<{ id: string }>()
   const playerRef = useRef<any>(null)
+  const useMobile = useMobilePlayer()
 
   const { data: video, isLoading } = useQuery({
     queryKey: ['video', id],
@@ -57,13 +60,21 @@ const VideoDetail = () => {
 
   return (
     <div className="max-w-7xl mx-auto">
-      {/* Video Player */}
+      {/* Video Player - 自动切换桌面/移动端播放器 */}
       <div className="mb-6">
-        <VideoPlayer
-          src={video.video_url || ''}
-          poster={video.backdrop_url || video.poster_url}
-          initialTime={0}
-        />
+        {useMobile ? (
+          <MobileVideoPlayer
+            src={video.video_url || ''}
+            poster={video.backdrop_url || video.poster_url}
+            initialTime={0}
+          />
+        ) : (
+          <VideoPlayer
+            src={video.video_url || ''}
+            poster={video.backdrop_url || video.poster_url}
+            initialTime={0}
+          />
+        )}
       </div>
 
       {/* Video Info */}

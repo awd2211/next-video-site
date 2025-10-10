@@ -1,7 +1,7 @@
 /**
  * 分享服务
  */
-import api from '@/utils/axios'
+import api from './api'
 
 export type SharePlatform =
   | 'wechat'

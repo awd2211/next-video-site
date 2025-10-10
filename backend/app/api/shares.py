@@ -12,14 +12,16 @@ from app.models.user import User
 from app.models.share import VideoShare, SharePlatform
 from app.schemas.share import ShareCreate, ShareResponse, ShareStatsResponse
 from app.utils.dependencies import get_current_user, get_current_user_optional
+from app.utils.rate_limit import limiter, RateLimitPresets
 
 router = APIRouter()
 
 
 @router.post("/", response_model=ShareResponse, summary="记录分享")
+@limiter.limit(RateLimitPresets.SHARE)  # 分享限流: 50/分钟
 async def create_share(
-    share_data: ShareCreate,
     request: Request,
+    share_data: ShareCreate,
     current_user: Optional[User] = Depends(get_current_user_optional),
     db: AsyncSession = Depends(get_db),
 ):

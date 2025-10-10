@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, and_
 from typing import Optional
@@ -13,12 +13,15 @@ from app.schemas.rating import (
     VideoRatingStats,
 )
 from app.utils.dependencies import get_current_user, get_current_active_user
+from app.utils.rate_limit import limiter, RateLimitPresets
 
 router = APIRouter()
 
 
 @router.post("/", response_model=RatingResponse, status_code=status.HTTP_201_CREATED)
+@limiter.limit(RateLimitPresets.COMMENT)  # 评分限流: 30/分钟 (与评论相同)
 async def create_or_update_rating(
+    request: Request,
     rating_data: RatingCreate,
     current_user: User = Depends(get_current_active_user),
     db: AsyncSession = Depends(get_db),

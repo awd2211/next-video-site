@@ -15,6 +15,9 @@ import BannersList from './pages/Banners/List'
 import AnnouncementsList from './pages/Announcements/List'
 import ActorsList from './pages/Actors/List'
 import DirectorsList from './pages/Directors/List'
+import IPBlacklist from './pages/IPBlacklist'
+import SeriesList from './pages/Series/List'
+import SeriesEdit from './pages/Series/Edit'
 
 // Protected Route Component
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -67,6 +70,11 @@ function App() {
           <Route path="statistics" element={<Statistics />} />
           <Route path="settings" element={<Settings />} />
           <Route path="logs" element={<OperationLogs />} />
+          <Route path="ip-blacklist" element={<IPBlacklist />} />
+          <Route path="series" element={<SeriesList />} />
+          <Route path="series/new" element={<SeriesEdit />} />
+          <Route path="series/:id" element={<SeriesEdit />} />
+          <Route path="series/:id/edit" element={<SeriesEdit />} />
         </Route>
       </Routes>
     </BrowserRouter>

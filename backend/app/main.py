@@ -1,12 +1,12 @@
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
-from slowapi import Limiter, _rate_limit_exceeded_handler
-from slowapi.util import get_remote_address
+from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 from app.config import settings
 from app.middleware.operation_log import OperationLogMiddleware
-from app.api import auth, videos, users, categories, search, comments, ratings, favorites, favorite_folders, history, actors, directors, captcha, recommendations, notifications, subtitles, websocket, danmaku, shares
+from app.utils.rate_limit import limiter
+from app.api import auth, videos, users, categories, search, comments, ratings, favorites, favorite_folders, history, actors, directors, captcha, recommendations, notifications, subtitles, websocket, danmaku, shares, series
 from app.admin import (
     videos as admin_videos,
     users as admin_users,
@@ -27,10 +27,12 @@ from app.admin import (
     transcode as admin_transcode,
     subtitles as admin_subtitles,
     danmaku as admin_danmaku,
+    ip_blacklist as admin_ip_blacklist,
+    series as admin_series,
+    image_upload as admin_image_upload,
 )
 
-# Initialize rate limiter
-limiter = Limiter(key_func=get_remote_address)
+# Rate limiter is imported from app.utils.rate_limit
 
 app = FastAPI(
     title=settings.APP_NAME,
@@ -81,6 +83,7 @@ app.include_router(subtitles.router, prefix=f"{settings.API_V1_PREFIX}/videos", 
 app.include_router(websocket.router, prefix=f"{settings.API_V1_PREFIX}", tags=["WebSocket"])
 app.include_router(danmaku.router, prefix=f"{settings.API_V1_PREFIX}/danmaku", tags=["Danmaku"])
 app.include_router(shares.router, prefix=f"{settings.API_V1_PREFIX}/shares", tags=["Shares"])
+app.include_router(series.router, prefix=f"{settings.API_V1_PREFIX}/series", tags=["Series"])
 
 # Admin API routes
 app.include_router(admin_videos.router, prefix=f"{settings.API_V1_PREFIX}/admin/videos", tags=["Admin - Videos"])
@@ -102,6 +105,9 @@ app.include_router(admin_directors.router, prefix=f"{settings.API_V1_PREFIX}/adm
 app.include_router(admin_transcode.router, prefix=f"{settings.API_V1_PREFIX}/admin", tags=["Admin - Transcode"])
 app.include_router(admin_subtitles.router, prefix=f"{settings.API_V1_PREFIX}/admin", tags=["Admin - Subtitles"])
 app.include_router(admin_danmaku.router, prefix=f"{settings.API_V1_PREFIX}/admin/danmaku", tags=["Admin - Danmaku"])
+app.include_router(admin_ip_blacklist.router, prefix=f"{settings.API_V1_PREFIX}/admin/ip-blacklist", tags=["Admin - IP Blacklist"])
+app.include_router(admin_series.router, prefix=f"{settings.API_V1_PREFIX}/admin/series", tags=["Admin - Series"])
+app.include_router(admin_image_upload.router, prefix=f"{settings.API_V1_PREFIX}/admin/images", tags=["Admin - Images"])
 
 
 @app.get("/")

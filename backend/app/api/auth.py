@@ -2,8 +2,6 @@ from datetime import datetime
 from fastapi import APIRouter, Depends, HTTPException, status, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
-from slowapi import Limiter
-from slowapi.util import get_remote_address
 from app.database import get_db
 from app.models.user import User, AdminUser
 from app.schemas.auth import UserRegister, UserLogin, AdminLogin, TokenResponse, RefreshTokenRequest
@@ -16,13 +14,13 @@ from app.utils.security import (
     decode_token,
 )
 from app.utils.dependencies import get_current_user, get_current_admin_user
+from app.utils.rate_limit import limiter, RateLimitPresets, AutoBanDetector
 
 router = APIRouter()
-limiter = Limiter(key_func=get_remote_address)
 
 
 @router.post("/register", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
-@limiter.limit("5/minute")  # 限制注册频率
+@limiter.limit(RateLimitPresets.STRICT)  # 严格限流: 5/分钟
 async def register(
     request: Request,
     user_data: UserRegister,
@@ -60,7 +58,7 @@ async def register(
 
 
 @router.post("/login", response_model=TokenResponse)
-@limiter.limit("10/minute")  # 限制登录频率，防止暴力破解
+@limiter.limit(RateLimitPresets.STRICT)  # 严格限流: 5/分钟，防止暴力破解
 async def login(
     request: Request,
     credentials: UserLogin,
@@ -71,6 +69,10 @@ async def login(
     user = result.scalar_one_or_none()
 
     if not user or not verify_password(credentials.password, user.hashed_password):
+        # 记录失败尝试
+        ip = request.client.host if request.client else "unknown"
+        await AutoBanDetector.record_failed_attempt(ip, "login")
+
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Incorrect email or password",
@@ -81,6 +83,10 @@ async def login(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="User account is inactive",
         )
+
+    # 登录成功,清除失败记录
+    ip = request.client.host if request.client else "unknown"
+    await AutoBanDetector.clear_failed_attempts(ip, "login")
 
     # Update last login
     user.last_login_at = datetime.utcnow()
@@ -98,7 +104,7 @@ async def login(
 
 
 @router.post("/admin/login", response_model=TokenResponse)
-@limiter.limit("5/minute")  # 更严格的管理员登录限制
+@limiter.limit(RateLimitPresets.STRICT)  # 严格限流: 5/分钟，管理员登录
 async def admin_login(
     request: Request,
     credentials: AdminLogin,

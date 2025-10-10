@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status, Query
+from fastapi import APIRouter, Depends, HTTPException, status, Query, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, and_
 from sqlalchemy.orm import selectinload
@@ -16,12 +16,15 @@ from app.schemas.comment import (
 )
 from app.utils.dependencies import get_current_user, get_current_active_user
 from app.utils.notification_service import NotificationService
+from app.utils.rate_limit import limiter, RateLimitPresets
 
 router = APIRouter()
 
 
 @router.post("/", response_model=CommentResponse, status_code=status.HTTP_201_CREATED)
+@limiter.limit(RateLimitPresets.COMMENT)  # 评论限流: 30/分钟
 async def create_comment(
+    request: Request,
     comment_data: CommentCreate,
     current_user: User = Depends(get_current_active_user),
     db: AsyncSession = Depends(get_db),

@@ -13,6 +13,8 @@ import {
   PictureOutlined,
   SoundOutlined,
   TeamOutlined,
+  StopOutlined,
+  AppstoreOutlined,
 } from '@ant-design/icons'
 
 const { Header, Content, Sider } = Layout
@@ -85,6 +87,16 @@ const AdminLayout = () => {
       key: '/logs',
       icon: <FileTextOutlined />,
       label: 'Logs',
+    },
+    {
+      key: '/ip-blacklist',
+      icon: <StopOutlined />,
+      label: 'IP Blacklist',
+    },
+    {
+      key: '/series',
+      icon: <AppstoreOutlined />,
+      label: 'Series',
     },
   ]
 

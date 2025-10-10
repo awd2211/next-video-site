@@ -182,6 +182,7 @@ class Video(Base):
     reports = relationship("Report", back_populates="video", cascade="all, delete-orphan")
     danmaku_list = relationship("Danmaku", back_populates="video", cascade="all, delete-orphan")  # 🆕 弹幕
     shares = relationship("VideoShare", back_populates="video", cascade="all, delete-orphan")  # 🆕 分享
+    series = relationship("Series", secondary="series_videos", back_populates="videos")  # 🆕 专辑/系列
 
     @property
     def compression_ratio(self) -> float:

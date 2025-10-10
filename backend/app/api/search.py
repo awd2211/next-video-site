@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, Query, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, or_, func, desc, and_
 from sqlalchemy.orm import selectinload
@@ -7,13 +7,16 @@ from app.database import get_db
 from app.models.video import Video, VideoStatus
 from app.schemas.video import VideoListResponse, PaginatedResponse
 from app.utils.cache import Cache
+from app.utils.rate_limit import limiter, RateLimitPresets
 import hashlib
 
 router = APIRouter()
 
 
 @router.get("", response_model=PaginatedResponse)
+@limiter.limit(RateLimitPresets.MODERATE)  # 搜索限流: 60/分钟
 async def search_videos(
+    request: Request,
     q: str = Query(..., min_length=1),
     page: int = Query(1, ge=1),
     page_size: int = Query(20, ge=1, le=100),

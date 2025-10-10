@@ -1,7 +1,7 @@
 """
 弹幕API - 公共接口
 """
-from fastapi import APIRouter, Depends, HTTPException, status, Query
+from fastapi import APIRouter, Depends, HTTPException, status, Query, Request
 from sqlalchemy import select, func, and_, or_
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
@@ -18,6 +18,7 @@ from app.schemas.danmaku import (
     DanmakuListResponse,
 )
 from app.utils.dependencies import get_current_active_user
+from app.utils.rate_limit import limiter, RateLimitPresets
 
 router = APIRouter()
 
@@ -42,7 +43,9 @@ async def check_blocked_words(content: str, db: AsyncSession) -> bool:
 
 
 @router.post("/", response_model=DanmakuResponse, status_code=status.HTTP_201_CREATED)
+@limiter.limit(RateLimitPresets.COMMENT)  # 弹幕限流: 30/分钟 (与评论相同)
 async def send_danmaku(
+    request: Request,
     danmaku_data: DanmakuCreate,
     current_user: User = Depends(get_current_active_user),
     db: AsyncSession = Depends(get_db),

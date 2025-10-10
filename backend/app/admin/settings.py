@@ -178,9 +178,9 @@ async def reset_settings(
     current_admin: AdminUser = Depends(get_current_admin_user),
 ):
     """重置系统设置为默认值"""
-    settings = await get_or_create_settings(db)
+    settings: SystemSettings = await get_or_create_settings(db)
 
-    # 重置为默认值
+    # 重置为默认值  # type: ignore
     settings.site_name = "视频网站"
     settings.site_url = "http://localhost:3000"
     settings.site_description = None
