@@ -52,4 +52,12 @@ export const videoService = {
     })
     return response.data
   },
+
+  getFeaturedVideos: async (params?: {
+    page?: number
+    page_size?: number
+  }): Promise<PaginatedResponse<Video>> => {
+    const response = await api.get('/videos/featured', { params })
+    return response.data
+  },
 }
