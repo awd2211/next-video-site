@@ -1,7 +1,7 @@
 /**
  * 带弹幕的视频播放器
  */
-import React, { useState, useEffect, useCallback, useRef } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import VideoPlayer from '../VideoPlayer'
 import DanmakuRenderer from '../DanmakuRenderer'
 import DanmakuInput from '../DanmakuInput'

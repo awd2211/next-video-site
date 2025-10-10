@@ -1,7 +1,7 @@
 /**
  * 弹幕输入框组件
  */
-import React, { useState, useRef, useEffect } from 'react'
+import React, { useState, useRef } from 'react'
 import { danmakuService, DanmakuType } from '../../services/danmakuService'
 import './styles.css'
 
