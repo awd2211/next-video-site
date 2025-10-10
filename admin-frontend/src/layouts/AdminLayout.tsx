@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Outlet, useNavigate } from 'react-router-dom'
+import { Outlet, useNavigate, useLocation } from 'react-router-dom'
 import { Layout, Menu, theme } from 'antd'
 import {
   DashboardOutlined,
@@ -16,15 +16,26 @@ import {
   StopOutlined,
   AppstoreOutlined,
 } from '@ant-design/icons'
+import Breadcrumb from '../components/Breadcrumb'
 
 const { Header, Content, Sider } = Layout
 
 const AdminLayout = () => {
   const navigate = useNavigate()
+  const location = useLocation()
   const [collapsed, setCollapsed] = useState(false)
   const {
     token: { colorBgContainer, borderRadiusLG },
   } = theme.useToken()
+
+  // Get the current selected menu key based on path
+  const getSelectedKey = () => {
+    const path = location.pathname
+    // Handle nested routes - get the first segment after /
+    if (path === '/') return '/'
+    const segments = path.split('/').filter(Boolean)
+    return `/${segments[0]}`
+  }
 
   const handleLogout = () => {
     localStorage.removeItem('admin_access_token')
@@ -119,7 +130,7 @@ const AdminLayout = () => {
         <Menu
           theme="dark"
           mode="inline"
-          defaultSelectedKeys={['/']}
+          selectedKeys={[getSelectedKey()]}
           items={menuItems}
           onClick={({ key }) => navigate(key)}
         />
@@ -136,6 +147,7 @@ const AdminLayout = () => {
           </div>
         </Header>
         <Content style={{ margin: '24px 16px' }}>
+          <Breadcrumb />
           <div
             style={{
               padding: 24,

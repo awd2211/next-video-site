@@ -10,18 +10,22 @@ import {
 } from '@ant-design/icons'
 import axios from '@/utils/axios'
 import dayjs from 'dayjs'
+import { useDebounce } from '@/hooks/useDebounce'
 
 const { Title } = Typography
 
 const UserList = () => {
   const [page, setPage] = useState(1)
   const [search, setSearch] = useState('')
+  
+  // Debounce search to reduce API calls
+  const debouncedSearch = useDebounce(search, 500)
 
   const { data, isLoading, refetch } = useQuery({
-    queryKey: ['admin-users', page, search],
+    queryKey: ['admin-users', page, debouncedSearch],
     queryFn: async () => {
       const response = await axios.get('/api/v1/admin/users', {
-        params: { page, page_size: 20 },
+        params: { page, page_size: 20, search: debouncedSearch },
       })
       return response.data
     },
@@ -151,7 +155,10 @@ const UserList = () => {
         </Title>
         <Input.Search
           placeholder="搜索用户名或邮箱"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
           onSearch={setSearch}
+          allowClear
           style={{ width: 300 }}
           prefix={<SearchOutlined />}
         />

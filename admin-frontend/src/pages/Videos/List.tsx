@@ -4,18 +4,22 @@ import { PlusOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons'
 import { useNavigate } from 'react-router-dom'
 import { useState } from 'react'
 import axios from '@/utils/axios'
+import { useDebounce } from '@/hooks/useDebounce'
 
 const VideoList = () => {
   const navigate = useNavigate()
   const [page, setPage] = useState(1)
   const [search, setSearch] = useState('')
   const [status, setStatus] = useState<string>()
+  
+  // Debounce search to reduce API calls
+  const debouncedSearch = useDebounce(search, 500)
 
   const { data, isLoading, refetch } = useQuery({
-    queryKey: ['admin-videos', page, search, status],
+    queryKey: ['admin-videos', page, debouncedSearch, status],
     queryFn: async () => {
       const response = await axios.get('/api/v1/admin/videos', {
-        params: { page, page_size: 20, search, status },
+        params: { page, page_size: 20, search: debouncedSearch, status },
       })
       return response.data
     },
@@ -99,7 +103,10 @@ const VideoList = () => {
         <Space>
           <Input.Search
             placeholder="Search videos..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
             onSearch={setSearch}
+            allowClear
             style={{ width: 300 }}
           />
           <Select

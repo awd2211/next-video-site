@@ -1,0 +1,19 @@
+# Dependencies
+node_modules
+dist
+build
+
+# Build outputs
+*.min.js
+
+# Config files
+vite.config.ts
+*.config.js
+*.config.ts
+
+# Other
+coverage
+public
+.vscode
+.idea
+

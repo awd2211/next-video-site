@@ -1,0 +1,25 @@
+# Dependencies
+node_modules
+dist
+build
+
+# Build outputs
+*.min.js
+*.min.css
+
+# Lock files
+pnpm-lock.yaml
+package-lock.json
+yarn.lock
+
+# Config files
+.eslintrc.cjs
+vite.config.ts
+tsconfig.json
+tsconfig.node.json
+
+# Other
+coverage
+.vscode
+.idea
+

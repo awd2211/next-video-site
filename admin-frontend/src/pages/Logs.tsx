@@ -165,7 +165,7 @@ const Logs = () => {
     }
 
     // 获取token
-    const token = localStorage.getItem('adminToken')
+    const token = localStorage.getItem('admin_access_token')
     if (!token) {
       message.error('请先登录')
       return

@@ -138,7 +138,7 @@ export function useWebSocket(isAdmin: boolean = true, options: UseWebSocketOptio
    * 获取WebSocket URL
    */
   const getWebSocketUrl = useCallback(() => {
-    const token = localStorage.getItem('token')
+    const token = localStorage.getItem('admin_access_token')
     if (!token) {
       throw new Error('未找到访问令牌')
     }
