@@ -1,0 +1,21 @@
+# 这些是支持的资金模式和平台
+
+# 如果你想启用资金链接，请取消注释并填写相应的用户名
+
+# GitHub 赞助
+# github: [awd2211]
+
+# Patreon
+# patreon: your_patreon_username
+
+# Open Collective
+# open_collective: videosite
+
+# Ko-fi
+# ko_fi: your_kofi_username
+
+# Tidelift
+# tidelift: npm/package-name
+
+# 自定义链接 (最多4个)
+# custom: ['https://www.buymeacoffee.com/username', 'https://paypal.me/username']

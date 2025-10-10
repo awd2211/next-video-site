@@ -1,0 +1,11 @@
+blank_issues_enabled: true
+contact_links:
+  - name: 💬 GitHub 讨论区
+    url: https://github.com/awd2211/next-video-site/discussions
+    about: 提出问题、分享想法或与社区讨论
+  - name: 📚 项目文档
+    url: https://github.com/awd2211/next-video-site#readme
+    about: 查看项目文档和使用指南
+  - name: 🚀 开发指南
+    url: https://github.com/awd2211/next-video-site/blob/master/CLAUDE.md
+    about: 查看详细的开发文档和架构说明
