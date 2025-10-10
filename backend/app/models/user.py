@@ -27,6 +27,7 @@ class User(Base):
     comments = relationship("Comment", back_populates="user", cascade="all, delete-orphan")
     ratings = relationship("Rating", back_populates="user", cascade="all, delete-orphan")
     favorites = relationship("Favorite", back_populates="user", cascade="all, delete-orphan")
+    favorite_folders = relationship("FavoriteFolder", back_populates="user", cascade="all, delete-orphan")  # 🆕 收藏夹分组
     watch_history = relationship("WatchHistory", back_populates="user", cascade="all, delete-orphan")
     reports = relationship("Report", back_populates="user", cascade="all, delete-orphan")
 
