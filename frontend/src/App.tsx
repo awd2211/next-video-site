@@ -4,6 +4,7 @@ import { ThemeProvider } from './contexts/ThemeContext'
 import ErrorBoundary from './components/ErrorBoundary'
 import Layout from './components/Layout'
 import Home from './pages/Home'
+import PWAInstallPrompt from './components/PWAInstallPrompt'
 
 // Lazy load components for code splitting with prefetch hints
 const VideoDetail = lazy(() => import(/* webpackPrefetch: true */ './pages/VideoDetail'))
@@ -82,6 +83,9 @@ function App() {
             <Route path="/register" element={<Register />} />
             </Routes>
           </Suspense>
+          
+          {/* PWA Install Prompt */}
+          <PWAInstallPrompt />
         </BrowserRouter>
       </ThemeProvider>
     </ErrorBoundary>

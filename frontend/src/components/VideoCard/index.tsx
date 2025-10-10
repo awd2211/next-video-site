@@ -85,8 +85,14 @@ const VideoCard: React.FC<VideoCardProps> = memo(({
         ref={cardRef}
         onMouseEnter={handleMouseEnter}
         onMouseLeave={handleMouseLeave}
+        aria-label={`观看 ${video.title}`}
+        tabIndex={0}
       >
-      <div className="card hover:ring-2 hover:ring-red-600 transition-all duration-300 overflow-hidden">
+      <article 
+        className="card hover:ring-2 hover:ring-red-600 transition-all duration-300 overflow-hidden"
+        aria-labelledby={`video-title-${video.id}`}
+        role="article"
+      >
         {/* Thumbnail */}
         <div className="relative aspect-video overflow-hidden bg-gray-800">
           <LazyImage
@@ -166,7 +172,10 @@ const VideoCard: React.FC<VideoCardProps> = memo(({
 
         {/* Info */}
         <div className="p-4">
-          <h3 className="font-semibold text-lg line-clamp-2 group-hover:text-red-600 transition-colors mb-2">
+          <h3 
+            id={`video-title-${video.id}`}
+            className="font-semibold text-lg line-clamp-2 group-hover:text-red-600 transition-colors mb-2"
+          >
             {video.title}
           </h3>
 
