@@ -1,0 +1,297 @@
+/* 分享按钮组件样式 */
+
+.share-button-wrapper {
+  display: inline-block;
+}
+
+.share-button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 20px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+}
+
+.share-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+}
+
+.share-button:active {
+  transform: translateY(0);
+}
+
+.share-icon {
+  font-size: 18px;
+}
+
+.share-label {
+  user-select: none;
+}
+
+/* 分享模态框 */
+.share-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  animation: fadeIn 0.2s ease;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.share-modal {
+  background: white;
+  border-radius: 16px;
+  padding: 24px;
+  max-width: 500px;
+  width: 90%;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  animation: slideUp 0.3s ease;
+}
+
+@keyframes slideUp {
+  from {
+    transform: translateY(20px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.share-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.share-modal-header h3 {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 600;
+  color: #1f2937;
+}
+
+.share-modal-close {
+  background: none;
+  border: none;
+  font-size: 32px;
+  color: #6b7280;
+  cursor: pointer;
+  line-height: 1;
+  padding: 0;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: all 0.2s ease;
+}
+
+.share-modal-close:hover {
+  background: #f3f4f6;
+  color: #1f2937;
+}
+
+/* 分享平台按钮 */
+.share-platforms {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+  gap: 12px;
+}
+
+.share-platform-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 16px 12px;
+  background: #f9fafb;
+  border: 2px solid transparent;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.share-platform-btn:hover {
+  background: #f3f4f6;
+  border-color: #667eea;
+  transform: translateY(-2px);
+}
+
+.share-platform-btn:active {
+  transform: translateY(0);
+}
+
+.platform-icon {
+  font-size: 32px;
+}
+
+.platform-name {
+  font-size: 13px;
+  color: #4b5563;
+  font-weight: 500;
+  text-align: center;
+  user-select: none;
+}
+
+/* 复制成功提示 */
+.copy-success-message {
+  margin-top: 16px;
+  padding: 12px;
+  background: #10b981;
+  color: white;
+  text-align: center;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  animation: slideDown 0.3s ease;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* 二维码模态框 */
+.share-qr-modal {
+  background: white;
+  border-radius: 16px;
+  padding: 24px;
+  max-width: 400px;
+  width: 90%;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  animation: slideUp 0.3s ease;
+}
+
+.qr-code-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  padding: 20px;
+}
+
+.qr-code-image {
+  width: 200px;
+  height: 200px;
+  border: 2px solid #e5e7eb;
+  border-radius: 8px;
+}
+
+.qr-code-hint {
+  margin: 0;
+  font-size: 14px;
+  color: #6b7280;
+  text-align: center;
+}
+
+/* 响应式设计 */
+@media (max-width: 640px) {
+  .share-button {
+    padding: 8px 16px;
+    font-size: 13px;
+  }
+
+  .share-icon {
+    font-size: 16px;
+  }
+
+  .share-platforms {
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  .share-platform-btn {
+    padding: 12px 8px;
+  }
+
+  .platform-icon {
+    font-size: 28px;
+  }
+
+  .platform-name {
+    font-size: 12px;
+  }
+}
+
+/* 暗色模式支持 */
+@media (prefers-color-scheme: dark) {
+  .share-modal,
+  .share-qr-modal {
+    background: #1f2937;
+  }
+
+  .share-modal-header h3 {
+    color: #f9fafb;
+  }
+
+  .share-modal-header {
+    border-bottom-color: #374151;
+  }
+
+  .share-modal-close {
+    color: #9ca3af;
+  }
+
+  .share-modal-close:hover {
+    background: #374151;
+    color: #f9fafb;
+  }
+
+  .share-platform-btn {
+    background: #374151;
+  }
+
+  .share-platform-btn:hover {
+    background: #4b5563;
+    border-color: #667eea;
+  }
+
+  .platform-name {
+    color: #d1d5db;
+  }
+
+  .qr-code-hint {
+    color: #9ca3af;
+  }
+
+  .qr-code-image {
+    border-color: #4b5563;
+  }
+}

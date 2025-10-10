@@ -1,0 +1,56 @@
+.video-player-with-danmaku {
+  position: relative;
+  width: 100%;
+  background: #000;
+}
+
+.danmaku-controls {
+  position: absolute;
+  bottom: 60px;
+  left: 0;
+  right: 0;
+  padding: 0 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  z-index: 20;
+  pointer-events: all;
+}
+
+.btn-danmaku-settings {
+  padding: 8px 16px;
+  background: rgba(0, 0, 0, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 4px;
+  color: white;
+  font-size: 14px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.2s;
+}
+
+.btn-danmaku-settings:hover {
+  background: rgba(0, 0, 0, 0.85);
+  border-color: rgba(255, 255, 255, 0.5);
+}
+
+/* 全屏时调整控制栏位置 */
+.video-player-with-danmaku:fullscreen .danmaku-controls,
+.video-player-with-danmaku:-webkit-full-screen .danmaku-controls,
+.video-player-with-danmaku:-moz-full-screen .danmaku-controls {
+  bottom: 80px;
+}
+
+/* 响应式 */
+@media (max-width: 768px) {
+  .danmaku-controls {
+    bottom: 50px;
+    padding: 0 12px;
+    gap: 8px;
+  }
+
+  .btn-danmaku-settings {
+    padding: 6px 12px;
+    font-size: 13px;
+  }
+}

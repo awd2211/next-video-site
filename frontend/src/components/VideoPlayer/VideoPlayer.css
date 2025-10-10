@@ -1,0 +1,172 @@
+.video-player-wrapper {
+  position: relative;
+  width: 100%;
+  background-color: #000;
+}
+
+.video-player {
+  width: 100%;
+  aspect-ratio: 16 / 9;
+}
+
+/* YouTube-like styling */
+.video-js {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
+}
+
+.video-js .vjs-big-play-button {
+  border: none;
+  background-color: rgba(23, 35, 34, 0.8);
+  font-size: 3em;
+  border-radius: 50%;
+  width: 80px;
+  height: 80px;
+  line-height: 80px;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+
+.video-js .vjs-big-play-button:hover {
+  background-color: rgba(220, 38, 38, 0.9);
+}
+
+.video-js .vjs-control-bar {
+  background: linear-gradient(transparent, rgba(0, 0, 0, 0.7));
+  height: 3.5em;
+}
+
+.video-js:hover .vjs-control-bar {
+  display: flex;
+}
+
+.video-js .vjs-progress-control .vjs-progress-holder {
+  font-size: 1.5em;
+  height: 0.3em;
+}
+
+.video-js .vjs-progress-control:hover .vjs-progress-holder {
+  font-size: 1.7em;
+}
+
+.video-js .vjs-play-progress {
+  background-color: #f00;
+}
+
+.video-js .vjs-play-progress:before {
+  display: none;
+}
+
+.video-js .vjs-load-progress {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+.video-js .vjs-slider {
+  background-color: rgba(255, 255, 255, 0.2);
+}
+
+/* Volume slider */
+.video-js .vjs-volume-level {
+  background-color: #fff;
+}
+
+/* Buttons */
+.video-js .vjs-button > .vjs-icon-placeholder:before {
+  font-size: 1.8em;
+  line-height: 1.8;
+}
+
+/* Time display */
+.video-js .vjs-time-control {
+  font-size: 1.1em;
+  line-height: 3.5em;
+  min-width: 2em;
+  padding: 0 0.5em;
+}
+
+/* Playback rate menu */
+.video-js .vjs-playback-rate .vjs-playback-rate-value {
+  font-size: 1.2em;
+  line-height: 3em;
+}
+
+/* Settings menu styling */
+.video-js .vjs-menu {
+  background-color: rgba(28, 28, 28, 0.95);
+}
+
+.video-js .vjs-menu-content {
+  background-color: transparent;
+}
+
+.video-js .vjs-menu li {
+  padding: 0.5em 1em;
+  font-size: 1.1em;
+}
+
+.video-js .vjs-menu li:hover,
+.video-js .vjs-menu li.vjs-selected {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+/* Theater mode */
+.video-js.vjs-theater-mode {
+  max-width: 100%;
+  width: 100%;
+}
+
+/* Fullscreen adjustments */
+.video-js.vjs-fullscreen {
+  position: fixed;
+  overflow: hidden;
+  z-index: 1000;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  right: 0;
+}
+
+.video-js.vjs-fullscreen .vjs-tech {
+  width: 100% !important;
+  height: 100% !important;
+}
+
+/* Loading spinner */
+.video-js .vjs-loading-spinner {
+  border-color: rgba(255, 0, 0, 0.8);
+}
+
+/* Error display */
+.video-js .vjs-error-display {
+  background-color: rgba(0, 0, 0, 0.8);
+}
+
+.video-js .vjs-error-display:before {
+  content: 'X';
+  font-size: 4em;
+  color: #f00;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .video-js .vjs-big-play-button {
+    width: 60px;
+    height: 60px;
+    line-height: 60px;
+    font-size: 2em;
+  }
+
+  .video-js .vjs-control-bar {
+    height: 3em;
+  }
+
+  .video-js .vjs-button > .vjs-icon-placeholder:before {
+    font-size: 1.5em;
+  }
+}
+
+.keyboard-shortcuts-hint {
+  padding: 8px;
+  background-color: rgba(0, 0, 0, 0.5);
+  border-radius: 4px;
+}

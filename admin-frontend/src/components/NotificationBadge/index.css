@@ -1,0 +1,28 @@
+/**
+ * 通知徽章样式
+ */
+
+.websocket-status {
+  transition: color 0.3s ease, transform 0.3s ease;
+}
+
+.websocket-status.connected {
+  animation: pulse 2s ease-in-out infinite;
+}
+
+.websocket-status.disconnected {
+  opacity: 0.5;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.6;
+  }
+}
+
+.ant-badge {
+  cursor: pointer;
+}

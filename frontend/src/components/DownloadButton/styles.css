@@ -1,0 +1,150 @@
+/**
+ * Download Button Styles
+ */
+
+.download-button-container {
+  position: relative;
+  display: inline-block;
+}
+
+.download-button {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.5rem;
+  background-color: #3b82f6;
+  color: white;
+  border: none;
+  border-radius: 0.5rem;
+  font-size: 1rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.download-button:hover:not(:disabled) {
+  background-color: #2563eb;
+}
+
+.download-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.download-icon {
+  width: 1.25rem;
+  height: 1.25rem;
+}
+
+.loading-spinner {
+  display: inline-block;
+  width: 1rem;
+  height: 1rem;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top-color: white;
+  border-radius: 50%;
+  animation: spin 0.6s linear infinite;
+}
+
+.loading-spinner-small {
+  display: inline-block;
+  width: 0.875rem;
+  height: 0.875rem;
+  border: 2px solid rgba(59, 130, 246, 0.3);
+  border-top-color: #3b82f6;
+  border-radius: 50%;
+  animation: spin 0.6s linear infinite;
+  margin-left: auto;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Menu backdrop */
+.download-menu-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.1);
+  z-index: 999;
+}
+
+/* Quality selection menu */
+.download-menu {
+  position: absolute;
+  top: calc(100% + 0.5rem);
+  left: 0;
+  min-width: 250px;
+  background-color: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.5rem;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  z-index: 1000;
+  overflow: hidden;
+}
+
+.download-menu-header {
+  padding: 0.75rem 1rem;
+  font-weight: 600;
+  color: #374151;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.download-menu-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.download-menu-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 0.75rem 1rem;
+  background-color: transparent;
+  border: none;
+  text-align: left;
+  font-size: 0.875rem;
+  color: #374151;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+.download-menu-item:hover:not(:disabled) {
+  background-color: #f3f4f6;
+}
+
+.download-menu-item:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.download-menu-footer {
+  padding: 0.75rem 1rem;
+  background-color: #f9fafb;
+  border-top: 1px solid #e5e7eb;
+  text-align: center;
+}
+
+.download-menu-footer small {
+  color: #6b7280;
+  font-size: 0.75rem;
+}
+
+/* Responsive */
+@media (max-width: 640px) {
+  .download-button {
+    padding: 0.5rem 1rem;
+    font-size: 0.875rem;
+  }
+
+  .download-menu {
+    min-width: 200px;
+  }
+}
