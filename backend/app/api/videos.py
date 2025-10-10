@@ -6,7 +6,7 @@ from sqlalchemy.orm import selectinload
 from typing import Optional
 from datetime import timedelta
 from app.database import get_db
-from app.models.video import Video, VideoStatus
+from app.models.video import Video, VideoStatus, VideoCategory, VideoTag, VideoActor, VideoDirector
 from app.models.user import User
 from app.schemas.video import VideoListResponse, VideoDetailResponse, PaginatedResponse
 from app.config import settings
@@ -235,10 +235,10 @@ async def get_video(
         select(Video)
         .options(
             selectinload(Video.country),
-            selectinload(Video.video_categories),
-            selectinload(Video.video_tags),
-            selectinload(Video.video_actors),
-            selectinload(Video.video_directors),
+            selectinload(Video.video_categories).selectinload(VideoCategory.category),
+            selectinload(Video.video_tags).selectinload(VideoTag.tag),
+            selectinload(Video.video_actors).selectinload(VideoActor.actor),
+            selectinload(Video.video_directors).selectinload(VideoDirector.director),
         )
         .filter(Video.id == video_id, Video.status == VideoStatus.PUBLISHED)
     )
@@ -250,6 +250,12 @@ async def get_video(
     # Increment view count (should be done asynchronously in production)
     video.view_count += 1
     await db.commit()
+
+    # Manually extract relationships from association tables
+    video.categories = [vc.category for vc in video.video_categories if vc.category]
+    video.tags = [vt.tag for vt in video.video_tags if vt.tag]
+    video.actors = [va.actor for va in video.video_actors if va.actor]
+    video.directors = [vd.director for vd in video.video_directors if vd.director]
 
     return video
 

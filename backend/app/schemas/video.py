@@ -116,6 +116,19 @@ class VideoDetailResponse(VideoListResponse):
     actors: List[ActorResponse] = []
     directors: List[DirectorResponse] = []
 
+    @classmethod
+    def model_validate(cls, obj, **kwargs):
+        """Custom validation to extract nested relationships"""
+        if hasattr(obj, 'video_categories'):
+            obj.categories = [vc.category for vc in obj.video_categories if vc.category]
+        if hasattr(obj, 'video_tags'):
+            obj.tags = [vt.tag for vt in obj.video_tags if vt.tag]
+        if hasattr(obj, 'video_actors'):
+            obj.actors = [va.actor for va in obj.video_actors if va.actor]
+        if hasattr(obj, 'video_directors'):
+            obj.directors = [vd.director for vd in obj.video_directors if vd.director]
+        return super().model_validate(obj, **kwargs)
+
 
 class VideoCreate(BaseModel):
     """Video creation schema"""
