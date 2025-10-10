@@ -15,6 +15,8 @@ from app.utils.av1_transcoder import AV1Transcoder, format_size
 from app.utils.minio_client import MinIOClient
 from app.database import SessionLocal
 from app.models.video import Video
+from app.utils.websocket_manager import notification_service
+import asyncio
 
 logger = logging.getLogger(__name__)
 
@@ -61,6 +63,14 @@ def transcode_video_to_av1(self, video_id: int):
         video.transcode_progress = 0
         video.transcode_error = None
         db.commit()
+
+        # 🆕 WebSocket通知: 开始转码
+        asyncio.run(notification_service.notify_transcode_progress(
+            video_id=video_id,
+            status='processing',
+            progress=0,
+            message=f"开始转码: {video.title}"
+        ))
 
         # 2. 创建临时目录
         temp_dir = Path(f'/tmp/av1_transcode_{video_id}')
@@ -137,6 +147,14 @@ def transcode_video_to_av1(self, video_id: int):
         video.transcode_progress = 10
         db.commit()
 
+        # 🆕 WebSocket通知: 准备转码
+        asyncio.run(notification_service.notify_transcode_progress(
+            video_id=video_id,
+            status='processing',
+            progress=10,
+            message=f"准备转码 {len(target_resolutions)} 个分辨率"
+        ))
+
         # 6. 并行转码所有分辨率
         hls_urls = {}
         local_paths = {}
@@ -165,6 +183,14 @@ def transcode_video_to_av1(self, video_id: int):
             video.transcode_progress = progress
             db.commit()
             logger.info(f"转码进度: {progress}%")
+
+            # 🆕 WebSocket通知: 转码进度
+            asyncio.run(notification_service.notify_transcode_progress(
+                video_id=video_id,
+                status='processing',
+                progress=progress,
+                message=f"已完成 {resolution} 转码 ({completed_count[0]}/{len(target_resolutions)})"
+            ))
 
             return resolution, output_dir
 
@@ -257,6 +283,14 @@ def transcode_video_to_av1(self, video_id: int):
         db.commit()
         logger.info(f"数据库更新成功: video_id={video_id}")
 
+        # 🆕 WebSocket通知: 转码完成
+        asyncio.run(notification_service.notify_transcode_complete(
+            video_id=video_id,
+            title=video.title,
+            format_type='av1',
+            file_size=av1_total_size
+        ))
+
         # 11. 清理临时文件
         logger.info("清理临时文件...")
         shutil.rmtree(temp_dir, ignore_errors=True)
@@ -283,6 +317,13 @@ def transcode_video_to_av1(self, video_id: int):
                 video.transcode_status = 'failed'
                 video.transcode_error = str(e)[:500]  # 限制错误信息长度
                 db.commit()
+
+                # 🆕 WebSocket通知: 转码失败
+                asyncio.run(notification_service.notify_transcode_failed(
+                    video_id=video_id,
+                    title=video.title,
+                    error=str(e)[:500]
+                ))
         except:
             pass
 

@@ -8,6 +8,7 @@ import {
   ReloadOutlined
 } from '@ant-design/icons'
 import axios from 'axios'
+import { useWebSocketContext } from '@/contexts/WebSocketContext'
 
 interface TranscodeStatusProps {
   videoId: number
@@ -42,6 +43,9 @@ const TranscodeStatus: React.FC<TranscodeStatusProps> = ({
   const [loading, setLoading] = useState(false)
   const [h264TranscodeAt, setH264TranscodeAt] = useState<string | null>(null)
   const [av1TranscodeAt, setAv1TranscodeAt] = useState<string | null>(null)
+
+  // 🆕 集成WebSocket实时更新
+  const { transcodeProgress, isConnected } = useWebSocketContext()
 
   // 获取转码状态
   const fetchTranscodeStatus = async () => {
@@ -86,16 +90,31 @@ const TranscodeStatus: React.FC<TranscodeStatusProps> = ({
     }
   }
 
-  // 自动刷新
+  // 🆕 监听WebSocket实时更新
+  useEffect(() => {
+    if (isConnected && transcodeProgress.has(videoId)) {
+      const wsData = transcodeProgress.get(videoId)
+      if (wsData) {
+        setStatus(wsData.status)
+        setProgress(wsData.progress)
+        console.log(`📡 WebSocket实时更新 video_id=${videoId}: ${wsData.progress}%`)
+      }
+    }
+  }, [transcodeProgress, videoId, isConnected])
+
+  // 自动刷新 (WebSocket连接失败时fallback)
   useEffect(() => {
     if (!autoRefresh) return
 
+    // 如果WebSocket已连接,优先使用WebSocket更新,降低轮询频率
+    const interval = isConnected ? refreshInterval * 3 : refreshInterval
+
     // 只在转码进行中时自动刷新
     if (status === 'processing' || status === 'pending') {
-      const timer = setInterval(fetchTranscodeStatus, refreshInterval)
+      const timer = setInterval(fetchTranscodeStatus, interval)
       return () => clearInterval(timer)
     }
-  }, [videoId, status, autoRefresh, refreshInterval])
+  }, [videoId, status, autoRefresh, refreshInterval, isConnected])
 
   // 渲染状态标签
   const renderStatusTag = () => {

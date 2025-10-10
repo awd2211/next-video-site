@@ -6,7 +6,7 @@ from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
 from app.config import settings
 from app.middleware.operation_log import OperationLogMiddleware
-from app.api import auth, videos, users, categories, search, comments, ratings, favorites, history, actors, directors, captcha, recommendations, notifications, subtitles
+from app.api import auth, videos, users, categories, search, comments, ratings, favorites, history, actors, directors, captcha, recommendations, notifications, subtitles, websocket
 from app.admin import (
     videos as admin_videos,
     users as admin_users,
@@ -76,6 +76,7 @@ app.include_router(directors.router, prefix=f"{settings.API_V1_PREFIX}/directors
 app.include_router(recommendations.router, prefix=f"{settings.API_V1_PREFIX}/recommendations", tags=["Recommendations"])
 app.include_router(notifications.router, prefix=f"{settings.API_V1_PREFIX}/notifications", tags=["Notifications"])
 app.include_router(subtitles.router, prefix=f"{settings.API_V1_PREFIX}/videos", tags=["Subtitles"])
+app.include_router(websocket.router, prefix=f"{settings.API_V1_PREFIX}", tags=["WebSocket"])
 
 # Admin API routes
 app.include_router(admin_videos.router, prefix=f"{settings.API_V1_PREFIX}/admin/videos", tags=["Admin - Videos"])
