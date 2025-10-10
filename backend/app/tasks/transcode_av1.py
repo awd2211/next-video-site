@@ -106,13 +106,16 @@ def transcode_video_to_av1(self, video_id: int):
                     size='1280x720'
                 )
 
-                # TODO: 上传缩略图到MinIO
-                # thumbnail_url = minio_client.upload_image(thumbnail_path, f'thumbnails/{video_id}.jpg')
-                # 临时: 使用本地路径
-                thumbnail_url = f'/tmp/thumbnails/video_{video_id}.jpg'
-                shutil.copy(thumbnail_path, thumbnail_url)
+                # 🆕 上传缩略图到MinIO
+                from app.utils.minio_client import minio_client
+                with open(thumbnail_path, 'rb') as thumb_file:
+                    thumbnail_url = minio_client.upload_thumbnail(
+                        thumb_file,
+                        video_id=video_id,
+                        thumbnail_type='poster'
+                    )
 
-                logger.info(f"✅ 缩略图已生成: {thumbnail_url}")
+                logger.info(f"✅ 缩略图已生成并上传到MinIO: {thumbnail_url}")
 
             except Exception as e:
                 logger.error(f"生成缩略图失败: {str(e)}")

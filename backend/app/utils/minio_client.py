@@ -93,6 +93,100 @@ class MinIOClient:
         """
         return self.upload_video(file, object_name, content_type)
 
+    def upload_subtitle(
+        self,
+        file: BinaryIO,
+        video_id: int,
+        language: str,
+        format: str = "vtt",
+    ) -> str:
+        """
+        上传字幕文件
+
+        Args:
+            file: 字幕文件对象
+            video_id: 视频ID
+            language: 语言代码 (zh-CN, en-US等)
+            format: 字幕格式 (vtt, srt, ass)
+
+        Returns:
+            str: 字幕文件URL
+        """
+        object_name = f"subtitles/video_{video_id}_{language}.{format}"
+        content_type = "text/vtt" if format == "vtt" else "text/plain"
+        return self.upload_video(file, object_name, content_type)
+
+    def upload_thumbnail(
+        self,
+        file: BinaryIO,
+        video_id: int,
+        thumbnail_type: str = "poster",
+    ) -> str:
+        """
+        上传视频缩略图
+
+        Args:
+            file: 图片文件对象
+            video_id: 视频ID
+            thumbnail_type: 缩略图类型 (poster/preview/frame)
+
+        Returns:
+            str: 缩略图URL
+        """
+        object_name = f"thumbnails/video_{video_id}_{thumbnail_type}.jpg"
+        return self.upload_image(file, object_name, "image/jpeg")
+
+    def get_subtitle_url(
+        self,
+        video_id: int,
+        language: str,
+        format: str = "vtt",
+        expires: timedelta = timedelta(days=7),
+    ) -> str:
+        """
+        获取字幕文件的预签名URL
+
+        Args:
+            video_id: 视频ID
+            language: 语言代码
+            format: 字幕格式
+            expires: 过期时间 (默认7天)
+
+        Returns:
+            str: 预签名URL
+        """
+        object_name = f"subtitles/video_{video_id}_{language}.{format}"
+        return self.get_presigned_url(object_name, expires)
+
+    def delete_subtitle(self, video_id: int, language: str, format: str = "vtt") -> bool:
+        """
+        删除字幕文件
+
+        Args:
+            video_id: 视频ID
+            language: 语言代码
+            format: 字幕格式
+
+        Returns:
+            bool: 是否成功删除
+        """
+        object_name = f"subtitles/video_{video_id}_{language}.{format}"
+        return self.delete_file(object_name)
+
+    def delete_thumbnail(self, video_id: int, thumbnail_type: str = "poster") -> bool:
+        """
+        删除缩略图
+
+        Args:
+            video_id: 视频ID
+            thumbnail_type: 缩略图类型
+
+        Returns:
+            bool: 是否成功删除
+        """
+        object_name = f"thumbnails/video_{video_id}_{thumbnail_type}.jpg"
+        return self.delete_file(object_name)
+
     def get_presigned_url(
         self,
         object_name: str,

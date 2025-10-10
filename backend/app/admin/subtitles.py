@@ -182,13 +182,23 @@ async def delete_subtitle(
     if not subtitle:
         raise HTTPException(status_code=404, detail="字幕不存在")
 
-    # 删除字幕
+    # 删除MinIO中的字幕文件
+    from app.utils.minio_client import minio_client
+    try:
+        minio_client.delete_subtitle(
+            video_id=subtitle.video_id,
+            language=subtitle.language,
+            format=subtitle.format
+        )
+        logger.info(f"✅ MinIO字幕文件已删除: video_{subtitle.video_id}_{subtitle.language}.{subtitle.format}")
+    except Exception as e:
+        logger.warning(f"⚠️ 删除MinIO字幕文件失败(继续删除数据库记录): {str(e)}")
+
+    # 删除数据库记录
     await db.delete(subtitle)
     await db.commit()
 
     logger.info(f"✅ 字幕已删除: subtitle_id={subtitle_id}")
-
-    # TODO: 同时删除MinIO中的字幕文件
 
     return {"message": "字幕已删除"}
 
@@ -232,34 +242,61 @@ async def upload_subtitle_file(
     # 读取文件内容
     content = await file.read()
 
-    # TODO: 上传到MinIO
-    # 临时实现:保存到本地
-    import os
+    # 🆕 上传到MinIO
     from pathlib import Path
     from app.utils.subtitle_converter import SubtitleConverter
+    from app.utils.minio_client import minio_client
+    import io
+    import tempfile
 
-    upload_dir = Path("/tmp/subtitles")
-    upload_dir.mkdir(parents=True, exist_ok=True)
-
-    # 保存原始文件
-    original_file_path = upload_dir / f"video_{video_id}_{language}.{file_ext}"
-    with open(original_file_path, "wb") as f:
-        f.write(content)
-
-    # 🆕 如果是SRT格式,自动转换为VTT (Video.js原生支持VTT)
+    # 如果是SRT格式,先转换为VTT
     if file_ext == 'srt':
         try:
-            vtt_file_path = SubtitleConverter.srt_file_to_vtt_file(original_file_path)
-            file_url = str(vtt_file_path)
-            file_ext = 'vtt'
-            logger.info(f"✅ SRT字幕已转换为VTT: {file_url}")
-        except Exception as e:
-            logger.error(f"❌ SRT转VTT失败: {str(e)}")
-            file_url = str(original_file_path)
-    else:
-        file_url = str(original_file_path)
+            # 保存临时SRT文件
+            with tempfile.NamedTemporaryFile(mode='wb', suffix='.srt', delete=False) as tmp_file:
+                tmp_file.write(content)
+                tmp_srt_path = Path(tmp_file.name)
 
-    logger.info(f"✅ 字幕文件已上传: {file_url}")
+            # 转换为VTT
+            vtt_file_path = SubtitleConverter.srt_file_to_vtt_file(tmp_srt_path)
+
+            # 读取VTT内容
+            with open(vtt_file_path, 'rb') as vtt_file:
+                vtt_content = vtt_file.read()
+
+            # 清理临时文件
+            tmp_srt_path.unlink()
+            vtt_file_path.unlink()
+
+            # 上传VTT到MinIO
+            file_url = minio_client.upload_subtitle(
+                io.BytesIO(vtt_content),
+                video_id=video_id,
+                language=language,
+                format='vtt'
+            )
+            file_ext = 'vtt'
+            logger.info(f"✅ SRT字幕已转换并上传到MinIO: {file_url}")
+
+        except Exception as e:
+            logger.error(f"❌ SRT转VTT失败,使用原始SRT: {str(e)}")
+            # Fallback: 上传原始SRT
+            file_url = minio_client.upload_subtitle(
+                io.BytesIO(content),
+                video_id=video_id,
+                language=language,
+                format='srt'
+            )
+    else:
+        # 直接上传VTT或其他格式
+        file_url = minio_client.upload_subtitle(
+            io.BytesIO(content),
+            video_id=video_id,
+            language=language,
+            format=file_ext
+        )
+
+    logger.info(f"✅ 字幕文件已上传到MinIO: {file_url}")
 
     # 创建字幕记录
     subtitle_create = SubtitleCreate(
