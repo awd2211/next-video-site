@@ -31,6 +31,7 @@ class User(Base):
     watch_history = relationship("WatchHistory", back_populates="user", cascade="all, delete-orphan")
     reports = relationship("Report", back_populates="user", cascade="all, delete-orphan")
     danmaku_list = relationship("Danmaku", back_populates="user", cascade="all, delete-orphan")  # 🆕 弹幕
+    shares = relationship("VideoShare", back_populates="user", cascade="all, delete-orphan")  # 🆕 分享
 
 
 class AdminUser(Base):
