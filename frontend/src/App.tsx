@@ -1,13 +1,13 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
-import { lazy, Suspense } from 'react'
+import { lazy, Suspense, useEffect } from 'react'
 import { ThemeProvider } from './contexts/ThemeContext'
 import ErrorBoundary from './components/ErrorBoundary'
 import Layout from './components/Layout'
 import Home from './pages/Home'
 
-// Lazy load components for code splitting
-const VideoDetail = lazy(() => import('./pages/VideoDetail'))
-const Search = lazy(() => import('./pages/Search'))
+// Lazy load components for code splitting with prefetch hints
+const VideoDetail = lazy(() => import(/* webpackPrefetch: true */ './pages/VideoDetail'))
+const Search = lazy(() => import(/* webpackPrefetch: true */ './pages/Search'))
 const Category = lazy(() => import('./pages/Category'))
 const Login = lazy(() => import('./pages/Login'))
 const Register = lazy(() => import('./pages/Register'))
@@ -25,6 +25,17 @@ const FAQ = lazy(() => import('./pages/FAQ'))
 const PrivacyPolicy = lazy(() => import('./pages/PrivacyPolicy'))
 const TermsOfService = lazy(() => import('./pages/TermsOfService'))
 
+// Preload critical routes
+const preloadCriticalRoutes = () => {
+  // Preload most visited pages after 2 seconds
+  const timer = setTimeout(() => {
+    import('./pages/VideoDetail')
+    import('./pages/Search')
+  }, 2000)
+
+  return () => clearTimeout(timer)
+}
+
 // Loading fallback component
 const PageLoader = () => (
   <div className="flex items-center justify-center min-h-screen">
@@ -36,6 +47,12 @@ const PageLoader = () => (
 )
 
 function App() {
+  // Preload critical routes on mount
+  useEffect(() => {
+    const cleanup = preloadCriticalRoutes()
+    return cleanup
+  }, [])
+
   return (
     <ErrorBoundary>
       <ThemeProvider>

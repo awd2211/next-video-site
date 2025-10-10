@@ -1,4 +1,4 @@
-import { useParams } from 'react-router-dom'
+import { useParams, useNavigate } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { videoService } from '@/services/videoService'
 import { recommendationService } from '@/services/recommendationService'
@@ -6,9 +6,10 @@ import VideoCard from '@/components/VideoCard'
 import RatingStars from '@/components/RatingStars'
 import FavoriteButton from '@/components/FavoriteButton'
 import ShareButton from '@/components/ShareButton'
-import { useWatchHistory } from '@/hooks/useWatchHistory'
 import { useMobilePlayer } from '@/hooks/useDeviceDetect'
-import { useEffect, useRef, lazy, Suspense } from 'react'
+import { useEffect, useState, lazy, Suspense } from 'react'
+import { historyService } from '@/services/historyService'
+import { VideoDetailSkeleton } from '@/components/Skeleton'
 
 // Lazy load heavy components
 const VideoPlayer = lazy(() => import('@/components/VideoPlayer'))
@@ -17,20 +18,14 @@ const CommentSection = lazy(() => import('@/components/CommentSection'))
 
 const VideoDetail = () => {
   const { id } = useParams<{ id: string }>()
-  const playerRef = useRef<any>(null)
+  const navigate = useNavigate()
   const useMobile = useMobilePlayer()
+  const [initialTime, setInitialTime] = useState(0)
 
   const { data: video, isLoading } = useQuery({
     queryKey: ['video', id],
     queryFn: () => videoService.getVideo(Number(id)),
     enabled: !!id,
-  })
-
-  // Watch history hook
-  const { setPlayerRef, resumeFromLastPosition } = useWatchHistory({
-    videoId: Number(id),
-    duration: video?.duration || 0,
-    enabled: !!video,
   })
 
   // Fetch similar videos (intelligent recommendations based on this video)
@@ -40,24 +35,45 @@ const VideoDetail = () => {
     enabled: !!id,
   })
 
-  // Resume from last position when video loads
+  // Load last watch position
   useEffect(() => {
-    if (video && playerRef.current) {
-      setPlayerRef(playerRef.current)
-      resumeFromLastPosition().then((position) => {
-        if (position > 0 && playerRef.current?.currentTime) {
-          playerRef.current.currentTime(position)
+    const loadPosition = async () => {
+      if (video && id) {
+        try {
+          const history = await historyService.getVideoHistory(Number(id))
+          if (history && history.last_position > 0 && !history.is_completed) {
+            setInitialTime(history.last_position)
+          }
+        } catch (error) {
+          console.error('Failed to load watch position:', error)
         }
-      })
+      }
     }
-  }, [video, setPlayerRef, resumeFromLastPosition])
+    loadPosition()
+  }, [video, id])
 
   if (isLoading) {
-    return <div className="text-center py-12">Loading...</div>
+    return <VideoDetailSkeleton />
   }
 
   if (!video) {
-    return <div className="text-center py-12">Video not found</div>
+    return (
+      <div className="max-w-7xl mx-auto text-center py-20">
+        <div className="bg-gray-800 rounded-lg p-12">
+          <svg className="w-24 h-24 mx-auto mb-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+          </svg>
+          <h2 className="text-3xl font-bold mb-4">视频不存在</h2>
+          <p className="text-gray-400 mb-8">抱歉，该视频可能已被删除或暂时不可用</p>
+          <button
+            onClick={() => navigate('/')}
+            className="bg-red-600 hover:bg-red-700 px-6 py-3 rounded-lg transition-colors"
+          >
+            返回首页
+          </button>
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -76,13 +92,16 @@ const VideoDetail = () => {
             <MobileVideoPlayer
               src={video.video_url || ''}
               poster={video.backdrop_url || video.poster_url}
-              initialTime={0}
+              initialTime={initialTime}
             />
           ) : (
             <VideoPlayer
               src={video.video_url || ''}
               poster={video.backdrop_url || video.poster_url}
-              initialTime={0}
+              videoId={video.id}
+              initialTime={initialTime}
+              autoSaveProgress={true}
+              enableSubtitles={true}
             />
           )}
         </Suspense>

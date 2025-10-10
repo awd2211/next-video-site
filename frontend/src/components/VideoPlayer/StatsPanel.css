@@ -1,0 +1,178 @@
+/**
+ * YouTube-Style Stats Panel (Stats for Nerds)
+ *
+ * Technical statistics overlay similar to YouTube's debug panel
+ */
+
+.video-stats-overlay {
+  position: absolute;
+  top: 60px;
+  right: 12px;
+  z-index: 100;
+  animation: statsPanelFadeIn 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes statsPanelFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.stats-panel {
+  background: rgba(0, 0, 0, 0.9);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border-radius: 6px;
+  border: 1px solid rgba(0, 255, 0, 0.3);
+  padding: 0;
+  font-family: 'Courier New', 'Consolas', monospace;
+  font-size: 11px;
+  color: #0f0;
+  min-width: 300px;
+  max-width: 400px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.7);
+  user-select: text;
+}
+
+.stats-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 12px;
+  border-bottom: 1px solid rgba(0, 255, 0, 0.2);
+  background: rgba(0, 255, 0, 0.05);
+}
+
+.stats-header h4 {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 600;
+  color: #0f0;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.stats-close {
+  background: none;
+  border: none;
+  color: #0f0;
+  font-size: 20px;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  transition: background 0.2s;
+}
+
+.stats-close:hover {
+  background: rgba(0, 255, 0, 0.1);
+}
+
+.stats-content {
+  padding: 12px;
+  max-height: 60vh;
+  overflow-y: auto;
+}
+
+.stats-content::-webkit-scrollbar {
+  width: 6px;
+}
+
+.stats-content::-webkit-scrollbar-track {
+  background: rgba(0, 255, 0, 0.05);
+}
+
+.stats-content::-webkit-scrollbar-thumb {
+  background: rgba(0, 255, 0, 0.2);
+  border-radius: 3px;
+}
+
+.stats-content::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 255, 0, 0.3);
+}
+
+.stats-row {
+  display: flex;
+  justify-content: space-between;
+  margin: 6px 0;
+  gap: 16px;
+  line-height: 1.5;
+}
+
+.stats-label {
+  color: #888;
+  flex-shrink: 0;
+  min-width: 120px;
+}
+
+.stats-value {
+  color: #0f0;
+  text-align: right;
+  font-weight: 500;
+  flex-grow: 1;
+}
+
+.stats-footer {
+  padding: 8px 12px;
+  border-top: 1px solid rgba(0, 255, 0, 0.2);
+  background: rgba(0, 255, 0, 0.03);
+}
+
+.stats-footer small {
+  color: #666;
+  font-size: 10px;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .video-stats-overlay {
+    top: 50px;
+    right: 8px;
+  }
+
+  .stats-panel {
+    min-width: 260px;
+    font-size: 10px;
+  }
+
+  .stats-label {
+    min-width: 100px;
+  }
+}
+
+/* Matrix-style animation for values (optional) */
+@keyframes matrixGlow {
+  0%, 100% {
+    text-shadow: 0 0 2px #0f0;
+  }
+  50% {
+    text-shadow: 0 0 5px #0f0, 0 0 10px #0f0;
+  }
+}
+
+.stats-value {
+  animation: matrixGlow 3s ease-in-out infinite;
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  .stats-panel {
+    background: #000;
+    border-color: #0f0;
+  }
+
+  .stats-value {
+    color: #0ff;
+  }
+}

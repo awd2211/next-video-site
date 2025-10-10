@@ -1,14 +1,14 @@
 import { Link, useNavigate } from 'react-router-dom'
 import ThemeToggle from '@/components/ThemeToggle'
 import SearchAutocomplete from '@/components/SearchAutocomplete'
+import { useAuthStore } from '@/store/authStore'
 
 const Header = () => {
   const navigate = useNavigate()
-  const isAuthenticated = !!localStorage.getItem('access_token')
+  const { isAuthenticated, logout: storeLogout } = useAuthStore()
 
   const handleLogout = () => {
-    localStorage.removeItem('access_token')
-    localStorage.removeItem('refresh_token')
+    storeLogout()
     navigate('/login')
   }
 

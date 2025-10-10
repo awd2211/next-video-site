@@ -26,9 +26,12 @@ export const useWatchHistory = ({ videoId, duration, enabled = true }: UseWatchH
     }
   }, [videoId, enabled])
 
+  // Track if component is mounted to prevent state updates after unmount
+  const isMountedRef = useRef(true)
+
   // Save watch progress
   const saveWatchProgress = useCallback(async (currentTime: number, isCompleted: boolean = false) => {
-    if (!enabled) return
+    if (!enabled || !isMountedRef.current) return
 
     const now = Date.now()
     const watchDuration = Math.floor((now - watchStartTime.current) / 1000)
@@ -40,7 +43,9 @@ export const useWatchHistory = ({ videoId, duration, enabled = true }: UseWatchH
         Math.floor(currentTime),
         isCompleted
       )
-      lastSaveTime.current = now
+      if (isMountedRef.current) {
+        lastSaveTime.current = now
+      }
     } catch (error) {
       console.error('Failed to save watch history:', error)
     }
@@ -67,19 +72,37 @@ export const useWatchHistory = ({ videoId, duration, enabled = true }: UseWatchH
     }
   }, [enabled, duration, saveWatchProgress])
 
-  // Save on unmount
+  // Save on unmount and cleanup
   useEffect(() => {
+    isMountedRef.current = true
+
     return () => {
+      isMountedRef.current = false
+      
+      // Save one last time when component unmounts
       if (enabled && playerRef.current && typeof playerRef.current.getCurrentTime === 'function') {
         const currentTime = playerRef.current.getCurrentTime()
         const videoDurationSeconds = duration * 60
         const isCompleted = currentTime >= videoDurationSeconds * 0.95
 
-        // Save one last time when component unmounts
-        saveWatchProgress(currentTime, isCompleted)
+        // Use navigator.sendBeacon for reliable delivery on page unload
+        const data = JSON.stringify({
+          video_id: videoId,
+          watch_duration: Math.floor((Date.now() - watchStartTime.current) / 1000),
+          last_position: Math.floor(currentTime),
+          is_completed: isCompleted,
+        })
+
+        // Try sendBeacon first (more reliable on page unload)
+        if ('sendBeacon' in navigator) {
+          navigator.sendBeacon('/api/v1/history', data)
+        } else {
+          // Fallback to regular async call
+          saveWatchProgress(currentTime, isCompleted)
+        }
       }
     }
-  }, [enabled, duration, saveWatchProgress])
+  }, [enabled, duration, videoId, saveWatchProgress])
 
   // Return methods for manual control
   return {

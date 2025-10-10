@@ -1,9 +1,11 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import api from '@/services/api'
+import { useAuthStore } from '@/store/authStore'
 
 const Login = () => {
   const navigate = useNavigate()
+  const { setAuth } = useAuthStore()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
@@ -16,8 +18,15 @@ const Login = () => {
 
     try {
       const response = await api.post('/auth/login', { email, password })
-      localStorage.setItem('access_token', response.data.access_token)
-      localStorage.setItem('refresh_token', response.data.refresh_token)
+      const { access_token, refresh_token, user } = response.data
+      
+      // Store tokens
+      localStorage.setItem('access_token', access_token)
+      localStorage.setItem('refresh_token', refresh_token)
+      
+      // Update auth state
+      setAuth(user, access_token)
+      
       navigate('/')
     } catch (err: any) {
       setError(err.response?.data?.detail || 'Login failed')

@@ -1,0 +1,171 @@
+/**
+ * YouTube-Style Seek Feedback
+ * 
+ * Double-click visual feedback with ripple animation
+ */
+
+.seek-feedback {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 80px;
+  height: 80px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  z-index: 50;
+  opacity: 0;
+  transition: opacity 0.1s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.seek-feedback.active {
+  opacity: 1;
+  animation: seekPulse 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.seek-feedback-left {
+  left: 80px;
+}
+
+.seek-feedback-center {
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+
+.seek-feedback-right {
+  right: 80px;
+}
+
+.seek-feedback-content {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  background: rgba(0, 0, 0, 0.8);
+  border-radius: 50%;
+  width: 80px;
+  height: 80px;
+  padding: 16px;
+  justify-content: center;
+}
+
+.seek-icon {
+  width: 32px;
+  height: 32px;
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.seek-icon svg {
+  width: 100%;
+  height: 100%;
+}
+
+.seek-text {
+  font-size: 12px;
+  font-weight: 600;
+  color: #ffffff;
+  white-space: nowrap;
+}
+
+/* Ripple effect */
+.seek-ripple {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 80px;
+  height: 80px;
+  border: 2px solid rgba(255, 255, 255, 0.5);
+  border-radius: 50%;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.seek-feedback.active .seek-ripple-1 {
+  animation: rippleExpand 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.seek-feedback.active .seek-ripple-2 {
+  animation: rippleExpand 0.8s cubic-bezier(0.4, 0, 0.2, 1) 0.15s;
+}
+
+@keyframes seekPulse {
+  0% {
+    opacity: 0;
+    transform: translateY(-50%) scale(0.8);
+  }
+  20% {
+    opacity: 1;
+    transform: translateY(-50%) scale(1.05);
+  }
+  80% {
+    opacity: 1;
+    transform: translateY(-50%) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-50%) scale(0.95);
+  }
+}
+
+@keyframes rippleExpand {
+  0% {
+    opacity: 0.6;
+    transform: translate(-50%, -50%) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(1.5);
+  }
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .seek-feedback {
+    width: 60px;
+    height: 60px;
+  }
+
+  .seek-feedback-content {
+    width: 60px;
+    height: 60px;
+    padding: 12px;
+  }
+
+  .seek-icon {
+    width: 24px;
+    height: 24px;
+  }
+
+  .seek-text {
+    font-size: 10px;
+  }
+
+  .seek-feedback-left {
+    left: 40px;
+  }
+
+  .seek-feedback-right {
+    right: 40px;
+  }
+
+  .seek-ripple {
+    width: 60px;
+    height: 60px;
+  }
+}
+
+/* High contrast mode */
+@media (prefers-contrast: high) {
+  .seek-feedback-content {
+    background: #000000;
+    border: 2px solid #ffffff;
+  }
+}
+

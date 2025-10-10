@@ -1,4 +1,4 @@
-import { useState, useRef, memo } from 'react'
+import { useState, useRef, memo, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { Play, Heart, Plus, Eye, Star } from 'lucide-react'
 import { Video } from '@/types'
@@ -23,6 +23,16 @@ const VideoCard: React.FC<VideoCardProps> = memo(({
   const [previewPosition, setPreviewPosition] = useState({ x: 0, y: 0 })
   const hoverTimeoutRef = useRef<NodeJS.Timeout | null>(null)
   const cardRef = useRef<HTMLDivElement>(null)
+  
+  // Cleanup timeout on unmount to prevent memory leaks
+  useEffect(() => {
+    return () => {
+      if (hoverTimeoutRef.current) {
+        clearTimeout(hoverTimeoutRef.current)
+        hoverTimeoutRef.current = null
+      }
+    }
+  }, [])
 
   const handleFavorite = (e: React.MouseEvent) => {
     e.preventDefault()

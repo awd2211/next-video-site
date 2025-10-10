@@ -1,10 +1,17 @@
-import React, { useEffect, useRef, useState } from 'react'
+import React, { useEffect, useRef, useState, useCallback } from 'react'
 import videojs from 'video.js'
 import 'video.js/dist/video-js.css'
 import './VideoPlayer.css'
+import './VideoPlayer-YouTube.css'
 import { historyService } from '../../services/historyService'
 import subtitleService, { Subtitle } from '../../services/subtitleService'
 import '../../utils/videojs-plugins' // Import plugins (they auto-register)
+import ContextMenu from './ContextMenu'
+import StatsPanel from './StatsPanel'
+import SeekFeedback from './SeekFeedback'
+import VolumeIndicator from './VolumeIndicator'
+import KeyboardShortcuts from './KeyboardShortcuts'
+import PlaybackRateIndicator from './PlaybackRateIndicator'
 
 interface VideoPlayerProps {
   src: string
@@ -33,11 +40,36 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
   const [subtitles, setSubtitles] = useState<Subtitle[]>([])
   const progressSaveIntervalRef = useRef<NodeJS.Timeout | null>(null)
 
+  // YouTube-style features state
+  const [contextMenu, setContextMenu] = useState({ visible: false, x: 0, y: 0 })
+  const [showStats, setShowStats] = useState(false)
+  const [loopEnabled, setLoopEnabled] = useState(false)
+  const [theaterMode, setTheaterMode] = useState(false)
+  const [miniPlayer, setMiniPlayer] = useState(false)
+  const [showKeyboardHelp, setShowKeyboardHelp] = useState(false)
+  const [seekFeedback, setSeekFeedback] = useState({
+    show: false,
+    direction: 'forward' as 'forward' | 'backward',
+    seconds: 10,
+    position: 'center' as 'left' | 'center' | 'right',
+  })
+  const [volumeIndicator, setVolumeIndicator] = useState({
+    show: false,
+    volume: 100,
+    muted: false,
+  })
+  const [playbackRate, setPlaybackRate] = useState(1)
+  const [showPlaybackRateIndicator, setShowPlaybackRateIndicator] = useState(false)
+  const controlBarTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+  const lastClickTimeRef = useRef<number>(0)
+  const clickCountRef = useRef<number>(0)
+
   useEffect(() => {
     // Initialize Video.js player
     if (!playerRef.current && videoRef.current) {
       const videoElement = document.createElement('video-js')
       videoElement.classList.add('vjs-big-play-centered')
+      videoElement.classList.add('vjs-youtube-skin') // YouTube styling
       videoRef.current.appendChild(videoElement)
 
       const player = (playerRef.current = videojs(videoElement, {
@@ -49,20 +81,23 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
         playbackRates: [0.25, 0.5, 0.75, 1, 1.25, 1.5, 1.75, 2],
         controlBar: {
           children: [
+            // YouTube 布局: 左侧控制
             'playToggle',
             'volumePanel',
             'currentTimeDisplay',
             'timeDivider',
             'durationDisplay',
+
+            // 中间: 占位符 (进度条已经在上方绝对定位)
             'progressControl',
-            'remainingTimeDisplay',
-            'playbackRateMenuButton',
-            'chaptersButton',
-            'descriptionsButton',
-            'subsCapsButton',
-            'audioTrackButton',
-            'pictureInPictureToggle',
-            'fullscreenToggle',
+
+            // YouTube 布局: 右侧控制
+            'subsCapsButton',          // 字幕按钮
+            'qualitySelector',         // 画质选择器 (自定义)
+            'playbackRateMenuButton',  // 播放速度
+            'theaterButton',           // 影院模式 (自定义)
+            'pictureInPictureToggle',  // 画中画
+            'fullscreenToggle',        // 全屏
           ],
         },
       }))
@@ -101,21 +136,39 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
               player.pause()
             }
             break
+          case 'j':
+            // 快退10秒
+            e.preventDefault()
+            player.currentTime((player.currentTime() || 0) - 10)
+            setSeekFeedback({ show: true, direction: 'backward', seconds: 10, position: 'left' })
+            break
+          case 'l':
+            // 快进10秒
+            e.preventDefault()
+            player.currentTime((player.currentTime() || 0) + 10)
+            setSeekFeedback({ show: true, direction: 'forward', seconds: 10, position: 'right' })
+            break
           case 'ArrowLeft':
             e.preventDefault()
             player.currentTime((player.currentTime() || 0) - 5)
+            setSeekFeedback({ show: true, direction: 'backward', seconds: 5, position: 'left' })
             break
           case 'ArrowRight':
             e.preventDefault()
             player.currentTime((player.currentTime() || 0) + 5)
+            setSeekFeedback({ show: true, direction: 'forward', seconds: 5, position: 'right' })
             break
           case 'ArrowUp':
             e.preventDefault()
-            player.volume(Math.min(1, (player.volume() || 0) + 0.1))
+            const newVolumeUp = Math.min(1, (player.volume() || 0) + 0.1)
+            player.volume(newVolumeUp)
+            setVolumeIndicator({ show: true, volume: newVolumeUp * 100, muted: player.muted() })
             break
           case 'ArrowDown':
             e.preventDefault()
-            player.volume(Math.max(0, (player.volume() || 0) - 0.1))
+            const newVolumeDown = Math.max(0, (player.volume() || 0) - 0.1)
+            player.volume(newVolumeDown)
+            setVolumeIndicator({ show: true, volume: newVolumeDown * 100, muted: player.muted() })
             break
           case 'f':
             e.preventDefault()
@@ -125,9 +178,74 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
               player.requestFullscreen()
             }
             break
+          case 't':
+            // 剧场模式
+            e.preventDefault()
+            handleToggleTheaterMode()
+            break
+          case 'i':
+            // 迷你播放器
+            e.preventDefault()
+            handleToggleMiniPlayer()
+            break
           case 'm':
             e.preventDefault()
-            player.muted(!player.muted())
+            const wasMuted = player.muted()
+            player.muted(!wasMuted)
+            setVolumeIndicator({ 
+              show: true, 
+              volume: (player.volume() || 0) * 100, 
+              muted: !wasMuted 
+            })
+            break
+          case ',':
+            // 逐帧后退（暂停时）
+            if (player.paused()) {
+              e.preventDefault()
+              const frameTime = 1 / 30 // 假设30fps
+              player.currentTime((player.currentTime() || 0) - frameTime)
+            }
+            break
+          case '.':
+            // 逐帧前进（暂停时）
+            if (player.paused()) {
+              e.preventDefault()
+              const frameTime = 1 / 30 // 假设30fps
+              player.currentTime((player.currentTime() || 0) + frameTime)
+            }
+            break
+          case '<':
+            // 减慢播放速度
+            e.preventDefault()
+            {
+              const rates = [0.25, 0.5, 0.75, 1, 1.25, 1.5, 1.75, 2]
+              const currentRate = player.playbackRate()
+              const currentIndex = rates.findIndex(r => Math.abs(r - currentRate) < 0.01)
+              if (currentIndex > 0) {
+                const newRate = rates[currentIndex - 1]
+                player.playbackRate(newRate)
+                setPlaybackRate(newRate)
+                setShowPlaybackRateIndicator(true)
+              }
+            }
+            break
+          case '>':
+            // 加快播放速度
+            e.preventDefault()
+            {
+              const rates = [0.25, 0.5, 0.75, 1, 1.25, 1.5, 1.75, 2]
+              const currentRate = player.playbackRate()
+              const currentIndex = rates.findIndex(r => Math.abs(r - currentRate) < 0.01)
+              if (currentIndex < rates.length - 1 && currentIndex !== -1) {
+                const newRate = rates[currentIndex + 1]
+                player.playbackRate(newRate)
+                setPlaybackRate(newRate)
+                setShowPlaybackRateIndicator(true)
+              } else if (currentIndex === -1) {
+                player.playbackRate(1)
+                setPlaybackRate(1)
+              }
+            }
             break
           case '0':
           case '1':
@@ -158,6 +276,11 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
               subtitleTrack.mode = subtitleTrack.mode === 'showing' ? 'hidden' : 'showing'
             }
             break
+          case '?':
+            // 显示键盘快捷键帮助
+            e.preventDefault()
+            setShowKeyboardHelp(true)
+            break
         }
       })
 
@@ -185,9 +308,59 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
 
       // Fullscreen change tracking
       player.on('fullscreenchange', () => {
-        // Track fullscreen state changes if needed
         const isFullscreen = player.isFullscreen() || false
         console.log('Fullscreen:', isFullscreen)
+        
+        // Optimize subtitle position in fullscreen
+        const textTrackDisplay = player.el().querySelector('.vjs-text-track-display')
+        if (textTrackDisplay) {
+          if (isFullscreen) {
+            (textTrackDisplay as HTMLElement).style.fontSize = '1.5em'
+            (textTrackDisplay as HTMLElement).style.bottom = '80px'
+          } else {
+            (textTrackDisplay as HTMLElement).style.fontSize = ''
+            (textTrackDisplay as HTMLElement).style.bottom = ''
+          }
+        }
+        
+        // Ensure controls are visible when entering fullscreen
+        if (isFullscreen) {
+          const controlBar = player.controlBar?.el()
+          if (controlBar) {
+            controlBar.style.opacity = '1'
+            controlBar.style.visibility = 'visible'
+          }
+        }
+      })
+
+      // Playback rate change tracking
+      player.on('ratechange', () => {
+        const rate = player.playbackRate() || 1
+        setPlaybackRate(rate)
+        if (rate !== 1) {
+          setShowPlaybackRateIndicator(true)
+        }
+      })
+
+      // Buffering state tracking
+      player.on('waiting', () => {
+        console.log('Buffering...')
+        // The loading spinner is handled automatically by Video.js
+      })
+
+      player.on('canplay', () => {
+        console.log('Can play - buffering complete')
+      })
+
+      player.on('progress', () => {
+        // Track buffer progress
+        const buffered = player.buffered()
+        if (buffered.length > 0) {
+          const bufferedEnd = buffered.end(buffered.length - 1)
+          const duration = player.duration()
+          const bufferedPercent = (bufferedEnd / duration) * 100
+          console.log(`Buffered: ${bufferedPercent.toFixed(1)}%`)
+        }
       })
 
       // Quality selector (if multiple sources)
@@ -195,23 +368,197 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
 
       // Add custom controls
       const Button = videojs.getComponent('Button')
+      const MenuButton = videojs.getComponent('MenuButton')
+      const MenuItem = videojs.getComponent('MenuItem')
 
-      // Theater mode button
+      // Quality Selector Button (画质选择器)
+      class QualitySelector extends MenuButton {
+        constructor(player: any, options: any) {
+          super(player, options)
+          // @ts-ignore
+          this.controlText('Quality')
+          this.addClass('vjs-quality-selector')
+        }
+
+        createEl() {
+          const el = super.createEl()
+          // 添加设置图标 (齿轮图标)
+          el.innerHTML = `
+            <span class="vjs-icon-placeholder" aria-hidden="true">
+              <svg height="100%" version="1.1" viewBox="0 0 36 36" width="100%">
+                <path d="M 23.94,18.78 C 23.94,21.53 21.69,23.78 18.94,23.78 C 16.19,23.78 13.94,21.53 13.94,18.78 C 13.94,16.03 16.19,13.78 18.94,13.78 C 21.69,13.78 23.94,16.03 23.94,18.78 Z M 27.74,18.78 C 27.74,18.46 27.73,18.14 27.71,17.82 L 30.55,15.56 L 28.55,12.22 L 25.26,13.48 C 24.69,13.01 24.06,12.62 23.37,12.32 L 22.87,8.78 L 18.87,8.78 L 18.37,12.32 C 17.68,12.62 17.05,13.01 16.48,13.48 L 13.19,12.22 L 11.19,15.56 L 14.03,17.82 C 14.01,18.14 14,18.46 14,18.78 C 14,19.1 14.01,19.42 14.03,19.74 L 11.19,22 L 13.19,25.34 L 16.48,24.08 C 17.05,24.55 17.68,24.94 18.37,25.24 L 18.87,28.78 L 22.87,28.78 L 23.37,25.24 C 24.06,24.94 24.69,24.55 25.26,24.08 L 28.55,25.34 L 30.55,22 L 27.71,19.74 C 27.73,19.42 27.74,19.1 27.74,18.78 Z" fill="#fff"></path>
+              </svg>
+            </span>
+          `
+          return el
+        }
+
+        createItems() {
+          const qualities = ['自动', '1080p', '720p', '480p', '360p']
+          return qualities.map((quality) => {
+            const item = new MenuItem(this.player(), {
+              label: quality,
+              selectable: true,
+              selected: quality === '自动',
+            })
+
+            item.handleClick = () => {
+              // 处理画质切换
+              console.log('Selected quality:', quality)
+              // TODO: 集成 HLS quality selector
+            }
+
+            return item
+          })
+        }
+      }
+
+      // Theater mode button (影院模式)
       class TheaterButton extends Button {
         constructor(player: any, options: any) {
           super(player, options)
-          // @ts-ignore - videojs Button type is incomplete
-          this.controlText('Theater Mode')
+          // @ts-ignore
+          this.controlText('Theater mode')
+          this.addClass('vjs-theater-button')
+        }
+
+        buildCSSClass() {
+          return `vjs-theater-button ${super.buildCSSClass()}`
+        }
+
+        createEl() {
+          const el = super.createEl()
+          // 添加影院模式图标
+          el.innerHTML = `
+            <span class="vjs-icon-placeholder" aria-hidden="true">
+              <svg height="100%" version="1.1" viewBox="0 0 36 36" width="100%">
+                <path d="m 26,13 0,10 -16,0 0,-10 z m -14,2 12,0 0,6 -12,0 0,-6 z" fill="#fff"></path>
+              </svg>
+            </span>
+          `
+          return el
         }
 
         handleClick() {
           // Toggle theater mode
+          const currentState = !theaterMode
+          setTheaterMode(currentState)
           const playerEl = this.player().el()
-          playerEl.classList.toggle('vjs-theater-mode')
+          if (currentState) {
+            playerEl.classList.add('vjs-theater-mode')
+          } else {
+            playerEl.classList.remove('vjs-theater-mode')
+          }
         }
       }
 
+      videojs.registerComponent('QualitySelector', QualitySelector)
       videojs.registerComponent('TheaterButton', TheaterButton)
+
+      // 🆕 YouTube-style interactions
+      const playerEl = player.el()
+
+      // Double-click interactions: left 1/3 rewind, right 1/3 forward, center play/pause
+      const handleDoubleClick = (e: MouseEvent) => {
+        const rect = playerEl.getBoundingClientRect()
+        const clickX = e.clientX - rect.left
+        const width = rect.width
+        const clickPercentage = clickX / width
+
+        if (clickPercentage < 0.33) {
+          // Left 1/3 - rewind 10 seconds
+          player.currentTime((player.currentTime() || 0) - 10)
+          setSeekFeedback({ show: true, direction: 'backward', seconds: 10, position: 'left' })
+        } else if (clickPercentage > 0.67) {
+          // Right 1/3 - forward 10 seconds
+          player.currentTime((player.currentTime() || 0) + 10)
+          setSeekFeedback({ show: true, direction: 'forward', seconds: 10, position: 'right' })
+        } else {
+          // Center - toggle play/pause
+          if (player.paused()) {
+            player.play()
+          } else {
+            player.pause()
+          }
+        }
+      }
+
+      // Detect double-click
+      playerEl.addEventListener('click', (e: Event) => {
+        const mouseEvent = e as MouseEvent
+        const now = Date.now()
+        const timeSinceLastClick = now - lastClickTimeRef.current
+
+        if (timeSinceLastClick < 300) {
+          // Double-click detected
+          clickCountRef.current++
+          if (clickCountRef.current === 2) {
+            handleDoubleClick(mouseEvent)
+            clickCountRef.current = 0
+          }
+        } else {
+          clickCountRef.current = 1
+        }
+
+        lastClickTimeRef.current = now
+      })
+
+      // Wheel event for volume control
+      const handleWheel = (e: WheelEvent) => {
+        e.preventDefault()
+        const delta = e.deltaY > 0 ? -0.05 : 0.05 // Scroll down = decrease, scroll up = increase
+        const newVolume = Math.max(0, Math.min(1, (player.volume() || 0) + delta))
+        player.volume(newVolume)
+        setVolumeIndicator({ 
+          show: true, 
+          volume: newVolume * 100, 
+          muted: player.muted() 
+        })
+      }
+
+      playerEl.addEventListener('wheel', handleWheel, { passive: false })
+
+      // Control bar auto-hide (YouTube-style)
+      const handleMouseMove = () => {
+        const controlBar = player.controlBar?.el()
+        if (controlBar) {
+          controlBar.style.opacity = '1'
+          controlBar.style.visibility = 'visible'
+
+          if (controlBarTimeoutRef.current) {
+            clearTimeout(controlBarTimeoutRef.current)
+          }
+
+          controlBarTimeoutRef.current = setTimeout(() => {
+            if (!player.paused()) {
+              controlBar.style.opacity = '0'
+              controlBar.style.visibility = 'hidden'
+            }
+          }, 3000)
+        }
+      }
+
+      playerEl.addEventListener('mousemove', handleMouseMove)
+      playerEl.addEventListener('mouseleave', () => {
+        if (controlBarTimeoutRef.current) {
+          clearTimeout(controlBarTimeoutRef.current)
+        }
+      })
+
+      // Right-click context menu
+      const handleContextMenu = (e: MouseEvent) => {
+        e.preventDefault()
+        setContextMenu({
+          visible: true,
+          x: e.clientX,
+          y: e.clientY,
+        })
+      }
+
+      playerEl.addEventListener('contextmenu', handleContextMenu)
+
+      // Store player element for cleanup
+      player.playerElement = playerEl
     } else {
       // Update source if it changes
       const player = playerRef.current
@@ -223,6 +570,135 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
       }
     }
   }, [src, poster])
+
+  // Handlers for feedback components
+  const handleSeekFeedbackEnd = useCallback(() => {
+    setSeekFeedback(prev => ({ ...prev, show: false }))
+  }, [])
+
+  const handleVolumeIndicatorEnd = useCallback(() => {
+    setVolumeIndicator(prev => ({ ...prev, show: false }))
+  }, [])
+
+  // Context menu handlers (optimized with useCallback)
+  const handleCloseContextMenu = useCallback(() => {
+    setContextMenu({ visible: false, x: 0, y: 0 })
+  }, [])
+
+  const handleToggleLoop = useCallback(() => {
+    const player = playerRef.current
+    if (player) {
+      setLoopEnabled(prev => {
+        const newLoopState = !prev
+        player.loop(newLoopState)
+        return newLoopState
+      })
+    }
+  }, [])
+
+  const handleChangePlaybackRate = useCallback((rate: number) => {
+    const player = playerRef.current
+    if (player) {
+      player.playbackRate(rate)
+      setPlaybackRate(rate)
+      if (rate !== 1) {
+        setShowPlaybackRateIndicator(true)
+      }
+    }
+  }, [])
+
+  const handleChangeQuality = useCallback((quality: string) => {
+    // Quality change handled by HLS quality selector plugin
+    console.log('Change quality to:', quality)
+  }, [])
+
+  const handleCopyVideoUrl = useCallback(() => {
+    const url = window.location.href.split('?')[0] // Remove query params
+    navigator.clipboard.writeText(url).then(() => {
+      console.log('Video URL copied:', url)
+    })
+  }, [])
+
+  const handleCopyVideoUrlWithTime = useCallback(() => {
+    const player = playerRef.current
+    if (player) {
+      const currentTime = Math.floor(player.currentTime() || 0)
+      const url = `${window.location.href.split('?')[0]}?t=${currentTime}`
+      navigator.clipboard.writeText(url).then(() => {
+        console.log('Video URL with timestamp copied:', url)
+      })
+    }
+  }, [])
+
+  const handleToggleStats = useCallback(() => {
+    setShowStats(prev => !prev)
+  }, [])
+
+  const handleToggleMiniPlayer = useCallback(() => {
+    setMiniPlayer(prev => {
+      const newState = !prev
+      const player = playerRef.current
+      if (player) {
+        const playerEl = player.el()
+        if (newState) {
+          playerEl.classList.add('vjs-mini-player')
+        } else {
+          playerEl.classList.remove('vjs-mini-player')
+        }
+      }
+      return newState
+    })
+  }, [])
+
+  const handleToggleTheaterMode = useCallback(() => {
+    setTheaterMode(prev => {
+      const newState = !prev
+      const player = playerRef.current
+      if (player) {
+        const playerEl = player.el()
+        if (newState) {
+          playerEl.classList.add('vjs-theater-mode')
+        } else {
+          playerEl.classList.remove('vjs-theater-mode')
+        }
+      }
+      return newState
+    })
+  }, [])
+
+  const handleToggleFullscreen = useCallback(() => {
+    const player = playerRef.current
+    if (player) {
+      if (player.isFullscreen()) {
+        player.exitFullscreen()
+      } else {
+        player.requestFullscreen()
+      }
+    }
+  }, [])
+
+  // Close context menu on scroll or outside click
+  useEffect(() => {
+    const handleClickOutside = () => {
+      if (contextMenu.visible) {
+        handleCloseContextMenu()
+      }
+    }
+
+    const handleScroll = () => {
+      if (contextMenu.visible) {
+        handleCloseContextMenu()
+      }
+    }
+
+    document.addEventListener('click', handleClickOutside)
+    document.addEventListener('scroll', handleScroll)
+
+    return () => {
+      document.removeEventListener('click', handleClickOutside)
+      document.removeEventListener('scroll', handleScroll)
+    }
+  }, [contextMenu.visible])
 
   // 🆕 自动保存播放进度 (每10秒)
   useEffect(() => {
@@ -365,15 +841,76 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
     <div className="video-player-wrapper">
       <div ref={videoRef} className="video-player" />
 
+      {/* Seek Feedback (Double-click or J/L keys) */}
+      <SeekFeedback
+        show={seekFeedback.show}
+        direction={seekFeedback.direction}
+        seconds={seekFeedback.seconds}
+        position={seekFeedback.position}
+        onAnimationEnd={handleSeekFeedbackEnd}
+      />
+
+      {/* Volume Indicator */}
+      <VolumeIndicator
+        show={volumeIndicator.show}
+        volume={volumeIndicator.volume}
+        muted={volumeIndicator.muted}
+        onAnimationEnd={handleVolumeIndicatorEnd}
+      />
+
+      {/* Playback Rate Indicator */}
+      <PlaybackRateIndicator
+        rate={playbackRate}
+        show={showPlaybackRateIndicator}
+      />
+
+      {/* YouTube-style Context Menu */}
+      <ContextMenu
+        visible={contextMenu.visible}
+        x={contextMenu.x}
+        y={contextMenu.y}
+        onClose={handleCloseContextMenu}
+        loopEnabled={loopEnabled}
+        onToggleLoop={handleToggleLoop}
+        currentPlaybackRate={playerRef.current?.playbackRate() || 1}
+        onChangePlaybackRate={handleChangePlaybackRate}
+        currentQuality="Auto" // TODO: Get from HLS quality selector
+        onChangeQuality={handleChangeQuality}
+        onCopyVideoUrl={handleCopyVideoUrl}
+        onCopyVideoUrlWithTime={handleCopyVideoUrlWithTime}
+        onToggleStats={handleToggleStats}
+        onToggleMiniPlayer={handleToggleMiniPlayer}
+        onToggleTheaterMode={handleToggleTheaterMode}
+        onToggleFullscreen={handleToggleFullscreen}
+        isTheaterMode={theaterMode}
+        isFullscreen={playerRef.current?.isFullscreen() || false}
+      />
+
+      {/* Stats Panel (Stats for nerds) */}
+      {showStats && videoId && (
+        <StatsPanel
+          visible={showStats}
+          player={playerRef.current}
+          videoId={videoId}
+          onClose={() => setShowStats(false)}
+        />
+      )}
+
+      {/* Keyboard Shortcuts Help (? key) */}
+      <KeyboardShortcuts
+        visible={showKeyboardHelp}
+        onClose={() => setShowKeyboardHelp(false)}
+      />
+
       {/* Keyboard shortcuts hint */}
       <div className="keyboard-shortcuts-hint text-xs text-gray-400 mt-2">
-        <p>Keyboard shortcuts: Space/K = Play/Pause | ← → = Seek | ↑ ↓ = Volume | F = Fullscreen | M = Mute | 0-9 = Jump to % | C = Toggle Subtitles</p>
+        <p>按 ? 查看完整快捷键列表 | Space/K = 播放/暂停 | J/L = 快退/快进 | ↑↓ = 音量 | F = 全屏</p>
       </div>
 
       {/* Subtitle info */}
       {subtitles.length > 0 && (
         <div className="subtitle-info text-xs text-gray-500 mt-1">
-          <p>Available subtitles: {subtitles.map(s => s.language_name).join(', ')}</p>
+          <p>可用字幕: {subtitles.map(s => s.language_name).join(', ')}</p>
         </div>
       )}
     </div>
