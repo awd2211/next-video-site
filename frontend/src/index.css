@@ -7,20 +7,40 @@
   line-height: 1.5;
   font-weight: 400;
 
-  color-scheme: light dark;
-  color: rgba(255, 255, 255, 0.87);
-  background-color: #242424;
-
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
+/* Light mode colors */
+.light {
+  color-scheme: light;
+  --bg-primary: #ffffff;
+  --bg-secondary: #f3f4f6;
+  --bg-tertiary: #e5e7eb;
+  --text-primary: #111827;
+  --text-secondary: #6b7280;
+  --border-color: #d1d5db;
+}
+
+/* Dark mode colors (default) */
+.dark {
+  color-scheme: dark;
+  --bg-primary: #0f1419;
+  --bg-secondary: #1a1f2e;
+  --bg-tertiary: #242933;
+  --text-primary: #f9fafb;
+  --text-secondary: #9ca3af;
+  --border-color: #374151;
+}
+
 body {
   margin: 0;
   min-width: 320px;
   min-height: 100vh;
+  @apply bg-gray-900 text-white dark:bg-gray-900 dark:text-white light:bg-white light:text-gray-900;
+  transition: background-color 0.3s ease, color 0.3s ease;
 }
 
 @layer components {
@@ -33,7 +53,7 @@ body {
   }
 
   .card {
-    @apply bg-gray-800 rounded-lg shadow-lg overflow-hidden;
+    @apply bg-gray-800 dark:bg-gray-800 light:bg-white light:border light:border-gray-200 rounded-lg shadow-lg overflow-hidden transition-colors;
   }
 }
 
