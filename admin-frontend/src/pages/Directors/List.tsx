@@ -36,7 +36,7 @@ const DirectorsList = () => {
     queryKey: ['directors', page, pageSize],
     queryFn: async () => {
       const response = await axios.get(
-        `/api/v1/admin/directors?page=${page}&page_size=${pageSize}`
+        `/api/v1/admin/directors/?page=${page}&page_size=${pageSize}`
       )
       return response.data
     },
@@ -55,9 +55,9 @@ const DirectorsList = () => {
   const saveMutation = useMutation({
     mutationFn: async (values: any) => {
       if (editingDirector) {
-        return await axios.put(`/api/v1/admin/directors/${editingDirector.id}`, values)
+        return await axios.put(`/api/v1/admin/directors/${editingDirector.id}/`, values)
       } else {
-        return await axios.post('/api/v1/admin/directors', values)
+        return await axios.post('/api/v1/admin/directors/', values)
       }
     },
     onSuccess: () => {
@@ -75,7 +75,7 @@ const DirectorsList = () => {
   // Delete mutation
   const deleteMutation = useMutation({
     mutationFn: async (id: number) => {
-      await axios.delete(`/api/v1/admin/directors/${id}`)
+      await axios.delete(`/api/v1/admin/directors/${id}/`)
     },
     onSuccess: () => {
       message.success('删除成功')

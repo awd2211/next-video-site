@@ -38,7 +38,7 @@ const ActorsList = () => {
     queryKey: ['actors', page, pageSize],
     queryFn: async () => {
       const response = await axios.get(
-        `/api/v1/admin/actors?page=${page}&page_size=${pageSize}`
+        `/api/v1/admin/actors/?page=${page}&page_size=${pageSize}`
       )
       return response.data
     },
@@ -57,9 +57,9 @@ const ActorsList = () => {
   const saveMutation = useMutation({
     mutationFn: async (values: any) => {
       if (editingActor) {
-        return await axios.put(`/api/v1/admin/actors/${editingActor.id}`, values)
+        return await axios.put(`/api/v1/admin/actors/${editingActor.id}/`, values)
       } else {
-        return await axios.post('/api/v1/admin/actors', values)
+        return await axios.post('/api/v1/admin/actors/', values)
       }
     },
     onSuccess: () => {
@@ -77,7 +77,7 @@ const ActorsList = () => {
   // Delete mutation
   const deleteMutation = useMutation({
     mutationFn: async (id: number) => {
-      await axios.delete(`/api/v1/admin/actors/${id}`)
+      await axios.delete(`/api/v1/admin/actors/${id}/`)
     },
     onSuccess: () => {
       message.success('删除成功')
