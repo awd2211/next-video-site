@@ -1,20 +1,12 @@
 from datetime import datetime, timedelta, timezone
 from typing import Optional
-import sys
-import io
 
 from jose import JWTError, jwt
+from passlib.context import CryptContext
 
 from app.config import settings
 
-# Suppress bcrypt version warning by redirecting stderr during passlib import
-_old_stderr = sys.stderr
-try:
-    sys.stderr = io.StringIO()
-    from passlib.context import CryptContext
-    pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
-finally:
-    sys.stderr = _old_stderr
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
