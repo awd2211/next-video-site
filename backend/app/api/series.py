@@ -7,9 +7,9 @@ import math
 from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
-from sqlalchemy import and_, func, select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import joinedload, selectinload
+from sqlalchemy.orm import selectinload
 
 from app.database import get_db
 from app.models.series import Series, SeriesStatus, SeriesType, series_videos
@@ -63,7 +63,7 @@ async def get_series_list(
     # 计数
     count_query = select(func.count()).select_from(query.subquery())
     total_result = await db.execute(count_query)
-    total = total_result.scalar()
+    total = total_result.scalar() or 0
 
     # 排序和分页
     query = (
@@ -86,7 +86,7 @@ async def get_series_list(
         total=total,
         page=page,
         page_size=page_size,
-        pages=math.ceil(total / page_size) if page_size > 0 else 0,
+        pages=math.ceil(total / page_size) if page_size > 0 and total > 0 else 0,
         items=items,
     )
 
@@ -158,22 +158,24 @@ async def get_series_detail(
         for row in video_rows
     ]
 
-    response = SeriesDetailResponse(
-        id=series.id,
-        title=series.title,
-        description=series.description,
-        cover_image=series.cover_image,
-        type=series.type,
-        status=series.status,
-        total_episodes=series.total_episodes,
-        total_views=series.total_views,
-        total_favorites=series.total_favorites,
-        display_order=series.display_order,
-        is_featured=series.is_featured,
-        created_at=series.created_at,
-        updated_at=series.updated_at,
-        videos=videos,
-    )
+    # 使用 model_validate 构造响应以避免类型检查错误
+    series_data = {
+        "id": series.id,
+        "title": series.title,
+        "description": series.description,
+        "cover_image": series.cover_image,
+        "type": series.type,
+        "status": series.status,
+        "total_episodes": series.total_episodes,
+        "total_views": series.total_views,
+        "total_favorites": series.total_favorites,
+        "display_order": series.display_order,
+        "is_featured": series.is_featured,
+        "created_at": series.created_at,
+        "updated_at": series.updated_at,
+        "videos": videos,
+    }
+    response = SeriesDetailResponse(**series_data)
 
     # 缓存5分钟
     await Cache.set(cache_key, response, ttl=300)
@@ -203,7 +205,7 @@ async def get_featured_series(
 
     result = await db.execute(
         select(Series)
-        .filter(Series.status == SeriesStatus.PUBLISHED, Series.is_featured == True)
+        .filter(Series.status == SeriesStatus.PUBLISHED, Series.is_featured.is_(True))
         .order_by(Series.display_order.desc(), Series.created_at.desc())
         .limit(limit)
     )

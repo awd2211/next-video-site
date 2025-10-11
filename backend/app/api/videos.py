@@ -360,7 +360,7 @@ async def get_video_download_url(
         download_url = minio_client.get_presigned_url(
             object_name=object_name, expires=timedelta(hours=24)
         )
-    except Exception as e:
+    except Exception:
         # 不泄露详细错误信息
         raise HTTPException(status_code=500, detail="Failed to generate download URL")
 

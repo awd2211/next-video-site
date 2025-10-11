@@ -1,21 +1,17 @@
 {
-  "include": [
-    "app"
-  ],
+  "include": ["app"],
   "exclude": [
     "**/node_modules",
     "**/__pycache__",
-    "**/.*"
+    "**/venv",
+    "**/.venv",
+    "alembic/versions"
   ],
   "venvPath": ".",
   "venv": "venv",
-  "pythonVersion": "3.12",
-  "pythonPlatform": "Linux",
-  "typeCheckingMode": "basic",
   "reportMissingImports": true,
   "reportMissingTypeStubs": false,
-  "reportUnknownMemberType": false,
-  "reportUnknownVariableType": false,
-  "reportUnknownArgumentType": false,
-  "stubPath": "typings"
+  "pythonVersion": "3.12",
+  "pythonPlatform": "Linux",
+  "typeCheckingMode": "basic"
 }

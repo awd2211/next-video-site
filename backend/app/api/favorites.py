@@ -75,7 +75,7 @@ async def add_favorite(
             select(FavoriteFolder).where(
                 and_(
                     FavoriteFolder.user_id == current_user.id,
-                    FavoriteFolder.is_default == True,
+                    FavoriteFolder.is_default.is_(True),
                 )
             )
         )
@@ -103,10 +103,10 @@ async def add_favorite(
     db.add(favorite)
 
     # Update video favorite count
-    video.favorite_count += 1
+    video.favorite_count += 1  # type: ignore[assignment]
 
     # Update folder video count
-    folder.video_count += 1
+    folder.video_count += 1  # type: ignore[assignment]
 
     await db.commit()
     await db.refresh(favorite)
@@ -137,8 +137,8 @@ async def remove_favorite(
     # Update video favorite count
     video_result = await db.execute(select(Video).where(Video.id == video_id))
     video = video_result.scalar_one_or_none()
-    if video and video.favorite_count > 0:
-        video.favorite_count -= 1
+    if video is not None and video.favorite_count > 0:  # type: ignore[misc]
+        video.favorite_count -= 1  # type: ignore[assignment]
 
     # Update folder video count
     if favorite.folder_id:
@@ -146,8 +146,8 @@ async def remove_favorite(
             select(FavoriteFolder).where(FavoriteFolder.id == favorite.folder_id)
         )
         folder = folder_result.scalar_one_or_none()
-        if folder and folder.video_count > 0:
-            folder.video_count -= 1
+        if folder is not None and folder.video_count > 0:  # type: ignore[misc]
+            folder.video_count -= 1  # type: ignore[assignment]
 
     await db.delete(favorite)
     await db.commit()
@@ -166,7 +166,7 @@ async def get_my_favorites(
     # Count total
     count_query = select(func.count()).where(Favorite.user_id == current_user.id)
     total_result = await db.execute(count_query)
-    total = total_result.scalar()
+    total = total_result.scalar() or 0
 
     # Get paginated favorites with video details
     query = (
@@ -187,7 +187,7 @@ async def get_my_favorites(
         total=total,
         page=page,
         page_size=page_size,
-        pages=math.ceil(total / page_size) if page_size > 0 else 0,
+        pages=math.ceil(total / page_size) if page_size > 0 and total > 0 else 0,
         items=items,
     )
 
