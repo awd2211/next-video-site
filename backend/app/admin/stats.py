@@ -29,15 +29,15 @@ async def admin_get_overview_stats(
 
     # Count users
     user_count_result = await db.execute(select(func.count()).select_from(User))
-    user_count = user_count_result.scalar()
+    user_count = user_count_result.scalar() or 0
 
     # Count videos
     video_count_result = await db.execute(select(func.count()).select_from(Video))
-    video_count = video_count_result.scalar()
+    video_count = video_count_result.scalar() or 0
 
     # Count comments
     comment_count_result = await db.execute(select(func.count()).select_from(Comment))
-    comment_count = comment_count_result.scalar()
+    comment_count = comment_count_result.scalar() or 0
 
     # Total views
     view_count_result = await db.execute(select(func.sum(Video.view_count)))

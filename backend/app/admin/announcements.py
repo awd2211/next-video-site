@@ -73,7 +73,7 @@ async def get_announcements(
     # Count total
     count_query = select(func.count()).select_from(query.subquery())
     result = await db.execute(count_query)
-    total = result.scalar()
+    total = result.scalar() or 0
 
     # Pagination
     query = query.offset((page - 1) * page_size).limit(page_size)

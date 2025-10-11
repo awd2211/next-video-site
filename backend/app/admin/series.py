@@ -394,7 +394,7 @@ async def admin_remove_videos_from_series(
         )
     )
     result = await db.execute(delete_stmt)
-    removed_count = result.rowcount
+    removed_count = result.rowcount  # type: ignore[attr-defined]
 
     # 更新专辑统计
     series.total_episodes -= removed_count

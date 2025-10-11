@@ -56,7 +56,7 @@ async def admin_list_videos(
     # Count total
     count_query = select(func.count()).select_from(query.subquery())
     result = await db.execute(count_query)
-    total = result.scalar()
+    total = result.scalar() or 0
 
     # Sort and paginate
     query = query.order_by(desc(Video.created_at))

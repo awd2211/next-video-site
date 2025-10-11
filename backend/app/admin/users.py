@@ -19,7 +19,7 @@ async def admin_list_users(
     """Admin: Get all users"""
     query = select(User)
     count_result = await db.execute(select(func.count()).select_from(User))
-    total = count_result.scalar()
+    total = count_result.scalar() or 0
 
     offset = (page - 1) * page_size
     query = query.offset(offset).limit(page_size)

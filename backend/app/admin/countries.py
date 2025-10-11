@@ -1,3 +1,5 @@
+import math
+
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -33,7 +35,7 @@ async def get_countries(
     # Count total
     count_query = select(func.count()).select_from(query.subquery())
     total_result = await db.execute(count_query)
-    total = total_result.scalar()
+    total = total_result.scalar() or 0
 
     # Get paginated results
     query = query.order_by(Country.name).offset((page - 1) * page_size).limit(page_size)
@@ -44,7 +46,11 @@ async def get_countries(
     items = [CountryResponse.model_validate(country) for country in countries]
 
     return PaginatedCountryResponse(
-        total=total, page=page, page_size=page_size, items=items
+        total=total,
+        page=page,
+        page_size=page_size,
+        pages=math.ceil(total / page_size) if page_size > 0 and total > 0 else 0,
+        items=items,
     )
 
 

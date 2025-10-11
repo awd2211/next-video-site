@@ -2,6 +2,7 @@ import csv
 import io
 import json
 from datetime import datetime, timedelta, timezone
+from typing import Optional
 
 from fastapi import APIRouter, Depends, Query, Request
 from fastapi.responses import StreamingResponse
@@ -23,8 +24,8 @@ async def create_operation_log(
     module: str,
     action: str,
     description: str,
-    request: Request = None,
-    request_data: dict = None,
+    request: Optional[Request] = None,
+    request_data: Optional[dict] = None,
 ):
     """创建操作日志的辅助函数"""
     log = OperationLog(
@@ -93,7 +94,7 @@ async def get_operation_logs(
 
     # 获取总数
     count_result = await db.execute(select(func.count()).select_from(query.subquery()))
-    total = count_result.scalar()
+    total = count_result.scalar() or 0
 
     # 分页和排序
     offset = (page - 1) * page_size
@@ -212,7 +213,7 @@ async def cleanup_old_logs(
         .select_from(OperationLog)
         .filter(OperationLog.created_at < cutoff_date)
     )
-    delete_count = count_result.scalar()
+    delete_count = count_result.scalar() or 0
 
     # 删除旧日志
     from sqlalchemy import delete as sql_delete

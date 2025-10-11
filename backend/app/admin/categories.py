@@ -1,3 +1,5 @@
+import math
+
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -38,7 +40,7 @@ async def get_categories(
     # Count total
     count_query = select(func.count()).select_from(query.subquery())
     total_result = await db.execute(count_query)
-    total = total_result.scalar()
+    total = total_result.scalar() or 0
 
     # Get paginated results
     query = (
@@ -53,7 +55,11 @@ async def get_categories(
     items = [CategoryResponse.model_validate(cat) for cat in categories]
 
     return PaginatedCategoryResponse(
-        total=total, page=page, page_size=page_size, items=items
+        total=total,
+        page=page,
+        page_size=page_size,
+        pages=math.ceil(total / page_size) if page_size > 0 and total > 0 else 0,
+        items=items,
     )
 
 
@@ -214,7 +220,7 @@ async def delete_category(
     children_result = await db.execute(
         select(func.count()).where(Category.parent_id == category_id)
     )
-    children_count = children_result.scalar()
+    children_count = children_result.scalar() or 0
 
     if children_count > 0:
         raise HTTPException(

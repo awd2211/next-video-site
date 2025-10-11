@@ -44,7 +44,7 @@ async def admin_list_comments(
 
     # Get total count
     count_result = await db.execute(select(func.count()).select_from(query.subquery()))
-    total = count_result.scalar()
+    total = count_result.scalar() or 0
 
     # Apply pagination
     offset = (page - 1) * page_size
@@ -70,7 +70,7 @@ async def admin_list_pending_comments(
     )
 
     count_result = await db.execute(select(func.count()).select_from(query.subquery()))
-    total = count_result.scalar()
+    total = count_result.scalar() or 0
 
     offset = (page - 1) * page_size
     query = query.order_by(Comment.created_at.desc()).offset(offset).limit(page_size)

@@ -35,47 +35,47 @@ async def get_danmaku_stats(
     """获取弹幕统计"""
     # 总数
     total_result = await db.execute(select(func.count(Danmaku.id)))
-    total = total_result.scalar()
+    total = total_result.scalar() or 0
 
     # 各状态统计
     pending_result = await db.execute(
         select(func.count(Danmaku.id)).filter(Danmaku.status == DanmakuStatus.PENDING)
     )
-    pending = pending_result.scalar()
+    pending = pending_result.scalar() or 0
 
     approved_result = await db.execute(
         select(func.count(Danmaku.id)).filter(Danmaku.status == DanmakuStatus.APPROVED)
     )
-    approved = approved_result.scalar()
+    approved = approved_result.scalar() or 0
 
     rejected_result = await db.execute(
         select(func.count(Danmaku.id)).filter(Danmaku.status == DanmakuStatus.REJECTED)
     )
-    rejected = rejected_result.scalar()
+    rejected = rejected_result.scalar() or 0
 
     deleted_result = await db.execute(
         select(func.count(Danmaku.id)).filter(Danmaku.status == DanmakuStatus.DELETED)
     )
-    deleted = deleted_result.scalar()
+    deleted = deleted_result.scalar() or 0
 
     # 被屏蔽统计
     blocked_result = await db.execute(
         select(func.count(Danmaku.id)).filter(Danmaku.is_blocked.is_(True))
     )
-    blocked = blocked_result.scalar()
+    blocked = blocked_result.scalar() or 0
 
     # 今日弹幕数
     today = datetime.now(timezone.utc).date()
     today_result = await db.execute(
         select(func.count(Danmaku.id)).filter(func.date(Danmaku.created_at) == today)
     )
-    today_count = today_result.scalar()
+    today_count = today_result.scalar() or 0
 
     # 被举报弹幕数 (举报次数 > 0)
     reported_result = await db.execute(
         select(func.count(Danmaku.id)).filter(Danmaku.report_count > 0)
     )
-    reported_count = reported_result.scalar()
+    reported_count = reported_result.scalar() or 0
 
     return DanmakuStatsResponse(
         total=total,
@@ -150,7 +150,7 @@ async def search_danmaku(
         count_query = count_query.filter(Danmaku.created_at <= search_params.end_date)
 
     total_result = await db.execute(count_query)
-    total = total_result.scalar()
+    total = total_result.scalar() or 0
 
     # 分页和排序
     query = query.order_by(Danmaku.created_at.desc())
@@ -199,7 +199,7 @@ async def review_danmaku(
     result = await db.execute(
         select(func.count(Danmaku.id)).filter(Danmaku.id.in_(review_action.danmaku_ids))
     )
-    count = result.scalar()
+    count = result.scalar() or 0
 
     if count != len(review_action.danmaku_ids):
         raise HTTPException(

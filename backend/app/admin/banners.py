@@ -75,7 +75,7 @@ async def get_banners(
 
     # Get total count
     count_result = await db.execute(select(func.count()).select_from(query.subquery()))
-    total = count_result.scalar()
+    total = count_result.scalar() or 0
 
     # Get paginated results
     query = query.offset((page - 1) * page_size).limit(page_size)
@@ -87,7 +87,7 @@ async def get_banners(
         "total": total,
         "page": page,
         "page_size": page_size,
-        "total_pages": (total + page_size - 1) // page_size,
+        "total_pages": (total + page_size - 1) // page_size if page_size > 0 else 0,
     }
 
 
