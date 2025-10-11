@@ -1,6 +1,7 @@
-from sqlalchemy import Column, Integer, String, Boolean, DateTime, ForeignKey, Text
-from sqlalchemy.sql import func
+from sqlalchemy import Boolean, Column, DateTime, ForeignKey, Integer, String, Text
 from sqlalchemy.orm import relationship
+from sqlalchemy.sql import func
+
 from app.database import Base
 
 
@@ -24,14 +25,30 @@ class User(Base):
     last_login_at = Column(DateTime(timezone=True), nullable=True)
 
     # Relationships
-    comments = relationship("Comment", back_populates="user", cascade="all, delete-orphan")
-    ratings = relationship("Rating", back_populates="user", cascade="all, delete-orphan")
-    favorites = relationship("Favorite", back_populates="user", cascade="all, delete-orphan")
-    favorite_folders = relationship("FavoriteFolder", back_populates="user", cascade="all, delete-orphan")  # 🆕 收藏夹分组
-    watch_history = relationship("WatchHistory", back_populates="user", cascade="all, delete-orphan")
-    reports = relationship("Report", back_populates="user", cascade="all, delete-orphan")
-    danmaku_list = relationship("Danmaku", back_populates="user", cascade="all, delete-orphan")  # 🆕 弹幕
-    shares = relationship("VideoShare", back_populates="user", cascade="all, delete-orphan")  # 🆕 分享
+    comments = relationship(
+        "Comment", back_populates="user", cascade="all, delete-orphan"
+    )
+    ratings = relationship(
+        "Rating", back_populates="user", cascade="all, delete-orphan"
+    )
+    favorites = relationship(
+        "Favorite", back_populates="user", cascade="all, delete-orphan"
+    )
+    favorite_folders = relationship(
+        "FavoriteFolder", back_populates="user", cascade="all, delete-orphan"
+    )  # 🆕 收藏夹分组
+    watch_history = relationship(
+        "WatchHistory", back_populates="user", cascade="all, delete-orphan"
+    )
+    reports = relationship(
+        "Report", back_populates="user", cascade="all, delete-orphan"
+    )
+    danmaku_list = relationship(
+        "Danmaku", back_populates="user", cascade="all, delete-orphan"
+    )  # 🆕 弹幕
+    shares = relationship(
+        "VideoShare", back_populates="user", cascade="all, delete-orphan"
+    )  # 🆕 分享
 
 
 class AdminUser(Base):
@@ -47,11 +64,15 @@ class AdminUser(Base):
     avatar = Column(String(500))
     is_active = Column(Boolean, default=True)
     is_superadmin = Column(Boolean, default=False)
-    role_id = Column(Integer, ForeignKey("roles.id", ondelete="SET NULL"), nullable=True)
+    role_id = Column(
+        Integer, ForeignKey("roles.id", ondelete="SET NULL"), nullable=True
+    )
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
     last_login_at = Column(DateTime(timezone=True), nullable=True)
 
     # Relationships
     role = relationship("Role", back_populates="admin_users")
-    operation_logs = relationship("OperationLog", back_populates="admin_user", cascade="all, delete-orphan")
+    operation_logs = relationship(
+        "OperationLog", back_populates="admin_user", cascade="all, delete-orphan"
+    )

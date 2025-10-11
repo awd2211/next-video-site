@@ -1,20 +1,22 @@
+import enum
+
 from sqlalchemy import (
+    BigInteger,
+    Boolean,
     Column,
+    DateTime,
+    Enum,
+    Float,
+    ForeignKey,
     Integer,
     String,
     Text,
-    Float,
-    DateTime,
-    ForeignKey,
-    Boolean,
-    Enum,
-    BigInteger,
 )
 from sqlalchemy.dialects.postgresql import JSONB, TSVECTOR
-from sqlalchemy.sql import func
 from sqlalchemy.orm import relationship
+from sqlalchemy.sql import func
+
 from app.database import Base
-import enum
 
 
 class VideoType(str, enum.Enum):

@@ -2,15 +2,16 @@
 推荐系统 API 端点
 """
 
+from typing import List, Optional
+
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
-from typing import Optional, List
 
 from app.database import get_db
 from app.models.user import User
+from app.schemas.video import VideoListResponse
 from app.utils.dependencies import get_current_user_optional
 from app.utils.recommendation_engine import RecommendationEngine
-from app.schemas.video import VideoListResponse
 
 router = APIRouter()
 
@@ -32,7 +33,9 @@ async def get_personalized_recommendations(
     exclude_video_ids = []
     if exclude_ids:
         try:
-            exclude_video_ids = [int(id.strip()) for id in exclude_ids.split(',') if id.strip()]
+            exclude_video_ids = [
+                int(id.strip()) for id in exclude_ids.split(",") if id.strip()
+            ]
         except ValueError:
             pass
 
@@ -42,9 +45,7 @@ async def get_personalized_recommendations(
     # 获取推荐
     user_id = current_user.id if current_user else None
     recommended_videos = await engine.get_personalized_recommendations(
-        user_id=user_id,
-        limit=limit,
-        exclude_video_ids=exclude_video_ids
+        user_id=user_id, limit=limit, exclude_video_ids=exclude_video_ids
     )
 
     return [VideoListResponse.model_validate(v) for v in recommended_videos]
@@ -72,7 +73,9 @@ async def get_similar_videos(
     exclude_video_ids = []
     if exclude_ids:
         try:
-            exclude_video_ids = [int(id.strip()) for id in exclude_ids.split(',') if id.strip()]
+            exclude_video_ids = [
+                int(id.strip()) for id in exclude_ids.split(",") if id.strip()
+            ]
         except ValueError:
             pass
 
@@ -81,9 +84,7 @@ async def get_similar_videos(
 
     # 获取相似视频
     similar_videos = await engine.get_similar_videos(
-        video_id=video_id,
-        limit=limit,
-        exclude_video_ids=exclude_video_ids
+        video_id=video_id, limit=limit, exclude_video_ids=exclude_video_ids
     )
 
     return [VideoListResponse.model_validate(v) for v in similar_videos]
@@ -104,9 +105,7 @@ async def get_for_you_recommendations(
     user_id = current_user.id if current_user else None
 
     recommended_videos = await engine.get_personalized_recommendations(
-        user_id=user_id,
-        limit=limit,
-        exclude_video_ids=[]
+        user_id=user_id, limit=limit, exclude_video_ids=[]
     )
 
     return [VideoListResponse.model_validate(v) for v in recommended_videos]

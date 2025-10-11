@@ -2,11 +2,13 @@
 WebSocket连接管理器
 用于实时通知推送 (转码进度、系统消息等)
 """
-from typing import Dict, List, Set
-from fastapi import WebSocket
+
 import json
 import logging
 from datetime import datetime
+from typing import Dict, List, Set
+
+from fastapi import WebSocket
 
 logger = logging.getLogger(__name__)
 
@@ -20,7 +22,9 @@ class ConnectionManager:
         # 管理员连接 (不区分user_id)
         self.admin_connections: Set[WebSocket] = set()
 
-    async def connect(self, websocket: WebSocket, user_id: int = None, is_admin: bool = False):
+    async def connect(
+        self, websocket: WebSocket, user_id: int = None, is_admin: bool = False
+    ):
         """
         建立WebSocket连接
 
@@ -33,14 +37,20 @@ class ConnectionManager:
 
         if is_admin:
             self.admin_connections.add(websocket)
-            logger.info(f"✅ Admin WebSocket连接已建立, 当前管理员连接数: {len(self.admin_connections)}")
+            logger.info(
+                f"✅ Admin WebSocket连接已建立, 当前管理员连接数: {len(self.admin_connections)}"
+            )
         elif user_id:
             if user_id not in self.active_connections:
                 self.active_connections[user_id] = []
             self.active_connections[user_id].append(websocket)
-            logger.info(f"✅ User {user_id} WebSocket连接已建立, 该用户连接数: {len(self.active_connections[user_id])}")
+            logger.info(
+                f"✅ User {user_id} WebSocket连接已建立, 该用户连接数: {len(self.active_connections[user_id])}"
+            )
 
-    def disconnect(self, websocket: WebSocket, user_id: int = None, is_admin: bool = False):
+    def disconnect(
+        self, websocket: WebSocket, user_id: int = None, is_admin: bool = False
+    ):
         """
         断开WebSocket连接
 
@@ -51,7 +61,9 @@ class ConnectionManager:
         """
         if is_admin and websocket in self.admin_connections:
             self.admin_connections.remove(websocket)
-            logger.info(f"❌ Admin WebSocket连接已断开, 剩余管理员连接数: {len(self.admin_connections)}")
+            logger.info(
+                f"❌ Admin WebSocket连接已断开, 剩余管理员连接数: {len(self.admin_connections)}"
+            )
         elif user_id and user_id in self.active_connections:
             if websocket in self.active_connections[user_id]:
                 self.active_connections[user_id].remove(websocket)
@@ -144,7 +156,7 @@ class ConnectionManager:
             "total_users": len(self.active_connections),
             "total_user_connections": user_count,
             "total_admin_connections": len(self.admin_connections),
-            "total_connections": user_count + len(self.admin_connections)
+            "total_connections": user_count + len(self.admin_connections),
         }
 
 
@@ -157,10 +169,7 @@ class NotificationService:
 
     @staticmethod
     async def notify_transcode_progress(
-        video_id: int,
-        status: str,
-        progress: int,
-        message: str = None
+        video_id: int, status: str, progress: int, message: str = None
     ):
         """
         通知转码进度更新
@@ -177,19 +186,18 @@ class NotificationService:
             "status": status,
             "progress": progress,
             "message": message,
-            "timestamp": datetime.now().isoformat()
+            "timestamp": datetime.now().isoformat(),
         }
 
         # 发送给所有管理员
         await manager.send_admin_message(notification)
-        logger.info(f"📡 转码进度通知已发送: video_id={video_id}, status={status}, progress={progress}%")
+        logger.info(
+            f"📡 转码进度通知已发送: video_id={video_id}, status={status}, progress={progress}%"
+        )
 
     @staticmethod
     async def notify_transcode_complete(
-        video_id: int,
-        title: str,
-        format_type: str,
-        file_size: int
+        video_id: int, title: str, format_type: str, file_size: int
     ):
         """
         通知转码完成
@@ -206,18 +214,14 @@ class NotificationService:
             "title": title,
             "format_type": format_type,
             "file_size": file_size,
-            "timestamp": datetime.now().isoformat()
+            "timestamp": datetime.now().isoformat(),
         }
 
         await manager.send_admin_message(notification)
         logger.info(f"✅ 转码完成通知已发送: video_id={video_id}, format={format_type}")
 
     @staticmethod
-    async def notify_transcode_failed(
-        video_id: int,
-        title: str,
-        error: str
-    ):
+    async def notify_transcode_failed(video_id: int, title: str, error: str):
         """
         通知转码失败
 
@@ -231,7 +235,7 @@ class NotificationService:
             "video_id": video_id,
             "title": title,
             "error": error,
-            "timestamp": datetime.now().isoformat()
+            "timestamp": datetime.now().isoformat(),
         }
 
         await manager.send_admin_message(notification)
@@ -239,9 +243,7 @@ class NotificationService:
 
     @staticmethod
     async def notify_system_message(
-        message: str,
-        level: str = "info",
-        target: str = "admin"
+        message: str, level: str = "info", target: str = "admin"
     ):
         """
         发送系统消息
@@ -255,7 +257,7 @@ class NotificationService:
             "type": "system_message",
             "message": message,
             "level": level,
-            "timestamp": datetime.now().isoformat()
+            "timestamp": datetime.now().isoformat(),
         }
 
         if target == "admin":
@@ -265,7 +267,9 @@ class NotificationService:
         elif isinstance(target, int):
             await manager.send_personal_message(notification, target)
 
-        logger.info(f"📢 系统消息已发送: message={message}, level={level}, target={target}")
+        logger.info(
+            f"📢 系统消息已发送: message={message}, level={level}, target={target}"
+        )
 
 
 # 全局通知服务实例

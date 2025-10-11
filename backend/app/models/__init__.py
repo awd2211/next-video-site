@@ -1,15 +1,30 @@
-from app.models.user import User, AdminUser
-from app.models.video import Video, Category, Country, Tag, Actor, Director
-from app.models.video import VideoCategory, VideoTag, VideoActor, VideoDirector
+from app.models.admin import OperationLog, Permission, Role, RolePermission
 from app.models.comment import Comment, Rating
-from app.models.user_activity import Favorite, WatchHistory
+from app.models.content import Announcement, Banner, Recommendation, Report
+from app.models.danmaku import (  # 🆕 弹幕系统
+    BlockedWord,
+    Danmaku,
+    DanmakuStatus,
+    DanmakuType,
+)
 from app.models.favorite_folder import FavoriteFolder  # 🆕 收藏夹分组
-from app.models.danmaku import Danmaku, BlockedWord, DanmakuType, DanmakuStatus  # 🆕 弹幕系统
-from app.models.share import VideoShare, SharePlatform  # 🆕 分享系统
-from app.models.series import Series, SeriesType, SeriesStatus  # 🆕 视频系列/专辑
-from app.models.admin import Role, Permission, RolePermission, OperationLog
-from app.models.content import Banner, Recommendation, Announcement, Report
+from app.models.series import Series, SeriesStatus, SeriesType  # 🆕 视频系列/专辑
 from app.models.settings import SystemSettings
+from app.models.share import SharePlatform, VideoShare  # 🆕 分享系统
+from app.models.user import AdminUser, User
+from app.models.user_activity import Favorite, WatchHistory
+from app.models.video import (
+    Actor,
+    Category,
+    Country,
+    Director,
+    Tag,
+    Video,
+    VideoActor,
+    VideoCategory,
+    VideoDirector,
+    VideoTag,
+)
 
 __all__ = [
     "User",

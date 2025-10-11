@@ -1,52 +1,56 @@
 """
 弹幕API - 公共接口
 """
-from fastapi import APIRouter, Depends, HTTPException, status, Query, Request
-from sqlalchemy import select, func, and_, or_
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import selectinload
-from typing import List, Optional
-import re
+
 import asyncio
 import logging
+import re
+from typing import List, Optional
+
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
+from sqlalchemy import and_, func, or_, select
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
 from app.database import get_db
-from app.models.danmaku import Danmaku, BlockedWord, DanmakuStatus, DanmakuType
+from app.models.danmaku import BlockedWord, Danmaku, DanmakuStatus, DanmakuType
 from app.models.user import User
 from app.models.video import Video
 from app.schemas.danmaku import (
     DanmakuCreate,
-    DanmakuResponse,
     DanmakuListResponse,
+    DanmakuResponse,
 )
 from app.utils.dependencies import get_current_active_user
-from app.utils.rate_limit import limiter, RateLimitPresets
+from app.utils.rate_limit import RateLimitPresets, limiter
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
 
 
-async def check_regex_with_timeout(pattern: str, text: str, timeout: float = 1.0) -> bool:
+async def check_regex_with_timeout(
+    pattern: str, text: str, timeout: float = 1.0
+) -> bool:
     """
     在超时限制内执行正则匹配，防止ReDoS攻击
-    
+
     Args:
         pattern: 正则表达式
         text: 待匹配文本
         timeout: 超时时间（秒）
-    
+
     Returns:
         是否匹配（超时返回False）
     """
+
     def regex_match():
         return re.search(pattern, text, re.IGNORECASE) is not None
-    
+
     try:
         # 使用asyncio.wait_for设置超时
         loop = asyncio.get_event_loop()
         result = await asyncio.wait_for(
-            loop.run_in_executor(None, regex_match),
-            timeout=timeout
+            loop.run_in_executor(None, regex_match), timeout=timeout
         )
         return result
     except asyncio.TimeoutError:
@@ -93,15 +97,13 @@ async def send_danmaku(
     # 验证视频存在
     video_result = await db.execute(
         select(Video).filter(
-            Video.id == danmaku_data.video_id,
-            Video.status == "published"
+            Video.id == danmaku_data.video_id, Video.status == "published"
         )
     )
     video = video_result.scalar_one_or_none()
     if not video:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="视频不存在或未发布"
+            status_code=status.HTTP_404_NOT_FOUND, detail="视频不存在或未发布"
         )
 
     # 检查屏蔽词
@@ -144,7 +146,7 @@ async def get_video_danmaku(
     query = select(Danmaku).filter(
         Danmaku.video_id == video_id,
         Danmaku.status == DanmakuStatus.APPROVED,
-        Danmaku.is_blocked == False
+        Danmaku.is_blocked == False,
     )
 
     # 时间段筛选
@@ -157,10 +159,14 @@ async def get_video_danmaku(
     query = query.order_by(Danmaku.time.asc())
 
     # 查询总数
-    count_query = select(func.count()).select_from(Danmaku).filter(
-        Danmaku.video_id == video_id,
-        Danmaku.status == DanmakuStatus.APPROVED,
-        Danmaku.is_blocked == False
+    count_query = (
+        select(func.count())
+        .select_from(Danmaku)
+        .filter(
+            Danmaku.video_id == video_id,
+            Danmaku.status == DanmakuStatus.APPROVED,
+            Danmaku.is_blocked == False,
+        )
     )
     if start_time is not None:
         count_query = count_query.filter(Danmaku.time >= start_time)
@@ -175,8 +181,7 @@ async def get_video_danmaku(
     danmaku_list = result.scalars().all()
 
     return DanmakuListResponse(
-        total=total,
-        items=[DanmakuResponse.model_validate(d) for d in danmaku_list]
+        total=total, items=[DanmakuResponse.model_validate(d) for d in danmaku_list]
     )
 
 
@@ -193,16 +198,14 @@ async def delete_my_danmaku(
     """
     result = await db.execute(
         select(Danmaku).filter(
-            Danmaku.id == danmaku_id,
-            Danmaku.user_id == current_user.id
+            Danmaku.id == danmaku_id, Danmaku.user_id == current_user.id
         )
     )
     danmaku = result.scalar_one_or_none()
 
     if not danmaku:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="弹幕不存在或无权删除"
+            status_code=status.HTTP_404_NOT_FOUND, detail="弹幕不存在或无权删除"
         )
 
     await db.delete(danmaku)
@@ -222,16 +225,11 @@ async def report_danmaku(
 
     - 举报次数达到阈值后自动屏蔽
     """
-    result = await db.execute(
-        select(Danmaku).filter(Danmaku.id == danmaku_id)
-    )
+    result = await db.execute(select(Danmaku).filter(Danmaku.id == danmaku_id))
     danmaku = result.scalar_one_or_none()
 
     if not danmaku:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="弹幕不存在"
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="弹幕不存在")
 
     # 增加举报次数
     danmaku.report_count += 1

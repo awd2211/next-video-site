@@ -1,14 +1,16 @@
+from datetime import datetime, timedelta, timezone
+
 from fastapi import APIRouter, Depends, Query
+from sqlalchemy import and_, extract, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, func, extract, and_
+
 from app.database import get_db, get_pool_status
-from app.models.user import User, AdminUser
-from app.models.video import Video, Category
 from app.models.comment import Comment
-from app.utils.dependencies import get_current_admin_user
+from app.models.user import AdminUser, User
+from app.models.video import Category, Video
 from app.utils.cache import Cache, CacheStats
 from app.utils.cache_warmer import CacheWarmer
-from datetime import datetime, timedelta, timezone
+from app.utils.dependencies import get_current_admin_user
 
 router = APIRouter()
 
@@ -72,8 +74,7 @@ async def admin_get_trend_stats(
     # User registration trend
     user_trend = await db.execute(
         select(
-            func.date(User.created_at).label("date"),
-            func.count(User.id).label("count")
+            func.date(User.created_at).label("date"), func.count(User.id).label("count")
         )
         .where(User.created_at >= thirty_days_ago)
         .group_by(func.date(User.created_at))
@@ -88,7 +89,7 @@ async def admin_get_trend_stats(
     video_trend = await db.execute(
         select(
             func.date(Video.created_at).label("date"),
-            func.count(Video.id).label("count")
+            func.count(Video.id).label("count"),
         )
         .where(Video.created_at >= thirty_days_ago)
         .group_by(func.date(Video.created_at))
@@ -103,7 +104,7 @@ async def admin_get_trend_stats(
     comment_trend = await db.execute(
         select(
             func.date(Comment.created_at).label("date"),
-            func.count(Comment.id).label("count")
+            func.count(Comment.id).label("count"),
         )
         .where(Comment.created_at >= thirty_days_ago)
         .group_by(func.date(Comment.created_at))
@@ -141,10 +142,7 @@ async def admin_get_video_category_stats(
         .limit(10)
     )
 
-    return [
-        {"category": row.name, "count": row.count}
-        for row in result.all()
-    ]
+    return [{"category": row.name, "count": row.count} for row in result.all()]
 
 
 @router.get("/video-types")

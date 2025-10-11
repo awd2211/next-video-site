@@ -1,13 +1,15 @@
+from typing import List, Optional
+
 from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
 from pydantic import BaseModel
-from typing import Optional, List
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
+
 from app.database import get_db
-from app.models.user import AdminUser
 from app.models.settings import SystemSettings
-from app.utils.dependencies import get_current_admin_user
+from app.models.user import AdminUser
 from app.utils.cache import Cache
+from app.utils.dependencies import get_current_admin_user
 
 router = APIRouter()
 

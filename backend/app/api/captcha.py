@@ -1,7 +1,9 @@
 """
 Captcha API endpoints
 """
+
 from fastapi import APIRouter, Response
+
 from app.utils.captcha import captcha_manager
 
 router = APIRouter()
@@ -19,5 +21,5 @@ async def generate_captcha():
     return Response(
         content=image_bytes,
         media_type="image/png",
-        headers={"X-Captcha-ID": captcha_id}
+        headers={"X-Captcha-ID": captcha_id},
     )

@@ -1,18 +1,20 @@
 """
 图片上传管理 - 支持自动压缩和CDN
 """
-from fastapi import APIRouter, Depends, UploadFile, File, Form, HTTPException, status
-from sqlalchemy.ext.asyncio import AsyncSession
-from typing import Optional
+
 import io
+from typing import Optional
+
+from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile, status
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
 from app.models.user import AdminUser
 from app.utils.dependencies import get_current_admin_user
-from app.utils.rate_limit import limiter, RateLimitPresets
-from app.utils.minio_client import minio_client
-from app.utils.image_processor import ImageProcessor
 from app.utils.file_validator import FileValidationPresets
+from app.utils.image_processor import ImageProcessor
+from app.utils.minio_client import minio_client
+from app.utils.rate_limit import RateLimitPresets, limiter
 
 router = APIRouter()
 
@@ -20,7 +22,9 @@ router = APIRouter()
 @router.post("/upload", summary="上传图片 (自动压缩)")
 async def upload_image(
     file: UploadFile = File(...),
-    category: str = Form("general", description="图片分类: poster, backdrop, avatar, banner, general"),
+    category: str = Form(
+        "general", description="图片分类: poster, backdrop, avatar, banner, general"
+    ),
     auto_compress: bool = Form(True, description="是否自动压缩"),
     generate_thumbnails: bool = Form(True, description="是否生成缩略图"),
     convert_webp: bool = Form(True, description="是否转换为WebP"),
@@ -58,6 +62,7 @@ async def upload_image(
     # 生成文件名
     import uuid
     from datetime import datetime, timezone
+
     timestamp = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
     unique_id = uuid.uuid4().hex[:8]
     base_name = f"{category}/{timestamp}_{unique_id}"
@@ -76,10 +81,7 @@ async def upload_image(
         # 压缩原图
         image_file.seek(0)
         compressed = ImageProcessor.compress_image(
-            image_file,
-            max_size=(1920, 1080),
-            quality="high",
-            output_format="JPEG"
+            image_file, max_size=(1920, 1080), quality="high", output_format="JPEG"
         )
 
         # 上传压缩后的原图
@@ -92,7 +94,9 @@ async def upload_image(
         image_file.seek(0)
         ext = file.filename.split(".")[-1] if file.filename else "jpg"
         object_name = f"{base_name}.{ext}"
-        original_url = minio_client.upload_image(image_file, object_name, file.content_type)
+        original_url = minio_client.upload_image(
+            image_file, object_name, file.content_type
+        )
         result["original_url"] = original_url
 
     # 2. 转换为WebP
@@ -115,19 +119,23 @@ async def upload_image(
             thumbnail_sizes = ["small", "medium", "large"]
 
         thumbnails = ImageProcessor.create_thumbnails(
-            image_file,
-            sizes=thumbnail_sizes,
-            output_format="WEBP"
+            image_file, sizes=thumbnail_sizes, output_format="WEBP"
         )
 
         # 上传缩略图
         for size_name, thumb_file in thumbnails.items():
             thumb_object_name = f"{base_name}_{size_name}.webp"
-            thumb_url = minio_client.upload_image(thumb_file, thumb_object_name, "image/webp")
+            thumb_url = minio_client.upload_image(
+                thumb_file, thumb_object_name, "image/webp"
+            )
             result["thumbnails"][size_name] = thumb_url
             result["size_saved"] += original_size - len(thumb_file.getvalue())
 
-    result["compression_ratio"] = f"{(result['size_saved'] / original_size * 100):.1f}%" if original_size > 0 else "0%"
+    result["compression_ratio"] = (
+        f"{(result['size_saved'] / original_size * 100):.1f}%"
+        if original_size > 0
+        else "0%"
+    )
 
     return result
 
@@ -151,6 +159,7 @@ async def upload_avatar(
 
     # 打开图片并裁剪为正方形
     from PIL import Image
+
     img = Image.open(image_file)
 
     # 裁剪为正方形 (中心裁剪)
@@ -165,6 +174,7 @@ async def upload_avatar(
     # 生成多种尺寸
     import uuid
     from datetime import datetime, timezone
+
     timestamp = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
     unique_id = uuid.uuid4().hex[:8]
     base_name = f"avatars/{timestamp}_{unique_id}"
@@ -196,12 +206,11 @@ async def delete_image(
     """
     try:
         minio_client.client.remove_object(
-            bucket_name=minio_client.bucket_name,
-            object_name=object_name
+            bucket_name=minio_client.bucket_name, object_name=object_name
         )
         return {"message": "删除成功", "object_name": object_name}
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"删除失败: {str(e)}"
+            detail=f"删除失败: {str(e)}",
         )

@@ -16,10 +16,10 @@ Video.js原生只支持WebVTT格式,需要将SRT转换为VTT
 - ASS → VTT (待实现)
 """
 
+import logging
 import re
 from pathlib import Path
-from typing import Union, Optional
-import logging
+from typing import Optional, Union
 
 logger = logging.getLogger(__name__)
 
@@ -41,19 +41,19 @@ class SubtitleConverter:
         file_path = Path(file_path)
 
         # 读取文件前4096字节用于检测
-        with open(file_path, 'rb') as f:
+        with open(file_path, "rb") as f:
             raw_data = f.read(4096)
 
         # 检测BOM
-        if raw_data.startswith(b'\xef\xbb\xbf'):
-            return 'utf-8-sig'
-        elif raw_data.startswith(b'\xff\xfe'):
-            return 'utf-16-le'
-        elif raw_data.startswith(b'\xfe\xff'):
-            return 'utf-16-be'
+        if raw_data.startswith(b"\xef\xbb\xbf"):
+            return "utf-8-sig"
+        elif raw_data.startswith(b"\xff\xfe"):
+            return "utf-16-le"
+        elif raw_data.startswith(b"\xfe\xff"):
+            return "utf-16-be"
 
         # 尝试常见编码
-        for encoding in ['utf-8', 'gbk', 'gb2312', 'big5', 'iso-8859-1']:
+        for encoding in ["utf-8", "gbk", "gb2312", "big5", "iso-8859-1"]:
             try:
                 raw_data.decode(encoding)
                 logger.info(f"检测到编码: {encoding}")
@@ -63,7 +63,7 @@ class SubtitleConverter:
 
         # 默认使用UTF-8
         logger.warning(f"无法检测编码,默认使用UTF-8")
-        return 'utf-8'
+        return "utf-8"
 
     @staticmethod
     def srt_to_vtt(srt_content: str) -> str:
@@ -92,11 +92,7 @@ class SubtitleConverter:
 
         # 将逗号替换为点号 (SRT使用逗号作为毫秒分隔符,VTT使用点号)
         # 00:00:00,000 -> 00:00:00.000
-        vtt_content += re.sub(
-            r'(\d{2}:\d{2}:\d{2}),(\d{3})',
-            r'\1.\2',
-            srt_content
-        )
+        vtt_content += re.sub(r"(\d{2}:\d{2}:\d{2}),(\d{3})", r"\1.\2", srt_content)
 
         return vtt_content
 
@@ -104,7 +100,7 @@ class SubtitleConverter:
     def srt_file_to_vtt_file(
         srt_path: Union[str, Path],
         vtt_path: Union[str, Path] = None,
-        encoding: Optional[str] = None
+        encoding: Optional[str] = None,
     ) -> Path:
         """
         将SRT文件转换为VTT文件 (自动检测编码)
@@ -133,12 +129,12 @@ class SubtitleConverter:
 
         # 读取SRT内容 (支持多种编码)
         try:
-            with open(srt_path, 'r', encoding=encoding, errors='replace') as f:
+            with open(srt_path, "r", encoding=encoding, errors="replace") as f:
                 srt_content = f.read()
         except Exception as e:
             logger.error(f"读取SRT文件失败: {e}")
             # Fallback: 使用UTF-8并忽略错误
-            with open(srt_path, 'r', encoding='utf-8', errors='ignore') as f:
+            with open(srt_path, "r", encoding="utf-8", errors="ignore") as f:
                 srt_content = f.read()
             logger.warning(f"使用UTF-8 fallback读取,部分字符可能丢失")
 
@@ -147,14 +143,14 @@ class SubtitleConverter:
 
         # 确定输出路径
         if vtt_path is None:
-            vtt_path = srt_path.with_suffix('.vtt')
+            vtt_path = srt_path.with_suffix(".vtt")
         else:
             vtt_path = Path(vtt_path)
 
         # 写入VTT文件 (始终使用UTF-8)
         try:
             vtt_path.parent.mkdir(parents=True, exist_ok=True)
-            with open(vtt_path, 'w', encoding='utf-8') as f:
+            with open(vtt_path, "w", encoding="utf-8") as f:
                 f.write(vtt_content)
         except Exception as e:
             logger.error(f"写入VTT文件失败: {e}")
@@ -167,8 +163,7 @@ class SubtitleConverter:
 
     @staticmethod
     def convert_subtitle_format(
-        input_path: Union[str, Path],
-        output_format: str = 'vtt'
+        input_path: Union[str, Path], output_format: str = "vtt"
     ) -> Path:
         """
         通用字幕格式转换
@@ -181,13 +176,13 @@ class SubtitleConverter:
             输出文件路径
         """
         input_path = Path(input_path)
-        input_format = input_path.suffix.lower().lstrip('.')
+        input_format = input_path.suffix.lower().lstrip(".")
 
         if input_format == output_format:
             logger.info(f"字幕已经是{output_format}格式,无需转换")
             return input_path
 
-        if input_format == 'srt' and output_format == 'vtt':
+        if input_format == "srt" and output_format == "vtt":
             return SubtitleConverter.srt_file_to_vtt_file(input_path)
         else:
             raise NotImplementedError(
@@ -201,6 +196,6 @@ def srt_to_vtt(srt_content: str) -> str:
     return SubtitleConverter.srt_to_vtt(srt_content)
 
 
-def convert_subtitle_file(input_path: str, output_format: str = 'vtt') -> Path:
+def convert_subtitle_file(input_path: str, output_format: str = "vtt") -> Path:
     """快捷函数: 字幕文件转换"""
     return SubtitleConverter.convert_subtitle_format(input_path, output_format)

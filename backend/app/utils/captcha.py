@@ -1,12 +1,15 @@
 """
 Captcha generation and validation utilities
 """
-import uuid
+
 import io
+import uuid
 from typing import Tuple
+
 from captcha.image import ImageCaptcha
-from app.utils.cache import get_redis
+
 from app.config import settings
+from app.utils.cache import get_redis
 
 
 class CaptchaManager:
@@ -26,7 +29,10 @@ class CaptchaManager:
         # Generate random captcha text (4 characters)
         import random
         import string
-        captcha_text = ''.join(random.choices(string.digits + string.ascii_uppercase, k=4))
+
+        captcha_text = "".join(
+            random.choices(string.digits + string.ascii_uppercase, k=4)
+        )
 
         # Generate captcha ID
         captcha_id = str(uuid.uuid4())
@@ -69,7 +75,7 @@ class CaptchaManager:
         await redis_client.delete(cache_key)
 
         # Compare (case-insensitive)
-        return stored_text.decode('utf-8').upper() == user_input.upper()
+        return stored_text.decode("utf-8").upper() == user_input.upper()
 
 
 # Singleton instance

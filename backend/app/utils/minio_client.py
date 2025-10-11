@@ -4,18 +4,21 @@ MinIO 客户端工具
 
 使用单例模式和延迟初始化，避免应用启动时阻塞
 """
+
+import io
+import threading
+from datetime import timedelta
+from typing import BinaryIO, Optional
+
 from minio import Minio
 from minio.error import S3Error
+
 from app.config import settings
-import io
-from typing import BinaryIO, Optional
-from datetime import timedelta
-import threading
 
 
 class MinIOClient:
     """MinIO 客户端封装 - 单例模式 + 延迟初始化"""
-    
+
     _instance = None
     _lock = threading.Lock()
     _initialized = False
@@ -31,13 +34,13 @@ class MinIOClient:
         # 避免重复初始化
         if MinIOClient._initialized:
             return
-        
+
         with MinIOClient._lock:
             if not MinIOClient._initialized:
                 self._client = None
                 self.bucket_name = settings.MINIO_BUCKET
                 MinIOClient._initialized = True
-    
+
     @property
     def client(self) -> Minio:
         """延迟初始化MinIO客户端"""
@@ -188,7 +191,9 @@ class MinIOClient:
         object_name = f"subtitles/video_{video_id}_{language}.{format}"
         return self.get_presigned_url(object_name, expires)
 
-    def delete_subtitle(self, video_id: int, language: str, format: str = "vtt") -> bool:
+    def delete_subtitle(
+        self, video_id: int, language: str, format: str = "vtt"
+    ) -> bool:
         """
         删除字幕文件
 

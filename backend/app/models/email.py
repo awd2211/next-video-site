@@ -1,5 +1,6 @@
-from sqlalchemy import Column, Integer, String, Boolean, Text, DateTime, JSON
+from sqlalchemy import JSON, Boolean, Column, DateTime, Integer, String, Text
 from sqlalchemy.sql import func
+
 from app.database import Base
 
 
@@ -27,8 +28,15 @@ class EmailConfiguration(Base):
     from_email = Column(String(255), nullable=False)
     from_name = Column(String(255), nullable=False)
 
-    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
-    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)
+    created_at = Column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+    updated_at = Column(
+        DateTime(timezone=True),
+        server_default=func.now(),
+        onupdate=func.now(),
+        nullable=False,
+    )
 
 
 class EmailTemplate(Base):
@@ -40,9 +48,18 @@ class EmailTemplate(Base):
     subject = Column(String(255), nullable=False)
     html_content = Column(Text, nullable=False)
     text_content = Column(Text, nullable=True)
-    variables = Column(JSON, nullable=True)  # List of available variables like ["user_name", "video_title"]
+    variables = Column(
+        JSON, nullable=True
+    )  # List of available variables like ["user_name", "video_title"]
     description = Column(Text, nullable=True)
     is_active = Column(Boolean, default=True, nullable=False)
 
-    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
-    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)
+    created_at = Column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+    updated_at = Column(
+        DateTime(timezone=True),
+        server_default=func.now(),
+        onupdate=func.now(),
+        nullable=False,
+    )

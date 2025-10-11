@@ -1,17 +1,23 @@
-from pydantic import BaseModel, Field
-from typing import Optional, List
 from datetime import datetime
+from typing import List, Optional
+
+from pydantic import BaseModel, Field
+
 from app.schemas.video import VideoListResponse
 
 
 class FavoriteCreate(BaseModel):
     """Favorite creation schema"""
+
     video_id: int = Field(..., gt=0)
-    folder_id: Optional[int] = Field(None, description="Folder ID (None for default folder)")
+    folder_id: Optional[int] = Field(
+        None, description="Folder ID (None for default folder)"
+    )
 
 
 class FavoriteResponse(BaseModel):
     """Favorite response schema"""
+
     id: int
     user_id: int
     video_id: int
@@ -26,6 +32,7 @@ class FavoriteResponse(BaseModel):
 
 class PaginatedFavoriteResponse(BaseModel):
     """Paginated favorite response"""
+
     total: int
     page: int
     page_size: int
@@ -35,6 +42,7 @@ class PaginatedFavoriteResponse(BaseModel):
 
 class WatchHistoryCreate(BaseModel):
     """Watch history creation schema"""
+
     video_id: int = Field(..., gt=0)
     watch_duration: int = Field(0, ge=0, description="Total watch duration in seconds")
     last_position: int = Field(0, ge=0, description="Last playback position in seconds")
@@ -43,6 +51,7 @@ class WatchHistoryCreate(BaseModel):
 
 class WatchHistoryUpdate(BaseModel):
     """Watch history update schema"""
+
     watch_duration: Optional[int] = Field(None, ge=0)
     last_position: Optional[int] = Field(None, ge=0)
     is_completed: Optional[bool] = None
@@ -50,6 +59,7 @@ class WatchHistoryUpdate(BaseModel):
 
 class WatchHistoryResponse(BaseModel):
     """Watch history response schema"""
+
     id: int
     user_id: int
     video_id: int
@@ -67,6 +77,7 @@ class WatchHistoryResponse(BaseModel):
 
 class PaginatedWatchHistoryResponse(BaseModel):
     """Paginated watch history response"""
+
     total: int
     page: int
     page_size: int

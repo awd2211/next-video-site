@@ -1,23 +1,27 @@
-from pydantic import BaseModel, Field
-from typing import Optional, List
 from datetime import datetime
+from typing import List, Optional
+
+from pydantic import BaseModel, Field
 
 
 # Tag Schemas
 class TagCreate(BaseModel):
     """Tag creation schema"""
+
     name: str = Field(..., min_length=1, max_length=100)
     slug: str = Field(..., min_length=1, max_length=100)
 
 
 class TagUpdate(BaseModel):
     """Tag update schema"""
+
     name: Optional[str] = Field(None, min_length=1, max_length=100)
     slug: Optional[str] = Field(None, min_length=1, max_length=100)
 
 
 class TagResponse(BaseModel):
     """Tag response schema"""
+
     id: int
     name: str
     slug: str
@@ -29,6 +33,7 @@ class TagResponse(BaseModel):
 
 class PaginatedTagResponse(BaseModel):
     """Paginated tag response"""
+
     total: int
     page: int
     page_size: int
@@ -39,18 +44,21 @@ class PaginatedTagResponse(BaseModel):
 # Country Schemas
 class CountryCreate(BaseModel):
     """Country creation schema"""
+
     name: str = Field(..., min_length=1, max_length=100)
     code: str = Field(..., min_length=2, max_length=10, description="ISO country code")
 
 
 class CountryUpdate(BaseModel):
     """Country update schema"""
+
     name: Optional[str] = Field(None, min_length=1, max_length=100)
     code: Optional[str] = Field(None, min_length=2, max_length=10)
 
 
 class CountryResponse(BaseModel):
     """Country response schema"""
+
     id: int
     name: str
     code: str
@@ -62,6 +70,7 @@ class CountryResponse(BaseModel):
 
 class PaginatedCountryResponse(BaseModel):
     """Paginated country response"""
+
     total: int
     page: int
     page_size: int
@@ -72,6 +81,7 @@ class PaginatedCountryResponse(BaseModel):
 # Category Schemas
 class CategoryCreate(BaseModel):
     """Category creation schema"""
+
     name: str = Field(..., min_length=1, max_length=100)
     slug: str = Field(..., min_length=1, max_length=100)
     description: Optional[str] = None
@@ -82,6 +92,7 @@ class CategoryCreate(BaseModel):
 
 class CategoryUpdate(BaseModel):
     """Category update schema"""
+
     name: Optional[str] = Field(None, min_length=1, max_length=100)
     slug: Optional[str] = Field(None, min_length=1, max_length=100)
     description: Optional[str] = None
@@ -92,6 +103,7 @@ class CategoryUpdate(BaseModel):
 
 class CategoryResponse(BaseModel):
     """Category response schema"""
+
     id: int
     name: str
     slug: str
@@ -107,6 +119,7 @@ class CategoryResponse(BaseModel):
 
 class PaginatedCategoryResponse(BaseModel):
     """Paginated category response"""
+
     total: int
     page: int
     page_size: int
@@ -117,6 +130,7 @@ class PaginatedCategoryResponse(BaseModel):
 # Actor Schemas
 class ActorCreate(BaseModel):
     """Actor creation schema"""
+
     name: str = Field(..., min_length=1, max_length=200)
     avatar: Optional[str] = None
     biography: Optional[str] = None
@@ -126,6 +140,7 @@ class ActorCreate(BaseModel):
 
 class ActorUpdate(BaseModel):
     """Actor update schema"""
+
     name: Optional[str] = Field(None, min_length=1, max_length=200)
     avatar: Optional[str] = None
     biography: Optional[str] = None
@@ -135,6 +150,7 @@ class ActorUpdate(BaseModel):
 
 class ActorAdminResponse(BaseModel):
     """Actor admin response schema"""
+
     id: int
     name: str
     avatar: Optional[str] = None
@@ -149,6 +165,7 @@ class ActorAdminResponse(BaseModel):
 
 class PaginatedActorAdminResponse(BaseModel):
     """Paginated actor admin response"""
+
     total: int
     page: int
     page_size: int
@@ -159,6 +176,7 @@ class PaginatedActorAdminResponse(BaseModel):
 # Director Schemas
 class DirectorCreate(BaseModel):
     """Director creation schema"""
+
     name: str = Field(..., min_length=1, max_length=200)
     avatar: Optional[str] = None
     biography: Optional[str] = None
@@ -168,6 +186,7 @@ class DirectorCreate(BaseModel):
 
 class DirectorUpdate(BaseModel):
     """Director update schema"""
+
     name: Optional[str] = Field(None, min_length=1, max_length=200)
     avatar: Optional[str] = None
     biography: Optional[str] = None
@@ -177,6 +196,7 @@ class DirectorUpdate(BaseModel):
 
 class DirectorAdminResponse(BaseModel):
     """Director admin response schema"""
+
     id: int
     name: str
     avatar: Optional[str] = None
@@ -191,6 +211,7 @@ class DirectorAdminResponse(BaseModel):
 
 class PaginatedDirectorAdminResponse(BaseModel):
     """Paginated director admin response"""
+
     total: int
     page: int
     page_size: int

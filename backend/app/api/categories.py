@@ -1,7 +1,9 @@
-from fastapi import APIRouter, Depends
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
 from typing import List
+
+from fastapi import APIRouter, Depends
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
+
 from app.database import get_db
 from app.models.video import Category, Country, Tag
 from app.schemas.video import CategoryResponse, CountryResponse, TagResponse
@@ -23,7 +25,9 @@ async def list_categories(
 
     # 从数据库查询
     result = await db.execute(
-        select(Category).filter(Category.is_active == True).order_by(Category.sort_order)
+        select(Category)
+        .filter(Category.is_active == True)
+        .order_by(Category.sort_order)
     )
     categories = result.scalars().all()
 

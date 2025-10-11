@@ -1,16 +1,17 @@
 from fastapi import APIRouter, Depends, HTTPException, Query, status
+from sqlalchemy import desc, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, func, desc
 from sqlalchemy.orm import selectinload
+
 from app.database import get_db
 from app.models.user import User
 from app.models.user_activity import Favorite
 from app.models.video import Video
-from app.schemas.user import UserResponse, UserUpdate, PasswordChange
-from app.schemas.video import VideoListResponse, PaginatedResponse
-from app.utils.dependencies import get_current_active_user
+from app.schemas.user import PasswordChange, UserResponse, UserUpdate
+from app.schemas.video import PaginatedResponse, VideoListResponse
 from app.utils.cache import Cache
-from app.utils.security import verify_password, get_password_hash
+from app.utils.dependencies import get_current_active_user
+from app.utils.security import get_password_hash, verify_password
 
 router = APIRouter()
 

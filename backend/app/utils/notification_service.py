@@ -17,10 +17,12 @@
     )
 """
 
-from sqlalchemy.ext.asyncio import AsyncSession
-from app.models.notification import Notification, NotificationType
-from typing import Optional
 import logging
+from typing import Optional
+
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.models.notification import Notification, NotificationType
 
 logger = logging.getLogger(__name__)
 
@@ -71,9 +73,7 @@ class NotificationService:
             await db.commit()
             await db.refresh(notification)
 
-            logger.info(
-                f"✅ 通知已创建: user_id={user_id}, type={type}, title={title}"
-            )
+            logger.info(f"✅ 通知已创建: user_id={user_id}, type={type}, title={title}")
 
             return notification
 
@@ -103,7 +103,9 @@ class NotificationService:
             comment_id: 评论ID
         """
         # 截断过长的回复内容
-        preview = reply_content[:50] + "..." if len(reply_content) > 50 else reply_content
+        preview = (
+            reply_content[:50] + "..." if len(reply_content) > 50 else reply_content
+        )
 
         await NotificationService.create_notification(
             db=db,
@@ -178,9 +180,7 @@ class NotificationService:
             db.add_all(notifications)
             await db.commit()
 
-            logger.info(
-                f"✅ 批量系统公告已发送: {len(notifications)} 条通知"
-            )
+            logger.info(f"✅ 批量系统公告已发送: {len(notifications)} 条通知")
 
         except Exception as e:
             logger.error(f"❌ 批量发送系统公告失败: {str(e)}")

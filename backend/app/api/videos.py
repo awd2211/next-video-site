@@ -1,21 +1,23 @@
 import math
-from fastapi import APIRouter, Depends, HTTPException, Query, BackgroundTasks
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, func, desc, update
-from sqlalchemy.orm import selectinload
-from typing import Optional
 from datetime import timedelta
+from typing import Optional
+
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query
+from sqlalchemy import desc, func, select, update
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
+
 from app.database import get_db
+from app.models.user import User
 from app.models.video import (
     Video,
-    VideoStatus,
-    VideoCategory,
-    VideoTag,
     VideoActor,
+    VideoCategory,
     VideoDirector,
+    VideoStatus,
+    VideoTag,
 )
-from app.models.user import User
-from app.schemas.video import VideoListResponse, VideoDetailResponse, PaginatedResponse
+from app.schemas.video import PaginatedResponse, VideoDetailResponse, VideoListResponse
 from app.utils.cache import Cache
 from app.utils.dependencies import get_current_user
 from app.utils.minio_client import minio_client

@@ -1,61 +1,61 @@
+import logging
+
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.responses import JSONResponse
 from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
+
+from app.admin import actors as admin_actors
+from app.admin import announcements as admin_announcements
+from app.admin import banners as admin_banners
+from app.admin import categories as admin_categories
+from app.admin import comments as admin_comments
+from app.admin import countries as admin_countries
+from app.admin import danmaku as admin_danmaku
+from app.admin import directors as admin_directors
+from app.admin import email_config as admin_email
+from app.admin import image_upload as admin_image_upload
+from app.admin import ip_blacklist as admin_ip_blacklist
+from app.admin import logs as admin_logs
+from app.admin import operations as admin_operations
+from app.admin import series as admin_series
+from app.admin import settings as admin_settings
+from app.admin import stats as admin_stats
+from app.admin import subtitles as admin_subtitles
+from app.admin import tags as admin_tags
+from app.admin import transcode as admin_transcode
+from app.admin import upload as admin_upload
+from app.admin import users as admin_users
+from app.admin import videos as admin_videos
+from app.api import (
+    actors,
+    auth,
+    captcha,
+    categories,
+    comments,
+    danmaku,
+    directors,
+    favorite_folders,
+    favorites,
+    history,
+    notifications,
+    ratings,
+    recommendations,
+    search,
+    series,
+    shares,
+    subtitles,
+    users,
+    videos,
+    websocket,
+)
 from app.config import settings
 from app.middleware.operation_log import OperationLogMiddleware
-from app.middleware.security_headers import SecurityHeadersMiddleware
 from app.middleware.request_size_limit import RequestSizeLimitMiddleware
+from app.middleware.security_headers import SecurityHeadersMiddleware
 from app.utils.rate_limit import limiter
-import logging
-from app.api import (
-    auth,
-    videos,
-    users,
-    categories,
-    search,
-    comments,
-    ratings,
-    favorites,
-    favorite_folders,
-    history,
-    actors,
-    directors,
-    captcha,
-    recommendations,
-    notifications,
-    subtitles,
-    websocket,
-    danmaku,
-    shares,
-    series,
-)
-from app.admin import (
-    videos as admin_videos,
-    users as admin_users,
-    comments as admin_comments,
-    stats as admin_stats,
-    settings as admin_settings,
-    operations as admin_operations,
-    logs as admin_logs,
-    upload as admin_upload,
-    email_config as admin_email,
-    banners as admin_banners,
-    announcements as admin_announcements,
-    tags as admin_tags,
-    countries as admin_countries,
-    categories as admin_categories,
-    actors as admin_actors,
-    directors as admin_directors,
-    transcode as admin_transcode,
-    subtitles as admin_subtitles,
-    danmaku as admin_danmaku,
-    ip_blacklist as admin_ip_blacklist,
-    series as admin_series,
-    image_upload as admin_image_upload,
-)
 
 # Rate limiter is imported from app.utils.rate_limit
 logger = logging.getLogger(__name__)

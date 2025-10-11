@@ -1,16 +1,18 @@
+import csv
+import io
+import json
+from datetime import datetime, timedelta, timezone
+
 from fastapi import APIRouter, Depends, Query, Request
 from fastapi.responses import StreamingResponse
+from sqlalchemy import desc, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, func, desc, or_
 from sqlalchemy.orm import selectinload
+
 from app.database import get_db
 from app.models.admin import OperationLog
 from app.models.user import AdminUser
 from app.utils.dependencies import get_current_admin_user
-from datetime import datetime, timedelta, timezone
-import json
-import csv
-import io
 
 router = APIRouter()
 
@@ -34,7 +36,9 @@ async def create_operation_log(
         user_agent=request.headers.get("user-agent") if request else None,
         request_method=request.method if request else None,
         request_url=str(request.url) if request else None,
-        request_data=json.dumps(request_data, ensure_ascii=False) if request_data else None,
+        request_data=(
+            json.dumps(request_data, ensure_ascii=False) if request_data else None
+        ),
     )
     db.add(log)
     await db.commit()
@@ -55,9 +59,7 @@ async def get_operation_logs(
     current_admin: AdminUser = Depends(get_current_admin_user),
 ):
     """获取操作日志列表，支持筛选和搜索"""
-    query = select(OperationLog).options(
-        selectinload(OperationLog.admin_user)
-    )
+    query = select(OperationLog).options(selectinload(OperationLog.admin_user))
 
     # 筛选模块
     if module:
@@ -82,11 +84,11 @@ async def get_operation_logs(
 
     # 日期范围筛选
     if start_date:
-        start_datetime = datetime.fromisoformat(start_date.replace('Z', '+00:00'))
+        start_datetime = datetime.fromisoformat(start_date.replace("Z", "+00:00"))
         query = query.filter(OperationLog.created_at >= start_datetime)
 
     if end_date:
-        end_datetime = datetime.fromisoformat(end_date.replace('Z', '+00:00'))
+        end_datetime = datetime.fromisoformat(end_date.replace("Z", "+00:00"))
         query = query.filter(OperationLog.created_at <= end_datetime)
 
     # 获取总数
@@ -95,7 +97,9 @@ async def get_operation_logs(
 
     # 分页和排序
     offset = (page - 1) * page_size
-    query = query.order_by(desc(OperationLog.created_at)).offset(offset).limit(page_size)
+    query = (
+        query.order_by(desc(OperationLog.created_at)).offset(offset).limit(page_size)
+    )
     result = await db.execute(query)
     logs = result.scalars().all()
 
@@ -118,6 +122,7 @@ async def get_operation_log_detail(
 
     if not log:
         from fastapi import HTTPException
+
         raise HTTPException(status_code=404, detail="操作日志不存在")
 
     return log
@@ -134,10 +139,7 @@ async def get_operation_logs_summary(
 
     # 按模块统计
     module_stats = await db.execute(
-        select(
-            OperationLog.module,
-            func.count(OperationLog.id).label("count")
-        )
+        select(OperationLog.module, func.count(OperationLog.id).label("count"))
         .filter(OperationLog.created_at >= start_date)
         .group_by(OperationLog.module)
         .order_by(desc("count"))
@@ -145,10 +147,7 @@ async def get_operation_logs_summary(
 
     # 按操作类型统计
     action_stats = await db.execute(
-        select(
-            OperationLog.action,
-            func.count(OperationLog.id).label("count")
-        )
+        select(OperationLog.action, func.count(OperationLog.id).label("count"))
         .filter(OperationLog.created_at >= start_date)
         .group_by(OperationLog.action)
         .order_by(desc("count"))
@@ -156,10 +155,7 @@ async def get_operation_logs_summary(
 
     # 按管理员统计
     admin_stats = await db.execute(
-        select(
-            OperationLog.admin_user_id,
-            func.count(OperationLog.id).label("count")
-        )
+        select(OperationLog.admin_user_id, func.count(OperationLog.id).label("count"))
         .filter(OperationLog.created_at >= start_date)
         .filter(OperationLog.admin_user_id.isnot(None))
         .group_by(OperationLog.admin_user_id)
@@ -171,7 +167,7 @@ async def get_operation_logs_summary(
     daily_stats = await db.execute(
         select(
             func.date(OperationLog.created_at).label("date"),
-            func.count(OperationLog.id).label("count")
+            func.count(OperationLog.id).label("count"),
         )
         .filter(OperationLog.created_at >= start_date)
         .group_by(func.date(OperationLog.created_at))
@@ -179,10 +175,19 @@ async def get_operation_logs_summary(
     )
 
     return {
-        "module_stats": [{"module": row.module, "count": row.count} for row in module_stats.all()],
-        "action_stats": [{"action": row.action, "count": row.count} for row in action_stats.all()],
-        "admin_stats": [{"admin_user_id": row.admin_user_id, "count": row.count} for row in admin_stats.all()],
-        "daily_stats": [{"date": str(row.date), "count": row.count} for row in daily_stats.all()],
+        "module_stats": [
+            {"module": row.module, "count": row.count} for row in module_stats.all()
+        ],
+        "action_stats": [
+            {"action": row.action, "count": row.count} for row in action_stats.all()
+        ],
+        "admin_stats": [
+            {"admin_user_id": row.admin_user_id, "count": row.count}
+            for row in admin_stats.all()
+        ],
+        "daily_stats": [
+            {"date": str(row.date), "count": row.count} for row in daily_stats.all()
+        ],
     }
 
 
@@ -196,6 +201,7 @@ async def cleanup_old_logs(
     # 只有超级管理员才能清理日志
     if not current_admin.is_superadmin:
         from fastapi import HTTPException
+
         raise HTTPException(status_code=403, detail="只有超级管理员才能清理日志")
 
     cutoff_date = datetime.now(timezone.utc) - timedelta(days=days)
@@ -210,6 +216,7 @@ async def cleanup_old_logs(
 
     # 删除旧日志
     from sqlalchemy import delete as sql_delete
+
     await db.execute(
         sql_delete(OperationLog).filter(OperationLog.created_at < cutoff_date)
     )
@@ -238,9 +245,7 @@ async def get_available_modules(
 ):
     """获取所有可用的模块列表"""
     result = await db.execute(
-        select(OperationLog.module)
-        .distinct()
-        .order_by(OperationLog.module)
+        select(OperationLog.module).distinct().order_by(OperationLog.module)
     )
     modules = [row[0] for row in result.all()]
     return {"modules": modules}
@@ -253,9 +258,7 @@ async def get_available_actions(
 ):
     """获取所有可用的操作类型列表"""
     result = await db.execute(
-        select(OperationLog.action)
-        .distinct()
-        .order_by(OperationLog.action)
+        select(OperationLog.action).distinct().order_by(OperationLog.action)
     )
     actions = [row[0] for row in result.all()]
     return {"actions": actions}
@@ -274,9 +277,7 @@ async def export_logs(
 ):
     """导出操作日志为CSV文件"""
     # 构建查询（与列表API相同的逻辑）
-    query = select(OperationLog).options(
-        selectinload(OperationLog.admin_user)
-    )
+    query = select(OperationLog).options(selectinload(OperationLog.admin_user))
 
     if module:
         query = query.filter(OperationLog.module == module)
@@ -292,10 +293,10 @@ async def export_logs(
             )
         )
     if start_date:
-        start_datetime = datetime.fromisoformat(start_date.replace('Z', '+00:00'))
+        start_datetime = datetime.fromisoformat(start_date.replace("Z", "+00:00"))
         query = query.filter(OperationLog.created_at >= start_datetime)
     if end_date:
-        end_datetime = datetime.fromisoformat(end_date.replace('Z', '+00:00'))
+        end_datetime = datetime.fromisoformat(end_date.replace("Z", "+00:00"))
         query = query.filter(OperationLog.created_at <= end_datetime)
 
     # 获取数据（限制最多导出10000条）
@@ -308,25 +309,37 @@ async def export_logs(
     writer = csv.writer(output)
 
     # 写入表头
-    writer.writerow([
-        'ID', '管理员用户名', '管理员邮箱', '模块', '操作',
-        '描述', 'IP地址', '请求方法', '请求URL', '创建时间'
-    ])
+    writer.writerow(
+        [
+            "ID",
+            "管理员用户名",
+            "管理员邮箱",
+            "模块",
+            "操作",
+            "描述",
+            "IP地址",
+            "请求方法",
+            "请求URL",
+            "创建时间",
+        ]
+    )
 
     # 写入数据
     for log in logs:
-        writer.writerow([
-            log.id,
-            log.admin_user.username if log.admin_user else '',
-            log.admin_user.email if log.admin_user else '',
-            log.module,
-            log.action,
-            log.description,
-            log.ip_address or '',
-            log.request_method or '',
-            log.request_url or '',
-            log.created_at.strftime('%Y-%m-%d %H:%M:%S'),
-        ])
+        writer.writerow(
+            [
+                log.id,
+                log.admin_user.username if log.admin_user else "",
+                log.admin_user.email if log.admin_user else "",
+                log.module,
+                log.action,
+                log.description,
+                log.ip_address or "",
+                log.request_method or "",
+                log.request_url or "",
+                log.created_at.strftime("%Y-%m-%d %H:%M:%S"),
+            ]
+        )
 
     # 返回CSV文件
     output.seek(0)
@@ -335,5 +348,5 @@ async def export_logs(
         media_type="text/csv",
         headers={
             "Content-Disposition": f"attachment; filename=operation_logs_{datetime.now(timezone.utc).strftime('%Y%m%d_%H%M%S')}.csv"
-        }
+        },
     )

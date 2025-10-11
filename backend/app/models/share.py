@@ -1,15 +1,21 @@
 """
 分享记录模型
 """
-from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, Enum as SQLEnum
-from sqlalchemy.sql import func
-from sqlalchemy.orm import relationship
-from app.database import Base
+
 import enum
+
+from sqlalchemy import Column, DateTime
+from sqlalchemy import Enum as SQLEnum
+from sqlalchemy import ForeignKey, Integer, String
+from sqlalchemy.orm import relationship
+from sqlalchemy.sql import func
+
+from app.database import Base
 
 
 class SharePlatform(str, enum.Enum):
     """分享平台枚举"""
+
     WECHAT = "wechat"
     WEIBO = "weibo"
     QQ = "qq"
@@ -26,8 +32,12 @@ class VideoShare(Base):
     __tablename__ = "video_shares"
 
     id = Column(Integer, primary_key=True, index=True)
-    video_id = Column(Integer, ForeignKey("videos.id", ondelete="CASCADE"), nullable=False, index=True)
-    user_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True, index=True)
+    video_id = Column(
+        Integer, ForeignKey("videos.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    user_id = Column(
+        Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True, index=True
+    )
     platform = Column(SQLEnum(SharePlatform), nullable=False, index=True)
     shared_at = Column(DateTime(timezone=True), server_default=func.now(), index=True)
 

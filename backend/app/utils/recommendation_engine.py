@@ -8,16 +8,17 @@
 
 """
 
-from typing import List, Dict, Optional, Tuple
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, func, and_, or_, desc
-from sqlalchemy.orm import selectinload
-from collections import defaultdict
 import math
+from collections import defaultdict
+from typing import Dict, List, Optional, Tuple
 
-from app.models.video import Video, VideoStatus
-from app.models.user_activity import WatchHistory, Favorite
+from sqlalchemy import and_, desc, func, or_, select
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
+
 from app.models.comment import Rating
+from app.models.user_activity import Favorite, WatchHistory
+from app.models.video import Video, VideoStatus
 from app.utils.cache import Cache
 
 
@@ -31,7 +32,7 @@ class RecommendationEngine:
         self,
         user_id: Optional[int],
         limit: int = 20,
-        exclude_video_ids: Optional[List[int]] = None
+        exclude_video_ids: Optional[List[int]] = None,
     ) -> List[Video]:
         """
         获取个性化推荐
@@ -50,14 +51,18 @@ class RecommendationEngine:
                 return cached
 
             # 获取协同过滤推荐（基于相似用户）
-            collaborative_videos = await self._get_collaborative_filtering_recommendations(
-                user_id, limit=int(limit * 0.6), exclude_ids=exclude_ids
+            collaborative_videos = (
+                await self._get_collaborative_filtering_recommendations(
+                    user_id, limit=int(limit * 0.6), exclude_ids=exclude_ids
+                )
             )
             collaborative_ids = [v.id for v in collaborative_videos]
 
             # 获取内容推荐（基于用户历史）
             content_videos = await self._get_content_based_recommendations(
-                user_id, limit=int(limit * 0.4), exclude_ids=exclude_ids + collaborative_ids
+                user_id,
+                limit=int(limit * 0.4),
+                exclude_ids=exclude_ids + collaborative_ids,
             )
 
             # 合并结果
@@ -67,7 +72,7 @@ class RecommendationEngine:
             if len(recommended_videos) < limit:
                 popular_videos = await self._get_popular_videos(
                     limit=limit - len(recommended_videos),
-                    exclude_ids=exclude_ids + [v.id for v in recommended_videos]
+                    exclude_ids=exclude_ids + [v.id for v in recommended_videos],
                 )
                 recommended_videos.extend(popular_videos)
 
@@ -83,7 +88,7 @@ class RecommendationEngine:
         self,
         video_id: int,
         limit: int = 10,
-        exclude_video_ids: Optional[List[int]] = None
+        exclude_video_ids: Optional[List[int]] = None,
     ) -> List[Video]:
         """
         获取相似视频推荐
@@ -108,7 +113,7 @@ class RecommendationEngine:
             .options(
                 selectinload(Video.video_categories),
                 selectinload(Video.video_actors),
-                selectinload(Video.video_directors)
+                selectinload(Video.video_directors),
             )
             .filter(Video.id == video_id)
         )
@@ -130,12 +135,9 @@ class RecommendationEngine:
                 selectinload(Video.country),
                 selectinload(Video.video_categories),
                 selectinload(Video.video_actors),
-                selectinload(Video.video_directors)
+                selectinload(Video.video_directors),
             )
-            .filter(
-                Video.status == VideoStatus.PUBLISHED,
-                Video.id.not_in(exclude_ids)
-            )
+            .filter(Video.status == VideoStatus.PUBLISHED, Video.id.not_in(exclude_ids))
         )
 
         # 至少匹配一个分类或演员或导演
@@ -157,7 +159,9 @@ class RecommendationEngine:
             )
 
         # 按观看次数排序
-        candidates_query = candidates_query.order_by(desc(Video.view_count)).limit(limit * 2)
+        candidates_query = candidates_query.order_by(desc(Video.view_count)).limit(
+            limit * 2
+        )
 
         result = await self.db.execute(candidates_query)
         candidates = result.scalars().all()
@@ -177,10 +181,7 @@ class RecommendationEngine:
         return similar_videos
 
     async def _get_collaborative_filtering_recommendations(
-        self,
-        user_id: int,
-        limit: int,
-        exclude_ids: List[int]
+        self, user_id: int, limit: int, exclude_ids: List[int]
     ) -> List[Video]:
         """
         协同过滤推荐
@@ -191,14 +192,12 @@ class RecommendationEngine:
         """
         # 获取当前用户的行为数据
         user_watched_result = await self.db.execute(
-            select(WatchHistory.video_id)
-            .filter(WatchHistory.user_id == user_id)
+            select(WatchHistory.video_id).filter(WatchHistory.user_id == user_id)
         )
         user_watched_ids = [row[0] for row in user_watched_result.fetchall()]
 
         user_favorited_result = await self.db.execute(
-            select(Favorite.video_id)
-            .filter(Favorite.user_id == user_id)
+            select(Favorite.video_id).filter(Favorite.user_id == user_id)
         )
         user_favorited_ids = [row[0] for row in user_favorited_result.fetchall()]
 
@@ -209,13 +208,15 @@ class RecommendationEngine:
         # 找到有相似行为的用户
         # 这里简化处理：找到观看过相同视频的其他用户
         similar_users_result = await self.db.execute(
-            select(WatchHistory.user_id, func.count(WatchHistory.id).label('overlap_count'))
+            select(
+                WatchHistory.user_id, func.count(WatchHistory.id).label("overlap_count")
+            )
             .filter(
                 WatchHistory.user_id != user_id,
-                WatchHistory.video_id.in_(user_watched_ids)
+                WatchHistory.video_id.in_(user_watched_ids),
             )
             .group_by(WatchHistory.user_id)
-            .order_by(desc('overlap_count'))
+            .order_by(desc("overlap_count"))
             .limit(20)  # 找前20个最相似的用户
         )
         similar_user_ids = [row[0] for row in similar_users_result.fetchall()]
@@ -226,19 +227,20 @@ class RecommendationEngine:
         # 获取这些相似用户喜欢的视频
         # 通过收藏和高评分来衡量"喜欢"
         recommended_video_ids_result = await self.db.execute(
-            select(
-                Favorite.video_id,
-                func.count(Favorite.id).label('favorite_count')
-            )
+            select(Favorite.video_id, func.count(Favorite.id).label("favorite_count"))
             .filter(
                 Favorite.user_id.in_(similar_user_ids),
-                Favorite.video_id.not_in(user_watched_ids + user_favorited_ids + exclude_ids)
+                Favorite.video_id.not_in(
+                    user_watched_ids + user_favorited_ids + exclude_ids
+                ),
             )
             .group_by(Favorite.video_id)
-            .order_by(desc('favorite_count'))
+            .order_by(desc("favorite_count"))
             .limit(limit)
         )
-        recommended_video_ids = [row[0] for row in recommended_video_ids_result.fetchall()]
+        recommended_video_ids = [
+            row[0] for row in recommended_video_ids_result.fetchall()
+        ]
 
         # 获取视频详情
         if not recommended_video_ids:
@@ -249,16 +251,13 @@ class RecommendationEngine:
             .options(selectinload(Video.country))
             .filter(
                 Video.id.in_(recommended_video_ids),
-                Video.status == VideoStatus.PUBLISHED
+                Video.status == VideoStatus.PUBLISHED,
             )
         )
         return list(result.scalars().all())
 
     async def _get_content_based_recommendations(
-        self,
-        user_id: int,
-        limit: int,
-        exclude_ids: List[int]
+        self, user_id: int, limit: int, exclude_ids: List[int]
     ) -> List[Video]:
         """
         基于内容的推荐
@@ -283,7 +282,7 @@ class RecommendationEngine:
             .options(
                 selectinload(Video.video_categories),
                 selectinload(Video.video_actors),
-                selectinload(Video.video_directors)
+                selectinload(Video.video_directors),
             )
             .filter(Video.id.in_(recent_video_ids))
         )
@@ -306,9 +305,13 @@ class RecommendationEngine:
                 country_counts[video.country_id] += 1
 
         # 获取最常见的偏好
-        top_categories = sorted(category_counts.items(), key=lambda x: x[1], reverse=True)[:3]
+        top_categories = sorted(
+            category_counts.items(), key=lambda x: x[1], reverse=True
+        )[:3]
         top_actors = sorted(actor_counts.items(), key=lambda x: x[1], reverse=True)[:3]
-        top_directors = sorted(director_counts.items(), key=lambda x: x[1], reverse=True)[:2]
+        top_directors = sorted(
+            director_counts.items(), key=lambda x: x[1], reverse=True
+        )[:2]
 
         # 构建推荐查询
         filters = []
@@ -332,7 +335,7 @@ class RecommendationEngine:
             .filter(
                 Video.status == VideoStatus.PUBLISHED,
                 Video.id.not_in(recent_video_ids + exclude_ids),
-                or_(*filters)
+                or_(*filters),
             )
             .order_by(desc(Video.average_rating), desc(Video.view_count))
             .limit(limit)
@@ -342,9 +345,7 @@ class RecommendationEngine:
         return list(result.scalars().all())
 
     async def _get_popular_videos(
-        self,
-        limit: int,
-        exclude_ids: List[int]
+        self, limit: int, exclude_ids: List[int]
     ) -> List[Video]:
         """获取热门视频（按观看次数和评分综合排序）"""
         cache_key = f"popular_videos:limit_{limit}"
@@ -360,10 +361,13 @@ class RecommendationEngine:
             .options(selectinload(Video.country))
             .filter(
                 Video.status == VideoStatus.PUBLISHED,
-                Video.id.not_in(exclude_ids) if exclude_ids else True
+                Video.id.not_in(exclude_ids) if exclude_ids else True,
             )
             .order_by(
-                desc(Video.view_count * 0.7 + Video.average_rating * Video.rating_count * 0.3)
+                desc(
+                    Video.view_count * 0.7
+                    + Video.average_rating * Video.rating_count * 0.3
+                )
             )
             .limit(limit * 2)  # 多取一些以便过滤后仍有足够数量
         )
@@ -392,7 +396,9 @@ class RecommendationEngine:
         categories1 = {vc.category_id for vc in video1.video_categories}
         categories2 = {vc.category_id for vc in video2.video_categories}
         if categories1 and categories2:
-            category_overlap = len(categories1 & categories2) / len(categories1 | categories2)
+            category_overlap = len(categories1 & categories2) / len(
+                categories1 | categories2
+            )
             score += category_overlap * 0.4
 
         # 演员相似度（权重30%）
@@ -406,11 +412,17 @@ class RecommendationEngine:
         directors1 = {vd.director_id for vd in video1.video_directors}
         directors2 = {vd.director_id for vd in video2.video_directors}
         if directors1 and directors2:
-            director_overlap = len(directors1 & directors2) / len(directors1 | directors2)
+            director_overlap = len(directors1 & directors2) / len(
+                directors1 | directors2
+            )
             score += director_overlap * 0.2
 
         # 国家相同（权重5%）
-        if video1.country_id and video2.country_id and video1.country_id == video2.country_id:
+        if (
+            video1.country_id
+            and video2.country_id
+            and video1.country_id == video2.country_id
+        ):
             score += 0.05
 
         # 评分相近（权重5%）

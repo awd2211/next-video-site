@@ -1,12 +1,13 @@
-from fastapi import APIRouter, Depends, HTTPException, status, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, status
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, func
 from sqlalchemy.orm import selectinload
+
 from app.database import get_db
-from app.models.video import Actor, VideoActor, Video
+from app.models.video import Actor, Video, VideoActor
 from app.schemas.person import (
-    ActorResponse,
     ActorDetailResponse,
+    ActorResponse,
     PaginatedActorResponse,
 )
 from app.utils.cache import Cache

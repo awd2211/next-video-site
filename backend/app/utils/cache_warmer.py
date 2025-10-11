@@ -2,14 +2,22 @@
 缓存预热工具
 在系统启动或定时任务时预加载热门数据到缓存
 """
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, desc
-from sqlalchemy.orm import selectinload
-from app.models.video import Video, Category, Country, Tag, VideoStatus
-from app.schemas.video import VideoListResponse, CategoryResponse, CountryResponse, TagResponse
-from app.utils.cache import Cache
-from app.database import async_session_maker
+
 import asyncio
+
+from sqlalchemy import desc, select
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
+
+from app.database import async_session_maker
+from app.models.video import Category, Country, Tag, Video, VideoStatus
+from app.schemas.video import (
+    CategoryResponse,
+    CountryResponse,
+    TagResponse,
+    VideoListResponse,
+)
+from app.utils.cache import Cache
 
 
 class CacheWarmer:
@@ -21,7 +29,9 @@ class CacheWarmer:
         print("Warming up categories cache...")
         async with async_session_maker() as db:
             result = await db.execute(
-                select(Category).filter(Category.is_active == True).order_by(Category.sort_order)
+                select(Category)
+                .filter(Category.is_active == True)
+                .order_by(Category.sort_order)
             )
             categories = result.scalars().all()
             response = [CategoryResponse.model_validate(c) for c in categories]
@@ -57,9 +67,12 @@ class CacheWarmer:
         async with async_session_maker() as db:
             # 预热前3页
             for page in range(1, 4):
-                query = select(Video).options(
-                    selectinload(Video.country)
-                ).filter(Video.status == VideoStatus.PUBLISHED).order_by(desc(Video.view_count))
+                query = (
+                    select(Video)
+                    .options(selectinload(Video.country))
+                    .filter(Video.status == VideoStatus.PUBLISHED)
+                    .order_by(desc(Video.view_count))
+                )
 
                 # Paginate
                 offset = (page - 1) * page_size
@@ -86,12 +99,14 @@ class CacheWarmer:
         async with async_session_maker() as db:
             # 预热前2页
             for page in range(1, 3):
-                query = select(Video).options(
-                    selectinload(Video.country)
-                ).filter(
-                    Video.status == VideoStatus.PUBLISHED,
-                    Video.is_featured == True
-                ).order_by(desc(Video.sort_order), desc(Video.created_at))
+                query = (
+                    select(Video)
+                    .options(selectinload(Video.country))
+                    .filter(
+                        Video.status == VideoStatus.PUBLISHED, Video.is_featured == True
+                    )
+                    .order_by(desc(Video.sort_order), desc(Video.created_at))
+                )
 
                 # Paginate
                 offset = (page - 1) * page_size
@@ -118,12 +133,15 @@ class CacheWarmer:
         async with async_session_maker() as db:
             # 预热前2页
             for page in range(1, 3):
-                query = select(Video).options(
-                    selectinload(Video.country)
-                ).filter(
-                    Video.status == VideoStatus.PUBLISHED,
-                    Video.is_recommended == True
-                ).order_by(desc(Video.sort_order), desc(Video.created_at))
+                query = (
+                    select(Video)
+                    .options(selectinload(Video.country))
+                    .filter(
+                        Video.status == VideoStatus.PUBLISHED,
+                        Video.is_recommended == True,
+                    )
+                    .order_by(desc(Video.sort_order), desc(Video.created_at))
+                )
 
                 # Paginate
                 offset = (page - 1) * page_size

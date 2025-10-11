@@ -1,14 +1,31 @@
 """
 视频专辑/系列模型
 """
-from sqlalchemy import Column, Integer, String, Text, DateTime, Boolean, ForeignKey, Table, func, Enum as SQLEnum
-from sqlalchemy.orm import relationship
-from app.database import Base
+
 import enum
+
+from sqlalchemy import (
+    Boolean,
+    Column,
+    DateTime,
+)
+from sqlalchemy import Enum as SQLEnum
+from sqlalchemy import (
+    ForeignKey,
+    Integer,
+    String,
+    Table,
+    Text,
+    func,
+)
+from sqlalchemy.orm import relationship
+
+from app.database import Base
 
 
 class SeriesType(str, enum.Enum):
     """专辑类型"""
+
     SERIES = "series"  # 系列剧 (连续剧集)
     COLLECTION = "collection"  # 合集 (主题合集)
     FRANCHISE = "franchise"  # 系列作品 (如电影系列)
@@ -16,6 +33,7 @@ class SeriesType(str, enum.Enum):
 
 class SeriesStatus(str, enum.Enum):
     """专辑状态"""
+
     DRAFT = "draft"  # 草稿
     PUBLISHED = "published"  # 已发布
     ARCHIVED = "archived"  # 已归档
@@ -25,8 +43,18 @@ class SeriesStatus(str, enum.Enum):
 series_videos = Table(
     "series_videos",
     Base.metadata,
-    Column("series_id", Integer, ForeignKey("series.id", ondelete="CASCADE"), primary_key=True),
-    Column("video_id", Integer, ForeignKey("videos.id", ondelete="CASCADE"), primary_key=True),
+    Column(
+        "series_id",
+        Integer,
+        ForeignKey("series.id", ondelete="CASCADE"),
+        primary_key=True,
+    ),
+    Column(
+        "video_id",
+        Integer,
+        ForeignKey("videos.id", ondelete="CASCADE"),
+        primary_key=True,
+    ),
     Column("episode_number", Integer, nullable=True, comment="集数/顺序"),
     Column("added_at", DateTime(timezone=True), server_default=func.now()),
 )
@@ -34,14 +62,27 @@ series_videos = Table(
 
 class Series(Base):
     """视频专辑/系列"""
+
     __tablename__ = "series"
 
     id = Column(Integer, primary_key=True, index=True)
     title = Column(String(255), nullable=False, index=True, comment="专辑标题")
     description = Column(Text, nullable=True, comment="专辑描述")
     cover_image = Column(String(500), nullable=True, comment="封面图")
-    type = Column(SQLEnum(SeriesType, values_callable=lambda obj: [e.value for e in obj]), nullable=False, default=SeriesType.SERIES, index=True, comment="专辑类型")
-    status = Column(SQLEnum(SeriesStatus, values_callable=lambda obj: [e.value for e in obj]), nullable=False, default=SeriesStatus.DRAFT, index=True, comment="发布状态")
+    type = Column(
+        SQLEnum(SeriesType, values_callable=lambda obj: [e.value for e in obj]),
+        nullable=False,
+        default=SeriesType.SERIES,
+        index=True,
+        comment="专辑类型",
+    )
+    status = Column(
+        SQLEnum(SeriesStatus, values_callable=lambda obj: [e.value for e in obj]),
+        nullable=False,
+        default=SeriesStatus.DRAFT,
+        index=True,
+        comment="发布状态",
+    )
 
     # 统计字段
     total_episodes = Column(Integer, default=0, comment="总集数")
@@ -53,9 +94,13 @@ class Series(Base):
     is_featured = Column(Boolean, default=False, index=True, comment="是否推荐")
 
     # 元数据
-    created_by = Column(Integer, ForeignKey("admin_users.id", ondelete="SET NULL"), nullable=True)
+    created_by = Column(
+        Integer, ForeignKey("admin_users.id", ondelete="SET NULL"), nullable=True
+    )
     created_at = Column(DateTime(timezone=True), server_default=func.now(), index=True)
-    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+    updated_at = Column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
+    )
 
     # 关系
     videos = relationship("Video", secondary=series_videos, back_populates="series")

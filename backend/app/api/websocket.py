@@ -2,13 +2,16 @@
 WebSocket API端点
 提供实时通知功能
 """
-from fastapi import APIRouter, WebSocket, WebSocketDisconnect, Depends, Query
-from app.utils.websocket_manager import manager
-from app.utils.security import decode_token
-from app.models.user import User, AdminUser
-from app.database import SessionLocal
-from sqlalchemy import select
+
 import logging
+
+from fastapi import APIRouter, Depends, Query, WebSocket, WebSocketDisconnect
+from sqlalchemy import select
+
+from app.database import SessionLocal
+from app.models.user import AdminUser, User
+from app.utils.security import decode_token
+from app.utils.websocket_manager import manager
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
@@ -32,9 +35,7 @@ async def get_current_user_from_token(token: str):
                 )
                 user = result.scalar_one_or_none()
             else:
-                result = await db.execute(
-                    select(User).where(User.id == int(user_id))
-                )
+                result = await db.execute(select(User).where(User.id == int(user_id)))
                 user = result.scalar_one_or_none()
 
             return {"user": user, "is_admin": is_admin}
@@ -48,13 +49,13 @@ async def get_current_user_from_token(token: str):
 @router.websocket("/ws")
 async def websocket_endpoint(
     websocket: WebSocket,
-    token: str = Query(..., description="JWT访问令牌（必需）")  # 强制要求token
+    token: str = Query(..., description="JWT访问令牌（必需）"),  # 强制要求token
 ):
     """
     WebSocket端点 (普通用户)
 
     连接URL: ws://localhost:8000/api/v1/ws?token=<access_token>
-    
+
     注意：token参数是必需的，未认证的连接将被拒绝
 
     消息格式:
@@ -75,11 +76,13 @@ async def websocket_endpoint(
 
     try:
         # 发送连接成功消息
-        await websocket.send_json({
-            "type": "connected",
-            "message": f"欢迎, {user.username}!",
-            "user_id": user_id
-        })
+        await websocket.send_json(
+            {
+                "type": "connected",
+                "message": f"欢迎, {user.username}!",
+                "user_id": user_id,
+            }
+        )
 
         # 保持连接,监听客户端消息
         while True:
@@ -100,13 +103,13 @@ async def websocket_endpoint(
 @router.websocket("/ws/admin")
 async def admin_websocket_endpoint(
     websocket: WebSocket,
-    token: str = Query(..., description="JWT访问令牌（必需）")  # 强制要求token
+    token: str = Query(..., description="JWT访问令牌（必需）"),  # 强制要求token
 ):
     """
     WebSocket端点 (管理员)
 
     连接URL: ws://localhost:8000/api/v1/ws/admin?token=<access_token>
-    
+
     注意：token参数是必需的，未认证的连接将被拒绝
 
     接收消息类型:
@@ -132,12 +135,14 @@ async def admin_websocket_endpoint(
 
     try:
         # 发送连接成功消息
-        await websocket.send_json({
-            "type": "connected",
-            "message": f"管理员 {admin_user.username} 已连接",
-            "admin_id": admin_user.id,
-            "connection_stats": manager.get_connection_count()
-        })
+        await websocket.send_json(
+            {
+                "type": "connected",
+                "message": f"管理员 {admin_user.username} 已连接",
+                "admin_id": admin_user.id,
+                "connection_stats": manager.get_connection_count(),
+            }
+        )
 
         # 保持连接,监听客户端消息
         while True:
@@ -148,10 +153,9 @@ async def admin_websocket_endpoint(
                 await websocket.send_text("pong")
             # 管理员可以请求连接统计
             elif data == "get_stats":
-                await websocket.send_json({
-                    "type": "connection_stats",
-                    "data": manager.get_connection_count()
-                })
+                await websocket.send_json(
+                    {"type": "connection_stats", "data": manager.get_connection_count()}
+                )
 
     except WebSocketDisconnect:
         manager.disconnect(websocket, is_admin=True)

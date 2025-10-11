@@ -1,13 +1,15 @@
-from fastapi import APIRouter, Depends, HTTPException, status, Query
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, func, and_
-from sqlalchemy.orm import selectinload
 import math
+
+from fastapi import APIRouter, Depends, HTTPException, Query, status
+from sqlalchemy import and_, func, select
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
+
 from app.database import get_db
-from app.models.user_activity import Favorite
-from app.models.user import User
-from app.models.video import Video
 from app.models.favorite_folder import FavoriteFolder
+from app.models.user import User
+from app.models.user_activity import Favorite
+from app.models.video import Video
 from app.schemas.user_activity import (
     FavoriteCreate,
     FavoriteResponse,
@@ -26,12 +28,13 @@ async def add_favorite(
 ):
     """Add a video to user's favorites"""
     # Verify video exists
-    video_result = await db.execute(select(Video).where(Video.id == favorite_data.video_id))
+    video_result = await db.execute(
+        select(Video).where(Video.id == favorite_data.video_id)
+    )
     video = video_result.scalar_one_or_none()
     if not video:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Video not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail="Video not found"
         )
 
     # Check if already favorited
@@ -39,7 +42,7 @@ async def add_favorite(
         select(Favorite).where(
             and_(
                 Favorite.user_id == current_user.id,
-                Favorite.video_id == favorite_data.video_id
+                Favorite.video_id == favorite_data.video_id,
             )
         )
     )
@@ -47,8 +50,7 @@ async def add_favorite(
 
     if existing_favorite:
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Video already in favorites"
+            status_code=status.HTTP_400_BAD_REQUEST, detail="Video already in favorites"
         )
 
     # Validate folder_id if provided
@@ -58,15 +60,14 @@ async def add_favorite(
             select(FavoriteFolder).where(
                 and_(
                     FavoriteFolder.id == folder_id,
-                    FavoriteFolder.user_id == current_user.id
+                    FavoriteFolder.user_id == current_user.id,
                 )
             )
         )
         folder = folder_result.scalar_one_or_none()
         if not folder:
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Folder not found"
+                status_code=status.HTTP_404_NOT_FOUND, detail="Folder not found"
             )
     else:
         # Get or create default folder
@@ -74,7 +75,7 @@ async def add_favorite(
             select(FavoriteFolder).where(
                 and_(
                     FavoriteFolder.user_id == current_user.id,
-                    FavoriteFolder.is_default == True
+                    FavoriteFolder.is_default == True,
                 )
             )
         )
@@ -97,9 +98,7 @@ async def add_favorite(
 
     # Create favorite
     favorite = Favorite(
-        user_id=current_user.id,
-        video_id=favorite_data.video_id,
-        folder_id=folder_id
+        user_id=current_user.id, video_id=favorite_data.video_id, folder_id=folder_id
     )
     db.add(favorite)
 
@@ -125,18 +124,14 @@ async def remove_favorite(
     """Remove a video from user's favorites"""
     result = await db.execute(
         select(Favorite).where(
-            and_(
-                Favorite.user_id == current_user.id,
-                Favorite.video_id == video_id
-            )
+            and_(Favorite.user_id == current_user.id, Favorite.video_id == video_id)
         )
     )
     favorite = result.scalar_one_or_none()
 
     if not favorite:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Favorite not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail="Favorite not found"
         )
 
     # Update video favorite count
@@ -193,7 +188,7 @@ async def get_my_favorites(
         page=page,
         page_size=page_size,
         pages=math.ceil(total / page_size) if page_size > 0 else 0,
-        items=items
+        items=items,
     )
 
 
@@ -206,10 +201,7 @@ async def check_favorite(
     """Check if a video is in user's favorites"""
     result = await db.execute(
         select(Favorite).where(
-            and_(
-                Favorite.user_id == current_user.id,
-                Favorite.video_id == video_id
-            )
+            and_(Favorite.user_id == current_user.id, Favorite.video_id == video_id)
         )
     )
     favorite = result.scalar_one_or_none()

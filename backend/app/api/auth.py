@@ -1,29 +1,39 @@
 from datetime import datetime, timezone
-from fastapi import APIRouter, Depends, HTTPException, status, Request
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from sqlalchemy.ext.asyncio import AsyncSession
+
+from fastapi import APIRouter, Depends, HTTPException, Request, status
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.config import settings
 from app.database import get_db
-from app.models.user import User, AdminUser
-from app.schemas.auth import UserRegister, UserLogin, AdminLogin, TokenResponse, RefreshTokenRequest
-from app.schemas.user import UserResponse, AdminUserResponse
+from app.models.user import AdminUser, User
+from app.schemas.auth import (
+    AdminLogin,
+    RefreshTokenRequest,
+    TokenResponse,
+    UserLogin,
+    UserRegister,
+)
+from app.schemas.user import AdminUserResponse, UserResponse
+from app.utils.dependencies import get_current_admin_user, get_current_user
+from app.utils.rate_limit import AutoBanDetector, RateLimitPresets, limiter
 from app.utils.security import (
-    verify_password,
-    get_password_hash,
     create_access_token,
     create_refresh_token,
     decode_token,
+    get_password_hash,
+    verify_password,
 )
-from app.utils.dependencies import get_current_user, get_current_admin_user
-from app.utils.rate_limit import limiter, RateLimitPresets, AutoBanDetector
 from app.utils.token_blacklist import add_to_blacklist
-from app.config import settings
 
 router = APIRouter()
 security = HTTPBearer()
 
 
-@router.post("/register", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/register", response_model=UserResponse, status_code=status.HTTP_201_CREATED
+)
 @limiter.limit(RateLimitPresets.STRICT)  # 严格限流: 5/分钟
 async def register(
     request: Request,
@@ -119,8 +129,7 @@ async def admin_login(
     from app.utils.captcha import captcha_manager
 
     is_valid = await captcha_manager.validate_captcha(
-        credentials.captcha_id,
-        credentials.captcha_code
+        credentials.captcha_id, credentials.captcha_code
     )
 
     if not is_valid:
@@ -129,14 +138,18 @@ async def admin_login(
             detail="Invalid or expired captcha code",
         )
 
-    result = await db.execute(select(AdminUser).filter(AdminUser.username == credentials.username))
+    result = await db.execute(
+        select(AdminUser).filter(AdminUser.username == credentials.username)
+    )
     admin_user = result.scalar_one_or_none()
 
-    if not admin_user or not verify_password(credentials.password, admin_user.hashed_password):
+    if not admin_user or not verify_password(
+        credentials.password, admin_user.hashed_password
+    ):
         # 记录失败尝试（管理员账户需要额外保护）
         ip = request.client.host if request.client else "unknown"
         await AutoBanDetector.record_failed_attempt(ip, "admin_login")
-        
+
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Incorrect username or password",
@@ -239,12 +252,12 @@ async def logout(
     客户端应同时删除本地存储的token
     """
     token = credentials.credentials
-    
+
     # 将token加入黑名单
     # 使用access token的过期时间
     expires_in = settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60
     await add_to_blacklist(token, reason="logout", expires_in=expires_in)
-    
+
     return {"message": "Successfully logged out"}
 
 
@@ -257,9 +270,9 @@ async def admin_logout(
     管理员登出，将当前token加入黑名单
     """
     token = credentials.credentials
-    
+
     # 将token加入黑名单
     expires_in = settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60
     await add_to_blacklist(token, reason="admin_logout", expires_in=expires_in)
-    
+
     return {"message": "Successfully logged out"}

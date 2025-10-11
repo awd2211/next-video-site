@@ -1,13 +1,14 @@
-from fastapi import APIRouter, Depends, HTTPException, status, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, status
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, func
+
 from app.database import get_db
-from app.models.video import Country
 from app.models.user import AdminUser
+from app.models.video import Country
 from app.schemas.admin_content import (
     CountryCreate,
-    CountryUpdate,
     CountryResponse,
+    CountryUpdate,
     PaginatedCountryResponse,
 )
 from app.utils.dependencies import get_current_admin_user
@@ -35,12 +36,7 @@ async def get_countries(
     total = total_result.scalar()
 
     # Get paginated results
-    query = (
-        query
-        .order_by(Country.name)
-        .offset((page - 1) * page_size)
-        .limit(page_size)
-    )
+    query = query.order_by(Country.name).offset((page - 1) * page_size).limit(page_size)
 
     result = await db.execute(query)
     countries = result.scalars().all()
@@ -48,10 +44,7 @@ async def get_countries(
     items = [CountryResponse.model_validate(country) for country in countries]
 
     return PaginatedCountryResponse(
-        total=total,
-        page=page,
-        page_size=page_size,
-        items=items
+        total=total, page=page, page_size=page_size, items=items
     )
 
 
@@ -69,7 +62,7 @@ async def create_country(
     if existing_name.scalar_one_or_none():
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Country name already exists"
+            detail="Country name already exists",
         )
 
     # Check if code already exists
@@ -79,7 +72,7 @@ async def create_country(
     if existing_code.scalar_one_or_none():
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Country code already exists"
+            detail="Country code already exists",
         )
 
     # Create country
@@ -103,8 +96,7 @@ async def get_country(
 
     if not country:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Country not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail="Country not found"
         )
 
     return CountryResponse.model_validate(country)
@@ -123,8 +115,7 @@ async def update_country(
 
     if not country:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Country not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail="Country not found"
         )
 
     # Check for duplicate name
@@ -135,7 +126,7 @@ async def update_country(
         if existing.scalar_one_or_none():
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Country name already exists"
+                detail="Country name already exists",
             )
 
     # Check for duplicate code
@@ -146,7 +137,7 @@ async def update_country(
         if existing.scalar_one_or_none():
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Country code already exists"
+                detail="Country code already exists",
             )
 
     # Update fields
@@ -172,8 +163,7 @@ async def delete_country(
 
     if not country:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Country not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail="Country not found"
         )
 
     await db.delete(country)

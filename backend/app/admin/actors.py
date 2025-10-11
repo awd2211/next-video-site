@@ -1,17 +1,18 @@
-from fastapi import APIRouter, Depends, HTTPException, status, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, status
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, func
+
 from app.database import get_db
-from app.models.video import Actor
 from app.models.user import AdminUser
+from app.models.video import Actor
 from app.schemas.admin_content import (
+    ActorAdminResponse,
     ActorCreate,
     ActorUpdate,
-    ActorAdminResponse,
     PaginatedActorAdminResponse,
 )
-from app.utils.dependencies import get_current_admin_user
 from app.utils.cache import Cache
+from app.utils.dependencies import get_current_admin_user
 
 router = APIRouter()
 

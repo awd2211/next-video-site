@@ -1,11 +1,13 @@
-from pydantic import BaseModel, Field
-from typing import Optional, List
 from datetime import datetime
 from enum import Enum
+from typing import List, Optional
+
+from pydantic import BaseModel, Field
 
 
 class CommentStatusEnum(str, Enum):
     """Comment status enum"""
+
     PENDING = "pending"
     APPROVED = "approved"
     REJECTED = "rejected"
@@ -13,6 +15,7 @@ class CommentStatusEnum(str, Enum):
 
 class CommentCreate(BaseModel):
     """Comment creation schema"""
+
     video_id: int = Field(..., gt=0)
     parent_id: Optional[int] = Field(None, gt=0)
     content: str = Field(..., min_length=1, max_length=1000)
@@ -20,11 +23,13 @@ class CommentCreate(BaseModel):
 
 class CommentUpdate(BaseModel):
     """Comment update schema"""
+
     content: str = Field(..., min_length=1, max_length=1000)
 
 
 class UserBrief(BaseModel):
     """Brief user info for comment"""
+
     id: int
     username: str
     avatar: Optional[str] = None
@@ -35,6 +40,7 @@ class UserBrief(BaseModel):
 
 class CommentResponse(BaseModel):
     """Comment response schema"""
+
     id: int
     video_id: int
     user_id: int
@@ -48,7 +54,7 @@ class CommentResponse(BaseModel):
 
     user: UserBrief
     reply_count: int = 0
-    replies: List['CommentResponse'] = []
+    replies: List["CommentResponse"] = []
 
     class Config:
         from_attributes = True
@@ -60,6 +66,7 @@ CommentResponse.model_rebuild()
 
 class PaginatedCommentResponse(BaseModel):
     """Paginated comment response"""
+
     total: int
     page: int
     page_size: int

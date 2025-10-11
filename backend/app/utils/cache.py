@@ -4,56 +4,61 @@ Redis缓存工具类
 
 注意：使用JSON序列化而非pickle，避免远程代码执行风险
 """
+
 import json
-from typing import Any, Callable
-from functools import wraps
-import redis.asyncio as redis
-from app.config import settings
 from datetime import datetime
 from decimal import Decimal
+from functools import wraps
+from typing import Any, Callable
+
+import redis.asyncio as redis
+
+from app.config import settings
 
 
 def json_serializer(obj: Any) -> str:
     """
     JSON序列化器，支持datetime等特殊类型
-    
+
     Args:
         obj: 要序列化的对象
-    
+
     Returns:
         JSON字符串
     """
+
     def default(o):
         if isinstance(o, datetime):
-            return {'__type__': 'datetime', 'value': o.isoformat()}
+            return {"__type__": "datetime", "value": o.isoformat()}
         elif isinstance(o, Decimal):
-            return {'__type__': 'decimal', 'value': str(o)}
-        elif hasattr(o, '__dict__'):
+            return {"__type__": "decimal", "value": str(o)}
+        elif hasattr(o, "__dict__"):
             # Pydantic models and similar objects
-            return {'__type__': 'object', 'value': str(o)}
+            return {"__type__": "object", "value": str(o)}
         return str(o)
-    
+
     return json.dumps(obj, default=default, ensure_ascii=False)
 
 
 def json_deserializer(json_str: str) -> Any:
     """
     JSON反序列化器，恢复datetime等特殊类型
-    
+
     Args:
         json_str: JSON字符串
-    
+
     Returns:
         反序列化的对象
     """
+
     def object_hook(obj):
-        if isinstance(obj, dict) and '__type__' in obj:
-            if obj['__type__'] == 'datetime':
-                return datetime.fromisoformat(obj['value'])
-            elif obj['__type__'] == 'decimal':
-                return Decimal(obj['value'])
+        if isinstance(obj, dict) and "__type__" in obj:
+            if obj["__type__"] == "datetime":
+                return datetime.fromisoformat(obj["value"])
+            elif obj["__type__"] == "decimal":
+                return Decimal(obj["value"])
         return obj
-    
+
     return json.loads(json_str, object_hook=object_hook)
 
 
@@ -108,6 +113,7 @@ class CacheStats:
                 date = datetime.now()
                 if i > 0:
                     from datetime import timedelta
+
                     date = date - timedelta(days=i)
 
                 date_str = date.strftime("%Y-%m-%d")
@@ -120,13 +126,15 @@ class CacheStats:
                 total = hits + misses
                 hit_rate = (hits / total * 100) if total > 0 else 0
 
-                stats.append({
-                    "date": date_str,
-                    "hits": hits,
-                    "misses": misses,
-                    "total": total,
-                    "hit_rate": round(hit_rate, 2)
-                })
+                stats.append(
+                    {
+                        "date": date_str,
+                        "hits": hits,
+                        "misses": misses,
+                        "total": total,
+                        "hit_rate": round(hit_rate, 2),
+                    }
+                )
 
             return {
                 "stats": stats[::-1],  # 倒序，最新的在前
@@ -135,13 +143,16 @@ class CacheStats:
                     "total_misses": sum(s["misses"] for s in stats),
                     "total_requests": sum(s["total"] for s in stats),
                     "average_hit_rate": round(
-                        sum(s["hits"] for s in stats) /
-                        sum(s["total"] for s in stats) * 100
-                        if sum(s["total"] for s in stats) > 0
-                        else 0,
-                        2
-                    )
-                }
+                        (
+                            sum(s["hits"] for s in stats)
+                            / sum(s["total"] for s in stats)
+                            * 100
+                            if sum(s["total"] for s in stats) > 0
+                            else 0
+                        ),
+                        2,
+                    ),
+                },
             }
         except Exception as e:
             print(f"Cache stats get error: {e}")
@@ -276,6 +287,7 @@ def cache_result(key_prefix: str, ttl: int = 3600):
             # 数据库查询
             return categories
     """
+
     def decorator(func: Callable):
         @wraps(func)
         async def wrapper(*args, **kwargs):
@@ -284,9 +296,7 @@ def cache_result(key_prefix: str, ttl: int = 3600):
             if args or kwargs:
                 # 将参数序列化为字符串作为键的一部分
                 args_str = json.dumps(
-                    {"args": args, "kwargs": kwargs},
-                    sort_keys=True,
-                    default=str
+                    {"args": args, "kwargs": kwargs}, sort_keys=True, default=str
                 )
                 cache_key = f"{key_prefix}:{hash(args_str)}"
 
@@ -303,7 +313,9 @@ def cache_result(key_prefix: str, ttl: int = 3600):
                 await Cache.set(cache_key, result, ttl)
 
             return result
+
         return wrapper
+
     return decorator
 
 

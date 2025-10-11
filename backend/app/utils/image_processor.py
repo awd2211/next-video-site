@@ -7,10 +7,12 @@
 - 生成多种尺寸缩略图
 - WebP转换
 """
-from PIL import Image
+
 import io
-from typing import Tuple, Optional, BinaryIO
 import os
+from typing import BinaryIO, Optional, Tuple
+
+from PIL import Image
 
 
 class ImageProcessor:
@@ -18,10 +20,10 @@ class ImageProcessor:
 
     # 预设尺寸
     THUMBNAIL_SIZES = {
-        "small": (320, 180),      # 小缩略图
-        "medium": (640, 360),     # 中等缩略图
-        "large": (1280, 720),     # 大缩略图
-        "poster_small": (200, 300),   # 海报小图
+        "small": (320, 180),  # 小缩略图
+        "medium": (640, 360),  # 中等缩略图
+        "large": (1280, 720),  # 大缩略图
+        "poster_small": (200, 300),  # 海报小图
         "poster_medium": (400, 600),  # 海报中图
         "poster_large": (800, 1200),  # 海报大图
     }
@@ -63,7 +65,9 @@ class ImageProcessor:
                 background = Image.new("RGB", img.size, (255, 255, 255))
                 if img.mode == "P":
                     img = img.convert("RGBA")
-                background.paste(img, mask=img.split()[-1] if img.mode == "RGBA" else None)
+                background.paste(
+                    img, mask=img.split()[-1] if img.mode == "RGBA" else None
+                )
                 img = background
             else:
                 img = img.convert("RGBA")

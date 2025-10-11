@@ -1,14 +1,18 @@
 """
 视频专辑/系列 Schema
 """
-from pydantic import BaseModel, Field
-from typing import Optional, List
+
 from datetime import datetime
-from app.models.series import SeriesType, SeriesStatus
+from typing import List, Optional
+
+from pydantic import BaseModel, Field
+
+from app.models.series import SeriesStatus, SeriesType
 
 
 class SeriesVideoItem(BaseModel):
     """专辑中的视频条目"""
+
     video_id: int
     episode_number: Optional[int] = None  # 集数/顺序
     title: str
@@ -23,6 +27,7 @@ class SeriesVideoItem(BaseModel):
 
 class SeriesCreate(BaseModel):
     """创建专辑"""
+
     title: str = Field(..., min_length=1, max_length=255)
     description: Optional[str] = None
     cover_image: Optional[str] = None
@@ -34,6 +39,7 @@ class SeriesCreate(BaseModel):
 
 class SeriesUpdate(BaseModel):
     """更新专辑"""
+
     title: Optional[str] = Field(None, min_length=1, max_length=255)
     description: Optional[str] = None
     cover_image: Optional[str] = None
@@ -45,22 +51,28 @@ class SeriesUpdate(BaseModel):
 
 class SeriesAddVideos(BaseModel):
     """添加视频到专辑"""
+
     video_ids: List[int] = Field(..., min_items=1)
     start_episode_number: Optional[int] = None  # 起始集数（自动递增）
 
 
 class SeriesRemoveVideos(BaseModel):
     """从专辑移除视频"""
+
     video_ids: List[int] = Field(..., min_items=1)
 
 
 class SeriesUpdateVideoOrder(BaseModel):
     """更新视频顺序"""
-    video_order: List[dict] = Field(..., description="[{video_id: 1, episode_number: 1}, ...]")
+
+    video_order: List[dict] = Field(
+        ..., description="[{video_id: 1, episode_number: 1}, ...]"
+    )
 
 
 class SeriesListResponse(BaseModel):
     """专辑列表响应（简化版）"""
+
     id: int
     title: str
     description: Optional[str] = None
@@ -80,6 +92,7 @@ class SeriesListResponse(BaseModel):
 
 class SeriesDetailResponse(BaseModel):
     """专辑详情响应（含视频列表）"""
+
     id: int
     title: str
     description: Optional[str] = None
@@ -101,6 +114,7 @@ class SeriesDetailResponse(BaseModel):
 
 class PaginatedSeriesResponse(BaseModel):
     """分页专辑响应"""
+
     total: int
     page: int
     page_size: int

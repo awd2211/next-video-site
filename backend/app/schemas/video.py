@@ -1,11 +1,13 @@
-from pydantic import BaseModel, Field
-from typing import Optional, List
 from datetime import datetime
 from enum import Enum
+from typing import List, Optional
+
+from pydantic import BaseModel, Field
 
 
 class VideoTypeEnum(str, Enum):
     """Video type enum"""
+
     MOVIE = "movie"
     TV_SERIES = "tv_series"
     ANIME = "anime"
@@ -14,6 +16,7 @@ class VideoTypeEnum(str, Enum):
 
 class VideoStatusEnum(str, Enum):
     """Video status enum"""
+
     DRAFT = "draft"
     PUBLISHED = "published"
     ARCHIVED = "archived"
@@ -21,6 +24,7 @@ class VideoStatusEnum(str, Enum):
 
 class CategoryResponse(BaseModel):
     """Category response schema"""
+
     id: int
     name: str
     slug: str
@@ -32,6 +36,7 @@ class CategoryResponse(BaseModel):
 
 class CountryResponse(BaseModel):
     """Country response schema"""
+
     id: int
     name: str
     code: str
@@ -42,6 +47,7 @@ class CountryResponse(BaseModel):
 
 class TagResponse(BaseModel):
     """Tag response schema"""
+
     id: int
     name: str
     slug: str
@@ -52,6 +58,7 @@ class TagResponse(BaseModel):
 
 class ActorResponse(BaseModel):
     """Actor response schema"""
+
     id: int
     name: str
     avatar: Optional[str] = None
@@ -63,6 +70,7 @@ class ActorResponse(BaseModel):
 
 class DirectorResponse(BaseModel):
     """Director response schema"""
+
     id: int
     name: str
     avatar: Optional[str] = None
@@ -73,6 +81,7 @@ class DirectorResponse(BaseModel):
 
 class VideoListResponse(BaseModel):
     """Video list item response schema"""
+
     id: int
     title: str
     slug: str
@@ -92,6 +101,7 @@ class VideoListResponse(BaseModel):
 
 class VideoDetailResponse(VideoListResponse):
     """Video detail response schema"""
+
     original_title: Optional[str] = None
     description: Optional[str] = None
     video_url: Optional[str] = None
@@ -119,19 +129,20 @@ class VideoDetailResponse(VideoListResponse):
     @classmethod
     def model_validate(cls, obj, **kwargs):
         """Custom validation to extract nested relationships"""
-        if hasattr(obj, 'video_categories'):
+        if hasattr(obj, "video_categories"):
             obj.categories = [vc.category for vc in obj.video_categories if vc.category]
-        if hasattr(obj, 'video_tags'):
+        if hasattr(obj, "video_tags"):
             obj.tags = [vt.tag for vt in obj.video_tags if vt.tag]
-        if hasattr(obj, 'video_actors'):
+        if hasattr(obj, "video_actors"):
             obj.actors = [va.actor for va in obj.video_actors if va.actor]
-        if hasattr(obj, 'video_directors'):
+        if hasattr(obj, "video_directors"):
             obj.directors = [vd.director for vd in obj.video_directors if vd.director]
         return super().model_validate(obj, **kwargs)
 
 
 class VideoCreate(BaseModel):
     """Video creation schema"""
+
     title: str = Field(..., min_length=1, max_length=500)
     original_title: Optional[str] = None
     description: Optional[str] = None
@@ -156,6 +167,7 @@ class VideoCreate(BaseModel):
 
 class VideoUpdate(BaseModel):
     """Video update schema"""
+
     title: Optional[str] = None
     original_title: Optional[str] = None
     description: Optional[str] = None
@@ -180,6 +192,7 @@ class VideoUpdate(BaseModel):
 
 class PaginatedResponse(BaseModel):
     """Paginated response schema"""
+
     total: int
     page: int
     page_size: int

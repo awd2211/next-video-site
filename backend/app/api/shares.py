@@ -1,18 +1,20 @@
 """
 分享相关 API 端点
 """
-from fastapi import APIRouter, Depends, Request
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, func, and_
-from typing import Optional
+
 from datetime import datetime, timedelta, timezone
+from typing import Optional
+
+from fastapi import APIRouter, Depends, Request
+from sqlalchemy import and_, func, select
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
+from app.models.share import SharePlatform, VideoShare
 from app.models.user import User
-from app.models.share import VideoShare, SharePlatform
 from app.schemas.share import ShareCreate, ShareResponse, ShareStatsResponse
 from app.utils.dependencies import get_current_user, get_current_user_optional
-from app.utils.rate_limit import limiter, RateLimitPresets
+from app.utils.rate_limit import RateLimitPresets, limiter
 
 router = APIRouter()
 
@@ -49,7 +51,11 @@ async def create_share(
     return share
 
 
-@router.get("/video/{video_id}/stats", response_model=ShareStatsResponse, summary="获取视频分享统计")
+@router.get(
+    "/video/{video_id}/stats",
+    response_model=ShareStatsResponse,
+    summary="获取视频分享统计",
+)
 async def get_video_share_stats(
     video_id: int,
     db: AsyncSession = Depends(get_db),
@@ -70,25 +76,18 @@ async def get_video_share_stats(
 
     # 各平台统计
     platform_result = await db.execute(
-        select(
-            VideoShare.platform,
-            func.count(VideoShare.id).label("count")
-        )
+        select(VideoShare.platform, func.count(VideoShare.id).label("count"))
         .where(VideoShare.video_id == video_id)
         .group_by(VideoShare.platform)
     )
-    platform_stats = {
-        str(row.platform): row.count
-        for row in platform_result.all()
-    }
+    platform_stats = {str(row.platform): row.count for row in platform_result.all()}
 
     # 最近7天分享次数
     seven_days_ago = datetime.now(timezone.utc) - timedelta(days=7)
     recent_result = await db.execute(
         select(func.count(VideoShare.id)).where(
             and_(
-                VideoShare.video_id == video_id,
-                VideoShare.shared_at >= seven_days_ago
+                VideoShare.video_id == video_id, VideoShare.shared_at >= seven_days_ago
             )
         )
     )
@@ -101,7 +100,9 @@ async def get_video_share_stats(
     )
 
 
-@router.get("/my-shares", response_model=list[ShareResponse], summary="获取我的分享记录")
+@router.get(
+    "/my-shares", response_model=list[ShareResponse], summary="获取我的分享记录"
+)
 async def get_my_shares(
     skip: int = 0,
     limit: int = 20,

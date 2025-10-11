@@ -2,12 +2,15 @@
 API 限流工具
 提供细化的限流策略和IP黑名单功能
 """
-from typing import Optional, Callable, Dict, List, Any
-from fastapi import Request, HTTPException, status
+
+from functools import wraps
+from typing import Any, Callable, Dict, List, Optional
+
+import redis.asyncio as redis
+from fastapi import HTTPException, Request, status
 from slowapi import Limiter
 from slowapi.util import get_remote_address
-import redis.asyncio as redis
-from functools import wraps
+
 from app.config import settings
 
 # 创建限流器实例
@@ -25,7 +28,7 @@ async def get_redis_client() -> redis.Redis:
             host=settings.REDIS_HOST,
             port=settings.REDIS_PORT,
             db=settings.REDIS_DB,
-            decode_responses=True
+            decode_responses=True,
         )
     return redis_client
 
@@ -35,26 +38,26 @@ class RateLimitPresets:
     """限流预设配置"""
 
     # 严格限流 (写操作/敏感操作)
-    STRICT = "5/minute"           # 注册、登录、修改密码
-    STRICT_HOUR = "20/hour"       # 每小时20次
+    STRICT = "5/minute"  # 注册、登录、修改密码
+    STRICT_HOUR = "20/hour"  # 每小时20次
 
     # 中等限流 (搜索/查询)
-    MODERATE = "60/minute"        # 搜索、复杂查询
-    MODERATE_HOUR = "1000/hour"   # 每小时1000次
+    MODERATE = "60/minute"  # 搜索、复杂查询
+    MODERATE_HOUR = "1000/hour"  # 每小时1000次
 
     # 宽松限流 (浏览/列表)
-    RELAXED = "200/minute"        # 视频列表、分类浏览
-    RELAXED_HOUR = "5000/hour"    # 每小时5000次
+    RELAXED = "200/minute"  # 视频列表、分类浏览
+    RELAXED_HOUR = "5000/hour"  # 每小时5000次
 
     # 特殊限流
-    UPLOAD = "5/hour"             # 用户上传操作
-    COMMENT = "30/minute"         # 评论发布
-    SHARE = "50/minute"           # 分享操作
-    DOWNLOAD = "10/minute"        # 下载操作
+    UPLOAD = "5/hour"  # 用户上传操作
+    COMMENT = "30/minute"  # 评论发布
+    SHARE = "50/minute"  # 分享操作
+    DOWNLOAD = "10/minute"  # 下载操作
 
     # 管理员限流 (更宽松)
-    ADMIN_WRITE = "100/minute"    # 管理员写操作
-    ADMIN_READ = "500/minute"     # 管理员读操作
+    ADMIN_WRITE = "100/minute"  # 管理员写操作
+    ADMIN_READ = "500/minute"  # 管理员读操作
     # 注意: 管理员上传视频通常不限流
 
 
@@ -77,7 +80,9 @@ async def check_ip_blacklist(ip: str) -> bool:
         return False
 
 
-async def add_to_blacklist(ip: str, reason: str = "", duration: Optional[int] = None) -> None:
+async def add_to_blacklist(
+    ip: str, reason: str = "", duration: Optional[int] = None
+) -> None:
     """
     添加IP到黑名单
 
@@ -92,10 +97,14 @@ async def add_to_blacklist(ip: str, reason: str = "", duration: Optional[int] = 
 
         # 记录封禁原因和时间
         import time
-        await client.hset(f"ip_blacklist_info:{ip}", mapping={
-            "reason": reason,
-            "banned_at": str(int(time.time())),
-        })
+
+        await client.hset(
+            f"ip_blacklist_info:{ip}",
+            mapping={
+                "reason": reason,
+                "banned_at": str(int(time.time())),
+            },
+        )
 
         # 如果指定了时长,设置过期时间
         if duration:
@@ -136,12 +145,14 @@ async def get_blacklist() -> List[Dict[str, Any]]:
             # 检查是否是临时封禁 (存在临时封禁key)
             is_temp: int = await client.exists(f"ip_blacklist_temp:{ip}")
 
-            result.append({
-                "ip": str(ip),
-                "reason": info.get("reason", ""),
-                "banned_at": info.get("banned_at", ""),
-                "is_permanent": not bool(is_temp),
-            })
+            result.append(
+                {
+                    "ip": str(ip),
+                    "reason": info.get("reason", ""),
+                    "banned_at": info.get("banned_at", ""),
+                    "is_permanent": not bool(is_temp),
+                }
+            )
         return result
     except Exception as e:
         print(f"Get blacklist error: {e}")
@@ -152,6 +163,7 @@ def check_blacklist_middleware():
     """
     IP黑名单检查中间件装饰器
     """
+
     def decorator(func: Callable):
         @wraps(func)
         async def wrapper(*args, **kwargs):
@@ -167,11 +179,13 @@ def check_blacklist_middleware():
                 if ip and await check_ip_blacklist(ip):
                     raise HTTPException(
                         status_code=status.HTTP_403_FORBIDDEN,
-                        detail="Your IP address has been blocked due to suspicious activity"
+                        detail="Your IP address has been blocked due to suspicious activity",
                     )
 
             return await func(*args, **kwargs)
+
         return wrapper
+
     return decorator
 
 
@@ -205,7 +219,7 @@ class AutoBanDetector:
                 await add_to_blacklist(
                     ip,
                     reason=f"Too many failed {attempt_type} attempts ({count} times)",
-                    duration=3600  # 封禁1小时
+                    duration=3600,  # 封禁1小时
                 )
                 # 清除计数
                 await client.delete(key)

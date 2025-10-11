@@ -1,6 +1,7 @@
-from sqlalchemy import Column, Integer, String, Text, DateTime, ForeignKey, Boolean
-from sqlalchemy.sql import func
+from sqlalchemy import Boolean, Column, DateTime, ForeignKey, Integer, String, Text
 from sqlalchemy.orm import relationship
+from sqlalchemy.sql import func
+
 from app.database import Base
 
 
@@ -18,7 +19,9 @@ class Role(Base):
 
     # Relationships
     admin_users = relationship("AdminUser", back_populates="role")
-    role_permissions = relationship("RolePermission", back_populates="role", cascade="all, delete-orphan")
+    role_permissions = relationship(
+        "RolePermission", back_populates="role", cascade="all, delete-orphan"
+    )
 
 
 class Permission(Base):
@@ -28,13 +31,17 @@ class Permission(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String(100), unique=True, nullable=False)
-    code = Column(String(100), unique=True, nullable=False)  # e.g., "video.create", "user.delete"
+    code = Column(
+        String(100), unique=True, nullable=False
+    )  # e.g., "video.create", "user.delete"
     description = Column(Text, nullable=True)
     module = Column(String(50), nullable=False)  # e.g., "video", "user", "comment"
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
     # Relationships
-    role_permissions = relationship("RolePermission", back_populates="permission", cascade="all, delete-orphan")
+    role_permissions = relationship(
+        "RolePermission", back_populates="permission", cascade="all, delete-orphan"
+    )
 
 
 class RolePermission(Base):
@@ -43,8 +50,12 @@ class RolePermission(Base):
     __tablename__ = "role_permissions"
 
     id = Column(Integer, primary_key=True, index=True)
-    role_id = Column(Integer, ForeignKey("roles.id", ondelete="CASCADE"), nullable=False)
-    permission_id = Column(Integer, ForeignKey("permissions.id", ondelete="CASCADE"), nullable=False)
+    role_id = Column(
+        Integer, ForeignKey("roles.id", ondelete="CASCADE"), nullable=False
+    )
+    permission_id = Column(
+        Integer, ForeignKey("permissions.id", ondelete="CASCADE"), nullable=False
+    )
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
     # Relationships
@@ -58,9 +69,15 @@ class OperationLog(Base):
     __tablename__ = "operation_logs"
 
     id = Column(Integer, primary_key=True, index=True)
-    admin_user_id = Column(Integer, ForeignKey("admin_users.id", ondelete="SET NULL"), nullable=True)
-    module = Column(String(50), nullable=False, index=True)  # video, user, comment, etc.
-    action = Column(String(50), nullable=False, index=True)  # create, update, delete, etc.
+    admin_user_id = Column(
+        Integer, ForeignKey("admin_users.id", ondelete="SET NULL"), nullable=True
+    )
+    module = Column(
+        String(50), nullable=False, index=True
+    )  # video, user, comment, etc.
+    action = Column(
+        String(50), nullable=False, index=True
+    )  # create, update, delete, etc.
     description = Column(Text, nullable=True)
     ip_address = Column(String(50), nullable=True)
     user_agent = Column(String(500), nullable=True)

@@ -2,11 +2,12 @@
 AV1视频转码工具类
 使用dav1d解码器 + SVT-AV1编码器
 """
+
+import json
+import logging
 import subprocess
 from pathlib import Path
 from typing import Dict, List, Optional
-import json
-import logging
 
 logger = logging.getLogger(__name__)
 
@@ -20,30 +21,30 @@ class AV1Transcoder:
 
     # SVT-AV1编码配置 (使用CRF模式,质量优先)
     PROFILES = {
-        '1080p': {
-            'resolution': '1920:1080',
-            'preset': 8,             # 0-13: 速度vs质量 (8=快速高质量)
-            'crf': 30,               # 质量参数 (28-32为最佳, 自动实现~56%压缩)
-            'audio_bitrate': '128k',
+        "1080p": {
+            "resolution": "1920:1080",
+            "preset": 8,  # 0-13: 速度vs质量 (8=快速高质量)
+            "crf": 30,  # 质量参数 (28-32为最佳, 自动实现~56%压缩)
+            "audio_bitrate": "128k",
         },
-        '720p': {
-            'resolution': '1280:720',
-            'preset': 8,
-            'crf': 32,
-            'audio_bitrate': '128k',
+        "720p": {
+            "resolution": "1280:720",
+            "preset": 8,
+            "crf": 32,
+            "audio_bitrate": "128k",
         },
-        '480p': {
-            'resolution': '854:480',
-            'preset': 8,
-            'crf': 34,
-            'audio_bitrate': '96k',
+        "480p": {
+            "resolution": "854:480",
+            "preset": 8,
+            "crf": 34,
+            "audio_bitrate": "96k",
         },
-        '360p': {
-            'resolution': '640:360',
-            'preset': 9,
-            'crf': 36,
-            'audio_bitrate': '96k',
-        }
+        "360p": {
+            "resolution": "640:360",
+            "preset": 9,
+            "crf": 36,
+            "audio_bitrate": "96k",
+        },
     }
 
     @staticmethod
@@ -61,12 +62,14 @@ class AV1Transcoder:
             }
         """
         cmd = [
-            'ffprobe',
-            '-v', 'quiet',
-            '-print_format', 'json',
-            '-show_format',
-            '-show_streams',
-            str(input_path)
+            "ffprobe",
+            "-v",
+            "quiet",
+            "-print_format",
+            "json",
+            "-show_format",
+            "-show_streams",
+            str(input_path),
         ]
 
         result = subprocess.run(cmd, capture_output=True, text=True)
@@ -77,28 +80,27 @@ class AV1Transcoder:
 
         # 获取视频流
         video_stream = next(
-            (s for s in data['streams'] if s['codec_type'] == 'video'),
-            None
+            (s for s in data["streams"] if s["codec_type"] == "video"), None
         )
 
         if not video_stream:
             raise Exception("No video stream found")
 
         return {
-            'width': int(video_stream.get('width', 0)),
-            'height': int(video_stream.get('height', 0)),
-            'duration': float(data['format'].get('duration', 0)),
-            'codec': video_stream.get('codec_name', 'unknown'),
-            'bitrate': int(data['format'].get('bit_rate', 0)),
+            "width": int(video_stream.get("width", 0)),
+            "height": int(video_stream.get("height", 0)),
+            "duration": float(data["format"].get("duration", 0)),
+            "codec": video_stream.get("codec_name", "unknown"),
+            "bitrate": int(data["format"].get("bit_rate", 0)),
         }
 
     @staticmethod
     def transcode_to_av1(
         input_path: Path,
         output_path: Path,
-        resolution: str = '1080p',
+        resolution: str = "1080p",
         use_gpu_decode: bool = False,
-        two_pass: bool = False
+        two_pass: bool = False,
     ) -> Path:
         """
         转码视频到AV1格式 (MP4容器)
@@ -119,40 +121,58 @@ class AV1Transcoder:
         profile = AV1Transcoder.PROFILES[resolution]
 
         # 基础命令
-        cmd = ['ffmpeg', '-y']
+        cmd = ["ffmpeg", "-y"]
 
         # GPU加速解码 (可选)
         if use_gpu_decode:
-            cmd.extend(['-hwaccel', 'auto'])
+            cmd.extend(["-hwaccel", "auto"])
 
         # 输入文件
-        cmd.extend(['-i', str(input_path)])
+        cmd.extend(["-i", str(input_path)])
 
         # 视频编码 - SVT-AV1 (CRF模式)
-        cmd.extend([
-            '-c:v', 'libsvtav1',
-            '-preset', str(profile['preset']),
-            '-crf', str(profile['crf']),
-            '-g', '240',             # Keyframe interval (8 seconds @ 30fps)
-            '-pix_fmt', 'yuv420p',   # Pixel format
-        ])
+        cmd.extend(
+            [
+                "-c:v",
+                "libsvtav1",
+                "-preset",
+                str(profile["preset"]),
+                "-crf",
+                str(profile["crf"]),
+                "-g",
+                "240",  # Keyframe interval (8 seconds @ 30fps)
+                "-pix_fmt",
+                "yuv420p",  # Pixel format
+            ]
+        )
 
         # 分辨率缩放
-        cmd.extend([
-            '-vf', f"scale={profile['resolution']}:flags=lanczos",
-        ])
+        cmd.extend(
+            [
+                "-vf",
+                f"scale={profile['resolution']}:flags=lanczos",
+            ]
+        )
 
         # 音频编码 - Opus (AV1推荐)
-        cmd.extend([
-            '-c:a', 'libopus',
-            '-b:a', profile['audio_bitrate'],
-        ])
+        cmd.extend(
+            [
+                "-c:a",
+                "libopus",
+                "-b:a",
+                profile["audio_bitrate"],
+            ]
+        )
 
         # 容器格式 - MP4
-        cmd.extend([
-            '-f', 'mp4',
-            '-movflags', '+faststart',  # 快速启动
-        ])
+        cmd.extend(
+            [
+                "-f",
+                "mp4",
+                "-movflags",
+                "+faststart",  # 快速启动
+            ]
+        )
 
         # 输出文件
         cmd.append(str(output_path))
@@ -172,8 +192,8 @@ class AV1Transcoder:
     def transcode_to_hls_av1(
         input_path: Path,
         output_dir: Path,
-        resolution: str = '1080p',
-        segment_time: int = 6
+        resolution: str = "1080p",
+        segment_time: int = 6,
     ) -> Path:
         """
         转码为AV1 HLS流 (用于Web播放)
@@ -191,29 +211,40 @@ class AV1Transcoder:
         profile = AV1Transcoder.PROFILES[resolution]
 
         cmd = [
-            'ffmpeg', '-y',
-            '-i', str(input_path),
-
+            "ffmpeg",
+            "-y",
+            "-i",
+            str(input_path),
             # 视频编码 - SVT-AV1 (CRF模式)
-            '-c:v', 'libsvtav1',
-            '-preset', str(profile['preset']),
-            '-crf', str(profile['crf']),
-            '-g', '240',
-            '-pix_fmt', 'yuv420p',
-            '-vf', f"scale={profile['resolution']}:flags=lanczos",
-
+            "-c:v",
+            "libsvtav1",
+            "-preset",
+            str(profile["preset"]),
+            "-crf",
+            str(profile["crf"]),
+            "-g",
+            "240",
+            "-pix_fmt",
+            "yuv420p",
+            "-vf",
+            f"scale={profile['resolution']}:flags=lanczos",
             # 音频编码
-            '-c:a', 'libopus',
-            '-b:a', profile['audio_bitrate'],
-
+            "-c:a",
+            "libopus",
+            "-b:a",
+            profile["audio_bitrate"],
             # HLS配置
-            '-f', 'hls',
-            '-hls_time', str(segment_time),
-            '-hls_playlist_type', 'vod',
-            '-hls_segment_filename', str(output_dir / 'segment_%03d.ts'),
-            '-hls_segment_type', 'mpegts',
-
-            str(output_dir / 'index.m3u8')
+            "-f",
+            "hls",
+            "-hls_time",
+            str(segment_time),
+            "-hls_playlist_type",
+            "vod",
+            "-hls_segment_filename",
+            str(output_dir / "segment_%03d.ts"),
+            "-hls_segment_type",
+            "mpegts",
+            str(output_dir / "index.m3u8"),
         ]
 
         logger.info(f"生成HLS: {output_dir}")
@@ -223,13 +254,11 @@ class AV1Transcoder:
             logger.error(f"HLS生成失败: {result.stderr}")
             raise Exception(f"HLS生成失败: {result.stderr}")
 
-        return output_dir / 'index.m3u8'
+        return output_dir / "index.m3u8"
 
     @staticmethod
     def create_master_playlist(
-        video_id: int,
-        resolutions: Dict[str, str],
-        format_type: str = 'av1'
+        video_id: int, resolutions: Dict[str, str], format_type: str = "av1"
     ) -> str:
         """
         生成HLS Master Playlist
@@ -247,22 +276,24 @@ class AV1Transcoder:
 
         # 分辨率配置
         resolution_configs = {
-            '1080p': {'bandwidth': 2200000, 'width': 1920, 'height': 1080},
-            '720p':  {'bandwidth': 1200000, 'width': 1280, 'height': 720},
-            '480p':  {'bandwidth': 600000,  'width': 854,  'height': 480},
-            '360p':  {'bandwidth': 400000,  'width': 640,  'height': 360},
+            "1080p": {"bandwidth": 2200000, "width": 1920, "height": 1080},
+            "720p": {"bandwidth": 1200000, "width": 1280, "height": 720},
+            "480p": {"bandwidth": 600000, "width": 854, "height": 480},
+            "360p": {"bandwidth": 400000, "width": 640, "height": 360},
         }
 
         # 编解码器声明
         # AV1: av01.0.05M.08 (Profile 0, Level 5.0, Main Tier, 8-bit)
         # H.264: avc1.64001f (High Profile, Level 3.1)
-        codec = 'av01.0.05M.08,opus' if format_type == 'av1' else 'avc1.64001f,mp4a.40.2'
+        codec = (
+            "av01.0.05M.08,opus" if format_type == "av1" else "avc1.64001f,mp4a.40.2"
+        )
 
         # 按分辨率从高到低排序
         sorted_resolutions = sorted(
             resolutions.items(),
-            key=lambda x: resolution_configs.get(x[0], {}).get('height', 0),
-            reverse=True
+            key=lambda x: resolution_configs.get(x[0], {}).get("height", 0),
+            reverse=True,
         )
 
         for res, url in sorted_resolutions:
@@ -273,7 +304,7 @@ class AV1Transcoder:
             playlist += f'#EXT-X-STREAM-INF:BANDWIDTH={config["bandwidth"]},'
             playlist += f'RESOLUTION={config["width"]}x{config["height"]},'
             playlist += f'CODECS="{codec}"\n'
-            playlist += f'{url}\n\n'
+            playlist += f"{url}\n\n"
 
         return playlist
 
@@ -295,20 +326,20 @@ class AV1Transcoder:
 
         if h264_size == 0:
             return {
-                'h264_size': 0,
-                'av1_size': av1_size,
-                'savings_bytes': 0,
-                'savings_percent': 0.0
+                "h264_size": 0,
+                "av1_size": av1_size,
+                "savings_bytes": 0,
+                "savings_percent": 0.0,
             }
 
         savings_bytes = h264_size - av1_size
         savings_percent = (savings_bytes / h264_size) * 100
 
         return {
-            'h264_size': h264_size,
-            'av1_size': av1_size,
-            'savings_bytes': savings_bytes,
-            'savings_percent': round(savings_percent, 2)
+            "h264_size": h264_size,
+            "av1_size": av1_size,
+            "savings_bytes": savings_bytes,
+            "savings_percent": round(savings_percent, 2),
         }
 
     @staticmethod
@@ -316,7 +347,7 @@ class AV1Transcoder:
         input_path: Path,
         output_path: Path,
         timestamp: float = 5.0,
-        size: str = '1280x720'
+        size: str = "1280x720",
     ) -> Path:
         """
         从视频中提取缩略图
@@ -342,13 +373,19 @@ class AV1Transcoder:
 
         # FFmpeg命令
         cmd = [
-            'ffmpeg', '-y',
-            '-ss', str(timestamp),  # 跳转到指定时间
-            '-i', str(input_path),
-            '-vframes', '1',        # 只提取1帧
-            '-vf', f'scale={size}:force_original_aspect_ratio=decrease,pad={size}:(ow-iw)/2:(oh-ih)/2',
-            '-q:v', '2',            # 高质量 (1-31, 越小越好)
-            str(output_path)
+            "ffmpeg",
+            "-y",
+            "-ss",
+            str(timestamp),  # 跳转到指定时间
+            "-i",
+            str(input_path),
+            "-vframes",
+            "1",  # 只提取1帧
+            "-vf",
+            f"scale={size}:force_original_aspect_ratio=decrease,pad={size}:(ow-iw)/2:(oh-ih)/2",
+            "-q:v",
+            "2",  # 高质量 (1-31, 越小越好)
+            str(output_path),
         ]
 
         logger.info(f"提取缩略图: {output_path} (时间点: {timestamp}s)")
@@ -361,15 +398,14 @@ class AV1Transcoder:
         if not output_path.exists():
             raise Exception(f"缩略图文件未生成: {output_path}")
 
-        logger.info(f"✅ 缩略图已生成: {output_path} ({format_size(output_path.stat().st_size)})")
+        logger.info(
+            f"✅ 缩略图已生成: {output_path} ({format_size(output_path.stat().st_size)})"
+        )
         return output_path
 
     @staticmethod
     def extract_multiple_thumbnails(
-        input_path: Path,
-        output_dir: Path,
-        count: int = 5,
-        size: str = '1280x720'
+        input_path: Path, output_dir: Path, count: int = 5, size: str = "1280x720"
     ) -> List[Path]:
         """
         提取多个缩略图 (用于悬停预览/GIF等)
@@ -385,7 +421,7 @@ class AV1Transcoder:
         """
         # 获取视频时长
         info = AV1Transcoder.get_video_info(input_path)
-        duration = info['duration']
+        duration = info["duration"]
 
         if duration < 10:
             # 视频太短,只提取1张
@@ -400,13 +436,10 @@ class AV1Transcoder:
         # 提取缩略图
         thumbnails = []
         for i, timestamp in enumerate(timestamps):
-            output_path = output_dir / f'thumbnail_{i+1}.jpg'
+            output_path = output_dir / f"thumbnail_{i+1}.jpg"
             try:
                 thumb = AV1Transcoder.extract_thumbnail(
-                    input_path,
-                    output_path,
-                    timestamp=timestamp,
-                    size=size
+                    input_path, output_path, timestamp=timestamp, size=size
                 )
                 thumbnails.append(thumb)
             except Exception as e:
@@ -417,7 +450,7 @@ class AV1Transcoder:
 
 def format_size(size_bytes: int) -> str:
     """格式化文件大小"""
-    for unit in ['B', 'KB', 'MB', 'GB', 'TB']:
+    for unit in ["B", "KB", "MB", "GB", "TB"]:
         if size_bytes < 1024.0:
             return f"{size_bytes:.2f} {unit}"
         size_bytes /= 1024.0

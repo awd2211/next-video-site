@@ -1,25 +1,27 @@
 """
 视频专辑/系列 - 公共API
 """
-from fastapi import APIRouter, Depends, HTTPException, status, Query, Request
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, func, and_
-from sqlalchemy.orm import selectinload, joinedload
-from typing import Optional
+
+import hashlib
 import math
+from typing import Optional
+
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
+from sqlalchemy import and_, func, select
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import joinedload, selectinload
 
 from app.database import get_db
-from app.models.series import Series, SeriesType, SeriesStatus, series_videos
+from app.models.series import Series, SeriesStatus, SeriesType, series_videos
 from app.models.video import Video
 from app.schemas.series import (
-    SeriesListResponse,
-    SeriesDetailResponse,
     PaginatedSeriesResponse,
+    SeriesDetailResponse,
+    SeriesListResponse,
     SeriesVideoItem,
 )
 from app.utils.cache import Cache
-from app.utils.rate_limit import limiter, RateLimitPresets
-import hashlib
+from app.utils.rate_limit import RateLimitPresets, limiter
 
 router = APIRouter()
 
@@ -77,7 +79,7 @@ async def get_series_list(
     items = []
     for s in series_list:
         item_dict = SeriesListResponse.model_validate(s).model_dump()
-        item_dict['video_count'] = item_dict['total_episodes']  # Add alias
+        item_dict["video_count"] = item_dict["total_episodes"]  # Add alias
         items.append(SeriesListResponse(**item_dict))
 
     response = PaginatedSeriesResponse(
@@ -115,18 +117,14 @@ async def get_series_detail(
     # 查询专辑
     result = await db.execute(
         select(Series)
-        .filter(
-            Series.id == series_id,
-            Series.status == SeriesStatus.PUBLISHED
-        )
+        .filter(Series.id == series_id, Series.status == SeriesStatus.PUBLISHED)
         .options(selectinload(Series.videos))
     )
     series = result.scalar_one_or_none()
 
     if not series:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="专辑不存在或未发布"
+            status_code=status.HTTP_404_NOT_FOUND, detail="专辑不存在或未发布"
         )
 
     # 查询视频详情
@@ -182,7 +180,9 @@ async def get_series_detail(
     return response
 
 
-@router.get("/featured/list", response_model=list[SeriesListResponse], summary="获取推荐专辑")
+@router.get(
+    "/featured/list", response_model=list[SeriesListResponse], summary="获取推荐专辑"
+)
 @limiter.limit(RateLimitPresets.RELAXED)
 async def get_featured_series(
     request: Request,
@@ -203,10 +203,7 @@ async def get_featured_series(
 
     result = await db.execute(
         select(Series)
-        .filter(
-            Series.status == SeriesStatus.PUBLISHED,
-            Series.is_featured == True
-        )
+        .filter(Series.status == SeriesStatus.PUBLISHED, Series.is_featured == True)
         .order_by(Series.display_order.desc(), Series.created_at.desc())
         .limit(limit)
     )
@@ -216,7 +213,7 @@ async def get_featured_series(
     response = []
     for s in series_list:
         item_dict = SeriesListResponse.model_validate(s).model_dump()
-        item_dict['video_count'] = item_dict['total_episodes']  # Add alias
+        item_dict["video_count"] = item_dict["total_episodes"]  # Add alias
         response.append(SeriesListResponse(**item_dict))
 
     # 缓存10分钟

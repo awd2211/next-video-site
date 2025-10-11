@@ -1,7 +1,8 @@
-from fastapi import APIRouter, Depends, Query, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
+from sqlalchemy import func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, func, or_
 from sqlalchemy.orm import selectinload
+
 from app.database import get_db
 from app.models.comment import Comment, CommentStatus
 from app.models.user import AdminUser
@@ -21,8 +22,7 @@ async def admin_list_comments(
 ):
     """Admin: Get all comments with filters"""
     query = select(Comment).options(
-        selectinload(Comment.user),
-        selectinload(Comment.video)
+        selectinload(Comment.user), selectinload(Comment.video)
     )
 
     # Filter by status
@@ -63,10 +63,11 @@ async def admin_list_pending_comments(
     current_admin: AdminUser = Depends(get_current_admin_user),
 ):
     """Admin: Get pending comments"""
-    query = select(Comment).options(
-        selectinload(Comment.user),
-        selectinload(Comment.video)
-    ).filter(Comment.status == CommentStatus.PENDING)
+    query = (
+        select(Comment)
+        .options(selectinload(Comment.user), selectinload(Comment.video))
+        .filter(Comment.status == CommentStatus.PENDING)
+    )
 
     count_result = await db.execute(select(func.count()).select_from(query.subquery()))
     total = count_result.scalar()

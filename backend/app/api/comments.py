@@ -1,23 +1,25 @@
-from fastapi import APIRouter, Depends, HTTPException, status, Query, Request
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, func, and_
-from sqlalchemy.orm import selectinload
-from typing import Optional
 import math
+from typing import Optional
+
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
+from sqlalchemy import and_, func, select
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
+
 from app.database import get_db
 from app.models.comment import Comment, CommentStatus, UserCommentLike
 from app.models.user import User
 from app.models.video import Video
 from app.schemas.comment import (
     CommentCreate,
-    CommentUpdate,
     CommentResponse,
+    CommentUpdate,
     PaginatedCommentResponse,
     UserBrief,
 )
-from app.utils.dependencies import get_current_user, get_current_active_user
+from app.utils.dependencies import get_current_active_user, get_current_user
 from app.utils.notification_service import NotificationService
-from app.utils.rate_limit import limiter, RateLimitPresets
+from app.utils.rate_limit import RateLimitPresets, limiter
 
 router = APIRouter()
 
@@ -35,30 +37,32 @@ async def create_comment(
     Users can reply to existing comments by providing parent_id.
     """
     # Verify video exists
-    video_result = await db.execute(select(Video).where(Video.id == comment_data.video_id))
+    video_result = await db.execute(
+        select(Video).where(Video.id == comment_data.video_id)
+    )
     video = video_result.scalar_one_or_none()
     if not video:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Video not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail="Video not found"
         )
 
     # Verify parent comment exists if provided
     parent = None
     if comment_data.parent_id:
         parent_result = await db.execute(
-            select(Comment).where(
+            select(Comment)
+            .where(
                 and_(
                     Comment.id == comment_data.parent_id,
-                    Comment.video_id == comment_data.video_id
+                    Comment.video_id == comment_data.video_id,
                 )
-            ).options(selectinload(Comment.user))
+            )
+            .options(selectinload(Comment.user))
         )
         parent = parent_result.scalar_one_or_none()
         if not parent:
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Parent comment not found"
+                status_code=status.HTTP_404_NOT_FOUND, detail="Parent comment not found"
             )
 
     # Create comment
@@ -134,8 +138,7 @@ async def get_video_comments(
 
     # Get paginated comments
     query = (
-        query
-        .options(selectinload(Comment.user))
+        query.options(selectinload(Comment.user))
         .order_by(Comment.is_pinned.desc(), Comment.created_at.desc())
         .offset((page - 1) * page_size)
         .limit(page_size)
@@ -152,13 +155,15 @@ async def get_video_comments(
             .where(
                 and_(
                     Comment.parent_id.in_(comment_ids),
-                    Comment.status == CommentStatus.APPROVED
+                    Comment.status == CommentStatus.APPROVED,
                 )
             )
             .group_by(Comment.parent_id)
         )
         reply_counts_result = await db.execute(reply_count_query)
-        reply_counts = {parent_id: count for parent_id, count in reply_counts_result.all()}
+        reply_counts = {
+            parent_id: count for parent_id, count in reply_counts_result.all()
+        }
     else:
         reply_counts = {}
 
@@ -174,7 +179,7 @@ async def get_video_comments(
         page=page,
         page_size=page_size,
         pages=math.ceil(total / page_size) if page_size > 0 else 0,
-        items=items
+        items=items,
     )
 
 
@@ -195,16 +200,12 @@ async def get_comment(
 
     if not comment:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Comment not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail="Comment not found"
         )
 
     # Get reply count
     reply_count_query = select(func.count()).where(
-        and_(
-            Comment.parent_id == comment_id,
-            Comment.status == CommentStatus.APPROVED
-        )
+        and_(Comment.parent_id == comment_id, Comment.status == CommentStatus.APPROVED)
     )
     reply_count_result = await db.execute(reply_count_query)
     reply_count = reply_count_result.scalar()
@@ -228,14 +229,13 @@ async def update_comment(
 
     if not comment:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Comment not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail="Comment not found"
         )
 
     if comment.user_id != current_user.id:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="You can only edit your own comments"
+            detail="You can only edit your own comments",
         )
 
     # Update comment
@@ -245,10 +245,7 @@ async def update_comment(
 
     # Get reply count
     reply_count_query = select(func.count()).where(
-        and_(
-            Comment.parent_id == comment_id,
-            Comment.status == CommentStatus.APPROVED
-        )
+        and_(Comment.parent_id == comment_id, Comment.status == CommentStatus.APPROVED)
     )
     reply_count_result = await db.execute(reply_count_query)
     reply_count = reply_count_result.scalar()
@@ -271,14 +268,13 @@ async def delete_comment(
 
     if not comment:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Comment not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail="Comment not found"
         )
 
     if comment.user_id != current_user.id:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="You can only delete your own comments"
+            detail="You can only delete your own comments",
         )
 
     # Update video comment count
@@ -329,7 +325,9 @@ async def get_my_comments(
             .group_by(Comment.parent_id)
         )
         reply_counts_result = await db.execute(reply_count_query)
-        reply_counts = {parent_id: count for parent_id, count in reply_counts_result.all()}
+        reply_counts = {
+            parent_id: count for parent_id, count in reply_counts_result.all()
+        }
     else:
         reply_counts = {}
 
@@ -345,7 +343,7 @@ async def get_my_comments(
         page=page,
         page_size=page_size,
         pages=math.ceil(total / page_size) if page_size > 0 else 0,
-        items=items
+        items=items,
     )
 
 
@@ -357,7 +355,7 @@ async def like_comment(
 ):
     """
     点赞评论（幂等性操作）
-    
+
     如果用户已经点赞过，则不会重复增加计数
     """
     # 检查评论是否存在
@@ -366,8 +364,7 @@ async def like_comment(
 
     if not comment:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Comment not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail="Comment not found"
         )
 
     # 检查是否已经点赞
@@ -375,26 +372,23 @@ async def like_comment(
         select(UserCommentLike).where(
             and_(
                 UserCommentLike.user_id == current_user.id,
-                UserCommentLike.comment_id == comment_id
+                UserCommentLike.comment_id == comment_id,
             )
         )
     )
-    
+
     if existing_like.scalar_one_or_none():
         # 已经点赞过，返回当前状态
         return {"liked": True, "like_count": comment.like_count}
-    
+
     # 创建点赞记录（触发器会自动更新like_count）
-    new_like = UserCommentLike(
-        user_id=current_user.id,
-        comment_id=comment_id
-    )
+    new_like = UserCommentLike(user_id=current_user.id, comment_id=comment_id)
     db.add(new_like)
     await db.commit()
-    
+
     # 刷新评论以获取更新后的like_count
     await db.refresh(comment)
-    
+
     return {"liked": True, "like_count": comment.like_count}
 
 
@@ -406,7 +400,7 @@ async def unlike_comment(
 ):
     """
     取消点赞评论（幂等性操作）
-    
+
     如果用户没有点赞过，则返回当前状态
     """
     # 检查评论是否存在
@@ -415,8 +409,7 @@ async def unlike_comment(
 
     if not comment:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Comment not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail="Comment not found"
         )
 
     # 查找并删除点赞记录
@@ -424,18 +417,18 @@ async def unlike_comment(
         select(UserCommentLike).where(
             and_(
                 UserCommentLike.user_id == current_user.id,
-                UserCommentLike.comment_id == comment_id
+                UserCommentLike.comment_id == comment_id,
             )
         )
     )
     existing_like = existing_like_result.scalar_one_or_none()
-    
+
     if existing_like:
         # 删除点赞记录（触发器会自动更新like_count）
         await db.delete(existing_like)
         await db.commit()
-    
+
     # 刷新评论以获取更新后的like_count
     await db.refresh(comment)
-    
+
     return {"liked": False, "like_count": comment.like_count}

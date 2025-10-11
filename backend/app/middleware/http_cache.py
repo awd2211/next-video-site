@@ -2,11 +2,13 @@
 HTTP缓存头中间件
 为静态内容添加缓存控制头，减少不必要的服务器请求
 """
-from fastapi import Request, Response
-from starlette.middleware.base import BaseHTTPMiddleware
-from starlette.datastructures import Headers
+
 import hashlib
 from typing import Callable
+
+from fastapi import Request, Response
+from starlette.datastructures import Headers
+from starlette.middleware.base import BaseHTTPMiddleware
 
 
 class HTTPCacheMiddleware(BaseHTTPMiddleware):
@@ -21,9 +23,7 @@ class HTTPCacheMiddleware(BaseHTTPMiddleware):
         "/api/v1/directors": 900,  # 15分钟
     }
 
-    async def dispatch(
-        self, request: Request, call_next: Callable
-    ) -> Response:
+    async def dispatch(self, request: Request, call_next: Callable) -> Response:
         """处理请求并添加缓存头"""
 
         # 执行请求
@@ -42,9 +42,7 @@ class HTTPCacheMiddleware(BaseHTTPMiddleware):
         for cache_path, max_age in self.CACHE_RULES.items():
             if path.startswith(cache_path):
                 # 添加Cache-Control头
-                response.headers["Cache-Control"] = (
-                    f"public, max-age={max_age}"
-                )
+                response.headers["Cache-Control"] = f"public, max-age={max_age}"
 
                 # 对于列表接口，添加Vary头
                 if "?" in str(request.url):
@@ -58,4 +56,3 @@ class HTTPCacheMiddleware(BaseHTTPMiddleware):
 def setup_http_cache():
     """设置HTTP缓存（供main.py调用）"""
     return HTTPCacheMiddleware
-

@@ -1,5 +1,6 @@
-from sqlalchemy import Column, Integer, String, Text, Boolean, DateTime, JSON
+from sqlalchemy import JSON, Boolean, Column, DateTime, Integer, String, Text
 from sqlalchemy.sql import func
+
 from app.database import Base
 
 
@@ -25,16 +26,22 @@ class SystemSettings(Base):
 
     # 上传设置
     upload_max_size = Column(Integer, nullable=False, default=1024)  # MB
-    upload_allowed_formats = Column(JSON, nullable=False, default=list)  # ["mp4", "avi", "mkv"]
+    upload_allowed_formats = Column(
+        JSON, nullable=False, default=list
+    )  # ["mp4", "avi", "mkv"]
     image_max_size = Column(Integer, nullable=False, default=10)  # MB
-    image_allowed_formats = Column(JSON, nullable=False, default=list)  # ["jpg", "png", "webp"]
+    image_allowed_formats = Column(
+        JSON, nullable=False, default=list
+    )  # ["jpg", "png", "webp"]
 
     # 视频设置
     video_auto_approve = Column(Boolean, nullable=False, default=False)
     video_require_review = Column(Boolean, nullable=False, default=True)
     video_default_quality = Column(String(20), nullable=False, default="720p")
     video_enable_transcode = Column(Boolean, nullable=False, default=True)
-    video_transcode_formats = Column(JSON, nullable=False, default=list)  # ["720p", "1080p"]
+    video_transcode_formats = Column(
+        JSON, nullable=False, default=list
+    )  # ["720p", "1080p"]
 
     # 评论设置
     comment_enable = Column(Boolean, nullable=False, default=True)
@@ -51,7 +58,9 @@ class SystemSettings(Base):
     # 安全设置
     security_enable_captcha = Column(Boolean, nullable=False, default=True)
     security_login_max_attempts = Column(Integer, nullable=False, default=5)
-    security_login_lockout_duration = Column(Integer, nullable=False, default=30)  # 分钟
+    security_login_lockout_duration = Column(
+        Integer, nullable=False, default=30
+    )  # 分钟
     security_session_timeout = Column(Integer, nullable=False, default=7200)  # 秒
 
     # 其他设置
@@ -62,4 +71,6 @@ class SystemSettings(Base):
     custom_js = Column(Text, nullable=True)
 
     created_at = Column(DateTime, nullable=False, server_default=func.now())
-    updated_at = Column(DateTime, nullable=False, server_default=func.now(), onupdate=func.now())
+    updated_at = Column(
+        DateTime, nullable=False, server_default=func.now(), onupdate=func.now()
+    )

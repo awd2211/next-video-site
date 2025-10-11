@@ -1,24 +1,26 @@
-from fastapi import APIRouter, Depends, HTTPException, Query, status, UploadFile, File
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, func, desc, or_
-from typing import Optional
-from datetime import datetime, timezone
-from app.database import get_db
-from app.models.video import Video, VideoCategory, VideoTag, VideoActor, VideoDirector
-from app.models.user import AdminUser
-from app.schemas.video import (
-    VideoDetailResponse,
-    VideoCreate,
-    VideoUpdate,
-    PaginatedResponse,
-)
-from app.utils.dependencies import get_current_admin_user
-from app.utils.minio_client import minio_client
-from app.utils.cache import Cache
-from app.tasks.transcode_av1 import transcode_video_dual_format
-from slugify import slugify
 import io
 import logging
+from datetime import datetime, timezone
+from typing import Optional
+
+from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile, status
+from slugify import slugify
+from sqlalchemy import desc, func, or_, select
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.database import get_db
+from app.models.user import AdminUser
+from app.models.video import Video, VideoActor, VideoCategory, VideoDirector, VideoTag
+from app.schemas.video import (
+    PaginatedResponse,
+    VideoCreate,
+    VideoDetailResponse,
+    VideoUpdate,
+)
+from app.tasks.transcode_av1 import transcode_video_dual_format
+from app.utils.cache import Cache
+from app.utils.dependencies import get_current_admin_user
+from app.utils.minio_client import minio_client
 
 router = APIRouter()
 logger = logging.getLogger(__name__)

@@ -6,8 +6,9 @@
 import io
 import mimetypes
 import re
-from typing import Tuple, List, Optional
-from fastapi import UploadFile, HTTPException, status
+from typing import List, Optional, Tuple
+
+from fastapi import HTTPException, UploadFile, status
 
 
 def sanitize_filename(filename: str) -> str:

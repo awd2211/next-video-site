@@ -1,10 +1,12 @@
 from typing import Optional
+
 from fastapi import Depends, HTTPException, status
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from sqlalchemy.ext.asyncio import AsyncSession
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
+
 from app.database import get_db
-from app.models.user import User, AdminUser
+from app.models.user import AdminUser, User
 from app.utils.security import decode_token
 from app.utils.token_blacklist import is_blacklisted
 
@@ -23,7 +25,7 @@ async def get_current_user(
     )
 
     token = credentials.credentials
-    
+
     # 检查token是否在黑名单中
     if await is_blacklisted(token):
         raise HTTPException(
@@ -31,7 +33,7 @@ async def get_current_user(
             detail="Token has been revoked",
             headers={"WWW-Authenticate": "Bearer"},
         )
-    
+
     payload = decode_token(token)
 
     if payload is None or payload.get("type") != "access":
@@ -76,7 +78,7 @@ async def get_current_admin_user(
     )
 
     token = credentials.credentials
-    
+
     # 检查token是否在黑名单中
     if await is_blacklisted(token):
         raise HTTPException(
@@ -84,11 +86,14 @@ async def get_current_admin_user(
             detail="Token has been revoked",
             headers={"WWW-Authenticate": "Bearer"},
         )
-    
+
     payload = decode_token(token)
 
-    if (payload is None or payload.get("type") != "access" or
-            not payload.get("is_admin")):
+    if (
+        payload is None
+        or payload.get("type") != "access"
+        or not payload.get("is_admin")
+    ):
         raise credentials_exception
 
     admin_id_str = payload.get("sub")
@@ -122,7 +127,9 @@ async def get_current_superadmin(
 
 
 async def get_current_user_optional(
-    credentials: Optional[HTTPAuthorizationCredentials] = Depends(HTTPBearer(auto_error=False)),
+    credentials: Optional[HTTPAuthorizationCredentials] = Depends(
+        HTTPBearer(auto_error=False)
+    ),
     db: AsyncSession = Depends(get_db),
 ) -> Optional[User]:
     """Get optional user (for endpoints that work with or without authentication)"""

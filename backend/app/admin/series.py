@@ -1,35 +1,39 @@
 """
 视频专辑/系列管理 - 管理员API
 """
-from fastapi import APIRouter, Depends, HTTPException, status, Query, Request
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, func, delete, and_
-from sqlalchemy.orm import selectinload
+
 from typing import Optional
 
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
+from sqlalchemy import and_, delete, func, select
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
+
 from app.database import get_db
+from app.models.series import Series, SeriesStatus, SeriesType, series_videos
 from app.models.user import AdminUser
-from app.models.series import Series, SeriesType, SeriesStatus, series_videos
 from app.models.video import Video
 from app.schemas.series import (
-    SeriesCreate,
-    SeriesUpdate,
-    SeriesListResponse,
-    SeriesDetailResponse,
     PaginatedSeriesResponse,
     SeriesAddVideos,
+    SeriesCreate,
+    SeriesDetailResponse,
+    SeriesListResponse,
     SeriesRemoveVideos,
+    SeriesUpdate,
     SeriesUpdateVideoOrder,
     SeriesVideoItem,
 )
-from app.utils.dependencies import get_current_admin_user
-from app.utils.rate_limit import limiter, RateLimitPresets
 from app.utils.cache import Cache
+from app.utils.dependencies import get_current_admin_user
+from app.utils.rate_limit import RateLimitPresets, limiter
 
 router = APIRouter()
 
 
-@router.get("", response_model=PaginatedSeriesResponse, summary="获取专辑列表（管理员）")
+@router.get(
+    "", response_model=PaginatedSeriesResponse, summary="获取专辑列表（管理员）"
+)
 @limiter.limit(RateLimitPresets.ADMIN_READ)
 async def admin_get_series_list(
     request: Request,
@@ -79,7 +83,12 @@ async def admin_get_series_list(
     )
 
 
-@router.post("", response_model=SeriesDetailResponse, status_code=status.HTTP_201_CREATED, summary="创建专辑")
+@router.post(
+    "",
+    response_model=SeriesDetailResponse,
+    status_code=status.HTTP_201_CREATED,
+    summary="创建专辑",
+)
 @limiter.limit(RateLimitPresets.ADMIN_WRITE)
 async def admin_create_series(
     request: Request,
@@ -129,7 +138,11 @@ async def admin_create_series(
     )
 
 
-@router.get("/{series_id}", response_model=SeriesDetailResponse, summary="获取专辑详情（管理员）")
+@router.get(
+    "/{series_id}",
+    response_model=SeriesDetailResponse,
+    summary="获取专辑详情（管理员）",
+)
 @limiter.limit(RateLimitPresets.ADMIN_READ)
 async def admin_get_series_detail(
     request: Request,
@@ -151,10 +164,7 @@ async def admin_get_series_detail(
     series = result.scalar_one_or_none()
 
     if not series:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="专辑不存在"
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="专辑不存在")
 
     # 查询视频详情和顺序
     series_videos_query = await db.execute(
@@ -220,10 +230,7 @@ async def admin_update_series(
     series = result.scalar_one_or_none()
 
     if not series:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="专辑不存在"
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="专辑不存在")
 
     # 更新字段
     if data.title is not None:
@@ -253,7 +260,9 @@ async def admin_update_series(
     return await admin_get_series_detail(request, series_id, current_admin, db)
 
 
-@router.delete("/{series_id}", status_code=status.HTTP_204_NO_CONTENT, summary="删除专辑")
+@router.delete(
+    "/{series_id}", status_code=status.HTTP_204_NO_CONTENT, summary="删除专辑"
+)
 @limiter.limit(RateLimitPresets.ADMIN_WRITE)
 async def admin_delete_series(
     request: Request,
@@ -271,10 +280,7 @@ async def admin_delete_series(
     series = result.scalar_one_or_none()
 
     if not series:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="专辑不存在"
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="专辑不存在")
 
     await db.delete(series)
     await db.commit()
@@ -307,10 +313,7 @@ async def admin_add_videos_to_series(
     series = result.scalar_one_or_none()
 
     if not series:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="专辑不存在"
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="专辑不存在")
 
     # 检查视频是否存在
     videos_result = await db.execute(
@@ -322,14 +325,15 @@ async def admin_add_videos_to_series(
     if missing_ids:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"视频不存在: {list(missing_ids)}"
+            detail=f"视频不存在: {list(missing_ids)}",
         )
 
     # 获取当前最大集数
     if data.start_episode_number is None:
         max_episode_result = await db.execute(
-            select(func.max(series_videos.c.episode_number))
-            .where(series_videos.c.series_id == series_id)
+            select(func.max(series_videos.c.episode_number)).where(
+                series_videos.c.series_id == series_id
+            )
         )
         max_episode = max_episode_result.scalar() or 0
         start_num = max_episode + 1
@@ -378,10 +382,7 @@ async def admin_remove_videos_from_series(
     series = result.scalar_one_or_none()
 
     if not series:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="专辑不存在"
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="专辑不存在")
 
     # 移除视频
     delete_stmt = delete(series_videos).where(
@@ -429,10 +430,7 @@ async def admin_update_video_order(
     series = result.scalar_one_or_none()
 
     if not series:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="专辑不存在"
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="专辑不存在")
 
     # 更新每个视频的集数
     for item in data.video_order:

@@ -1,27 +1,29 @@
 """
 IP黑名单管理 - 管理员API
 """
-from fastapi import APIRouter, Depends, HTTPException, status, Query, Request
-from typing import Optional
+
 import time
 from datetime import datetime, timedelta
+from typing import Optional
+
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 
 from app.models.user import AdminUser
-from app.utils.dependencies import get_current_admin_user
-from app.utils.rate_limit import (
-    limiter,
-    RateLimitPresets,
-    add_to_blacklist,
-    remove_from_blacklist,
-    get_blacklist,
-    check_ip_blacklist,
-    get_redis_client,
-)
 from app.schemas.ip_blacklist import (
     IPBlacklistCreate,
-    IPBlacklistResponse,
     IPBlacklistListResponse,
+    IPBlacklistResponse,
     IPBlacklistStatsResponse,
+)
+from app.utils.dependencies import get_current_admin_user
+from app.utils.rate_limit import (
+    RateLimitPresets,
+    add_to_blacklist,
+    check_ip_blacklist,
+    get_blacklist,
+    get_redis_client,
+    limiter,
+    remove_from_blacklist,
 )
 
 router = APIRouter()
@@ -50,10 +52,7 @@ async def get_blacklist_list(
         blacklist = [item for item in blacklist if search.lower() in item["ip"].lower()]
 
     # 排序: 永久封禁在前, 然后按封禁时间倒序
-    blacklist.sort(key=lambda x: (
-        0 if x["is_permanent"] else 1,
-        -int(x["banned_at"])
-    ))
+    blacklist.sort(key=lambda x: (0 if x["is_permanent"] else 1, -int(x["banned_at"])))
 
     # 分页
     total = len(blacklist)
@@ -62,12 +61,16 @@ async def get_blacklist_list(
     items = blacklist[start:end]
 
     return IPBlacklistListResponse(
-        total=total,
-        items=[IPBlacklistResponse(**item) for item in items]
+        total=total, items=[IPBlacklistResponse(**item) for item in items]
     )
 
 
-@router.post("/", response_model=IPBlacklistResponse, summary="添加IP到黑名单", status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/",
+    response_model=IPBlacklistResponse,
+    summary="添加IP到黑名单",
+    status_code=status.HTTP_201_CREATED,
+)
 @limiter.limit(RateLimitPresets.ADMIN_WRITE)
 async def add_ip_to_blacklist(
     request: Request,
@@ -84,15 +87,12 @@ async def add_ip_to_blacklist(
     # 检查IP是否已在黑名单
     if await check_ip_blacklist(data.ip):
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"IP {data.ip} 已在黑名单中"
+            status_code=status.HTTP_400_BAD_REQUEST, detail=f"IP {data.ip} 已在黑名单中"
         )
 
     # 添加到黑名单
     await add_to_blacklist(
-        ip=data.ip,
-        reason=f"{data.reason} (管理员手动添加)",
-        duration=data.duration
+        ip=data.ip, reason=f"{data.reason} (管理员手动添加)", duration=data.duration
     )
 
     # 获取添加后的信息
@@ -101,14 +101,15 @@ async def add_ip_to_blacklist(
 
     if not item:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="添加失败"
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="添加失败"
         )
 
     return IPBlacklistResponse(**item)
 
 
-@router.delete("/{ip}", status_code=status.HTTP_204_NO_CONTENT, summary="从黑名单移除IP")
+@router.delete(
+    "/{ip}", status_code=status.HTTP_204_NO_CONTENT, summary="从黑名单移除IP"
+)
 @limiter.limit(RateLimitPresets.ADMIN_WRITE)
 async def remove_ip_from_blacklist(
     request: Request,
@@ -123,8 +124,7 @@ async def remove_ip_from_blacklist(
     # 检查IP是否在黑名单
     if not await check_ip_blacklist(ip):
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"IP {ip} 不在黑名单中"
+            status_code=status.HTTP_404_NOT_FOUND, detail=f"IP {ip} 不在黑名单中"
         )
 
     # 从黑名单移除
@@ -147,8 +147,7 @@ async def check_ip_status(
     """
     if not await check_ip_blacklist(ip):
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"IP {ip} 不在黑名单中"
+            status_code=status.HTTP_404_NOT_FOUND, detail=f"IP {ip} 不在黑名单中"
         )
 
     blacklist = await get_blacklist()
@@ -156,14 +155,15 @@ async def check_ip_status(
 
     if not item:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"IP {ip} 信息未找到"
+            status_code=status.HTTP_404_NOT_FOUND, detail=f"IP {ip} 信息未找到"
         )
 
     return IPBlacklistResponse(**item)
 
 
-@router.get("/stats/summary", response_model=IPBlacklistStatsResponse, summary="获取黑名单统计")
+@router.get(
+    "/stats/summary", response_model=IPBlacklistStatsResponse, summary="获取黑名单统计"
+)
 @limiter.limit(RateLimitPresets.ADMIN_READ)
 async def get_blacklist_stats(
     request: Request,

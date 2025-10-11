@@ -2,13 +2,15 @@
 操作日志中间件
 自动记录管理员的重要操作
 """
+
 import json
-from fastapi import Request, Response
-from starlette.middleware.base import BaseHTTPMiddleware
-from app.database import async_session_maker
-from app.models.admin import OperationLog
 import re
 
+from fastapi import Request, Response
+from starlette.middleware.base import BaseHTTPMiddleware
+
+from app.database import async_session_maker
+from app.models.admin import OperationLog
 
 # 需要记录日志的路由模式
 LOG_PATTERNS = [
@@ -16,45 +18,86 @@ LOG_PATTERNS = [
     (r"^/api/v1/admin/videos$", "POST", "video", "create", "创建视频"),
     (r"^/api/v1/admin/videos/\d+$", "PUT", "video", "update", "更新视频"),
     (r"^/api/v1/admin/videos/\d+$", "DELETE", "video", "delete", "删除视频"),
-    (r"^/api/v1/admin/videos/\d+/status$", "PUT", "video", "update_status", "更新视频状态"),
-
+    (
+        r"^/api/v1/admin/videos/\d+/status$",
+        "PUT",
+        "video",
+        "update_status",
+        "更新视频状态",
+    ),
     # 用户管理
     (r"^/api/v1/admin/users$", "POST", "user", "create", "创建用户"),
     (r"^/api/v1/admin/users/\d+$", "PUT", "user", "update", "更新用户信息"),
     (r"^/api/v1/admin/users/\d+$", "DELETE", "user", "delete", "删除用户"),
     (r"^/api/v1/admin/users/\d+/ban$", "POST", "user", "ban", "封禁用户"),
     (r"^/api/v1/admin/users/\d+/unban$", "POST", "user", "unban", "解封用户"),
-
     # 评论管理
     (r"^/api/v1/admin/comments/\d+$", "DELETE", "comment", "delete", "删除评论"),
-    (r"^/api/v1/admin/comments/\d+/approve$", "POST", "comment", "approve", "审核通过评论"),
+    (
+        r"^/api/v1/admin/comments/\d+/approve$",
+        "POST",
+        "comment",
+        "approve",
+        "审核通过评论",
+    ),
     (r"^/api/v1/admin/comments/\d+/reject$", "POST", "comment", "reject", "拒绝评论"),
-    (r"^/api/v1/admin/comments/batch-delete$", "POST", "comment", "batch_delete", "批量删除评论"),
-
+    (
+        r"^/api/v1/admin/comments/batch-delete$",
+        "POST",
+        "comment",
+        "batch_delete",
+        "批量删除评论",
+    ),
     # 分类管理
     (r"^/api/v1/admin/categories$", "POST", "category", "create", "创建分类"),
     (r"^/api/v1/admin/categories/\d+$", "PUT", "category", "update", "更新分类"),
     (r"^/api/v1/admin/categories/\d+$", "DELETE", "category", "delete", "删除分类"),
-
     # 公告管理
-    (r"^/api/v1/admin/announcements/announcements$", "POST", "announcement", "create", "创建公告"),
-    (r"^/api/v1/admin/announcements/announcements/\d+$", "PUT", "announcement", "update", "更新公告"),
-    (r"^/api/v1/admin/announcements/announcements/\d+$", "DELETE", "announcement", "delete", "删除公告"),
-
+    (
+        r"^/api/v1/admin/announcements/announcements$",
+        "POST",
+        "announcement",
+        "create",
+        "创建公告",
+    ),
+    (
+        r"^/api/v1/admin/announcements/announcements/\d+$",
+        "PUT",
+        "announcement",
+        "update",
+        "更新公告",
+    ),
+    (
+        r"^/api/v1/admin/announcements/announcements/\d+$",
+        "DELETE",
+        "announcement",
+        "delete",
+        "删除公告",
+    ),
     # 横幅管理
     (r"^/api/v1/admin/banners$", "POST", "banner", "create", "创建横幅"),
     (r"^/api/v1/admin/banners/\d+$", "PUT", "banner", "update", "更新横幅"),
     (r"^/api/v1/admin/banners/\d+$", "DELETE", "banner", "delete", "删除横幅"),
-
     # 系统设置
-    (r"^/api/v1/admin/system-settings$", "POST", "system", "update_settings", "更新系统设置"),
+    (
+        r"^/api/v1/admin/system-settings$",
+        "POST",
+        "system",
+        "update_settings",
+        "更新系统设置",
+    ),
     (r"^/api/v1/admin/email/config$", "PUT", "system", "update_email", "更新邮件配置"),
-
     # 角色权限
     (r"^/api/v1/admin/roles$", "POST", "role", "create", "创建角色"),
     (r"^/api/v1/admin/roles/\d+$", "PUT", "role", "update", "更新角色"),
     (r"^/api/v1/admin/roles/\d+$", "DELETE", "role", "delete", "删除角色"),
-    (r"^/api/v1/admin/roles/\d+/permissions$", "PUT", "role", "update_permissions", "更新角色权限"),
+    (
+        r"^/api/v1/admin/roles/\d+/permissions$",
+        "PUT",
+        "role",
+        "update_permissions",
+        "更新角色权限",
+    ),
 ]
 
 
@@ -119,13 +162,18 @@ class OperationLogMiddleware(BaseHTTPMiddleware):
                         user_agent=request.headers.get("user-agent"),
                         request_method=request.method,
                         request_url=str(request.url),
-                        request_data=json.dumps(request_data, ensure_ascii=False) if request_data else None,
+                        request_data=(
+                            json.dumps(request_data, ensure_ascii=False)
+                            if request_data
+                            else None
+                        ),
                     )
                     db.add(log)
                     await db.commit()
 
             # 启动后台任务
             import asyncio
+
             asyncio.create_task(log_operation())
 
         except Exception as e:

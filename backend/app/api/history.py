@@ -1,24 +1,28 @@
-from fastapi import APIRouter, Depends, HTTPException, status, Query, BackgroundTasks
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, func, and_, update
-from sqlalchemy.orm import selectinload
 import math
+
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query, status
+from sqlalchemy import and_, func, select, update
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
+
 from app.database import get_db
-from app.models.user_activity import WatchHistory
 from app.models.user import User
+from app.models.user_activity import WatchHistory
 from app.models.video import Video
 from app.schemas.user_activity import (
-    WatchHistoryCreate,
-    WatchHistoryUpdate,
-    WatchHistoryResponse,
     PaginatedWatchHistoryResponse,
+    WatchHistoryCreate,
+    WatchHistoryResponse,
+    WatchHistoryUpdate,
 )
 from app.utils.dependencies import get_current_active_user
 
 router = APIRouter()
 
 
-@router.post("/", response_model=WatchHistoryResponse, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/", response_model=WatchHistoryResponse, status_code=status.HTTP_201_CREATED
+)
 async def create_or_update_watch_history(
     history_data: WatchHistoryCreate,
     background_tasks: BackgroundTasks,
@@ -30,12 +34,13 @@ async def create_or_update_watch_history(
     If history exists, update it; otherwise create new.
     """
     # Verify video exists
-    video_result = await db.execute(select(Video).where(Video.id == history_data.video_id))
+    video_result = await db.execute(
+        select(Video).where(Video.id == history_data.video_id)
+    )
     video = video_result.scalar_one_or_none()
     if not video:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Video not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail="Video not found"
         )
 
     # Check if history exists
@@ -43,7 +48,7 @@ async def create_or_update_watch_history(
         select(WatchHistory).where(
             and_(
                 WatchHistory.user_id == current_user.id,
-                WatchHistory.video_id == history_data.video_id
+                WatchHistory.video_id == history_data.video_id,
             )
         )
     )
@@ -63,7 +68,7 @@ async def create_or_update_watch_history(
             video_id=history_data.video_id,
             watch_duration=history_data.watch_duration,
             last_position=history_data.last_position,
-            is_completed=1 if history_data.is_completed else 0
+            is_completed=1 if history_data.is_completed else 0,
         )
         db.add(history)
         is_new_watch = True
@@ -75,8 +80,10 @@ async def create_or_update_watch_history(
     # 使用后台任务异步更新浏览量（仅新观看记录）
     # 使用原子UPDATE避免竞态条件
     if is_new_watch:
+
         async def increment_view_count():
             from app.database import AsyncSessionLocal
+
             async with AsyncSessionLocal() as session:
                 try:
                     await session.execute(
@@ -87,7 +94,7 @@ async def create_or_update_watch_history(
                     await session.commit()
                 except Exception as e:
                     print(f"Failed to increment view count: {e}")
-        
+
         background_tasks.add_task(increment_view_count)
 
     return WatchHistoryResponse.model_validate(history)
@@ -126,7 +133,7 @@ async def get_watch_history(
         page=page,
         page_size=page_size,
         pages=math.ceil(total / page_size) if page_size > 0 else 0,
-        items=items
+        items=items,
     )
 
 
@@ -142,7 +149,7 @@ async def get_video_watch_history(
         .where(
             and_(
                 WatchHistory.user_id == current_user.id,
-                WatchHistory.video_id == video_id
+                WatchHistory.video_id == video_id,
             )
         )
         .options(selectinload(WatchHistory.video))
@@ -153,8 +160,7 @@ async def get_video_watch_history(
 
     if not history:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Watch history not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail="Watch history not found"
         )
 
     return WatchHistoryResponse.model_validate(history)
@@ -174,12 +180,14 @@ async def update_watch_progress(
     """
     # Check if history exists
     existing_result = await db.execute(
-        select(WatchHistory).where(
+        select(WatchHistory)
+        .where(
             and_(
                 WatchHistory.user_id == current_user.id,
-                WatchHistory.video_id == video_id
+                WatchHistory.video_id == video_id,
             )
-        ).options(selectinload(WatchHistory.video))
+        )
+        .options(selectinload(WatchHistory.video))
     )
     existing_history = existing_result.scalar_one_or_none()
 
@@ -200,8 +208,7 @@ async def update_watch_progress(
         video = video_result.scalar_one_or_none()
         if not video:
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Video not found"
+                status_code=status.HTTP_404_NOT_FOUND, detail="Video not found"
             )
 
         history = WatchHistory(
@@ -209,7 +216,7 @@ async def update_watch_progress(
             video_id=video_id,
             watch_duration=progress_data.watch_duration or 0,
             last_position=progress_data.last_position or 0,
-            is_completed=1 if progress_data.is_completed else 0
+            is_completed=1 if progress_data.is_completed else 0,
         )
         db.add(history)
 
@@ -234,7 +241,7 @@ async def delete_watch_history(
         select(WatchHistory).where(
             and_(
                 WatchHistory.user_id == current_user.id,
-                WatchHistory.video_id == video_id
+                WatchHistory.video_id == video_id,
             )
         )
     )
@@ -242,8 +249,7 @@ async def delete_watch_history(
 
     if not history:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Watch history not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail="Watch history not found"
         )
 
     await db.delete(history)

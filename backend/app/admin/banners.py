@@ -1,15 +1,17 @@
-from fastapi import APIRouter, Depends, HTTPException, Query, UploadFile, File
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, update, delete, desc, func
-from pydantic import BaseModel
-from typing import Optional, List
+import io
 from datetime import datetime, timezone
+from typing import List, Optional
+
+from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile
+from pydantic import BaseModel
+from sqlalchemy import delete, desc, func, select, update
+from sqlalchemy.ext.asyncio import AsyncSession
+
 from app.database import get_db
-from app.models.user import AdminUser
 from app.models.content import Banner, BannerStatus
+from app.models.user import AdminUser
 from app.utils.dependencies import get_current_admin_user
 from app.utils.minio_client import minio_client
-import io
 
 router = APIRouter()
 
@@ -214,14 +216,15 @@ async def upload_banner_image(
     allowed_types = ["image/jpeg", "image/jpg", "image/png", "image/webp"]
     if file.content_type not in allowed_types:
         raise HTTPException(
-            status_code=400,
-            detail="不支持的图片格式，仅支持 JPG, PNG, WEBP"
+            status_code=400, detail="不支持的图片格式，仅支持 JPG, PNG, WEBP"
         )
 
     try:
         # 生成文件名
         ext = file.filename.split(".")[-1]
-        object_name = f"banners/banner_{int(datetime.now(timezone.utc).timestamp())}.{ext}"
+        object_name = (
+            f"banners/banner_{int(datetime.now(timezone.utc).timestamp())}.{ext}"
+        )
 
         # 上传到 MinIO
         file_content = await file.read()

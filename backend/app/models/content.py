@@ -1,18 +1,31 @@
-from sqlalchemy import Column, Integer, String, Text, DateTime, ForeignKey, Boolean, Enum
-from sqlalchemy.sql import func
-from sqlalchemy.orm import relationship
-from app.database import Base
 import enum
+
+from sqlalchemy import (
+    Boolean,
+    Column,
+    DateTime,
+    Enum,
+    ForeignKey,
+    Integer,
+    String,
+    Text,
+)
+from sqlalchemy.orm import relationship
+from sqlalchemy.sql import func
+
+from app.database import Base
 
 
 class BannerStatus(str, enum.Enum):
     """Banner status enum"""
+
     ACTIVE = "active"
     INACTIVE = "inactive"
 
 
 class ReportStatus(str, enum.Enum):
     """Report status enum"""
+
     PENDING = "pending"
     PROCESSED = "processed"
     REJECTED = "rejected"
@@ -27,7 +40,9 @@ class Banner(Base):
     title = Column(String(200), nullable=False)
     image_url = Column(String(500), nullable=False)
     link_url = Column(String(500), nullable=True)
-    video_id = Column(Integer, ForeignKey("videos.id", ondelete="SET NULL"), nullable=True)
+    video_id = Column(
+        Integer, ForeignKey("videos.id", ondelete="SET NULL"), nullable=True
+    )
     description = Column(Text, nullable=True)
     status = Column(Enum(BannerStatus), nullable=False, default=BannerStatus.ACTIVE)
     sort_order = Column(Integer, default=0, index=True)
@@ -44,7 +59,9 @@ class Recommendation(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     position = Column(String(50), nullable=False)  # home_top, home_trending, etc.
-    video_id = Column(Integer, ForeignKey("videos.id", ondelete="CASCADE"), nullable=False)
+    video_id = Column(
+        Integer, ForeignKey("videos.id", ondelete="CASCADE"), nullable=False
+    )
     sort_order = Column(Integer, default=0, index=True)
     is_active = Column(Boolean, default=True)
     start_date = Column(DateTime(timezone=True), nullable=True)
@@ -76,12 +93,20 @@ class Report(Base):
     __tablename__ = "reports"
 
     id = Column(Integer, primary_key=True, index=True)
-    user_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
-    video_id = Column(Integer, ForeignKey("videos.id", ondelete="SET NULL"), nullable=True)
-    comment_id = Column(Integer, ForeignKey("comments.id", ondelete="SET NULL"), nullable=True)
+    user_id = Column(
+        Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True
+    )
+    video_id = Column(
+        Integer, ForeignKey("videos.id", ondelete="SET NULL"), nullable=True
+    )
+    comment_id = Column(
+        Integer, ForeignKey("comments.id", ondelete="SET NULL"), nullable=True
+    )
     reason = Column(String(100), nullable=False)
     description = Column(Text, nullable=True)
-    status = Column(Enum(ReportStatus), nullable=False, default=ReportStatus.PENDING, index=True)
+    status = Column(
+        Enum(ReportStatus), nullable=False, default=ReportStatus.PENDING, index=True
+    )
     admin_note = Column(Text, nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now(), index=True)
     processed_at = Column(DateTime(timezone=True), nullable=True)

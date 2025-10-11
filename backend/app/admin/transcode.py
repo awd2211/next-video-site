@@ -1,21 +1,25 @@
 """
 转码状态查询 API
 """
-from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
-from app.database import get_db
-from app.models.video import Video
-from app.models.user import AdminUser
-from app.utils.dependencies import get_current_admin_user
+
 from typing import Optional
+
+from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.database import get_db
+from app.models.user import AdminUser
+from app.models.video import Video
+from app.utils.dependencies import get_current_admin_user
 
 router = APIRouter()
 
 
 class TranscodeStatusResponse(BaseModel):
     """转码状态响应"""
+
     video_id: int
     status: Optional[str] = None  # pending, processing, completed, failed
     progress: int = 0  # 0-100
@@ -28,7 +32,9 @@ class TranscodeStatusResponse(BaseModel):
         from_attributes = True
 
 
-@router.get("/videos/{video_id}/transcode-status", response_model=TranscodeStatusResponse)
+@router.get(
+    "/videos/{video_id}/transcode-status", response_model=TranscodeStatusResponse
+)
 async def get_transcode_status(
     video_id: int,
     db: AsyncSession = Depends(get_db),
@@ -50,8 +56,12 @@ async def get_transcode_status(
         status=video.transcode_status,
         progress=video.transcode_progress or 0,
         error=video.transcode_error,
-        h264_transcode_at=video.h264_transcode_at.isoformat() if video.h264_transcode_at else None,
-        av1_transcode_at=video.av1_transcode_at.isoformat() if video.av1_transcode_at else None,
+        h264_transcode_at=(
+            video.h264_transcode_at.isoformat() if video.h264_transcode_at else None
+        ),
+        av1_transcode_at=(
+            video.av1_transcode_at.isoformat() if video.av1_transcode_at else None
+        ),
         is_av1_available=video.is_av1_available or False,
     )
 
@@ -78,10 +88,11 @@ async def retry_transcode(
 
     # 触发转码任务
     from app.tasks.transcode_av1 import transcode_video_dual_format
+
     task = transcode_video_dual_format.delay(video_id)
 
     # 重置状态
-    video.transcode_status = 'pending'
+    video.transcode_status = "pending"
     video.transcode_progress = 0
     video.transcode_error = None
     await db.commit()
@@ -90,5 +101,5 @@ async def retry_transcode(
         "message": "Transcode task triggered",
         "video_id": video_id,
         "task_id": task.id,
-        "status": "pending"
+        "status": "pending",
     }

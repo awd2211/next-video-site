@@ -1,18 +1,21 @@
 """
 文件上传管理 API（支持分片上传和断点续传）
 """
-from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
-from typing import Optional
+
+import hashlib
+import io
+import os
 from datetime import datetime, timezone
+from typing import Optional
+
+from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
+
 from app.database import get_db
 from app.models.user import AdminUser
 from app.utils.dependencies import get_current_admin_user
 from app.utils.minio_client import minio_client
-import hashlib
-import os
-import io
 
 router = APIRouter()
 
@@ -29,7 +32,9 @@ async def init_multipart_upload(
 ):
     """初始化分片上传"""
     # 生成唯一的上传 ID
-    upload_id = hashlib.md5(f"{filename}{file_size}{datetime.now(timezone.utc)}".encode()).hexdigest()
+    upload_id = hashlib.md5(
+        f"{filename}{file_size}{datetime.now(timezone.utc)}".encode()
+    ).hexdigest()
 
     # 存储上传会话信息
     upload_sessions[upload_id] = {
@@ -44,7 +49,7 @@ async def init_multipart_upload(
     return {
         "upload_id": upload_id,
         "chunk_size": 5 * 1024 * 1024,  # 5MB 每片
-        "message": "分片上传已初始化"
+        "message": "分片上传已初始化",
     }
 
 
@@ -85,7 +90,7 @@ async def upload_chunk(
         "uploaded_chunks": uploaded_count,
         "total_chunks": total_chunks,
         "progress": round(progress, 2),
-        "message": f"分片 {chunk_index + 1}/{total_chunks} 上传成功"
+        "message": f"分片 {chunk_index + 1}/{total_chunks} 上传成功",
     }
 
 
@@ -108,10 +113,7 @@ async def complete_multipart_upload(
 
     if uploaded_chunks != expected_chunks:
         missing = set(expected_chunks) - set(uploaded_chunks)
-        raise HTTPException(
-            status_code=400,
-            detail=f"缺少分片: {missing}"
-        )
+        raise HTTPException(status_code=400, detail=f"缺少分片: {missing}")
 
     # 合并分片
     temp_dir = f"/tmp/uploads/{upload_id}"
@@ -132,38 +134,30 @@ async def complete_multipart_upload(
         if upload_type == "video":
             object_name = f"videos/video_{video_id}_{timestamp}.{ext}"
             url = minio_client.upload_video(
-                merged_file,
-                object_name,
-                session["file_type"]
+                merged_file, object_name, session["file_type"]
             )
         elif upload_type == "poster":
             object_name = f"posters/poster_{video_id}_{timestamp}.{ext}"
             url = minio_client.upload_image(
-                merged_file,
-                object_name,
-                session["file_type"]
+                merged_file, object_name, session["file_type"]
             )
         elif upload_type == "backdrop":
             object_name = f"backdrops/backdrop_{video_id}_{timestamp}.{ext}"
             url = minio_client.upload_image(
-                merged_file,
-                object_name,
-                session["file_type"]
+                merged_file, object_name, session["file_type"]
             )
         else:
             raise HTTPException(status_code=400, detail="不支持的上传类型")
 
         # 清理临时文件
         import shutil
+
         shutil.rmtree(temp_dir, ignore_errors=True)
 
         # 清理会话
         del upload_sessions[upload_id]
 
-        return {
-            "url": url,
-            "message": "文件上传完成"
-        }
+        return {"url": url, "message": "文件上传完成"}
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"上传失败: {str(e)}")
@@ -190,7 +184,9 @@ async def get_upload_status(
         "uploaded_chunks": uploaded_count,
         "total_chunks": total_chunks,
         "progress": round(progress, 2),
-        "missing_chunks": list(set(range(total_chunks)) - set(session["uploaded_chunks"]))
+        "missing_chunks": list(
+            set(range(total_chunks)) - set(session["uploaded_chunks"])
+        ),
     }
 
 
@@ -204,6 +200,7 @@ async def cancel_upload(
         # 清理临时文件
         temp_dir = f"/tmp/uploads/{upload_id}"
         import shutil
+
         shutil.rmtree(temp_dir, ignore_errors=True)
 
         # 清理会话

@@ -1,16 +1,28 @@
 import math
+
 """
 管理员视频管理 API
 """
-from fastapi import APIRouter, Depends, HTTPException, Query, status, UploadFile, File
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, func, desc, or_
-from typing import Optional, List
 from datetime import datetime
+from typing import List, Optional
+
+from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile, status
+from sqlalchemy import desc, func, or_, select
+from sqlalchemy.ext.asyncio import AsyncSession
+
 from app.database import get_db
-from app.models.video import Video, VideoStatus, VideoType, Category, Country, Tag, VideoCategory, VideoTag
 from app.models.user import AdminUser
-from app.schemas.video import VideoCreate, VideoUpdate, VideoResponse, PaginatedResponse
+from app.models.video import (
+    Category,
+    Country,
+    Tag,
+    Video,
+    VideoCategory,
+    VideoStatus,
+    VideoTag,
+    VideoType,
+)
+from app.schemas.video import PaginatedResponse, VideoCreate, VideoResponse, VideoUpdate
 from app.utils.dependencies import get_current_admin_user
 from app.utils.minio_client import minio_client
 
@@ -99,7 +111,9 @@ async def create_video(
     """创建视频"""
     # 验证国家是否存在
     if video_data.country_id:
-        result = await db.execute(select(Country).filter(Country.id == video_data.country_id))
+        result = await db.execute(
+            select(Country).filter(Country.id == video_data.country_id)
+        )
         if not result.scalar_one_or_none():
             raise HTTPException(status_code=400, detail="国家不存在")
 
@@ -143,12 +157,16 @@ async def update_video(
 
     # 验证国家是否存在
     if video_data.country_id:
-        result = await db.execute(select(Country).filter(Country.id == video_data.country_id))
+        result = await db.execute(
+            select(Country).filter(Country.id == video_data.country_id)
+        )
         if not result.scalar_one_or_none():
             raise HTTPException(status_code=400, detail="国家不存在")
 
     # 更新基本字段
-    update_dict = video_data.dict(exclude_unset=True, exclude={"category_ids", "tag_ids"})
+    update_dict = video_data.dict(
+        exclude_unset=True, exclude={"category_ids", "tag_ids"}
+    )
     for key, value in update_dict.items():
         setattr(video, key, value)
 
@@ -166,9 +184,7 @@ async def update_video(
     # 更新标签关联
     if video_data.tag_ids is not None:
         # 删除旧的关联
-        await db.execute(
-            select(VideoTag).filter(VideoTag.video_id == video_id)
-        )
+        await db.execute(select(VideoTag).filter(VideoTag.video_id == video_id))
         # 添加新的关联
         for tag_id in video_data.tag_ids:
             video_tag = VideoTag(video_id=video.id, tag_id=tag_id)

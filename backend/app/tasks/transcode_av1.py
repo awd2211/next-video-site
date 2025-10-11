@@ -5,24 +5,25 @@ AV1视频转码Celery任务
 - 文件大小对比统计
 """
 
-from celery import shared_task
-from pathlib import Path
+import asyncio
+import logging
 import shutil
 from concurrent.futures import ThreadPoolExecutor
+from pathlib import Path
 from typing import Dict, List
-import logging
 
+from celery import shared_task
+
+from app.database import SessionLocal
+from app.models.video import Video
 from app.utils.av1_transcoder import AV1Transcoder, format_size
 from app.utils.minio_client import MinIOClient
 from app.utils.path_validator import (
-    validate_video_id,
     create_safe_temp_dir,
     validate_path,
+    validate_video_id,
 )
-from app.database import SessionLocal
-from app.models.video import Video
 from app.utils.websocket_manager import notification_service
-import asyncio
 
 logger = logging.getLogger(__name__)
 

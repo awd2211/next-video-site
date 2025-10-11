@@ -1,14 +1,15 @@
-from fastapi import APIRouter, Depends, HTTPException, Query
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, desc, func
-from typing import Optional
 from datetime import datetime
+from typing import Optional
+
+from fastapi import APIRouter, Depends, HTTPException, Query
+from pydantic import BaseModel
+from sqlalchemy import desc, func, select
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
 from app.models.content import Announcement
 from app.models.user import AdminUser
 from app.utils.dependencies import get_current_admin_user
-from pydantic import BaseModel
 
 router = APIRouter()
 
@@ -60,8 +61,7 @@ async def get_announcements(
 ):
     """获取公告列表"""
     query = select(Announcement).order_by(
-        desc(Announcement.is_pinned),
-        desc(Announcement.created_at)
+        desc(Announcement.is_pinned), desc(Announcement.created_at)
     )
 
     if is_active is not None:

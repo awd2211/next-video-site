@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Depends
+
 from app.models.user import AdminUser
 from app.utils.dependencies import get_current_admin_user
 

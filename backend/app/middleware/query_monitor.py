@@ -3,10 +3,12 @@
 记录执行时间超过阈值的数据库查询
 """
 
-import time
 import logging
+import time
+
 from sqlalchemy import event
 from sqlalchemy.engine import Engine
+
 from app.database import async_engine
 
 logger = logging.getLogger(__name__)

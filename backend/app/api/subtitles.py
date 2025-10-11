@@ -1,10 +1,11 @@
 from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
+
 from app.database import get_db
 from app.models.subtitle import Subtitle
 from app.models.video import Video
-from app.schemas.subtitle import SubtitleResponse, SubtitleListResponse
+from app.schemas.subtitle import SubtitleListResponse, SubtitleResponse
 
 router = APIRouter()
 
@@ -22,9 +23,7 @@ async def get_video_subtitles(
     返回该视频的所有可用字幕列表,按排序顺序排列
     """
     # 验证视频存在
-    video_result = await db.execute(
-        select(Video).where(Video.id == video_id)
-    )
+    video_result = await db.execute(select(Video).where(Video.id == video_id))
     video = video_result.scalar_one_or_none()
     if not video:
         raise HTTPException(status_code=404, detail="Video not found")

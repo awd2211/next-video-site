@@ -1,8 +1,10 @@
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
+from typing import List, Optional
+
 import aiosmtplib
 import requests
-from email.mime.text import MIMEText
-from email.mime.multipart import MIMEMultipart
-from typing import List, Optional
+
 from app.models.email import EmailConfiguration
 
 
@@ -79,7 +81,9 @@ async def send_email(
 ):
     """Send email using configured provider"""
     if config.provider == "smtp":
-        return await send_email_smtp(config, to_email, subject, html_content, text_content)
+        return await send_email_smtp(
+            config, to_email, subject, html_content, text_content
+        )
     elif config.provider == "mailgun":
         return send_email_mailgun(config, to_email, subject, html_content, text_content)
     else:

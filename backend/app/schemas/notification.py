@@ -1,10 +1,12 @@
-from pydantic import BaseModel, Field
 from datetime import datetime
 from typing import Optional
+
+from pydantic import BaseModel, Field
 
 
 class NotificationBase(BaseModel):
     """通知基础Schema"""
+
     type: str = Field(..., description="通知类型")
     title: str = Field(..., max_length=200, description="通知标题")
     content: str = Field(..., description="通知内容")
@@ -15,16 +17,19 @@ class NotificationBase(BaseModel):
 
 class NotificationCreate(NotificationBase):
     """创建通知Schema"""
+
     user_id: int = Field(..., description="用户ID")
 
 
 class NotificationUpdate(BaseModel):
     """更新通知Schema"""
+
     is_read: Optional[bool] = Field(None, description="是否已读")
 
 
 class NotificationResponse(NotificationBase):
     """通知响应Schema"""
+
     id: int
     user_id: int
     is_read: bool
@@ -37,6 +42,7 @@ class NotificationResponse(NotificationBase):
 
 class NotificationStatsResponse(BaseModel):
     """通知统计响应Schema"""
+
     total: int = Field(..., description="总通知数")
     unread: int = Field(..., description="未读通知数")
     read: int = Field(..., description="已读通知数")
@@ -44,6 +50,7 @@ class NotificationStatsResponse(BaseModel):
 
 class NotificationListResponse(BaseModel):
     """通知列表响应Schema"""
+
     notifications: list[NotificationResponse]
     total: int
     page: int

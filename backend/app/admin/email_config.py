@@ -1,8 +1,10 @@
-from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
-from pydantic import BaseModel, EmailStr
 from typing import Optional
+
+from fastapi import APIRouter, Depends, HTTPException
+from pydantic import BaseModel, EmailStr
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
+
 from app.database import get_db
 from app.models.email import EmailConfiguration, EmailTemplate
 from app.models.user import AdminUser
@@ -182,7 +184,9 @@ async def test_email_config(
         await send_test_email(email_config, test_email)
         return {"message": "Test email sent successfully"}
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to send test email: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail=f"Failed to send test email: {str(e)}"
+        )
 
 
 # Email Template Endpoints
@@ -192,7 +196,9 @@ async def list_email_templates(
     current_admin: AdminUser = Depends(get_current_admin_user),
 ):
     """List all email templates"""
-    result = await db.execute(select(EmailTemplate).order_by(EmailTemplate.created_at.desc()))
+    result = await db.execute(
+        select(EmailTemplate).order_by(EmailTemplate.created_at.desc())
+    )
     templates = result.scalars().all()
     return templates
 
@@ -227,7 +233,9 @@ async def create_email_template(
         select(EmailTemplate).filter(EmailTemplate.slug == template.slug)
     )
     if result.scalar_one_or_none():
-        raise HTTPException(status_code=400, detail="Template with this slug already exists")
+        raise HTTPException(
+            status_code=400, detail="Template with this slug already exists"
+        )
 
     new_template = EmailTemplate(**template.model_dump())
     db.add(new_template)

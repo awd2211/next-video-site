@@ -1,21 +1,22 @@
-from fastapi import APIRouter, Depends, HTTPException, status, Query
-from sqlalchemy import select, func, and_, delete
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import selectinload
 from typing import List, Optional
 
+from fastapi import APIRouter, Depends, HTTPException, Query, status
+from sqlalchemy import and_, delete, func, select
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
+
 from app.database import get_db
-from app.models.user import User
 from app.models.favorite_folder import FavoriteFolder
+from app.models.user import User
 from app.models.user_activity import Favorite
 from app.models.video import Video
 from app.schemas.favorite_folder import (
+    BatchMoveFavoritesToFolder,
     FavoriteFolderCreate,
-    FavoriteFolderUpdate,
     FavoriteFolderResponse,
+    FavoriteFolderUpdate,
     FavoriteFolderWithVideos,
     MoveFavoriteToFolder,
-    BatchMoveFavoritesToFolder,
 )
 from app.schemas.video import VideoListResponse
 from app.utils.dependencies import get_current_user
@@ -23,7 +24,11 @@ from app.utils.dependencies import get_current_user
 router = APIRouter()
 
 
-@router.post("/folders", response_model=FavoriteFolderResponse, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/folders",
+    response_model=FavoriteFolderResponse,
+    status_code=status.HTTP_201_CREATED,
+)
 async def create_favorite_folder(
     folder_data: FavoriteFolderCreate,
     current_user: User = Depends(get_current_user),
@@ -38,14 +43,16 @@ async def create_favorite_folder(
     """
     # Check folder count limit (max 50 folders per user)
     result = await db.execute(
-        select(func.count(FavoriteFolder.id)).filter(FavoriteFolder.user_id == current_user.id)
+        select(func.count(FavoriteFolder.id)).filter(
+            FavoriteFolder.user_id == current_user.id
+        )
     )
     folder_count = result.scalar()
 
     if folder_count >= 50:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Maximum 50 folders allowed per user"
+            detail="Maximum 50 folders allowed per user",
         )
 
     # Check if folder name already exists for this user
@@ -53,7 +60,7 @@ async def create_favorite_folder(
         select(FavoriteFolder).filter(
             and_(
                 FavoriteFolder.user_id == current_user.id,
-                FavoriteFolder.name == folder_data.name
+                FavoriteFolder.name == folder_data.name,
             )
         )
     )
@@ -62,7 +69,7 @@ async def create_favorite_folder(
     if existing_folder:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Folder with this name already exists"
+            detail="Folder with this name already exists",
         )
 
     # Create new folder
@@ -137,7 +144,7 @@ async def get_favorite_folder(
         select(FavoriteFolder).filter(
             and_(
                 FavoriteFolder.id == folder_id,
-                FavoriteFolder.user_id == current_user.id
+                FavoriteFolder.user_id == current_user.id,
             )
         )
     )
@@ -145,8 +152,7 @@ async def get_favorite_folder(
 
     if not folder:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Folder not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail="Folder not found"
         )
 
     # Get videos in folder with pagination
@@ -156,10 +162,7 @@ async def get_favorite_folder(
         select(Video)
         .join(Favorite, Favorite.video_id == Video.id)
         .filter(
-            and_(
-                Favorite.user_id == current_user.id,
-                Favorite.folder_id == folder_id
-            )
+            and_(Favorite.user_id == current_user.id, Favorite.folder_id == folder_id)
         )
         .order_by(Favorite.created_at.desc())
         .offset(offset)
@@ -202,7 +205,7 @@ async def update_favorite_folder(
         select(FavoriteFolder).filter(
             and_(
                 FavoriteFolder.id == folder_id,
-                FavoriteFolder.user_id == current_user.id
+                FavoriteFolder.user_id == current_user.id,
             )
         )
     )
@@ -210,15 +213,18 @@ async def update_favorite_folder(
 
     if not folder:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Folder not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail="Folder not found"
         )
 
     # Check if trying to rename default folder
-    if folder.is_default and folder_data.name is not None and folder_data.name != folder.name:
+    if (
+        folder.is_default
+        and folder_data.name is not None
+        and folder_data.name != folder.name
+    ):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Cannot rename default folder"
+            detail="Cannot rename default folder",
         )
 
     # Check name uniqueness if renaming
@@ -228,14 +234,14 @@ async def update_favorite_folder(
                 and_(
                     FavoriteFolder.user_id == current_user.id,
                     FavoriteFolder.name == folder_data.name,
-                    FavoriteFolder.id != folder_id
+                    FavoriteFolder.id != folder_id,
                 )
             )
         )
         if result.scalar_one_or_none():
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Folder with this name already exists"
+                detail="Folder with this name already exists",
             )
 
     # Update fields
@@ -269,7 +275,7 @@ async def delete_favorite_folder(
         select(FavoriteFolder).filter(
             and_(
                 FavoriteFolder.id == folder_id,
-                FavoriteFolder.user_id == current_user.id
+                FavoriteFolder.user_id == current_user.id,
             )
         )
     )
@@ -277,14 +283,13 @@ async def delete_favorite_folder(
 
     if not folder:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Folder not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail="Folder not found"
         )
 
     if folder.is_default:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Cannot delete default folder"
+            detail="Cannot delete default folder",
         )
 
     if move_to_default:
@@ -293,7 +298,7 @@ async def delete_favorite_folder(
             select(FavoriteFolder).filter(
                 and_(
                     FavoriteFolder.user_id == current_user.id,
-                    FavoriteFolder.is_default == True
+                    FavoriteFolder.is_default == True,
                 )
             )
         )
@@ -316,8 +321,7 @@ async def delete_favorite_folder(
             Favorite.__table__.update()
             .where(
                 and_(
-                    Favorite.user_id == current_user.id,
-                    Favorite.folder_id == folder_id
+                    Favorite.user_id == current_user.id, Favorite.folder_id == folder_id
                 )
             )
             .values(folder_id=default_folder.id)
@@ -334,8 +338,7 @@ async def delete_favorite_folder(
         await db.execute(
             delete(Favorite).where(
                 and_(
-                    Favorite.user_id == current_user.id,
-                    Favorite.folder_id == folder_id
+                    Favorite.user_id == current_user.id, Favorite.folder_id == folder_id
                 )
             )
         )
@@ -364,7 +367,7 @@ async def move_favorite_to_folder(
         select(Favorite).filter(
             and_(
                 Favorite.id == move_data.favorite_id,
-                Favorite.user_id == current_user.id
+                Favorite.user_id == current_user.id,
             )
         )
     )
@@ -372,8 +375,7 @@ async def move_favorite_to_folder(
 
     if not favorite:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Favorite not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail="Favorite not found"
         )
 
     # Validate target folder
@@ -382,7 +384,7 @@ async def move_favorite_to_folder(
             select(FavoriteFolder).filter(
                 and_(
                     FavoriteFolder.id == move_data.target_folder_id,
-                    FavoriteFolder.user_id == current_user.id
+                    FavoriteFolder.user_id == current_user.id,
                 )
             )
         )
@@ -390,8 +392,7 @@ async def move_favorite_to_folder(
 
         if not target_folder:
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Target folder not found"
+                status_code=status.HTTP_404_NOT_FOUND, detail="Target folder not found"
             )
 
     # Update folder_id
@@ -409,7 +410,9 @@ async def move_favorite_to_folder(
 
     if move_data.target_folder_id:
         result = await db.execute(
-            select(FavoriteFolder).filter(FavoriteFolder.id == move_data.target_folder_id)
+            select(FavoriteFolder).filter(
+                FavoriteFolder.id == move_data.target_folder_id
+            )
         )
         new_folder = result.scalar_one_or_none()
         if new_folder:
@@ -438,7 +441,7 @@ async def batch_move_favorites_to_folder(
             select(FavoriteFolder).filter(
                 and_(
                     FavoriteFolder.id == move_data.target_folder_id,
-                    FavoriteFolder.user_id == current_user.id
+                    FavoriteFolder.user_id == current_user.id,
                 )
             )
         )
@@ -446,8 +449,7 @@ async def batch_move_favorites_to_folder(
 
         if not target_folder:
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Target folder not found"
+                status_code=status.HTTP_404_NOT_FOUND, detail="Target folder not found"
             )
 
     # Get all favorites
@@ -455,7 +457,7 @@ async def batch_move_favorites_to_folder(
         select(Favorite).filter(
             and_(
                 Favorite.id.in_(move_data.favorite_ids),
-                Favorite.user_id == current_user.id
+                Favorite.user_id == current_user.id,
             )
         )
     )
@@ -463,8 +465,7 @@ async def batch_move_favorites_to_folder(
 
     if len(favorites) != len(move_data.favorite_ids):
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Some favorites not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail="Some favorites not found"
         )
 
     # Track folder changes for count updates
@@ -479,7 +480,9 @@ async def batch_move_favorites_to_folder(
 
         # Increment new folder count
         if move_data.target_folder_id:
-            folder_changes[move_data.target_folder_id] = folder_changes.get(move_data.target_folder_id, 0) + 1
+            folder_changes[move_data.target_folder_id] = (
+                folder_changes.get(move_data.target_folder_id, 0) + 1
+            )
 
         # Update favorite
         favorite.folder_id = move_data.target_folder_id

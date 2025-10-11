@@ -1,14 +1,15 @@
-from fastapi import APIRouter, Depends, HTTPException, status, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, status
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, func
+
 from app.database import get_db
-from app.models.video import Tag
 from app.models.user import AdminUser
+from app.models.video import Tag
 from app.schemas.admin_content import (
-    TagCreate,
-    TagUpdate,
-    TagResponse,
     PaginatedTagResponse,
+    TagCreate,
+    TagResponse,
+    TagUpdate,
 )
 from app.utils.dependencies import get_current_admin_user
 
@@ -35,12 +36,7 @@ async def get_tags(
     total = total_result.scalar()
 
     # Get paginated results
-    query = (
-        query
-        .order_by(Tag.name)
-        .offset((page - 1) * page_size)
-        .limit(page_size)
-    )
+    query = query.order_by(Tag.name).offset((page - 1) * page_size).limit(page_size)
 
     result = await db.execute(query)
     tags = result.scalars().all()
@@ -48,10 +44,7 @@ async def get_tags(
     items = [TagResponse.model_validate(tag) for tag in tags]
 
     return PaginatedTagResponse(
-        total=total,
-        page=page,
-        page_size=page_size,
-        items=items
+        total=total, page=page, page_size=page_size, items=items
     )
 
 
@@ -63,23 +56,17 @@ async def create_tag(
 ):
     """Create a new tag"""
     # Check if tag name already exists
-    existing_name = await db.execute(
-        select(Tag).where(Tag.name == tag_data.name)
-    )
+    existing_name = await db.execute(select(Tag).where(Tag.name == tag_data.name))
     if existing_name.scalar_one_or_none():
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Tag name already exists"
+            status_code=status.HTTP_400_BAD_REQUEST, detail="Tag name already exists"
         )
 
     # Check if slug already exists
-    existing_slug = await db.execute(
-        select(Tag).where(Tag.slug == tag_data.slug)
-    )
+    existing_slug = await db.execute(select(Tag).where(Tag.slug == tag_data.slug))
     if existing_slug.scalar_one_or_none():
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Tag slug already exists"
+            status_code=status.HTTP_400_BAD_REQUEST, detail="Tag slug already exists"
         )
 
     # Create tag
@@ -103,8 +90,7 @@ async def get_tag(
 
     if not tag:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Tag not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail="Tag not found"
         )
 
     return TagResponse.model_validate(tag)
@@ -123,30 +109,25 @@ async def update_tag(
 
     if not tag:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Tag not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail="Tag not found"
         )
 
     # Check for duplicate name
     if tag_data.name and tag_data.name != tag.name:
-        existing = await db.execute(
-            select(Tag).where(Tag.name == tag_data.name)
-        )
+        existing = await db.execute(select(Tag).where(Tag.name == tag_data.name))
         if existing.scalar_one_or_none():
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Tag name already exists"
+                detail="Tag name already exists",
             )
 
     # Check for duplicate slug
     if tag_data.slug and tag_data.slug != tag.slug:
-        existing = await db.execute(
-            select(Tag).where(Tag.slug == tag_data.slug)
-        )
+        existing = await db.execute(select(Tag).where(Tag.slug == tag_data.slug))
         if existing.scalar_one_or_none():
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Tag slug already exists"
+                detail="Tag slug already exists",
             )
 
     # Update fields
@@ -172,8 +153,7 @@ async def delete_tag(
 
     if not tag:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Tag not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail="Tag not found"
         )
 
     await db.delete(tag)

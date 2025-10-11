@@ -1,18 +1,20 @@
+from datetime import datetime, timezone
+from typing import Optional
+
 from fastapi import APIRouter, Depends, HTTPException, Query
+from sqlalchemy import and_, delete, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, and_, func, delete
+
 from app.database import get_db
-from app.models.user import User
 from app.models.notification import Notification
+from app.models.user import User
 from app.schemas.notification import (
-    NotificationResponse,
     NotificationListResponse,
+    NotificationResponse,
     NotificationStatsResponse,
     NotificationUpdate,
 )
 from app.utils.dependencies import get_current_active_user
-from typing import Optional
-from datetime import datetime, timezone
 
 router = APIRouter()
 
@@ -50,10 +52,7 @@ async def get_notifications(
 
     # 查询未读数量
     unread_query = select(func.count(Notification.id)).where(
-        and_(
-            Notification.user_id == current_user.id,
-            Notification.is_read == False
-        )
+        and_(Notification.user_id == current_user.id, Notification.is_read == False)
     )
     unread_result = await db.execute(unread_query)
     unread_count = unread_result.scalar()
@@ -99,10 +98,7 @@ async def get_notification_stats(
 
     # 未读数
     unread_query = select(func.count(Notification.id)).where(
-        and_(
-            Notification.user_id == current_user.id,
-            Notification.is_read == False
-        )
+        and_(Notification.user_id == current_user.id, Notification.is_read == False)
     )
     unread_result = await db.execute(unread_query)
     unread = unread_result.scalar()
@@ -128,8 +124,7 @@ async def mark_notification_as_read(
     # 查询通知
     query = select(Notification).where(
         and_(
-            Notification.id == notification_id,
-            Notification.user_id == current_user.id
+            Notification.id == notification_id, Notification.user_id == current_user.id
         )
     )
     result = await db.execute(query)
@@ -158,10 +153,7 @@ async def mark_all_notifications_as_read(
     """
     # 查询所有未读通知
     query = select(Notification).where(
-        and_(
-            Notification.user_id == current_user.id,
-            Notification.is_read == False
-        )
+        and_(Notification.user_id == current_user.id, Notification.is_read == False)
     )
     result = await db.execute(query)
     notifications = result.scalars().all()
@@ -175,10 +167,7 @@ async def mark_all_notifications_as_read(
 
     await db.commit()
 
-    return {
-        "message": f"已标记 {count} 条通知为已读",
-        "count": count
-    }
+    return {"message": f"已标记 {count} 条通知为已读", "count": count}
 
 
 @router.delete("/{notification_id}")
@@ -195,8 +184,7 @@ async def delete_notification(
     # 查询通知
     query = select(Notification).where(
         and_(
-            Notification.id == notification_id,
-            Notification.user_id == current_user.id
+            Notification.id == notification_id, Notification.user_id == current_user.id
         )
     )
     result = await db.execute(query)
@@ -227,7 +215,4 @@ async def clear_all_notifications(
 
     count = result.rowcount
 
-    return {
-        "message": f"已清空 {count} 条通知",
-        "count": count
-    }
+    return {"message": f"已清空 {count} 条通知", "count": count}
