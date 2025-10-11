@@ -47,9 +47,9 @@ class RecommendationEngine:
             cached = await Cache.get(cache_key)
             if cached:
                 # 检查缓存数据类型,确保是Video对象而非字典
-                if cached and isinstance(cached[0], Video):
+                if len(cached) > 0 and isinstance(cached[0], Video):
                     return cached
-                # 如果缓存数据类型不对,清空缓存重新查询
+                # 如果缓存数据类型不对或为空,清空缓存重新查询
                 cached = None
 
             # 获取协同过滤推荐（基于相似用户）
@@ -105,9 +105,9 @@ class RecommendationEngine:
         cached = await Cache.get(cache_key)
         if cached:
             # 检查缓存数据类型,确保是Video对象而非字典
-            if cached and isinstance(cached[0], Video):
+            if len(cached) > 0 and isinstance(cached[0], Video):
                 return cached
-            # 如果缓存数据类型不对,清空缓存重新查询
+            # 如果缓存数据类型不对或为空,清空缓存重新查询
             cached = None
 
         exclude_ids = exclude_video_ids or []
@@ -368,11 +368,11 @@ class RecommendationEngine:
         cached = await Cache.get(cache_key)
         if cached:
             # 检查缓存数据类型,确保是Video对象而非字典
-            if cached and isinstance(cached[0], Video):
+            if len(cached) > 0 and isinstance(cached[0], Video):
                 # 过滤掉排除的视频
                 filtered = [v for v in cached if v.id not in exclude_ids]
                 return filtered[:limit]
-            # 如果缓存数据类型不对,清空缓存重新查询
+            # 如果缓存数据类型不对或为空,清空缓存重新查询
             cached = None
 
         # 查询热门视频
