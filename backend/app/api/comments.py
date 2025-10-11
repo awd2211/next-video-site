@@ -76,7 +76,7 @@ async def create_comment(
     db.add(new_comment)
 
     # Update video comment count
-    video.comment_count += 1
+    video.comment_count += 1  # type: ignore[assignment]
 
     await db.commit()
     await db.refresh(new_comment)
@@ -89,11 +89,11 @@ async def create_comment(
         try:
             await NotificationService.notify_comment_reply(
                 db=db,
-                target_user_id=parent.user_id,
-                replier_name=current_user.username or current_user.email,
+                target_user_id=int(parent.user_id),  # type: ignore[arg-type]
+                replier_name=str(current_user.username or current_user.email),
                 reply_content=comment_data.content,
                 video_id=comment_data.video_id,
-                comment_id=new_comment.id,
+                comment_id=int(new_comment.id),  # type: ignore[arg-type]
             )
         except Exception as e:
             # 通知失败不影响评论创建
@@ -133,7 +133,7 @@ async def get_video_comments(
     # Count total
     count_query = select(func.count()).select_from(query.subquery())
     total_result = await db.execute(count_query)
-    total = total_result.scalar()
+    total = total_result.scalar() or 0
 
     # Get paginated comments
     query = (
@@ -177,7 +177,7 @@ async def get_video_comments(
         total=total,
         page=page,
         page_size=page_size,
-        pages=math.ceil(total / page_size) if page_size > 0 else 0,
+        pages=math.ceil(total / page_size) if page_size > 0 and total > 0 else 0,
         items=items,
     )
 
@@ -207,7 +207,7 @@ async def get_comment(
         and_(Comment.parent_id == comment_id, Comment.status == CommentStatus.APPROVED)
     )
     reply_count_result = await db.execute(reply_count_query)
-    reply_count = reply_count_result.scalar()
+    reply_count = reply_count_result.scalar() or 0
 
     comment_data = CommentResponse.model_validate(comment)
     comment_data.reply_count = reply_count
@@ -238,7 +238,7 @@ async def update_comment(
         )
 
     # Update comment
-    comment.content = comment_data.content
+    comment.content = comment_data.content  # type: ignore[assignment]
     await db.commit()
     await db.refresh(comment, ["user"])
 
@@ -247,7 +247,7 @@ async def update_comment(
         and_(Comment.parent_id == comment_id, Comment.status == CommentStatus.APPROVED)
     )
     reply_count_result = await db.execute(reply_count_query)
-    reply_count = reply_count_result.scalar()
+    reply_count = reply_count_result.scalar() or 0
 
     comment_response = CommentResponse.model_validate(comment)
     comment_response.reply_count = reply_count
@@ -280,7 +280,7 @@ async def delete_comment(
     video_result = await db.execute(select(Video).where(Video.id == comment.video_id))
     video = video_result.scalar_one_or_none()
     if video and video.comment_count > 0:
-        video.comment_count -= 1
+        video.comment_count -= 1  # type: ignore[assignment]
 
     # Delete comment (cascade will handle replies)
     await db.delete(comment)
@@ -300,7 +300,7 @@ async def get_my_comments(
     # Count total
     count_query = select(func.count()).where(Comment.user_id == current_user.id)
     total_result = await db.execute(count_query)
-    total = total_result.scalar()
+    total = total_result.scalar() or 0
 
     # Get paginated comments
     query = (
@@ -341,7 +341,7 @@ async def get_my_comments(
         total=total,
         page=page,
         page_size=page_size,
-        pages=math.ceil(total / page_size) if page_size > 0 else 0,
+        pages=math.ceil(total / page_size) if page_size > 0 and total > 0 else 0,
         items=items,
     )
 
