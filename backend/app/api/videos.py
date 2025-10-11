@@ -1,15 +1,21 @@
 import math
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, BackgroundTasks
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, func, desc
+from sqlalchemy import select, func, desc, update
 from sqlalchemy.orm import selectinload
 from typing import Optional
 from datetime import timedelta
 from app.database import get_db
-from app.models.video import Video, VideoStatus, VideoCategory, VideoTag, VideoActor, VideoDirector
+from app.models.video import (
+    Video,
+    VideoStatus,
+    VideoCategory,
+    VideoTag,
+    VideoActor,
+    VideoDirector,
+)
 from app.models.user import User
 from app.schemas.video import VideoListResponse, VideoDetailResponse, PaginatedResponse
-from app.config import settings
 from app.utils.cache import Cache
 from app.utils.dependencies import get_current_user
 from app.utils.minio_client import minio_client
@@ -25,11 +31,26 @@ async def list_videos(
     country_id: Optional[int] = None,
     category_id: Optional[int] = None,
     year: Optional[int] = None,
-    sort_by: str = Query("created_at", regex="^(created_at|view_count|average_rating)$"),
+    sort_by: str = Query(
+        "created_at", regex="^(created_at|view_count|average_rating)$"
+    ),
     db: AsyncSession = Depends(get_db),
 ):
-    """Get paginated list of published videos"""
-    query = select(Video).filter(Video.status == VideoStatus.PUBLISHED)
+    """Get paginated list of published videos (cached for 5 minutes)"""
+    # 生成缓存键（包含所有过滤参数）
+    cache_key = f"videos_list:{page}:{page_size}:{video_type or 'all'}:{country_id or 'all'}:{category_id or 'all'}:{year or 'all'}:{sort_by}"
+
+    # 尝试从缓存获取
+    cached = await Cache.get(cache_key)
+    if cached is not None:
+        return cached
+
+    # 预加载关联数据，避免N+1查询
+    query = (
+        select(Video)
+        .options(selectinload(Video.country))
+        .filter(Video.status == VideoStatus.PUBLISHED)
+    )
 
     # Filters
     if video_type:
@@ -59,13 +80,18 @@ async def list_videos(
     result = await db.execute(query)
     videos = result.scalars().all()
 
-    return {
+    response = {
         "total": total,
         "page": page,
         "page_size": page_size,
         "pages": math.ceil(total / page_size) if page_size > 0 else 0,
-        "items": videos,
+        "items": [VideoListResponse.model_validate(v) for v in videos],
     }
+
+    # 缓存5分钟
+    await Cache.set(cache_key, response, ttl=300)
+
+    return response
 
 
 @router.get("/trending", response_model=PaginatedResponse)
@@ -84,9 +110,12 @@ async def get_trending_videos(
         return cached
 
     # 从数据库查询
-    query = select(Video).options(
-        selectinload(Video.country)
-    ).filter(Video.status == VideoStatus.PUBLISHED).order_by(desc(Video.view_count))
+    query = (
+        select(Video)
+        .options(selectinload(Video.country))
+        .filter(Video.status == VideoStatus.PUBLISHED)
+        .order_by(desc(Video.view_count))
+    )
 
     # Count total
     count_query = select(func.count()).select_from(
@@ -132,19 +161,18 @@ async def get_featured_videos(
         return cached
 
     # 从数据库查询
-    query = select(Video).options(
-        selectinload(Video.country)
-    ).filter(
-        Video.status == VideoStatus.PUBLISHED,
-        Video.is_featured == True
-    ).order_by(desc(Video.sort_order), desc(Video.created_at))
+    query = (
+        select(Video)
+        .options(selectinload(Video.country))
+        .filter(Video.status == VideoStatus.PUBLISHED, Video.is_featured.is_(True))
+        .order_by(desc(Video.sort_order), desc(Video.created_at))
+    )
 
     # Count total
     count_query = select(func.count()).select_from(
-        select(Video).filter(
-            Video.status == VideoStatus.PUBLISHED,
-            Video.is_featured == True
-        ).subquery()
+        select(Video)
+        .filter(Video.status == VideoStatus.PUBLISHED, Video.is_featured.is_(True))
+        .subquery()
     )
     result = await db.execute(count_query)
     total = result.scalar()
@@ -186,19 +214,18 @@ async def get_recommended_videos(
         return cached
 
     # 从数据库查询
-    query = select(Video).options(
-        selectinload(Video.country)
-    ).filter(
-        Video.status == VideoStatus.PUBLISHED,
-        Video.is_recommended == True
-    ).order_by(desc(Video.sort_order), desc(Video.created_at))
+    query = (
+        select(Video)
+        .options(selectinload(Video.country))
+        .filter(Video.status == VideoStatus.PUBLISHED, Video.is_recommended.is_(True))
+        .order_by(desc(Video.sort_order), desc(Video.created_at))
+    )
 
     # Count total
     count_query = select(func.count()).select_from(
-        select(Video).filter(
-            Video.status == VideoStatus.PUBLISHED,
-            Video.is_recommended == True
-        ).subquery()
+        select(Video)
+        .filter(Video.status == VideoStatus.PUBLISHED, Video.is_recommended.is_(True))
+        .subquery()
     )
     result = await db.execute(count_query)
     total = result.scalar()
@@ -227,6 +254,7 @@ async def get_recommended_videos(
 @router.get("/{video_id}", response_model=VideoDetailResponse)
 async def get_video(
     video_id: int,
+    background_tasks: BackgroundTasks,
     db: AsyncSession = Depends(get_db),
 ):
     """Get video details with eagerly loaded relationships"""
@@ -247,9 +275,23 @@ async def get_video(
     if not video:
         raise HTTPException(status_code=404, detail="Video not found")
 
-    # Increment view count (should be done asynchronously in production)
-    video.view_count += 1
-    await db.commit()
+    # 使用后台任务异步更新浏览量，避免阻塞响应
+    # 使用原子UPDATE避免竞态条件
+    async def increment_view_count():
+        from app.database import AsyncSessionLocal
+
+        async with AsyncSessionLocal() as session:
+            try:
+                await session.execute(
+                    update(Video)
+                    .where(Video.id == video_id)
+                    .values(view_count=Video.view_count + 1)
+                )
+                await session.commit()
+            except Exception as e:
+                print(f"Failed to increment view count: {e}")
+
+    background_tasks.add_task(increment_view_count)
 
     # Manually extract relationships from association tables
     video.categories = [vc.category for vc in video.video_categories if vc.category]
@@ -290,8 +332,7 @@ async def get_video_download_url(
     # Get video
     result = await db.execute(
         select(Video).filter(
-            Video.id == video_id,
-            Video.status == VideoStatus.PUBLISHED
+            Video.id == video_id, Video.status == VideoStatus.PUBLISHED
         )
     )
     video = result.scalar_one_or_none()
@@ -315,19 +356,16 @@ async def get_video_download_url(
     # Generate presigned URL (valid for 24 hours)
     try:
         download_url = minio_client.get_presigned_url(
-            object_name=object_name,
-            expires=timedelta(hours=24)
+            object_name=object_name, expires=timedelta(hours=24)
         )
     except Exception as e:
-        raise HTTPException(
-            status_code=500,
-            detail=f"Failed to generate download URL: {str(e)}"
-        )
+        # 不泄露详细错误信息
+        raise HTTPException(status_code=500, detail="Failed to generate download URL")
 
     # Get file size (optional)
     try:
         file_size = minio_client.get_object_size(object_name)
-    except:
+    except Exception:
         file_size = None
 
     return {
@@ -337,4 +375,3 @@ async def get_video_download_url(
         "file_size": file_size,
         "video_title": video.title,
     }
-

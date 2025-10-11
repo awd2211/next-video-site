@@ -1,5 +1,6 @@
-from datetime import datetime
+from datetime import datetime, timezone
 from fastapi import APIRouter, Depends, HTTPException, status, Request
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from app.database import get_db
@@ -15,8 +16,11 @@ from app.utils.security import (
 )
 from app.utils.dependencies import get_current_user, get_current_admin_user
 from app.utils.rate_limit import limiter, RateLimitPresets, AutoBanDetector
+from app.utils.token_blacklist import add_to_blacklist
+from app.config import settings
 
 router = APIRouter()
+security = HTTPBearer()
 
 
 @router.post("/register", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
@@ -89,7 +93,7 @@ async def login(
     await AutoBanDetector.clear_failed_attempts(ip, "login")
 
     # Update last login
-    user.last_login_at = datetime.utcnow()
+    user.last_login_at = datetime.now(timezone.utc)
     await db.commit()
 
     # Create tokens (sub must be string per JWT spec)
@@ -129,6 +133,10 @@ async def admin_login(
     admin_user = result.scalar_one_or_none()
 
     if not admin_user or not verify_password(credentials.password, admin_user.hashed_password):
+        # 记录失败尝试（管理员账户需要额外保护）
+        ip = request.client.host if request.client else "unknown"
+        await AutoBanDetector.record_failed_attempt(ip, "admin_login")
+        
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Incorrect username or password",
@@ -140,8 +148,12 @@ async def admin_login(
             detail="Admin account is inactive",
         )
 
+    # 登录成功，清除失败记录
+    ip = request.client.host if request.client else "unknown"
+    await AutoBanDetector.clear_failed_attempts(ip, "admin_login")
+
     # Update last login
-    admin_user.last_login_at = datetime.utcnow()
+    admin_user.last_login_at = datetime.now(timezone.utc)
     await db.commit()
 
     # Create tokens with admin flag (sub must be string per JWT spec)
@@ -215,3 +227,39 @@ async def get_current_admin_info(
 ):
     """Get current admin user info"""
     return current_admin
+
+
+@router.post("/logout", status_code=status.HTTP_200_OK)
+async def logout(
+    current_user: User = Depends(get_current_user),
+    credentials: HTTPAuthorizationCredentials = Depends(security),
+):
+    """
+    用户登出，将当前token加入黑名单
+    客户端应同时删除本地存储的token
+    """
+    token = credentials.credentials
+    
+    # 将token加入黑名单
+    # 使用access token的过期时间
+    expires_in = settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60
+    await add_to_blacklist(token, reason="logout", expires_in=expires_in)
+    
+    return {"message": "Successfully logged out"}
+
+
+@router.post("/admin/logout", status_code=status.HTTP_200_OK)
+async def admin_logout(
+    current_admin: AdminUser = Depends(get_current_admin_user),
+    credentials: HTTPAuthorizationCredentials = Depends(security),
+):
+    """
+    管理员登出，将当前token加入黑名单
+    """
+    token = credentials.credentials
+    
+    # 将token加入黑名单
+    expires_in = settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60
+    await add_to_blacklist(token, reason="admin_logout", expires_in=expires_in)
+    
+    return {"message": "Successfully logged out"}

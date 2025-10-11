@@ -5,7 +5,7 @@ from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from typing import Optional
-from datetime import datetime
+from datetime import datetime, timezone
 from app.database import get_db
 from app.models.user import AdminUser
 from app.utils.dependencies import get_current_admin_user
@@ -29,7 +29,7 @@ async def init_multipart_upload(
 ):
     """初始化分片上传"""
     # 生成唯一的上传 ID
-    upload_id = hashlib.md5(f"{filename}{file_size}{datetime.utcnow()}".encode()).hexdigest()
+    upload_id = hashlib.md5(f"{filename}{file_size}{datetime.now(timezone.utc)}".encode()).hexdigest()
 
     # 存储上传会话信息
     upload_sessions[upload_id] = {
@@ -38,7 +38,7 @@ async def init_multipart_upload(
         "file_type": file_type,
         "uploaded_chunks": [],
         "total_chunks": 0,
-        "created_at": datetime.utcnow(),
+        "created_at": datetime.now(timezone.utc),
     }
 
     return {
@@ -127,7 +127,7 @@ async def complete_multipart_upload(
     # 上传到 MinIO
     try:
         ext = session["filename"].split(".")[-1]
-        timestamp = int(datetime.utcnow().timestamp())
+        timestamp = int(datetime.now(timezone.utc).timestamp())
 
         if upload_type == "video":
             object_name = f"videos/video_{video_id}_{timestamp}.{ext}"

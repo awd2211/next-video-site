@@ -2,10 +2,10 @@
  * WebSocket Context for Global Notification Management
  * 全局WebSocket上下文,提供实时通知功能
  */
-import React, { createContext, useContext, useState, ReactNode } from 'react'
+import { createContext, useContext, useState, ReactNode } from 'react'
 import { useWebSocket, TranscodeProgressMessage, TranscodeCompleteMessage, TranscodeFailedMessage } from '@/hooks/useWebSocket'
-import { notification, Badge } from 'antd'
-import { BellOutlined, SyncOutlined, CheckCircleOutlined, CloseCircleOutlined } from '@ant-design/icons'
+import { notification } from 'antd'
+import { SyncOutlined, CheckCircleOutlined, CloseCircleOutlined } from '@ant-design/icons'
 
 interface WebSocketContextValue {
   isConnected: boolean

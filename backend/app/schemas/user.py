@@ -1,4 +1,4 @@
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, EmailStr, Field, field_validator
 from typing import Optional
 from datetime import datetime
 
@@ -12,7 +12,14 @@ class UserBase(BaseModel):
 
 class UserCreate(UserBase):
     """User creation schema"""
-    password: str
+    password: str = Field(..., min_length=8, max_length=128)
+    
+    @field_validator('password')
+    @classmethod
+    def validate_password_strength(cls, v: str) -> str:
+        """验证密码强度"""
+        from app.utils.password_validator import validate_password_field
+        return validate_password_field(v)
 
 
 class UserUpdate(BaseModel):
@@ -24,7 +31,14 @@ class UserUpdate(BaseModel):
 class PasswordChange(BaseModel):
     """Password change schema"""
     old_password: str
-    new_password: str
+    new_password: str = Field(..., min_length=8, max_length=128)
+    
+    @field_validator('new_password')
+    @classmethod
+    def validate_new_password_strength(cls, v: str) -> str:
+        """验证新密码强度"""
+        from app.utils.password_validator import validate_password_field
+        return validate_password_field(v)
 
 
 class UserResponse(UserBase):

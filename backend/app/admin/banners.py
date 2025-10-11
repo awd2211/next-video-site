@@ -3,7 +3,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, update, delete, desc, func
 from pydantic import BaseModel
 from typing import Optional, List
-from datetime import datetime
+from datetime import datetime, timezone
 from app.database import get_db
 from app.models.user import AdminUser
 from app.models.content import Banner, BannerStatus
@@ -221,7 +221,7 @@ async def upload_banner_image(
     try:
         # 生成文件名
         ext = file.filename.split(".")[-1]
-        object_name = f"banners/banner_{int(datetime.utcnow().timestamp())}.{ext}"
+        object_name = f"banners/banner_{int(datetime.now(timezone.utc).timestamp())}.{ext}"
 
         # 上传到 MinIO
         file_content = await file.read()

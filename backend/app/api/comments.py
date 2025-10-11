@@ -5,7 +5,7 @@ from sqlalchemy.orm import selectinload
 from typing import Optional
 import math
 from app.database import get_db
-from app.models.comment import Comment, CommentStatus
+from app.models.comment import Comment, CommentStatus, UserCommentLike
 from app.models.user import User
 from app.models.video import Video
 from app.schemas.comment import (
@@ -355,7 +355,12 @@ async def like_comment(
     current_user: User = Depends(get_current_active_user),
     db: AsyncSession = Depends(get_db),
 ):
-    """Like a comment (increment like count)"""
+    """
+    点赞评论（幂等性操作）
+    
+    如果用户已经点赞过，则不会重复增加计数
+    """
+    # 检查评论是否存在
     result = await db.execute(select(Comment).where(Comment.id == comment_id))
     comment = result.scalar_one_or_none()
 
@@ -365,10 +370,32 @@ async def like_comment(
             detail="Comment not found"
         )
 
-    comment.like_count += 1
+    # 检查是否已经点赞
+    existing_like = await db.execute(
+        select(UserCommentLike).where(
+            and_(
+                UserCommentLike.user_id == current_user.id,
+                UserCommentLike.comment_id == comment_id
+            )
+        )
+    )
+    
+    if existing_like.scalar_one_or_none():
+        # 已经点赞过，返回当前状态
+        return {"liked": True, "like_count": comment.like_count}
+    
+    # 创建点赞记录（触发器会自动更新like_count）
+    new_like = UserCommentLike(
+        user_id=current_user.id,
+        comment_id=comment_id
+    )
+    db.add(new_like)
     await db.commit()
-
-    return {"like_count": comment.like_count}
+    
+    # 刷新评论以获取更新后的like_count
+    await db.refresh(comment)
+    
+    return {"liked": True, "like_count": comment.like_count}
 
 
 @router.delete("/{comment_id}/like", status_code=status.HTTP_200_OK)
@@ -377,7 +404,12 @@ async def unlike_comment(
     current_user: User = Depends(get_current_active_user),
     db: AsyncSession = Depends(get_db),
 ):
-    """Unlike a comment (decrement like count)"""
+    """
+    取消点赞评论（幂等性操作）
+    
+    如果用户没有点赞过，则返回当前状态
+    """
+    # 检查评论是否存在
     result = await db.execute(select(Comment).where(Comment.id == comment_id))
     comment = result.scalar_one_or_none()
 
@@ -387,7 +419,23 @@ async def unlike_comment(
             detail="Comment not found"
         )
 
-    comment.like_count = max(0, comment.like_count - 1)
-    await db.commit()
-
-    return {"like_count": comment.like_count}
+    # 查找并删除点赞记录
+    existing_like_result = await db.execute(
+        select(UserCommentLike).where(
+            and_(
+                UserCommentLike.user_id == current_user.id,
+                UserCommentLike.comment_id == comment_id
+            )
+        )
+    )
+    existing_like = existing_like_result.scalar_one_or_none()
+    
+    if existing_like:
+        # 删除点赞记录（触发器会自动更新like_count）
+        await db.delete(existing_like)
+        await db.commit()
+    
+    # 刷新评论以获取更新后的like_count
+    await db.refresh(comment)
+    
+    return {"liked": False, "like_count": comment.like_count}

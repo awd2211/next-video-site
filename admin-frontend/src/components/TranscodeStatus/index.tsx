@@ -104,7 +104,7 @@ const TranscodeStatus: React.FC<TranscodeStatusProps> = ({
 
   // 自动刷新 (WebSocket连接失败时fallback)
   useEffect(() => {
-    if (!autoRefresh) return
+    if (!autoRefresh) return undefined
 
     // 如果WebSocket已连接,优先使用WebSocket更新,降低轮询频率
     const interval = isConnected ? refreshInterval * 3 : refreshInterval
@@ -114,10 +114,12 @@ const TranscodeStatus: React.FC<TranscodeStatusProps> = ({
       const timer = setInterval(fetchTranscodeStatus, interval)
       return () => clearInterval(timer)
     }
+
+    return undefined
   }, [videoId, status, autoRefresh, refreshInterval, isConnected])
 
   // 渲染状态标签
-  const renderStatusTag = () => {
+  const renderStatusTag = (): JSX.Element => {
     switch (status) {
       case 'pending':
         return (

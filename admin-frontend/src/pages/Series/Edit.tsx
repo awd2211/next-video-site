@@ -43,7 +43,7 @@ const SeriesEdit: React.FC = () => {
   const isEditMode = !!id
   const [form] = Form.useForm()
   const [loading, setLoading] = useState(false)
-  const [seriesData, setSeriesData] = useState<SeriesDetail | null>(null)
+  const [, setSeriesData] = useState<SeriesDetail | null>(null)
   const [videos, setVideos] = useState<SeriesVideoItem[]>([])
   const [addVideoModalVisible, setAddVideoModalVisible] = useState(false)
   const [availableVideos, setAvailableVideos] = useState<any[]>([])
@@ -171,7 +171,9 @@ const SeriesEdit: React.FC = () => {
 
     const newVideos = [...videos]
     const [movedVideo] = newVideos.splice(currentIndex, 1)
-    newVideos.splice(newIndex, 0, movedVideo)
+    if (movedVideo) {
+      newVideos.splice(newIndex, 0, movedVideo)
+    }
 
     // 更新集数
     const videoOrder = newVideos.map((v, idx) => ({

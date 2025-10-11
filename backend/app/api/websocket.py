@@ -48,21 +48,19 @@ async def get_current_user_from_token(token: str):
 @router.websocket("/ws")
 async def websocket_endpoint(
     websocket: WebSocket,
-    token: str = Query(None, description="JWT访问令牌")
+    token: str = Query(..., description="JWT访问令牌（必需）")  # 强制要求token
 ):
     """
     WebSocket端点 (普通用户)
 
     连接URL: ws://localhost:8000/api/v1/ws?token=<access_token>
+    
+    注意：token参数是必需的，未认证的连接将被拒绝
 
     消息格式:
     - type: 消息类型 (ping/subscribe/unsubscribe)
     - data: 消息数据
     """
-    if not token:
-        await websocket.close(code=1008, reason="缺少访问令牌")
-        return
-
     # 验证token
     auth_result = await get_current_user_from_token(token)
     if not auth_result or not auth_result["user"]:
@@ -102,12 +100,14 @@ async def websocket_endpoint(
 @router.websocket("/ws/admin")
 async def admin_websocket_endpoint(
     websocket: WebSocket,
-    token: str = Query(None, description="JWT访问令牌")
+    token: str = Query(..., description="JWT访问令牌（必需）")  # 强制要求token
 ):
     """
     WebSocket端点 (管理员)
 
     连接URL: ws://localhost:8000/api/v1/ws/admin?token=<access_token>
+    
+    注意：token参数是必需的，未认证的连接将被拒绝
 
     接收消息类型:
     - transcode_progress: 转码进度更新

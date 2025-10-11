@@ -144,7 +144,7 @@ export function useWebSocket(isAdmin: boolean = true, options: UseWebSocketOptio
     }
 
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
-    const host = process.env.REACT_APP_WS_URL || window.location.host.replace(':3001', ':8000')
+    const host = import.meta.env.VITE_WS_URL || window.location.host.replace(':3001', ':8000')
     const endpoint = isAdmin ? '/ws/admin' : '/ws'
 
     return `${protocol}//${host}/api/v1${endpoint}?token=${token}`

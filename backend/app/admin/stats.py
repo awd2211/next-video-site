@@ -8,7 +8,7 @@ from app.models.comment import Comment
 from app.utils.dependencies import get_current_admin_user
 from app.utils.cache import Cache, CacheStats
 from app.utils.cache_warmer import CacheWarmer
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 router = APIRouter()
 
@@ -67,7 +67,7 @@ async def admin_get_trend_stats(
         return cached
 
     # Get data for the last 30 days
-    thirty_days_ago = datetime.utcnow() - timedelta(days=30)
+    thirty_days_ago = datetime.now(timezone.utc) - timedelta(days=30)
 
     # User registration trend
     user_trend = await db.execute(
@@ -222,3 +222,33 @@ async def warm_cache(
         return {"message": "Cache warming completed successfully"}
     except Exception as e:
         return {"message": f"Cache warming failed: {str(e)}", "success": False}
+
+
+@router.get("/celery-queue")
+async def get_celery_queue_stats(
+    current_admin: AdminUser = Depends(get_current_admin_user),
+):
+    """Admin: Get Celery queue statistics"""
+    from app.utils.celery_monitor import CeleryMonitor
+
+    return CeleryMonitor.get_queue_stats()
+
+
+@router.get("/celery-workers")
+async def get_celery_worker_stats(
+    current_admin: AdminUser = Depends(get_current_admin_user),
+):
+    """Admin: Get Celery worker statistics"""
+    from app.utils.celery_monitor import CeleryMonitor
+
+    return CeleryMonitor.get_worker_stats()
+
+
+@router.get("/celery-health")
+async def check_celery_health(
+    current_admin: AdminUser = Depends(get_current_admin_user),
+):
+    """Admin: Check Celery health"""
+    from app.utils.celery_monitor import CeleryMonitor
+
+    return CeleryMonitor.check_health()

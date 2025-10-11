@@ -1,6 +1,6 @@
-from fastapi import APIRouter, Depends, HTTPException, status, Query
+from fastapi import APIRouter, Depends, HTTPException, status, Query, BackgroundTasks
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, func, and_
+from sqlalchemy import select, func, and_, update
 from sqlalchemy.orm import selectinload
 import math
 from app.database import get_db
@@ -21,6 +21,7 @@ router = APIRouter()
 @router.post("/", response_model=WatchHistoryResponse, status_code=status.HTTP_201_CREATED)
 async def create_or_update_watch_history(
     history_data: WatchHistoryCreate,
+    background_tasks: BackgroundTasks,
     current_user: User = Depends(get_current_active_user),
     db: AsyncSession = Depends(get_db),
 ):
@@ -48,6 +49,7 @@ async def create_or_update_watch_history(
     )
     existing_history = existing_result.scalar_one_or_none()
 
+    is_new_watch = False
     if existing_history:
         # Update existing history
         existing_history.watch_duration = history_data.watch_duration
@@ -64,13 +66,29 @@ async def create_or_update_watch_history(
             is_completed=1 if history_data.is_completed else 0
         )
         db.add(history)
-
-        # Update video view count (only for new history)
-        video.view_count += 1
+        is_new_watch = True
 
     await db.commit()
     await db.refresh(history)
     await db.refresh(history, ["video"])
+
+    # 使用后台任务异步更新浏览量（仅新观看记录）
+    # 使用原子UPDATE避免竞态条件
+    if is_new_watch:
+        async def increment_view_count():
+            from app.database import AsyncSessionLocal
+            async with AsyncSessionLocal() as session:
+                try:
+                    await session.execute(
+                        update(Video)
+                        .where(Video.id == history_data.video_id)
+                        .values(view_count=Video.view_count + 1)
+                    )
+                    await session.commit()
+                except Exception as e:
+                    print(f"Failed to increment view count: {e}")
+        
+        background_tasks.add_task(increment_view_count)
 
     return WatchHistoryResponse.model_validate(history)
 

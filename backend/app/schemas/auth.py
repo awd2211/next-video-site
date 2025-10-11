@@ -1,4 +1,4 @@
-from pydantic import BaseModel, EmailStr, Field
+from pydantic import BaseModel, EmailStr, Field, field_validator
 from typing import Optional
 
 
@@ -6,8 +6,17 @@ class UserRegister(BaseModel):
     """User registration schema"""
     email: EmailStr
     username: str = Field(..., min_length=3, max_length=100)
-    password: str = Field(..., min_length=6)
+    password: str = Field(..., min_length=8, max_length=128)
     full_name: Optional[str] = None
+
+    @field_validator('password')
+    @classmethod
+    def validate_password_strength(cls, v: str) -> str:
+        """验证密码强度"""
+        from app.utils.password_validator import (
+            validate_password_field
+        )
+        return validate_password_field(v)
 
 
 class UserLogin(BaseModel):

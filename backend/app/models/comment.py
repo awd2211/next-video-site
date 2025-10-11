@@ -34,6 +34,21 @@ class Comment(Base):
     parent = relationship("Comment", remote_side=[id], backref="replies")
 
 
+class UserCommentLike(Base):
+    """用户评论点赞关联表 - 确保幂等性"""
+    
+    __tablename__ = "user_comment_likes"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    comment_id = Column(Integer, ForeignKey("comments.id", ondelete="CASCADE"), nullable=False, index=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    
+    # Relationships
+    user = relationship("User", backref="comment_likes")
+    comment = relationship("Comment", backref="user_likes")
+
+
 class Rating(Base):
     """Rating model"""
 

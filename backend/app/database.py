@@ -104,10 +104,30 @@ def get_pool_status():
 
 # Dependency for getting async DB session
 async def get_db():
+    """
+    获取数据库session（自动commit）
+    适用于大多数场景
+    """
     async with AsyncSessionLocal() as session:
         try:
             yield session
             await session.commit()
+        except Exception:
+            await session.rollback()
+            raise
+        finally:
+            await session.close()
+
+
+async def get_db_read_only():
+    """
+    获取只读数据库session（不commit）
+    适用于纯查询场景，性能更好
+    """
+    async with AsyncSessionLocal() as session:
+        try:
+            yield session
+            # 只读操作不需要commit
         except Exception:
             await session.rollback()
             raise

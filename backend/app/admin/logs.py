@@ -7,7 +7,7 @@ from app.database import get_db
 from app.models.admin import OperationLog
 from app.models.user import AdminUser
 from app.utils.dependencies import get_current_admin_user
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 import json
 import csv
 import io
@@ -130,7 +130,7 @@ async def get_operation_logs_summary(
     current_admin: AdminUser = Depends(get_current_admin_user),
 ):
     """获取操作日志统计摘要"""
-    start_date = datetime.utcnow() - timedelta(days=days)
+    start_date = datetime.now(timezone.utc) - timedelta(days=days)
 
     # 按模块统计
     module_stats = await db.execute(
@@ -198,7 +198,7 @@ async def cleanup_old_logs(
         from fastapi import HTTPException
         raise HTTPException(status_code=403, detail="只有超级管理员才能清理日志")
 
-    cutoff_date = datetime.utcnow() - timedelta(days=days)
+    cutoff_date = datetime.now(timezone.utc) - timedelta(days=days)
 
     # 查询要删除的日志数量
     count_result = await db.execute(
@@ -334,6 +334,6 @@ async def export_logs(
         iter([output.getvalue()]),
         media_type="text/csv",
         headers={
-            "Content-Disposition": f"attachment; filename=operation_logs_{datetime.utcnow().strftime('%Y%m%d_%H%M%S')}.csv"
+            "Content-Disposition": f"attachment; filename=operation_logs_{datetime.now(timezone.utc).strftime('%Y%m%d_%H%M%S')}.csv"
         }
     )

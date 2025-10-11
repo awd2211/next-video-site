@@ -1,4 +1,4 @@
-import React, { Component, ErrorInfo, ReactNode } from 'react'
+import { Component, ErrorInfo, ReactNode } from 'react'
 import { Button, Result } from 'antd'
 import { ReloadOutlined, HomeOutlined } from '@ant-design/icons'
 
@@ -80,7 +80,7 @@ class ErrorBoundary extends Component<Props, State> {
             subTitle={
               <div>
                 <p>应用程序遇到了一个错误。我们已经记录了这个问题。</p>
-                {process.env.NODE_ENV === 'development' && this.state.error && (
+                {import.meta.env.DEV && this.state.error && (
                   <details style={{ marginTop: 16, textAlign: 'left' }}>
                     <summary style={{ cursor: 'pointer', color: '#1890ff' }}>
                       查看错误详情

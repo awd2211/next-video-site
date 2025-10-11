@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends, Query, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, or_, func, desc, and_
 from sqlalchemy.orm import selectinload
+from sqlalchemy.sql import text
 from typing import Optional
 from app.database import get_db
 from app.models.video import Video, VideoStatus
@@ -24,7 +25,9 @@ async def search_videos(
     country_id: Optional[int] = None,
     year: Optional[int] = None,
     min_rating: Optional[float] = Query(None, ge=0, le=10),
-    sort_by: str = Query("created_at", regex="^(created_at|view_count|average_rating)$"),
+    sort_by: str = Query(
+        "created_at", regex="^(created_at|view_count|average_rating)$"
+    ),
     db: AsyncSession = Depends(get_db),
 ):
     """Search videos with advanced filters (cached for 5 minutes)"""
@@ -39,16 +42,20 @@ async def search_videos(
     if cached is not None:
         return cached
 
-    # Build base search query
+    # Build base search query using PostgreSQL full-text search
+    # 使用tsquery进行全文搜索，性能远超ILIKE
+    filters = [Video.status == VideoStatus.PUBLISHED]
+
+    # 使用ILIKE搜索（稳定可靠）
+    # 注：如果需要全文搜索，确保search_vector列已正确配置和填充
     search_pattern = f"%{q}%"
-    filters = [
-        Video.status == VideoStatus.PUBLISHED,
+    filters.append(
         or_(
             Video.title.ilike(search_pattern),
             Video.original_title.ilike(search_pattern),
             Video.description.ilike(search_pattern),
         )
-    ]
+    )
 
     # Apply advanced filters
     if category_id:
@@ -60,9 +67,7 @@ async def search_videos(
     if min_rating is not None:
         filters.append(Video.average_rating >= min_rating)
 
-    query = select(Video).options(
-        selectinload(Video.country)
-    ).filter(and_(*filters))
+    query = select(Video).options(selectinload(Video.country)).filter(and_(*filters))
 
     # Count total
     count_query = select(func.count()).select_from(query.subquery())

@@ -1,6 +1,8 @@
 """
 MinIO 客户端工具
 用于上传、下载和管理视频文件
+
+使用单例模式和延迟初始化，避免应用启动时阻塞
 """
 from minio import Minio
 from minio.error import S3Error
@@ -8,20 +10,48 @@ from app.config import settings
 import io
 from typing import BinaryIO, Optional
 from datetime import timedelta
+import threading
 
 
 class MinIOClient:
-    """MinIO 客户端封装"""
+    """MinIO 客户端封装 - 单例模式 + 延迟初始化"""
+    
+    _instance = None
+    _lock = threading.Lock()
+    _initialized = False
+
+    def __new__(cls):
+        if cls._instance is None:
+            with cls._lock:
+                if cls._instance is None:
+                    cls._instance = super().__new__(cls)
+        return cls._instance
 
     def __init__(self):
-        self.client = Minio(
-            settings.MINIO_ENDPOINT,
-            access_key=settings.MINIO_ACCESS_KEY,
-            secret_key=settings.MINIO_SECRET_KEY,
-            secure=settings.MINIO_SECURE,
-        )
-        self.bucket_name = settings.MINIO_BUCKET
-        self._ensure_bucket()
+        # 避免重复初始化
+        if MinIOClient._initialized:
+            return
+        
+        with MinIOClient._lock:
+            if not MinIOClient._initialized:
+                self._client = None
+                self.bucket_name = settings.MINIO_BUCKET
+                MinIOClient._initialized = True
+    
+    @property
+    def client(self) -> Minio:
+        """延迟初始化MinIO客户端"""
+        if self._client is None:
+            with MinIOClient._lock:
+                if self._client is None:
+                    self._client = Minio(
+                        settings.MINIO_ENDPOINT,
+                        access_key=settings.MINIO_ACCESS_KEY,
+                        secret_key=settings.MINIO_SECRET_KEY,
+                        secure=settings.MINIO_SECURE,
+                    )
+                    self._ensure_bucket()
+        return self._client
 
     def _ensure_bucket(self):
         """确保存储桶存在，不存在则创建"""

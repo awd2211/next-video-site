@@ -1,12 +1,13 @@
 """
 弹幕管理后台API
 """
+
 from fastapi import APIRouter, Depends, HTTPException, status, Query
-from sqlalchemy import select, func, and_, or_, delete as sql_delete
+from sqlalchemy import select, func, and_, or_, delete as sql_delete, update
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 from typing import List, Optional
-from datetime import datetime, timedelta
+from datetime import datetime, timezone, timedelta
 
 from app.database import get_db
 from app.models.danmaku import Danmaku, BlockedWord, DanmakuStatus, DanmakuType
@@ -62,11 +63,9 @@ async def get_danmaku_stats(
     blocked = blocked_result.scalar()
 
     # 今日弹幕数
-    today = datetime.utcnow().date()
+    today = datetime.now(timezone.utc).date()
     today_result = await db.execute(
-        select(func.count(Danmaku.id)).filter(
-            func.date(Danmaku.created_at) == today
-        )
+        select(func.count(Danmaku.id)).filter(func.date(Danmaku.created_at) == today)
     )
     today_count = today_result.scalar()
 
@@ -140,7 +139,9 @@ async def search_danmaku(
     if search_params.is_blocked is not None:
         count_query = count_query.filter(Danmaku.is_blocked == search_params.is_blocked)
     if search_params.keyword:
-        count_query = count_query.filter(Danmaku.content.ilike(f"%{search_params.keyword}%"))
+        count_query = count_query.filter(
+            Danmaku.content.ilike(f"%{search_params.keyword}%")
+        )
     if search_params.start_date:
         count_query = count_query.filter(Danmaku.created_at >= search_params.start_date)
     if search_params.end_date:
@@ -163,10 +164,10 @@ async def search_danmaku(
     for d in danmaku_list:
         danmaku_dict = DanmakuAdminResponse.model_validate(d).model_dump()
         if d.user:
-            danmaku_dict['user'] = {
-                'id': d.user.id,
-                'username': d.user.username,
-                'email': d.user.email,
+            danmaku_dict["user"] = {
+                "id": d.user.id,
+                "username": d.user.username,
+                "email": d.user.email,
             }
         items.append(danmaku_dict)
 
@@ -192,38 +193,44 @@ async def review_danmaku(
     - delete: 删除
     - block: 屏蔽
     """
-    # 获取弹幕
+    # 验证弹幕是否存在
     result = await db.execute(
-        select(Danmaku).filter(Danmaku.id.in_(review_action.danmaku_ids))
+        select(func.count(Danmaku.id)).filter(Danmaku.id.in_(review_action.danmaku_ids))
     )
-    danmaku_list = result.scalars().all()
+    count = result.scalar()
 
-    if len(danmaku_list) != len(review_action.danmaku_ids):
+    if count != len(review_action.danmaku_ids):
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="部分弹幕不存在"
+            status_code=status.HTTP_404_NOT_FOUND, detail="部分弹幕不存在"
         )
 
-    # 执行操作
-    for danmaku in danmaku_list:
-        if review_action.action == "approve":
-            danmaku.status = DanmakuStatus.APPROVED
-            danmaku.is_blocked = False
-        elif review_action.action == "reject":
-            danmaku.status = DanmakuStatus.REJECTED
-            danmaku.reject_reason = review_action.reject_reason
-        elif review_action.action == "delete":
-            danmaku.status = DanmakuStatus.DELETED
-        elif review_action.action == "block":
-            danmaku.is_blocked = True
-            danmaku.status = DanmakuStatus.DELETED
+    # 批量更新操作（优化：使用bulk update）
+    update_values = {
+        "reviewed_by": admin_user.id,
+        "reviewed_at": datetime.now(timezone.utc),
+    }
 
-        danmaku.reviewed_by = admin_user.id
-        danmaku.reviewed_at = datetime.utcnow()
+    if review_action.action == "approve":
+        update_values["status"] = DanmakuStatus.APPROVED
+        update_values["is_blocked"] = False
+    elif review_action.action == "reject":
+        update_values["status"] = DanmakuStatus.REJECTED
+        update_values["reject_reason"] = review_action.reject_reason
+    elif review_action.action == "delete":
+        update_values["status"] = DanmakuStatus.DELETED
+    elif review_action.action == "block":
+        update_values["is_blocked"] = True
+        update_values["status"] = DanmakuStatus.DELETED
+
+    await db.execute(
+        update(Danmaku)
+        .where(Danmaku.id.in_(review_action.danmaku_ids))
+        .values(**update_values)
+    )
 
     await db.commit()
 
-    return {"message": f"已处理 {len(danmaku_list)} 条弹幕"}
+    return {"message": f"已处理 {len(review_action.danmaku_ids)} 条弹幕"}
 
 
 @router.delete("/{danmaku_id}", status_code=status.HTTP_204_NO_CONTENT)
@@ -233,16 +240,11 @@ async def delete_danmaku(
     db: AsyncSession = Depends(get_db),
 ):
     """删除弹幕 (物理删除)"""
-    result = await db.execute(
-        select(Danmaku).filter(Danmaku.id == danmaku_id)
-    )
+    result = await db.execute(select(Danmaku).filter(Danmaku.id == danmaku_id))
     danmaku = result.scalar_one_or_none()
 
     if not danmaku:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="弹幕不存在"
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="弹幕不存在")
 
     await db.delete(danmaku)
     await db.commit()
@@ -257,15 +259,14 @@ async def batch_delete_danmaku(
     db: AsyncSession = Depends(get_db),
 ):
     """批量删除弹幕"""
-    await db.execute(
-        sql_delete(Danmaku).where(Danmaku.id.in_(danmaku_ids))
-    )
+    await db.execute(sql_delete(Danmaku).where(Danmaku.id.in_(danmaku_ids)))
     await db.commit()
 
     return {"message": f"已删除 {len(danmaku_ids)} 条弹幕"}
 
 
 # ============ 屏蔽词管理 ============
+
 
 @router.get("/blocked-words", response_model=List[BlockedWordResponse])
 async def get_blocked_words(
@@ -281,7 +282,11 @@ async def get_blocked_words(
     return [BlockedWordResponse.model_validate(w) for w in blocked_words]
 
 
-@router.post("/blocked-words", response_model=BlockedWordResponse, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/blocked-words",
+    response_model=BlockedWordResponse,
+    status_code=status.HTTP_201_CREATED,
+)
 async def add_blocked_word(
     word_data: BlockedWordCreate,
     admin_user: AdminUser = Depends(get_current_admin_user),
@@ -296,8 +301,7 @@ async def add_blocked_word(
 
     if existing:
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="该屏蔽词已存在"
+            status_code=status.HTTP_400_BAD_REQUEST, detail="该屏蔽词已存在"
         )
 
     # 创建屏蔽词
@@ -321,15 +325,12 @@ async def delete_blocked_word(
     db: AsyncSession = Depends(get_db),
 ):
     """删除屏蔽词"""
-    result = await db.execute(
-        select(BlockedWord).filter(BlockedWord.id == word_id)
-    )
+    result = await db.execute(select(BlockedWord).filter(BlockedWord.id == word_id))
     blocked_word = result.scalar_one_or_none()
 
     if not blocked_word:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="屏蔽词不存在"
+            status_code=status.HTTP_404_NOT_FOUND, detail="屏蔽词不存在"
         )
 
     await db.delete(blocked_word)

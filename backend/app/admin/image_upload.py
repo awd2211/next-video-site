@@ -12,6 +12,7 @@ from app.utils.dependencies import get_current_admin_user
 from app.utils.rate_limit import limiter, RateLimitPresets
 from app.utils.minio_client import minio_client
 from app.utils.image_processor import ImageProcessor
+from app.utils.file_validator import FileValidationPresets
 
 router = APIRouter()
 
@@ -46,15 +47,8 @@ async def upload_image(
         "size_saved": "节省的空间(bytes)"
     }
     """
-    # 验证文件类型
-    if not file.content_type or not file.content_type.startswith("image/"):
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="只支持图片文件"
-        )
-
-    # 读取文件
-    file_content = await file.read()
+    # 使用安全的文件验证（检查魔数、大小、扩展名）
+    file_content, ext = await FileValidationPresets.validate_image(file)
     original_size = len(file_content)
     image_file = io.BytesIO(file_content)
 
@@ -63,8 +57,8 @@ async def upload_image(
 
     # 生成文件名
     import uuid
-    from datetime import datetime
-    timestamp = datetime.utcnow().strftime("%Y%m%d_%H%M%S")
+    from datetime import datetime, timezone
+    timestamp = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
     unique_id = uuid.uuid4().hex[:8]
     base_name = f"{category}/{timestamp}_{unique_id}"
 
@@ -151,13 +145,8 @@ async def upload_avatar(
     - 生成多种尺寸 (64x64, 128x128, 256x256)
     - WebP格式
     """
-    if not file.content_type or not file.content_type.startswith("image/"):
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="只支持图片文件"
-        )
-
-    file_content = await file.read()
+    # 使用安全的文件验证
+    file_content, ext = await FileValidationPresets.validate_image(file)
     image_file = io.BytesIO(file_content)
 
     # 打开图片并裁剪为正方形
@@ -175,8 +164,8 @@ async def upload_avatar(
 
     # 生成多种尺寸
     import uuid
-    from datetime import datetime
-    timestamp = datetime.utcnow().strftime("%Y%m%d_%H%M%S")
+    from datetime import datetime, timezone
+    timestamp = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
     unique_id = uuid.uuid4().hex[:8]
     base_name = f"avatars/{timestamp}_{unique_id}"
 

@@ -6,7 +6,6 @@ import {
   CommentOutlined,
   EyeOutlined,
   RiseOutlined,
-  FallOutlined,
 } from '@ant-design/icons'
 import { Line, Column, Pie } from '@ant-design/charts'
 import axios from '@/utils/axios'

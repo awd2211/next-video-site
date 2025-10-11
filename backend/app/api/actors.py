@@ -9,6 +9,7 @@ from app.schemas.person import (
     ActorDetailResponse,
     PaginatedActorResponse,
 )
+from app.utils.cache import Cache
 
 router = APIRouter()
 
@@ -20,7 +21,15 @@ async def get_actors(
     search: str = Query("", description="Search actors by name"),
     db: AsyncSession = Depends(get_db),
 ):
-    """Get list of actors with pagination and search"""
+    """Get list of actors with pagination and search (cached for 15 minutes)"""
+    # 生成缓存键
+    cache_key = f"actors_list:{page}:{page_size}:{search or 'all'}"
+
+    # 尝试从缓存获取
+    cached = await Cache.get(cache_key)
+    if cached is not None:
+        return cached
+
     # Build query
     query = select(Actor)
 
@@ -34,24 +43,21 @@ async def get_actors(
     total = total_result.scalar()
 
     # Get paginated results
-    query = (
-        query
-        .order_by(Actor.name)
-        .offset((page - 1) * page_size)
-        .limit(page_size)
-    )
+    query = query.order_by(Actor.name).offset((page - 1) * page_size).limit(page_size)
 
     result = await db.execute(query)
     actors = result.scalars().all()
 
     items = [ActorResponse.model_validate(actor) for actor in actors]
 
-    return PaginatedActorResponse(
-        total=total,
-        page=page,
-        page_size=page_size,
-        items=items
+    response = PaginatedActorResponse(
+        total=total, page=page, page_size=page_size, items=items
     )
+
+    # 缓存15分钟
+    await Cache.set(cache_key, response, ttl=900)
+
+    return response
 
 
 @router.get("/{actor_id}", response_model=ActorDetailResponse)
@@ -71,8 +77,7 @@ async def get_actor(
 
     if not actor:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Actor not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail="Actor not found"
         )
 
     # Get videos featuring this actor
@@ -98,8 +103,7 @@ async def get_actor_videos(
     actor = actor_result.scalar_one_or_none()
     if not actor:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Actor not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail="Actor not found"
         )
 
     # Count total videos
@@ -125,11 +129,7 @@ async def get_actor_videos(
     videos = result.scalars().all()
 
     from app.schemas.video import VideoListResponse
+
     items = [VideoListResponse.model_validate(video) for video in videos]
 
-    return {
-        "total": total,
-        "page": page,
-        "page_size": page_size,
-        "items": items
-    }
+    return {"total": total, "page": page, "page_size": page_size, "items": items}

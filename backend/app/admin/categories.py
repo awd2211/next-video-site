@@ -11,6 +11,7 @@ from app.schemas.admin_content import (
     PaginatedCategoryResponse,
 )
 from app.utils.dependencies import get_current_admin_user
+from app.utils.cache import Cache
 
 router = APIRouter()
 
@@ -40,8 +41,7 @@ async def get_categories(
 
     # Get paginated results
     query = (
-        query
-        .order_by(Category.sort_order, Category.name)
+        query.order_by(Category.sort_order, Category.name)
         .offset((page - 1) * page_size)
         .limit(page_size)
     )
@@ -52,10 +52,7 @@ async def get_categories(
     items = [CategoryResponse.model_validate(cat) for cat in categories]
 
     return PaginatedCategoryResponse(
-        total=total,
-        page=page,
-        page_size=page_size,
-        items=items
+        total=total, page=page, page_size=page_size, items=items
     )
 
 
@@ -73,7 +70,7 @@ async def create_category(
     if existing_name.scalar_one_or_none():
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Category name already exists"
+            detail="Category name already exists",
         )
 
     # Check if slug already exists
@@ -83,7 +80,7 @@ async def create_category(
     if existing_slug.scalar_one_or_none():
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Category slug already exists"
+            detail="Category slug already exists",
         )
 
     # Verify parent category exists if provided
@@ -94,7 +91,7 @@ async def create_category(
         if not parent_result.scalar_one_or_none():
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail="Parent category not found"
+                detail="Parent category not found",
             )
 
     # Create category
@@ -102,6 +99,9 @@ async def create_category(
     db.add(category)
     await db.commit()
     await db.refresh(category)
+
+    # 清除分类缓存
+    await Cache.delete_pattern("categories:*")
 
     return CategoryResponse.model_validate(category)
 
@@ -118,8 +118,7 @@ async def get_category(
 
     if not category:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Category not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail="Category not found"
         )
 
     return CategoryResponse.model_validate(category)
@@ -138,8 +137,7 @@ async def update_category(
 
     if not category:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Category not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail="Category not found"
         )
 
     # Check for duplicate name
@@ -150,7 +148,7 @@ async def update_category(
         if existing.scalar_one_or_none():
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Category name already exists"
+                detail="Category name already exists",
             )
 
     # Check for duplicate slug
@@ -161,7 +159,7 @@ async def update_category(
         if existing.scalar_one_or_none():
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Category slug already exists"
+                detail="Category slug already exists",
             )
 
     # Verify parent category exists if provided
@@ -170,7 +168,7 @@ async def update_category(
         if category_data.parent_id == category_id:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Category cannot be its own parent"
+                detail="Category cannot be its own parent",
             )
 
         parent_result = await db.execute(
@@ -179,7 +177,7 @@ async def update_category(
         if not parent_result.scalar_one_or_none():
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail="Parent category not found"
+                detail="Parent category not found",
             )
 
     # Update fields
@@ -189,6 +187,9 @@ async def update_category(
 
     await db.commit()
     await db.refresh(category)
+
+    # 清除分类缓存
+    await Cache.delete_pattern("categories:*")
 
     return CategoryResponse.model_validate(category)
 
@@ -205,8 +206,7 @@ async def delete_category(
 
     if not category:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Category not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail="Category not found"
         )
 
     # Check for child categories
@@ -218,10 +218,13 @@ async def delete_category(
     if children_count > 0:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Cannot delete category with {children_count} child categories"
+            detail=f"Cannot delete category with {children_count} child categories",
         )
 
     await db.delete(category)
     await db.commit()
+
+    # 清除分类缓存
+    await Cache.delete_pattern("categories:*")
 
     return None

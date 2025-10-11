@@ -11,6 +11,7 @@ from app.schemas.admin_content import (
     PaginatedActorAdminResponse,
 )
 from app.utils.dependencies import get_current_admin_user
+from app.utils.cache import Cache
 
 router = APIRouter()
 
@@ -35,12 +36,7 @@ async def get_actors(
     total = total_result.scalar()
 
     # Get paginated results
-    query = (
-        query
-        .order_by(Actor.name)
-        .offset((page - 1) * page_size)
-        .limit(page_size)
-    )
+    query = query.order_by(Actor.name).offset((page - 1) * page_size).limit(page_size)
 
     result = await db.execute(query)
     actors = result.scalars().all()
@@ -48,14 +44,13 @@ async def get_actors(
     items = [ActorAdminResponse.model_validate(actor) for actor in actors]
 
     return PaginatedActorAdminResponse(
-        total=total,
-        page=page,
-        page_size=page_size,
-        items=items
+        total=total, page=page, page_size=page_size, items=items
     )
 
 
-@router.post("/", response_model=ActorAdminResponse, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/", response_model=ActorAdminResponse, status_code=status.HTTP_201_CREATED
+)
 async def create_actor(
     actor_data: ActorCreate,
     current_admin: AdminUser = Depends(get_current_admin_user),
@@ -67,6 +62,9 @@ async def create_actor(
     db.add(actor)
     await db.commit()
     await db.refresh(actor)
+
+    # 清除演员缓存
+    await Cache.delete_pattern("actors_list:*")
 
     return ActorAdminResponse.model_validate(actor)
 
@@ -83,8 +81,7 @@ async def get_actor(
 
     if not actor:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Actor not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail="Actor not found"
         )
 
     return ActorAdminResponse.model_validate(actor)
@@ -103,8 +100,7 @@ async def update_actor(
 
     if not actor:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Actor not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail="Actor not found"
         )
 
     # Update fields
@@ -114,6 +110,9 @@ async def update_actor(
 
     await db.commit()
     await db.refresh(actor)
+
+    # 清除演员缓存
+    await Cache.delete_pattern("actors_list:*")
 
     return ActorAdminResponse.model_validate(actor)
 
@@ -130,11 +129,13 @@ async def delete_actor(
 
     if not actor:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Actor not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail="Actor not found"
         )
 
     await db.delete(actor)
     await db.commit()
+
+    # 清除演员缓存
+    await Cache.delete_pattern("actors_list:*")
 
     return None

@@ -12,7 +12,7 @@ from app.schemas.notification import (
 )
 from app.utils.dependencies import get_current_active_user
 from typing import Optional
-from datetime import datetime
+from datetime import datetime, timezone
 
 router = APIRouter()
 
@@ -141,7 +141,7 @@ async def mark_notification_as_read(
     # 更新为已读
     if not notification.is_read:
         notification.is_read = True
-        notification.read_at = datetime.utcnow()
+        notification.read_at = datetime.now(timezone.utc)
         await db.commit()
         await db.refresh(notification)
 
@@ -170,7 +170,7 @@ async def mark_all_notifications_as_read(
     count = 0
     for notification in notifications:
         notification.is_read = True
-        notification.read_at = datetime.utcnow()
+        notification.read_at = datetime.now(timezone.utc)
         count += 1
 
     await db.commit()

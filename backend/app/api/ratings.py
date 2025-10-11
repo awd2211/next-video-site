@@ -67,20 +67,9 @@ async def create_or_update_rating(
     await db.commit()
     await db.refresh(rating)
 
-    # Recalculate video average rating
-    stats_result = await db.execute(
-        select(
-            func.avg(Rating.score).label("avg_score"),
-            func.count(Rating.id).label("count")
-        ).where(Rating.video_id == rating_data.video_id)
-    )
-    stats = stats_result.one()
-
-    video.average_rating = float(stats.avg_score) if stats.avg_score else 0.0
-    video.rating_count = stats.count
-
-    await db.commit()
-
+    # 注意：评分统计由数据库触发器自动更新，无需手动计算
+    # 这样可以避免并发竞态条件
+    
     return RatingResponse.model_validate(rating)
 
 

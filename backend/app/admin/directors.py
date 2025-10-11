@@ -11,6 +11,7 @@ from app.schemas.admin_content import (
     PaginatedDirectorAdminResponse,
 )
 from app.utils.dependencies import get_current_admin_user
+from app.utils.cache import Cache
 
 router = APIRouter()
 
@@ -36,10 +37,7 @@ async def get_directors(
 
     # Get paginated results
     query = (
-        query
-        .order_by(Director.name)
-        .offset((page - 1) * page_size)
-        .limit(page_size)
+        query.order_by(Director.name).offset((page - 1) * page_size).limit(page_size)
     )
 
     result = await db.execute(query)
@@ -48,14 +46,13 @@ async def get_directors(
     items = [DirectorAdminResponse.model_validate(director) for director in directors]
 
     return PaginatedDirectorAdminResponse(
-        total=total,
-        page=page,
-        page_size=page_size,
-        items=items
+        total=total, page=page, page_size=page_size, items=items
     )
 
 
-@router.post("/", response_model=DirectorAdminResponse, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/", response_model=DirectorAdminResponse, status_code=status.HTTP_201_CREATED
+)
 async def create_director(
     director_data: DirectorCreate,
     current_admin: AdminUser = Depends(get_current_admin_user),
@@ -67,6 +64,9 @@ async def create_director(
     db.add(director)
     await db.commit()
     await db.refresh(director)
+
+    # 清除导演缓存
+    await Cache.delete_pattern("directors_list:*")
 
     return DirectorAdminResponse.model_validate(director)
 
@@ -83,8 +83,7 @@ async def get_director(
 
     if not director:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Director not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail="Director not found"
         )
 
     return DirectorAdminResponse.model_validate(director)
@@ -103,8 +102,7 @@ async def update_director(
 
     if not director:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Director not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail="Director not found"
         )
 
     # Update fields
@@ -114,6 +112,9 @@ async def update_director(
 
     await db.commit()
     await db.refresh(director)
+
+    # 清除导演缓存
+    await Cache.delete_pattern("directors_list:*")
 
     return DirectorAdminResponse.model_validate(director)
 
@@ -130,11 +131,13 @@ async def delete_director(
 
     if not director:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Director not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail="Director not found"
         )
 
     await db.delete(director)
     await db.commit()
+
+    # 清除导演缓存
+    await Cache.delete_pattern("directors_list:*")
 
     return None

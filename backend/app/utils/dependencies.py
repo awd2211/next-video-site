@@ -6,6 +6,7 @@ from sqlalchemy import select
 from app.database import get_db
 from app.models.user import User, AdminUser
 from app.utils.security import decode_token
+from app.utils.token_blacklist import is_blacklisted
 
 security = HTTPBearer()
 
@@ -22,6 +23,15 @@ async def get_current_user(
     )
 
     token = credentials.credentials
+    
+    # 检查token是否在黑名单中
+    if await is_blacklisted(token):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Token has been revoked",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    
     payload = decode_token(token)
 
     if payload is None or payload.get("type") != "access":
@@ -66,9 +76,19 @@ async def get_current_admin_user(
     )
 
     token = credentials.credentials
+    
+    # 检查token是否在黑名单中
+    if await is_blacklisted(token):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Token has been revoked",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    
     payload = decode_token(token)
 
-    if payload is None or payload.get("type") != "access" or payload.get("is_admin") != True:
+    if (payload is None or payload.get("type") != "access" or
+            not payload.get("is_admin")):
         raise credentials_exception
 
     admin_id_str = payload.get("sub")

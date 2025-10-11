@@ -1,21 +1,68 @@
 """
 Redis缓存工具类
 提供通用的缓存操作，用于缓存频繁访问的数据
+
+注意：使用JSON序列化而非pickle，避免远程代码执行风险
 """
 import json
-import pickle
-from typing import Optional, Any, Callable
+from typing import Any, Callable
 from functools import wraps
 import redis.asyncio as redis
 from app.config import settings
 from datetime import datetime
+from decimal import Decimal
+
+
+def json_serializer(obj: Any) -> str:
+    """
+    JSON序列化器，支持datetime等特殊类型
+    
+    Args:
+        obj: 要序列化的对象
+    
+    Returns:
+        JSON字符串
+    """
+    def default(o):
+        if isinstance(o, datetime):
+            return {'__type__': 'datetime', 'value': o.isoformat()}
+        elif isinstance(o, Decimal):
+            return {'__type__': 'decimal', 'value': str(o)}
+        elif hasattr(o, '__dict__'):
+            # Pydantic models and similar objects
+            return {'__type__': 'object', 'value': str(o)}
+        return str(o)
+    
+    return json.dumps(obj, default=default, ensure_ascii=False)
+
+
+def json_deserializer(json_str: str) -> Any:
+    """
+    JSON反序列化器，恢复datetime等特殊类型
+    
+    Args:
+        json_str: JSON字符串
+    
+    Returns:
+        反序列化的对象
+    """
+    def object_hook(obj):
+        if isinstance(obj, dict) and '__type__' in obj:
+            if obj['__type__'] == 'datetime':
+                return datetime.fromisoformat(obj['value'])
+            elif obj['__type__'] == 'decimal':
+                return Decimal(obj['value'])
+        return obj
+    
+    return json.loads(json_str, object_hook=object_hook)
+
 
 # 创建Redis连接池
 redis_pool = redis.ConnectionPool(
     host=settings.REDIS_HOST,
     port=settings.REDIS_PORT,
     db=settings.REDIS_DB,
-    decode_responses=False,  # 使用bytes以支持pickle
+    decode_responses=True,  # 使用字符串模式（JSON）
     max_connections=50,
 )
 
@@ -88,8 +135,10 @@ class CacheStats:
                     "total_misses": sum(s["misses"] for s in stats),
                     "total_requests": sum(s["total"] for s in stats),
                     "average_hit_rate": round(
-                        sum(s["hits"] for s in stats) / sum(s["total"] for s in stats) * 100
-                        if sum(s["total"] for s in stats) > 0 else 0,
+                        sum(s["hits"] for s in stats) /
+                        sum(s["total"] for s in stats) * 100
+                        if sum(s["total"] for s in stats) > 0
+                        else 0,
                         2
                     )
                 }
@@ -123,12 +172,8 @@ class Cache:
                 return default
             # 记录缓存命中
             await CacheStats.record_hit()
-            # 尝试用pickle反序列化
-            try:
-                return pickle.loads(value)
-            except:
-                # 如果失败，尝试JSON
-                return json.loads(value.decode('utf-8'))
+            # 使用JSON反序列化
+            return json_deserializer(value)
         except Exception as e:
             print(f"Cache get error for key {key}: {e}")
             return default
@@ -148,8 +193,8 @@ class Cache:
         """
         try:
             client = await get_redis()
-            # 使用pickle序列化，支持更多数据类型
-            serialized = pickle.dumps(value)
+            # 使用JSON序列化，安全且高效
+            serialized = json_serializer(value)
             await client.setex(key, ttl, serialized)
             return True
         except Exception as e:
@@ -238,7 +283,11 @@ def cache_result(key_prefix: str, ttl: int = 3600):
             cache_key = f"{key_prefix}"
             if args or kwargs:
                 # 将参数序列化为字符串作为键的一部分
-                args_str = json.dumps({"args": args, "kwargs": kwargs}, sort_keys=True, default=str)
+                args_str = json.dumps(
+                    {"args": args, "kwargs": kwargs},
+                    sort_keys=True,
+                    default=str
+                )
                 cache_key = f"{key_prefix}:{hash(args_str)}"
 
             # 尝试从缓存获取

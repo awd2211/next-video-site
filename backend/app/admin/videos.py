@@ -2,11 +2,16 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status, UploadFile
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, desc, or_
 from typing import Optional
-from datetime import datetime
+from datetime import datetime, timezone
 from app.database import get_db
 from app.models.video import Video, VideoCategory, VideoTag, VideoActor, VideoDirector
 from app.models.user import AdminUser
-from app.schemas.video import VideoDetailResponse, VideoCreate, VideoUpdate, PaginatedResponse
+from app.schemas.video import (
+    VideoDetailResponse,
+    VideoCreate,
+    VideoUpdate,
+    PaginatedResponse,
+)
 from app.utils.dependencies import get_current_admin_user
 from app.utils.minio_client import minio_client
 from app.utils.cache import Cache
@@ -67,7 +72,9 @@ async def admin_list_videos(
     }
 
 
-@router.post("", response_model=VideoDetailResponse, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "", response_model=VideoDetailResponse, status_code=status.HTTP_201_CREATED
+)
 async def admin_create_video(
     video_data: VideoCreate,
     db: AsyncSession = Depends(get_db),
@@ -81,7 +88,7 @@ async def admin_create_video(
     result = await db.execute(select(Video).filter(Video.slug == slug))
     if result.scalar_one_or_none():
         # Append timestamp to make it unique
-        slug = f"{slug}-{int(datetime.utcnow().timestamp())}"
+        slug = f"{slug}-{int(datetime.now(timezone.utc).timestamp())}"
 
     # Create video
     new_video = Video(
@@ -107,30 +114,48 @@ async def admin_create_video(
     db.add(new_video)
     await db.flush()
 
-    # Add categories
-    for category_id in video_data.category_ids:
-        video_category = VideoCategory(video_id=new_video.id, category_id=category_id)
-        db.add(video_category)
+    # Batch insert categories (优化：批量插入)
+    if video_data.category_ids:
+        await db.execute(
+            VideoCategory.__table__.insert(),
+            [
+                {"video_id": new_video.id, "category_id": cid}
+                for cid in video_data.category_ids
+            ],
+        )
 
-    # Add tags
-    for tag_id in video_data.tag_ids:
-        video_tag = VideoTag(video_id=new_video.id, tag_id=tag_id)
-        db.add(video_tag)
+    # Batch insert tags (优化：批量插入)
+    if video_data.tag_ids:
+        await db.execute(
+            VideoTag.__table__.insert(),
+            [{"video_id": new_video.id, "tag_id": tid} for tid in video_data.tag_ids],
+        )
 
-    # Add actors
-    for actor_id in video_data.actor_ids:
-        video_actor = VideoActor(video_id=new_video.id, actor_id=actor_id)
-        db.add(video_actor)
+    # Batch insert actors (优化：批量插入)
+    if video_data.actor_ids:
+        await db.execute(
+            VideoActor.__table__.insert(),
+            [
+                {"video_id": new_video.id, "actor_id": aid}
+                for aid in video_data.actor_ids
+            ],
+        )
 
-    # Add directors
-    for director_id in video_data.director_ids:
-        video_director = VideoDirector(video_id=new_video.id, director_id=director_id)
-        db.add(video_director)
+    # Batch insert directors (优化：批量插入)
+    if video_data.director_ids:
+        await db.execute(
+            VideoDirector.__table__.insert(),
+            [
+                {"video_id": new_video.id, "director_id": did}
+                for did in video_data.director_ids
+            ],
+        )
 
     await db.commit()
     await db.refresh(new_video)
 
     # 清除相关缓存
+    await Cache.delete_pattern("videos_list:*")  # 优化：清除列表缓存
     await Cache.delete_pattern("trending_videos:*")
     await Cache.delete_pattern("featured_videos:*")
     await Cache.delete_pattern("recommended_videos:*")
@@ -140,7 +165,9 @@ async def admin_create_video(
     if new_video.video_url:
         try:
             task = transcode_video_dual_format.delay(new_video.id)
-            logger.info(f"✅ AV1转码任务已触发: video_id={new_video.id}, task_id={task.id}")
+            logger.info(
+                f"✅ AV1转码任务已触发: video_id={new_video.id}, task_id={task.id}"
+            )
         except Exception as e:
             logger.error(f"❌ 触发AV1转码失败: video_id={new_video.id}, error={str(e)}")
             # 不阻塞视频创建流程,转码失败只记录日志
@@ -188,25 +215,65 @@ async def admin_update_video(
     director_ids = update_data.pop("director_ids", None)
 
     # 🆕 检测video_url是否更新
-    video_url_updated = "video_url" in update_data and update_data["video_url"] != video.video_url
+    video_url_updated = (
+        "video_url" in update_data and update_data["video_url"] != video.video_url
+    )
 
     # Update basic fields
     for field, value in update_data.items():
         setattr(video, field, value)
 
-    # Update categories if provided
+    # Update categories if provided (优化：批量操作)
     if category_ids is not None:
         # Remove existing
-        await db.execute(select(VideoCategory).filter(VideoCategory.video_id == video_id))
-        # Add new
-        for category_id in category_ids:
-            video_category = VideoCategory(video_id=video.id, category_id=category_id)
-            db.add(video_category)
+        await db.execute(
+            VideoCategory.__table__.delete().where(VideoCategory.video_id == video_id)
+        )
+        # Batch insert new
+        if category_ids:
+            await db.execute(
+                VideoCategory.__table__.insert(),
+                [{"video_id": video.id, "category_id": cid} for cid in category_ids],
+            )
+
+    # Update tags if provided (优化：批量操作)
+    if tag_ids is not None:
+        await db.execute(
+            VideoTag.__table__.delete().where(VideoTag.video_id == video_id)
+        )
+        if tag_ids:
+            await db.execute(
+                VideoTag.__table__.insert(),
+                [{"video_id": video.id, "tag_id": tid} for tid in tag_ids],
+            )
+
+    # Update actors if provided (优化：批量操作)
+    if actor_ids is not None:
+        await db.execute(
+            VideoActor.__table__.delete().where(VideoActor.video_id == video_id)
+        )
+        if actor_ids:
+            await db.execute(
+                VideoActor.__table__.insert(),
+                [{"video_id": video.id, "actor_id": aid} for aid in actor_ids],
+            )
+
+    # Update directors if provided (优化：批量操作)
+    if director_ids is not None:
+        await db.execute(
+            VideoDirector.__table__.delete().where(VideoDirector.video_id == video_id)
+        )
+        if director_ids:
+            await db.execute(
+                VideoDirector.__table__.insert(),
+                [{"video_id": video.id, "director_id": did} for did in director_ids],
+            )
 
     await db.commit()
     await db.refresh(video)
 
     # 清除相关缓存
+    await Cache.delete_pattern("videos_list:*")  # 优化：清除列表缓存
     await Cache.delete_pattern("trending_videos:*")
     await Cache.delete_pattern("featured_videos:*")
     await Cache.delete_pattern("recommended_videos:*")
@@ -216,9 +283,13 @@ async def admin_update_video(
     if video_url_updated and video.video_url:
         try:
             task = transcode_video_dual_format.delay(video.id)
-            logger.info(f"✅ AV1转码任务已触发(更新): video_id={video.id}, task_id={task.id}")
+            logger.info(
+                f"✅ AV1转码任务已触发(更新): video_id={video.id}, task_id={task.id}"
+            )
         except Exception as e:
-            logger.error(f"❌ 触发AV1转码失败(更新): video_id={video.id}, error={str(e)}")
+            logger.error(
+                f"❌ 触发AV1转码失败(更新): video_id={video.id}, error={str(e)}"
+            )
 
     return video
 
@@ -240,6 +311,7 @@ async def admin_delete_video(
     await db.commit()
 
     # 清除相关缓存
+    await Cache.delete_pattern("videos_list:*")  # 优化：清除列表缓存
     await Cache.delete_pattern("trending_videos:*")
     await Cache.delete_pattern("featured_videos:*")
     await Cache.delete_pattern("recommended_videos:*")
@@ -264,7 +336,7 @@ async def admin_update_video_status(
 
     video.status = status
     if status == "published" and not video.published_at:
-        video.published_at = datetime.utcnow()
+        video.published_at = datetime.now(timezone.utc)
 
     await db.commit()
 
@@ -294,12 +366,14 @@ async def admin_upload_video_file(
     # 验证文件类型
     allowed_types = ["video/mp4", "video/avi", "video/mkv", "video/mov", "video/flv"]
     if file.content_type not in allowed_types:
-        raise HTTPException(status_code=400, detail=f"不支持的视频格式，仅支持 MP4, AVI, MKV, MOV, FLV")
+        raise HTTPException(
+            status_code=400, detail=f"不支持的视频格式，仅支持 MP4, AVI, MKV, MOV, FLV"
+        )
 
     try:
         # 生成文件名
         ext = file.filename.split(".")[-1]
-        object_name = f"videos/video_{video_id}_{int(datetime.utcnow().timestamp())}.{ext}"
+        object_name = f"videos/video_{video_id}_{int(datetime.now(timezone.utc).timestamp())}.{ext}"
 
         # 上传到 MinIO
         file_content = await file.read()
@@ -336,12 +410,14 @@ async def admin_upload_poster(
     # 验证文件类型
     allowed_types = ["image/jpeg", "image/jpg", "image/png", "image/webp"]
     if file.content_type not in allowed_types:
-        raise HTTPException(status_code=400, detail="不支持的图片格式，仅支持 JPG, PNG, WEBP")
+        raise HTTPException(
+            status_code=400, detail="不支持的图片格式，仅支持 JPG, PNG, WEBP"
+        )
 
     try:
         # 生成文件名
         ext = file.filename.split(".")[-1]
-        object_name = f"posters/poster_{video_id}_{int(datetime.utcnow().timestamp())}.{ext}"
+        object_name = f"posters/poster_{video_id}_{int(datetime.now(timezone.utc).timestamp())}.{ext}"
 
         # 上传到 MinIO
         file_content = await file.read()
@@ -383,7 +459,7 @@ async def admin_upload_backdrop(
     try:
         # 生成文件名
         ext = file.filename.split(".")[-1]
-        object_name = f"backdrops/backdrop_{video_id}_{int(datetime.utcnow().timestamp())}.{ext}"
+        object_name = f"backdrops/backdrop_{video_id}_{int(datetime.now(timezone.utc).timestamp())}.{ext}"
 
         # 上传到 MinIO
         file_content = await file.read()

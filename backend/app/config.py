@@ -8,7 +8,7 @@ class Settings(BaseSettings):
 
     # Application
     APP_NAME: str = "VideoSite"
-    DEBUG: bool = True
+    DEBUG: bool = False  # 生产环境必须为False，开发时可通过.env覆盖
     SECRET_KEY: str
     API_V1_PREFIX: str = "/api/v1"
 
@@ -29,15 +29,22 @@ class Settings(BaseSettings):
     REFRESH_TOKEN_EXPIRE_DAYS: int = 7
 
     # CORS
-    BACKEND_CORS_ORIGINS: List[str] = ["http://localhost:3000", "http://localhost:3001", "http://localhost:5173"]
+    # 生产环境应该通过环境变量覆盖这个默认值
+    # 示例: BACKEND_CORS_ORIGINS='["https://yourdomain.com","https://admin.yourdomain.com"]'
+    BACKEND_CORS_ORIGINS: List[str] = [
+        "http://localhost:3000",
+        "http://localhost:3001",
+        "http://localhost:5173",
+    ]
 
     # File Storage (MinIO)
-    MINIO_ENDPOINT: str = "localhost:9002"
-    MINIO_ACCESS_KEY: str = "minioadmin"
-    MINIO_SECRET_KEY: str = "minioadmin"
+    # 警告：生产环境必须在.env中设置强密码，不要使用默认值！
+    MINIO_ENDPOINT: str
+    MINIO_ACCESS_KEY: str
+    MINIO_SECRET_KEY: str
     MINIO_BUCKET: str = "videos"
-    MINIO_SECURE: bool = False
-    MINIO_PUBLIC_URL: str = "http://localhost:9002"
+    MINIO_SECURE: bool = False  # 生产环境应设为True
+    MINIO_PUBLIC_URL: str
 
     # Elasticsearch
     ELASTICSEARCH_URL: str = "http://localhost:9200"

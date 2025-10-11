@@ -9,6 +9,7 @@ from app.schemas.person import (
     DirectorDetailResponse,
     PaginatedDirectorResponse,
 )
+from app.utils.cache import Cache
 
 router = APIRouter()
 
@@ -20,7 +21,15 @@ async def get_directors(
     search: str = Query("", description="Search directors by name"),
     db: AsyncSession = Depends(get_db),
 ):
-    """Get list of directors with pagination and search"""
+    """Get list of directors with pagination and search (cached for 15 minutes)"""
+    # 生成缓存键
+    cache_key = f"directors_list:{page}:{page_size}:{search or 'all'}"
+
+    # 尝试从缓存获取
+    cached = await Cache.get(cache_key)
+    if cached is not None:
+        return cached
+
     # Build query
     query = select(Director)
 
@@ -35,10 +44,7 @@ async def get_directors(
 
     # Get paginated results
     query = (
-        query
-        .order_by(Director.name)
-        .offset((page - 1) * page_size)
-        .limit(page_size)
+        query.order_by(Director.name).offset((page - 1) * page_size).limit(page_size)
     )
 
     result = await db.execute(query)
@@ -46,12 +52,14 @@ async def get_directors(
 
     items = [DirectorResponse.model_validate(director) for director in directors]
 
-    return PaginatedDirectorResponse(
-        total=total,
-        page=page,
-        page_size=page_size,
-        items=items
+    response = PaginatedDirectorResponse(
+        total=total, page=page, page_size=page_size, items=items
     )
+
+    # 缓存15分钟
+    await Cache.set(cache_key, response, ttl=900)
+
+    return response
 
 
 @router.get("/{director_id}", response_model=DirectorDetailResponse)
@@ -63,7 +71,9 @@ async def get_director(
     query = (
         select(Director)
         .where(Director.id == director_id)
-        .options(selectinload(Director.video_directors).selectinload(VideoDirector.video))
+        .options(
+            selectinload(Director.video_directors).selectinload(VideoDirector.video)
+        )
     )
 
     result = await db.execute(query)
@@ -71,8 +81,7 @@ async def get_director(
 
     if not director:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Director not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail="Director not found"
         )
 
     # Get videos directed by this director
@@ -94,12 +103,13 @@ async def get_director_videos(
 ):
     """Get videos directed by a specific director"""
     # Verify director exists
-    director_result = await db.execute(select(Director).where(Director.id == director_id))
+    director_result = await db.execute(
+        select(Director).where(Director.id == director_id)
+    )
     director = director_result.scalar_one_or_none()
     if not director:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Director not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail="Director not found"
         )
 
     # Count total videos
@@ -125,11 +135,7 @@ async def get_director_videos(
     videos = result.scalars().all()
 
     from app.schemas.video import VideoListResponse
+
     items = [VideoListResponse.model_validate(video) for video in videos]
 
-    return {
-        "total": total,
-        "page": page,
-        "page_size": page_size,
-        "items": items
-    }
+    return {"total": total, "page": page, "page_size": page_size, "items": items}

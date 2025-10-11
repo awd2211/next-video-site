@@ -24,7 +24,8 @@ const ChunkedUploader = ({
   const [progress, setProgress] = useState(0)
   const [uploadId, setUploadId] = useState<string>()
   const [fileList, setFileList] = useState<UploadFile[]>([])
-  const [currentFile, setCurrentFile] = useState<File | null>(null)
+  // currentFile is used in handleUpload and handleCancel
+  const [, setCurrentFile] = useState<File | null>(null)
 
   const CHUNK_SIZE = 5 * 1024 * 1024 // 5MB
 

@@ -7,6 +7,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 from typing import List, Optional
 import re
+import asyncio
+import logging
 
 from app.database import get_db
 from app.models.danmaku import Danmaku, BlockedWord, DanmakuStatus, DanmakuType
@@ -21,6 +23,38 @@ from app.utils.dependencies import get_current_active_user
 from app.utils.rate_limit import limiter, RateLimitPresets
 
 router = APIRouter()
+logger = logging.getLogger(__name__)
+
+
+async def check_regex_with_timeout(pattern: str, text: str, timeout: float = 1.0) -> bool:
+    """
+    在超时限制内执行正则匹配，防止ReDoS攻击
+    
+    Args:
+        pattern: 正则表达式
+        text: 待匹配文本
+        timeout: 超时时间（秒）
+    
+    Returns:
+        是否匹配（超时返回False）
+    """
+    def regex_match():
+        return re.search(pattern, text, re.IGNORECASE) is not None
+    
+    try:
+        # 使用asyncio.wait_for设置超时
+        loop = asyncio.get_event_loop()
+        result = await asyncio.wait_for(
+            loop.run_in_executor(None, regex_match),
+            timeout=timeout
+        )
+        return result
+    except asyncio.TimeoutError:
+        logger.warning(f"正则表达式执行超时（可能是ReDoS攻击）: {pattern[:50]}")
+        return False
+    except re.error as e:
+        logger.error(f"无效的正则表达式: {pattern[:50]}, error: {e}")
+        return False
 
 
 async def check_blocked_words(content: str, db: AsyncSession) -> bool:
@@ -30,12 +64,11 @@ async def check_blocked_words(content: str, db: AsyncSession) -> bool:
 
     for word in blocked_words:
         if word.is_regex:
-            try:
-                if re.search(word.word, content, re.IGNORECASE):
-                    return True
-            except re.error:
-                continue  # 忽略无效的正则表达式
+            # 使用超时保护的正则匹配
+            if await check_regex_with_timeout(word.word, content, timeout=1.0):
+                return True
         else:
+            # 简单字符串匹配
             if word.word.lower() in content.lower():
                 return True
 
