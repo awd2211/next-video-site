@@ -9,7 +9,14 @@
   "python.linting.enabled": true,
   "python.linting.pylintEnabled": false,
   "python.linting.flake8Enabled": true,
+  "python.linting.flake8Args": [
+    "--max-line-length=88",
+    "--extend-ignore=E203,E266,E501,W503"
+  ],
   "python.formatting.provider": "black",
+  "python.formatting.blackArgs": [
+    "--line-length=88"
+  ],
   "[python]": {
     "editor.formatOnSave": true,
     "editor.codeActionsOnSave": {
@@ -18,6 +25,10 @@
   },
   "python.analysis.typeCheckingMode": "basic",
   "python.analysis.autoImportCompletions": true,
+  "python.analysis.diagnosticSeverityOverrides": {
+    "reportGeneralTypeIssues": "none",
+    "reportOptionalMemberAccess": "none"
+  },
   "files.exclude": {
     "**/__pycache__": true,
     "**/*.pyc": true,
@@ -28,5 +39,11 @@
   "cursorpyright.analysis.extraPaths": [
     "${workspaceFolder}/backend"
   ],
-  "cursorpyright.analysis.typeCheckingMode": "basic"
+  "cursorpyright.analysis.typeCheckingMode": "basic",
+  "cursorpyright.analysis.diagnosticSeverityOverrides": {
+    "reportGeneralTypeIssues": "none",
+    "reportOptionalMemberAccess": "none"
+  },
+  "editor.rulers": [88],
+  "editor.formatOnSave": true
 }

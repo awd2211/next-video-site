@@ -141,7 +141,7 @@ async def remove_favorite(
         video.favorite_count -= 1  # type: ignore[assignment]
 
     # Update folder video count
-    if favorite.folder_id:
+    if favorite.folder_id:  # type: ignore[misc]
         folder_result = await db.execute(
             select(FavoriteFolder).where(FavoriteFolder.id == favorite.folder_id)
         )
