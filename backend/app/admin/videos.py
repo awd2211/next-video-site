@@ -1,5 +1,6 @@
 import io
 import logging
+import math
 from datetime import datetime, timezone
 from typing import Optional
 
@@ -77,6 +78,7 @@ async def admin_list_videos(
         "total": total,
         "page": page,
         "page_size": page_size,
+        "pages": math.ceil(total / page_size) if page_size > 0 and total > 0 else 0,
         "items": videos,
     }
 
