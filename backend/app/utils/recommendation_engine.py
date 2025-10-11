@@ -244,9 +244,14 @@ class RecommendationEngine:
         if not recommended_video_ids:
             return []
 
+        from app.models.video import VideoCategory
+
         result = await self.db.execute(
             select(Video)
-            .options(selectinload(Video.country))
+            .options(
+                selectinload(Video.country),
+                selectinload(Video.video_categories).selectinload(VideoCategory.category)
+            )
             .filter(
                 Video.id.in_(recommended_video_ids),
                 Video.status == VideoStatus.PUBLISHED,
@@ -327,9 +332,14 @@ class RecommendationEngine:
             return []
 
         # 查询推荐视频
+        from app.models.video import VideoCategory
+
         query = (
             select(Video)
-            .options(selectinload(Video.country))
+            .options(
+                selectinload(Video.country),
+                selectinload(Video.video_categories).selectinload(VideoCategory.category)
+            )
             .filter(
                 Video.status == VideoStatus.PUBLISHED,
                 Video.id.not_in(recent_video_ids + exclude_ids),
@@ -354,9 +364,14 @@ class RecommendationEngine:
             return filtered[:limit]
 
         # 查询热门视频
+        from app.models.video import VideoCategory
+
         query = (
             select(Video)
-            .options(selectinload(Video.country))
+            .options(
+                selectinload(Video.country),
+                selectinload(Video.video_categories).selectinload(VideoCategory.category)
+            )
             .filter(
                 Video.status == VideoStatus.PUBLISHED,
                 Video.id.not_in(exclude_ids) if exclude_ids else True,

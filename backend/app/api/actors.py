@@ -1,3 +1,5 @@
+import math
+
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -27,9 +29,9 @@ async def get_actors(
     cache_key = f"actors_list:{page}:{page_size}:{search or 'all'}"
 
     # 尝试从缓存获取
-    cached = await Cache.get(cache_key)
-    if cached is not None:
-        return cached
+    # cached = await Cache.get(cache_key)
+    # if cached is not None:
+    #     return cached
 
     # Build query
     query = select(Actor)
@@ -51,14 +53,18 @@ async def get_actors(
 
     items = [ActorResponse.model_validate(actor) for actor in actors]
 
-    response = PaginatedActorResponse(
-        total=total, page=page, page_size=page_size, items=items
-    )
+    response_dict = {
+        "total": total,
+        "page": page,
+        "page_size": page_size,
+        "pages": math.ceil(total / page_size) if page_size > 0 and total > 0 else 0,
+        "items": items,
+    }
 
     # 缓存15分钟
-    await Cache.set(cache_key, response, ttl=900)
+    await Cache.set(cache_key, response_dict, ttl=900)
 
-    return response
+    return response_dict
 
 
 @router.get("/{actor_id}", response_model=ActorDetailResponse)
@@ -117,10 +123,16 @@ async def get_actor_videos(
     total = total_result.scalar() or 0
 
     # Get paginated videos
+    from app.models.video import VideoCategory
+
     query = (
         select(Video)
         .join(VideoActor, VideoActor.video_id == Video.id)
         .where(VideoActor.actor_id == actor_id)
+        .options(
+            selectinload(Video.country),
+            selectinload(Video.video_categories).selectinload(VideoCategory.category)
+        )
         .order_by(Video.created_at.desc())
         .offset((page - 1) * page_size)
         .limit(page_size)

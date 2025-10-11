@@ -47,10 +47,13 @@ async def list_videos(
     if cached is not None:
         return cached
 
-    # 预加载关联数据，避免N+1查询
+    # 预加载关联数据，避免N+1查询和延迟加载问题
     query = (
         select(Video)
-        .options(selectinload(Video.country))
+        .options(
+            selectinload(Video.country),
+            selectinload(Video.video_categories).selectinload(VideoCategory.category)
+        )
         .filter(Video.status == VideoStatus.PUBLISHED)
     )
 
@@ -111,10 +114,13 @@ async def get_trending_videos(
     if cached is not None:
         return cached
 
-    # 从数据库查询
+    # 从数据库查询（预加载关联数据避免延迟加载问题）
     query = (
         select(Video)
-        .options(selectinload(Video.country))
+        .options(
+            selectinload(Video.country),
+            selectinload(Video.video_categories).selectinload(VideoCategory.category)
+        )
         .filter(Video.status == VideoStatus.PUBLISHED)
         .order_by(desc(Video.view_count))
     )
@@ -162,10 +168,13 @@ async def get_featured_videos(
     if cached is not None:
         return cached
 
-    # 从数据库查询
+    # 从数据库查询（预加载关联数据避免延迟加载问题）
     query = (
         select(Video)
-        .options(selectinload(Video.country))
+        .options(
+            selectinload(Video.country),
+            selectinload(Video.video_categories).selectinload(VideoCategory.category)
+        )
         .filter(Video.status == VideoStatus.PUBLISHED, Video.is_featured.is_(True))
         .order_by(desc(Video.sort_order), desc(Video.created_at))
     )
@@ -215,10 +224,13 @@ async def get_recommended_videos(
     if cached is not None:
         return cached
 
-    # 从数据库查询
+    # 从数据库查询（预加载关联数据避免延迟加载问题）
     query = (
         select(Video)
-        .options(selectinload(Video.country))
+        .options(
+            selectinload(Video.country),
+            selectinload(Video.video_categories).selectinload(VideoCategory.category)
+        )
         .filter(Video.status == VideoStatus.PUBLISHED, Video.is_recommended.is_(True))
         .order_by(desc(Video.sort_order), desc(Video.created_at))
     )

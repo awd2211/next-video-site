@@ -1,3 +1,4 @@
+import math
 from datetime import datetime, timezone
 from typing import Optional
 
@@ -74,6 +75,7 @@ async def get_notifications(
         total=total,
         page=page,
         page_size=page_size,
+        pages=math.ceil(total / page_size) if page_size > 0 and total > 0 else 0,
         unread_count=unread_count,
     )
 

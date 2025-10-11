@@ -1,4 +1,5 @@
 import hashlib
+import math
 from typing import Optional
 
 from fastapi import APIRouter, Depends, Query, Request
@@ -68,7 +69,12 @@ async def search_videos(
     if min_rating is not None:
         filters.append(Video.average_rating >= min_rating)
 
-    query = select(Video).options(selectinload(Video.country)).filter(and_(*filters))
+    from app.models.video import VideoCategory
+
+    query = select(Video).options(
+        selectinload(Video.country),
+        selectinload(Video.video_categories).selectinload(VideoCategory.category)
+    ).filter(and_(*filters))
 
     # Count total
     count_query = select(func.count()).select_from(query.subquery())
@@ -94,6 +100,7 @@ async def search_videos(
         "total": total,
         "page": page,
         "page_size": page_size,
+        "pages": math.ceil(total / page_size) if page_size > 0 and total > 0 else 0,
         "items": [VideoListResponse.model_validate(v) for v in videos],
     }
 

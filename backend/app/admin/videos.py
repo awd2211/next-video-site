@@ -7,6 +7,7 @@ from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile, 
 from slugify import slugify
 from sqlalchemy import desc, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
 from app.database import get_db
 from app.models.user import AdminUser
@@ -37,7 +38,13 @@ async def admin_list_videos(
     current_admin: AdminUser = Depends(get_current_admin_user),
 ):
     """Admin: Get all videos with filters"""
-    query = select(Video)
+    query = select(Video).options(
+        selectinload(Video.video_categories).selectinload(VideoCategory.category),
+        selectinload(Video.video_actors).selectinload(VideoActor.actor),
+        selectinload(Video.video_directors).selectinload(VideoDirector.director),
+        selectinload(Video.video_tags).selectinload(VideoTag.tag),
+        selectinload(Video.country)
+    )
 
     # Filters
     if status:
