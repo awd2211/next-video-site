@@ -1,8 +1,22 @@
-from sqlalchemy import Boolean, Column, DateTime, ForeignKey, Integer, String
-from sqlalchemy.orm import relationship
+from __future__ import annotations
+
+from datetime import datetime
+from typing import TYPE_CHECKING, Optional
+
+from sqlalchemy import Boolean, DateTime, ForeignKey, Integer, String
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.sql import func
 
 from app.database import Base
+
+if TYPE_CHECKING:
+    from app.models.admin import OperationLog, Role
+    from app.models.comment import Comment, Rating
+    from app.models.content import Report
+    from app.models.danmaku import Danmaku
+    from app.models.favorite_folder import FavoriteFolder
+    from app.models.share import VideoShare
+    from app.models.user_activity import Favorite, WatchHistory
 
 
 class User(Base):
@@ -10,43 +24,43 @@ class User(Base):
 
     __tablename__ = "users"
 
-    id = Column(Integer, primary_key=True, index=True)
-    email = Column(String(255), unique=True, index=True, nullable=False)
-    username = Column(String(100), unique=True, index=True, nullable=False)
-    hashed_password = Column(String(255), nullable=False)
-    full_name = Column(String(200))
-    avatar = Column(String(500))
-    is_active = Column(Boolean, default=True)
-    is_verified = Column(Boolean, default=False)
-    is_vip = Column(Boolean, default=False)
-    vip_expires_at = Column(DateTime(timezone=True), nullable=True)
-    created_at = Column(DateTime(timezone=True), server_default=func.now())
-    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
-    last_login_at = Column(DateTime(timezone=True), nullable=True)
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    email: Mapped[str] = mapped_column(String(255), unique=True, index=True, nullable=False)
+    username: Mapped[str] = mapped_column(String(100), unique=True, index=True, nullable=False)
+    hashed_password: Mapped[str] = mapped_column(String(255), nullable=False)
+    full_name: Mapped[Optional[str]] = mapped_column(String(200))
+    avatar: Mapped[Optional[str]] = mapped_column(String(500))
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+    is_verified: Mapped[bool] = mapped_column(Boolean, default=False)
+    is_vip: Mapped[bool] = mapped_column(Boolean, default=False)
+    vip_expires_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    updated_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), onupdate=func.now())
+    last_login_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
 
     # Relationships
-    comments = relationship(
+    comments: Mapped[list[Comment]] = relationship(
         "Comment", back_populates="user", cascade="all, delete-orphan"
     )
-    ratings = relationship(
+    ratings: Mapped[list[Rating]] = relationship(
         "Rating", back_populates="user", cascade="all, delete-orphan"
     )
-    favorites = relationship(
+    favorites: Mapped[list[Favorite]] = relationship(
         "Favorite", back_populates="user", cascade="all, delete-orphan"
     )
-    favorite_folders = relationship(
+    favorite_folders: Mapped[list[FavoriteFolder]] = relationship(
         "FavoriteFolder", back_populates="user", cascade="all, delete-orphan"
     )  # 🆕 收藏夹分组
-    watch_history = relationship(
+    watch_history: Mapped[list[WatchHistory]] = relationship(
         "WatchHistory", back_populates="user", cascade="all, delete-orphan"
     )
-    reports = relationship(
+    reports: Mapped[list[Report]] = relationship(
         "Report", back_populates="user", cascade="all, delete-orphan"
     )
-    danmaku_list = relationship(
+    danmaku_list: Mapped[list[Danmaku]] = relationship(
         "Danmaku", back_populates="user", cascade="all, delete-orphan"
     )  # 🆕 弹幕
-    shares = relationship(
+    shares: Mapped[list[VideoShare]] = relationship(
         "VideoShare", back_populates="user", cascade="all, delete-orphan"
     )  # 🆕 分享
 
@@ -56,23 +70,23 @@ class AdminUser(Base):
 
     __tablename__ = "admin_users"
 
-    id = Column(Integer, primary_key=True, index=True)
-    email = Column(String(255), unique=True, index=True, nullable=False)
-    username = Column(String(100), unique=True, index=True, nullable=False)
-    hashed_password = Column(String(255), nullable=False)
-    full_name = Column(String(200))
-    avatar = Column(String(500))
-    is_active = Column(Boolean, default=True)
-    is_superadmin = Column(Boolean, default=False)
-    role_id = Column(
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    email: Mapped[str] = mapped_column(String(255), unique=True, index=True, nullable=False)
+    username: Mapped[str] = mapped_column(String(100), unique=True, index=True, nullable=False)
+    hashed_password: Mapped[str] = mapped_column(String(255), nullable=False)
+    full_name: Mapped[Optional[str]] = mapped_column(String(200))
+    avatar: Mapped[Optional[str]] = mapped_column(String(500))
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+    is_superadmin: Mapped[bool] = mapped_column(Boolean, default=False)
+    role_id: Mapped[Optional[int]] = mapped_column(
         Integer, ForeignKey("roles.id", ondelete="SET NULL"), nullable=True
     )
-    created_at = Column(DateTime(timezone=True), server_default=func.now())
-    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
-    last_login_at = Column(DateTime(timezone=True), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    updated_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), onupdate=func.now())
+    last_login_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
 
     # Relationships
-    role = relationship("Role", back_populates="admin_users")
-    operation_logs = relationship(
+    role: Mapped[Optional[Role]] = relationship("Role", back_populates="admin_users")
+    operation_logs: Mapped[list[OperationLog]] = relationship(
         "OperationLog", back_populates="admin_user", cascade="all, delete-orphan"
     )

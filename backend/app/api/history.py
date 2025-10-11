@@ -221,7 +221,7 @@ async def update_watch_progress(
         db.add(history)
 
         # Only increment view count for new history
-        video.view_count += 1  # type: ignore[assignment]
+        video.view_count = video.view_count + 1
 
     await db.commit()
     await db.refresh(history)

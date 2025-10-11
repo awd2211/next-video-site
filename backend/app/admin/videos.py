@@ -10,7 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
 from app.models.user import AdminUser
-from app.models.video import Video, VideoActor, VideoCategory, VideoDirector, VideoTag
+from app.models.video import Video, VideoActor, VideoCategory, VideoDirector, VideoStatus, VideoTag
 from app.schemas.video import (
     PaginatedResponse,
     VideoCreate,
@@ -166,7 +166,7 @@ async def admin_create_video(
     # 🆕 触发AV1转码任务 (如果有video_url)
     if new_video.video_url:
         try:
-            task = transcode_video_dual_format.delay(new_video.id)
+            task = transcode_video_dual_format.delay(new_video.id)  # type: ignore[misc]
             logger.info(
                 f"✅ AV1转码任务已触发: video_id={new_video.id}, task_id={task.id}"
             )
@@ -284,7 +284,7 @@ async def admin_update_video(
     # 🆕 如果video_url更新了,触发AV1转码任务
     if video_url_updated and video.video_url:
         try:
-            task = transcode_video_dual_format.delay(video.id)
+            task = transcode_video_dual_format.delay(video.id)  # type: ignore[misc]
             logger.info(
                 f"✅ AV1转码任务已触发(更新): video_id={video.id}, task_id={task.id}"
             )
@@ -325,7 +325,7 @@ async def admin_delete_video(
 @router.put("/{video_id}/status")
 async def admin_update_video_status(
     video_id: int,
-    status: str,
+    status: VideoStatus,
     db: AsyncSession = Depends(get_db),
     current_admin: AdminUser = Depends(get_current_admin_user),
 ):
@@ -337,7 +337,7 @@ async def admin_update_video_status(
         raise HTTPException(status_code=404, detail="Video not found")
 
     video.status = status
-    if status == "published" and not video.published_at:
+    if status == VideoStatus.PUBLISHED and not video.published_at:
         video.published_at = datetime.now(timezone.utc)
 
     await db.commit()

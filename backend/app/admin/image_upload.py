@@ -91,7 +91,7 @@ async def upload_image(
         ext = file.filename.split(".")[-1] if file.filename else "jpg"
         object_name = f"{base_name}.{ext}"
         original_url = minio_client.upload_image(
-            image_file, object_name, file.content_type
+            image_file, object_name, file.content_type or "image/jpeg"
         )
         result["original_url"] = original_url
 

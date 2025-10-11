@@ -165,7 +165,7 @@ async def delete_rating(
         stats = stats_result.one()
 
         video.average_rating = float(stats.avg_score) if stats.avg_score else 0.0
-        video.rating_count = stats.count
+        video.rating_count = int(stats.count) if stats.count else 0
 
         await db.commit()
 

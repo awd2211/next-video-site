@@ -1,9 +1,12 @@
+from __future__ import annotations
+
 import enum
+from datetime import datetime
+from typing import TYPE_CHECKING, Any, Optional
 
 from sqlalchemy import (
     BigInteger,
     Boolean,
-    Column,
     DateTime,
     Enum,
     Float,
@@ -13,10 +16,18 @@ from sqlalchemy import (
     Text,
 )
 from sqlalchemy.dialects.postgresql import JSONB, TSVECTOR
-from sqlalchemy.orm import relationship
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.sql import func
 
 from app.database import Base
+
+if TYPE_CHECKING:
+    from app.models.comment import Comment, Rating
+    from app.models.content import Report
+    from app.models.danmaku import Danmaku
+    from app.models.series import Series
+    from app.models.share import VideoShare
+    from app.models.user_activity import Favorite, WatchHistory
 
 
 class VideoType(str, enum.Enum):
@@ -41,13 +52,13 @@ class Country(Base):
 
     __tablename__ = "countries"
 
-    id = Column(Integer, primary_key=True, index=True)
-    name = Column(String(100), unique=True, nullable=False)
-    code = Column(String(10), unique=True, nullable=False)  # ISO code
-    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    name: Mapped[str] = mapped_column(String(100), unique=True, nullable=False)
+    code: Mapped[str] = mapped_column(String(10), unique=True, nullable=False)  # ISO code
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
     # Relationships
-    videos = relationship("Video", back_populates="country")
+    videos: Mapped[list[Video]] = relationship("Video", back_populates="country")
 
 
 class Category(Base):
@@ -55,20 +66,20 @@ class Category(Base):
 
     __tablename__ = "categories"
 
-    id = Column(Integer, primary_key=True, index=True)
-    name = Column(String(100), unique=True, nullable=False)
-    slug = Column(String(100), unique=True, nullable=False)
-    description = Column(Text, nullable=True)
-    parent_id = Column(
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    name: Mapped[str] = mapped_column(String(100), unique=True, nullable=False)
+    slug: Mapped[str] = mapped_column(String(100), unique=True, nullable=False)
+    description: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    parent_id: Mapped[Optional[int]] = mapped_column(
         Integer, ForeignKey("categories.id", ondelete="SET NULL"), nullable=True
     )
-    sort_order = Column(Integer, default=0)
-    is_active = Column(Boolean, default=True)
-    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    sort_order: Mapped[int] = mapped_column(Integer, default=0)
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
     # Relationships
-    parent = relationship("Category", remote_side=[id], backref="children")
-    video_categories = relationship("VideoCategory", back_populates="category")
+    parent: Mapped[Optional[Category]] = relationship("Category", remote_side=[id], backref="children")
+    video_categories: Mapped[list[VideoCategory]] = relationship("VideoCategory", back_populates="category")
 
 
 class Tag(Base):
@@ -76,13 +87,13 @@ class Tag(Base):
 
     __tablename__ = "tags"
 
-    id = Column(Integer, primary_key=True, index=True)
-    name = Column(String(100), unique=True, nullable=False)
-    slug = Column(String(100), unique=True, nullable=False)
-    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    name: Mapped[str] = mapped_column(String(100), unique=True, nullable=False)
+    slug: Mapped[str] = mapped_column(String(100), unique=True, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
     # Relationships
-    video_tags = relationship("VideoTag", back_populates="tag")
+    video_tags: Mapped[list[VideoTag]] = relationship("VideoTag", back_populates="tag")
 
 
 class Actor(Base):
@@ -90,18 +101,18 @@ class Actor(Base):
 
     __tablename__ = "actors"
 
-    id = Column(Integer, primary_key=True, index=True)
-    name = Column(String(200), nullable=False)
-    avatar = Column(String(500), nullable=True)
-    biography = Column(Text, nullable=True)
-    birth_date = Column(DateTime(timezone=True), nullable=True)
-    country_id = Column(
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    name: Mapped[str] = mapped_column(String(200), nullable=False)
+    avatar: Mapped[Optional[str]] = mapped_column(String(500), nullable=True)
+    biography: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    birth_date: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    country_id: Mapped[Optional[int]] = mapped_column(
         Integer, ForeignKey("countries.id", ondelete="SET NULL"), nullable=True
     )
-    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
     # Relationships
-    video_actors = relationship("VideoActor", back_populates="actor")
+    video_actors: Mapped[list[VideoActor]] = relationship("VideoActor", back_populates="actor")
 
 
 class Director(Base):
@@ -109,18 +120,18 @@ class Director(Base):
 
     __tablename__ = "directors"
 
-    id = Column(Integer, primary_key=True, index=True)
-    name = Column(String(200), nullable=False)
-    avatar = Column(String(500), nullable=True)
-    biography = Column(Text, nullable=True)
-    birth_date = Column(DateTime(timezone=True), nullable=True)
-    country_id = Column(
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    name: Mapped[str] = mapped_column(String(200), nullable=False)
+    avatar: Mapped[Optional[str]] = mapped_column(String(500), nullable=True)
+    biography: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    birth_date: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    country_id: Mapped[Optional[int]] = mapped_column(
         Integer, ForeignKey("countries.id", ondelete="SET NULL"), nullable=True
     )
-    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
     # Relationships
-    video_directors = relationship("VideoDirector", back_populates="director")
+    video_directors: Mapped[list[VideoDirector]] = relationship("VideoDirector", back_populates="director")
 
 
 class Video(Base):
@@ -128,122 +139,122 @@ class Video(Base):
 
     __tablename__ = "videos"
 
-    id = Column(Integer, primary_key=True, index=True)
-    title = Column(String(500), nullable=False, index=True)
-    original_title = Column(String(500), nullable=True)
-    slug = Column(String(500), unique=True, nullable=False, index=True)
-    description = Column(Text, nullable=True)
-    video_type = Column(Enum(VideoType), nullable=False, default=VideoType.MOVIE)
-    status = Column(
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    title: Mapped[str] = mapped_column(String(500), nullable=False, index=True)
+    original_title: Mapped[Optional[str]] = mapped_column(String(500), nullable=True)
+    slug: Mapped[str] = mapped_column(String(500), unique=True, nullable=False, index=True)
+    description: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    video_type: Mapped[VideoType] = mapped_column(Enum(VideoType), nullable=False, default=VideoType.MOVIE)
+    status: Mapped[VideoStatus] = mapped_column(
         Enum(VideoStatus), nullable=False, default=VideoStatus.DRAFT, index=True
     )
 
     # Media files
-    video_url = Column(String(1000), nullable=True)
-    trailer_url = Column(String(1000), nullable=True)
-    poster_url = Column(String(500), nullable=True)
-    backdrop_url = Column(String(500), nullable=True)
+    video_url: Mapped[Optional[str]] = mapped_column(String(1000), nullable=True)
+    trailer_url: Mapped[Optional[str]] = mapped_column(String(1000), nullable=True)
+    poster_url: Mapped[Optional[str]] = mapped_column(String(500), nullable=True)
+    backdrop_url: Mapped[Optional[str]] = mapped_column(String(500), nullable=True)
 
     # AV1 support (新增)
-    av1_master_url = Column(Text, nullable=True, comment="AV1 HLS master playlist URL")
-    av1_resolutions = Column(JSONB, default={}, comment="AV1分辨率URL映射")
-    is_av1_available = Column(
+    av1_master_url: Mapped[Optional[str]] = mapped_column(Text, nullable=True, comment="AV1 HLS master playlist URL")
+    av1_resolutions: Mapped[dict[str, Any]] = mapped_column(JSONB, default={}, comment="AV1分辨率URL映射")
+    is_av1_available: Mapped[bool] = mapped_column(
         Boolean, default=False, index=True, comment="是否有AV1版本"
     )
-    av1_file_size = Column(BigInteger, nullable=True, comment="AV1文件总大小(字节)")
-    h264_file_size = Column(BigInteger, nullable=True, comment="H.264文件大小(对比用)")
+    av1_file_size: Mapped[Optional[int]] = mapped_column(BigInteger, nullable=True, comment="AV1文件总大小(字节)")
+    h264_file_size: Mapped[Optional[int]] = mapped_column(BigInteger, nullable=True, comment="H.264文件大小(对比用)")
 
     # 🆕 Transcode status tracking
-    transcode_status = Column(
+    transcode_status: Mapped[Optional[str]] = mapped_column(
         String(50),
         nullable=True,
         index=True,
         comment="转码状态: pending, processing, completed, failed",
     )
-    transcode_progress = Column(Integer, default=0, comment="转码进度 0-100")
-    transcode_error = Column(Text, nullable=True, comment="转码错误信息")
-    h264_transcode_at = Column(
+    transcode_progress: Mapped[int] = mapped_column(Integer, default=0, comment="转码进度 0-100")
+    transcode_error: Mapped[Optional[str]] = mapped_column(Text, nullable=True, comment="转码错误信息")
+    h264_transcode_at: Mapped[Optional[datetime]] = mapped_column(
         DateTime(timezone=True), nullable=True, comment="H.264转码完成时间"
     )
-    av1_transcode_at = Column(
+    av1_transcode_at: Mapped[Optional[datetime]] = mapped_column(
         DateTime(timezone=True), nullable=True, comment="AV1转码完成时间"
     )
 
     # Metadata
-    release_year = Column(Integer, nullable=True, index=True)
-    release_date = Column(DateTime(timezone=True), nullable=True)
-    duration = Column(Integer, nullable=True)  # in minutes
-    country_id = Column(
+    release_year: Mapped[Optional[int]] = mapped_column(Integer, nullable=True, index=True)
+    release_date: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    duration: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)  # in minutes
+    country_id: Mapped[Optional[int]] = mapped_column(
         Integer, ForeignKey("countries.id", ondelete="SET NULL"), nullable=True
     )
-    language = Column(String(50), nullable=True)
-    subtitle_languages = Column(String(500), nullable=True)  # JSON array as string
+    language: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
+    subtitle_languages: Mapped[Optional[str]] = mapped_column(String(500), nullable=True)  # JSON array as string
 
     # Series info (for TV series)
-    total_seasons = Column(Integer, nullable=True)
-    total_episodes = Column(Integer, nullable=True)
-    series_status = Column(String(50), nullable=True)  # ongoing, completed
+    total_seasons: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    total_episodes: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    series_status: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)  # ongoing, completed
 
     # Statistics
-    view_count = Column(Integer, default=0)
-    like_count = Column(Integer, default=0)
-    favorite_count = Column(Integer, default=0)
-    comment_count = Column(Integer, default=0)
-    average_rating = Column(Float, default=0.0)
-    rating_count = Column(Integer, default=0)
+    view_count: Mapped[int] = mapped_column(Integer, default=0)
+    like_count: Mapped[int] = mapped_column(Integer, default=0)
+    favorite_count: Mapped[int] = mapped_column(Integer, default=0)
+    comment_count: Mapped[int] = mapped_column(Integer, default=0)
+    average_rating: Mapped[float] = mapped_column(Float, default=0.0)
+    rating_count: Mapped[int] = mapped_column(Integer, default=0)
 
     # SEO
-    meta_title = Column(String(500), nullable=True)
-    meta_description = Column(Text, nullable=True)
-    meta_keywords = Column(String(500), nullable=True)
+    meta_title: Mapped[Optional[str]] = mapped_column(String(500), nullable=True)
+    meta_description: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    meta_keywords: Mapped[Optional[str]] = mapped_column(String(500), nullable=True)
 
     # 全文搜索向量（由数据库触发器自动维护）
-    search_vector = Column(TSVECTOR, nullable=True)
+    search_vector: Mapped[Optional[Any]] = mapped_column(TSVECTOR, nullable=True)
 
     # Admin fields
-    is_featured = Column(Boolean, default=False)
-    is_recommended = Column(Boolean, default=False)
-    sort_order = Column(Integer, default=0)
-    created_at = Column(DateTime(timezone=True), server_default=func.now(), index=True)
-    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
-    published_at = Column(DateTime(timezone=True), nullable=True)
+    is_featured: Mapped[bool] = mapped_column(Boolean, default=False)
+    is_recommended: Mapped[bool] = mapped_column(Boolean, default=False)
+    sort_order: Mapped[int] = mapped_column(Integer, default=0)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), index=True)
+    updated_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), onupdate=func.now())
+    published_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
 
     # Relationships
-    country = relationship("Country", back_populates="videos")
-    video_categories = relationship(
+    country: Mapped[Optional[Country]] = relationship("Country", back_populates="videos")
+    video_categories: Mapped[list[VideoCategory]] = relationship(
         "VideoCategory", back_populates="video", cascade="all, delete-orphan"
     )
-    video_tags = relationship(
+    video_tags: Mapped[list[VideoTag]] = relationship(
         "VideoTag", back_populates="video", cascade="all, delete-orphan"
     )
-    video_actors = relationship(
+    video_actors: Mapped[list[VideoActor]] = relationship(
         "VideoActor", back_populates="video", cascade="all, delete-orphan"
     )
-    video_directors = relationship(
+    video_directors: Mapped[list[VideoDirector]] = relationship(
         "VideoDirector", back_populates="video", cascade="all, delete-orphan"
     )
-    comments = relationship(
+    comments: Mapped[list[Comment]] = relationship(
         "Comment", back_populates="video", cascade="all, delete-orphan"
     )
-    ratings = relationship(
+    ratings: Mapped[list[Rating]] = relationship(
         "Rating", back_populates="video", cascade="all, delete-orphan"
     )
-    favorites = relationship(
+    favorites: Mapped[list[Favorite]] = relationship(
         "Favorite", back_populates="video", cascade="all, delete-orphan"
     )
-    watch_history = relationship(
+    watch_history: Mapped[list[WatchHistory]] = relationship(
         "WatchHistory", back_populates="video", cascade="all, delete-orphan"
     )
-    reports = relationship(
+    reports: Mapped[list[Report]] = relationship(
         "Report", back_populates="video", cascade="all, delete-orphan"
     )
-    danmaku_list = relationship(
+    danmaku_list: Mapped[list[Danmaku]] = relationship(
         "Danmaku", back_populates="video", cascade="all, delete-orphan"
     )  # 🆕 弹幕
-    shares = relationship(
+    shares: Mapped[list[VideoShare]] = relationship(
         "VideoShare", back_populates="video", cascade="all, delete-orphan"
     )  # 🆕 分享
-    series = relationship(
+    series: Mapped[list[Series]] = relationship(
         "Series", secondary="series_videos", back_populates="videos"
     )  # 🆕 专辑/系列
 
@@ -268,18 +279,18 @@ class VideoCategory(Base):
 
     __tablename__ = "video_categories"
 
-    id = Column(Integer, primary_key=True, index=True)
-    video_id = Column(
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    video_id: Mapped[int] = mapped_column(
         Integer, ForeignKey("videos.id", ondelete="CASCADE"), nullable=False
     )
-    category_id = Column(
+    category_id: Mapped[int] = mapped_column(
         Integer, ForeignKey("categories.id", ondelete="CASCADE"), nullable=False
     )
-    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
     # Relationships
-    video = relationship("Video", back_populates="video_categories")
-    category = relationship("Category", back_populates="video_categories")
+    video: Mapped[Video] = relationship("Video", back_populates="video_categories")
+    category: Mapped[Category] = relationship("Category", back_populates="video_categories")
 
 
 class VideoTag(Base):
@@ -287,16 +298,16 @@ class VideoTag(Base):
 
     __tablename__ = "video_tags"
 
-    id = Column(Integer, primary_key=True, index=True)
-    video_id = Column(
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    video_id: Mapped[int] = mapped_column(
         Integer, ForeignKey("videos.id", ondelete="CASCADE"), nullable=False
     )
-    tag_id = Column(Integer, ForeignKey("tags.id", ondelete="CASCADE"), nullable=False)
-    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    tag_id: Mapped[int] = mapped_column(Integer, ForeignKey("tags.id", ondelete="CASCADE"), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
     # Relationships
-    video = relationship("Video", back_populates="video_tags")
-    tag = relationship("Tag", back_populates="video_tags")
+    video: Mapped[Video] = relationship("Video", back_populates="video_tags")
+    tag: Mapped[Tag] = relationship("Tag", back_populates="video_tags")
 
 
 class VideoActor(Base):
@@ -304,20 +315,20 @@ class VideoActor(Base):
 
     __tablename__ = "video_actors"
 
-    id = Column(Integer, primary_key=True, index=True)
-    video_id = Column(
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    video_id: Mapped[int] = mapped_column(
         Integer, ForeignKey("videos.id", ondelete="CASCADE"), nullable=False
     )
-    actor_id = Column(
+    actor_id: Mapped[int] = mapped_column(
         Integer, ForeignKey("actors.id", ondelete="CASCADE"), nullable=False
     )
-    role_name = Column(String(200), nullable=True)  # Character name
-    sort_order = Column(Integer, default=0)
-    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    role_name: Mapped[Optional[str]] = mapped_column(String(200), nullable=True)  # Character name
+    sort_order: Mapped[int] = mapped_column(Integer, default=0)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
     # Relationships
-    video = relationship("Video", back_populates="video_actors")
-    actor = relationship("Actor", back_populates="video_actors")
+    video: Mapped[Video] = relationship("Video", back_populates="video_actors")
+    actor: Mapped[Actor] = relationship("Actor", back_populates="video_actors")
 
 
 class VideoDirector(Base):
@@ -325,16 +336,16 @@ class VideoDirector(Base):
 
     __tablename__ = "video_directors"
 
-    id = Column(Integer, primary_key=True, index=True)
-    video_id = Column(
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    video_id: Mapped[int] = mapped_column(
         Integer, ForeignKey("videos.id", ondelete="CASCADE"), nullable=False
     )
-    director_id = Column(
+    director_id: Mapped[int] = mapped_column(
         Integer, ForeignKey("directors.id", ondelete="CASCADE"), nullable=False
     )
-    sort_order = Column(Integer, default=0)
-    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    sort_order: Mapped[int] = mapped_column(Integer, default=0)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
     # Relationships
-    video = relationship("Video", back_populates="video_directors")
-    director = relationship("Director", back_populates="video_directors")
+    video: Mapped[Video] = relationship("Video", back_populates="video_directors")
+    director: Mapped[Director] = relationship("Director", back_populates="video_directors")

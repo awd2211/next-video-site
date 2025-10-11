@@ -21,7 +21,7 @@ from app.models.video import (
     VideoTag,
     VideoType,
 )
-from app.schemas.video import PaginatedResponse, VideoCreate, VideoResponse, VideoUpdate
+from app.schemas.video import PaginatedResponse, VideoCreate, VideoDetailResponse, VideoUpdate
 from app.utils.dependencies import get_current_admin_user
 from app.utils.minio_client import minio_client
 
@@ -85,7 +85,7 @@ async def list_videos_admin(
     }
 
 
-@router.get("/{video_id}", response_model=VideoResponse)
+@router.get("/{video_id}", response_model=VideoDetailResponse)
 async def get_video_admin(
     video_id: int,
     db: AsyncSession = Depends(get_db),
@@ -101,7 +101,7 @@ async def get_video_admin(
     return video
 
 
-@router.post("", response_model=VideoResponse, status_code=status.HTTP_201_CREATED)
+@router.post("", response_model=VideoDetailResponse, status_code=status.HTTP_201_CREATED)
 async def create_video(
     video_data: VideoCreate,
     db: AsyncSession = Depends(get_db),
@@ -140,7 +140,7 @@ async def create_video(
     return video
 
 
-@router.put("/{video_id}", response_model=VideoResponse)
+@router.put("/{video_id}", response_model=VideoDetailResponse)
 async def update_video(
     video_id: int,
     video_data: VideoUpdate,

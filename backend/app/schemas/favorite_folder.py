@@ -63,7 +63,7 @@ class BatchMoveFavoritesToFolder(BaseModel):
     """Schema for batch moving favorites to a folder"""
 
     favorite_ids: list[int] = Field(
-        ..., min_items=1, description="List of favorite IDs"
+        ..., min_length=1, description="List of favorite IDs"
     )
     target_folder_id: Optional[int] = Field(
         None, description="Target folder ID (None for default)"

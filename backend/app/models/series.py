@@ -2,7 +2,11 @@
 视频专辑/系列模型
 """
 
+from __future__ import annotations
+
 import enum
+from datetime import datetime
+from typing import TYPE_CHECKING, Optional
 
 from sqlalchemy import (
     Boolean,
@@ -18,9 +22,13 @@ from sqlalchemy import (
     Text,
     func,
 )
-from sqlalchemy.orm import relationship
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.database import Base
+
+if TYPE_CHECKING:
+    from app.models.user import AdminUser
+    from app.models.video import Video
 
 
 class SeriesType(str, enum.Enum):
@@ -65,18 +73,18 @@ class Series(Base):
 
     __tablename__ = "series"
 
-    id = Column(Integer, primary_key=True, index=True)
-    title = Column(String(255), nullable=False, index=True, comment="专辑标题")
-    description = Column(Text, nullable=True, comment="专辑描述")
-    cover_image = Column(String(500), nullable=True, comment="封面图")
-    type = Column(
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    title: Mapped[str] = mapped_column(String(255), nullable=False, index=True, comment="专辑标题")
+    description: Mapped[Optional[str]] = mapped_column(Text, nullable=True, comment="专辑描述")
+    cover_image: Mapped[Optional[str]] = mapped_column(String(500), nullable=True, comment="封面图")
+    type: Mapped[SeriesType] = mapped_column(
         SQLEnum(SeriesType, values_callable=lambda obj: [e.value for e in obj]),
         nullable=False,
         default=SeriesType.SERIES,
         index=True,
         comment="专辑类型",
     )
-    status = Column(
+    status: Mapped[SeriesStatus] = mapped_column(
         SQLEnum(SeriesStatus, values_callable=lambda obj: [e.value for e in obj]),
         nullable=False,
         default=SeriesStatus.DRAFT,
@@ -85,26 +93,26 @@ class Series(Base):
     )
 
     # 统计字段
-    total_episodes = Column(Integer, default=0, comment="总集数")
-    total_views = Column(Integer, default=0, comment="总播放量")
-    total_favorites = Column(Integer, default=0, comment="总收藏数")
+    total_episodes: Mapped[int] = mapped_column(Integer, default=0, comment="总集数")
+    total_views: Mapped[int] = mapped_column(Integer, default=0, comment="总播放量")
+    total_favorites: Mapped[int] = mapped_column(Integer, default=0, comment="总收藏数")
 
     # 排序和推荐
-    display_order = Column(Integer, default=0, index=True, comment="显示顺序")
-    is_featured = Column(Boolean, default=False, index=True, comment="是否推荐")
+    display_order: Mapped[int] = mapped_column(Integer, default=0, index=True, comment="显示顺序")
+    is_featured: Mapped[bool] = mapped_column(Boolean, default=False, index=True, comment="是否推荐")
 
     # 元数据
-    created_by = Column(
+    created_by: Mapped[Optional[int]] = mapped_column(
         Integer, ForeignKey("admin_users.id", ondelete="SET NULL"), nullable=True
     )
-    created_at = Column(DateTime(timezone=True), server_default=func.now(), index=True)
-    updated_at = Column(
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), index=True)
+    updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
     )
 
     # 关系
-    videos = relationship("Video", secondary=series_videos, back_populates="series")
-    creator = relationship("AdminUser", foreign_keys=[created_by])
+    videos: Mapped[list[Video]] = relationship("Video", secondary=series_videos, back_populates="series")
+    creator: Mapped[Optional[AdminUser]] = relationship("AdminUser", foreign_keys=[created_by])
 
     def __repr__(self):
         return f"<Series {self.id}: {self.title}>"

@@ -89,7 +89,7 @@ async def retry_transcode(
     # 触发转码任务
     from app.tasks.transcode_av1 import transcode_video_dual_format
 
-    task = transcode_video_dual_format.delay(video_id)
+    task = transcode_video_dual_format.delay(video_id)  # type: ignore[misc]
 
     # 重置状态
     video.transcode_status = "pending"

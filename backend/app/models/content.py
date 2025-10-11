@@ -1,8 +1,11 @@
+from __future__ import annotations
+
 import enum
+from datetime import datetime
+from typing import TYPE_CHECKING, Optional
 
 from sqlalchemy import (
     Boolean,
-    Column,
     DateTime,
     Enum,
     ForeignKey,
@@ -10,10 +13,14 @@ from sqlalchemy import (
     String,
     Text,
 )
-from sqlalchemy.orm import relationship
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.sql import func
 
 from app.database import Base
+
+if TYPE_CHECKING:
+    from app.models.user import User
+    from app.models.video import Video
 
 
 class BannerStatus(str, enum.Enum):
@@ -36,20 +43,20 @@ class Banner(Base):
 
     __tablename__ = "banners"
 
-    id = Column(Integer, primary_key=True, index=True)
-    title = Column(String(200), nullable=False)
-    image_url = Column(String(500), nullable=False)
-    link_url = Column(String(500), nullable=True)
-    video_id = Column(
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    title: Mapped[str] = mapped_column(String(200), nullable=False)
+    image_url: Mapped[str] = mapped_column(String(500), nullable=False)
+    link_url: Mapped[Optional[str]] = mapped_column(String(500), nullable=True)
+    video_id: Mapped[Optional[int]] = mapped_column(
         Integer, ForeignKey("videos.id", ondelete="SET NULL"), nullable=True
     )
-    description = Column(Text, nullable=True)
-    status = Column(Enum(BannerStatus), nullable=False, default=BannerStatus.ACTIVE)
-    sort_order = Column(Integer, default=0, index=True)
-    start_date = Column(DateTime(timezone=True), nullable=True)
-    end_date = Column(DateTime(timezone=True), nullable=True)
-    created_at = Column(DateTime(timezone=True), server_default=func.now())
-    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+    description: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    status: Mapped[BannerStatus] = mapped_column(Enum(BannerStatus), nullable=False, default=BannerStatus.ACTIVE)
+    sort_order: Mapped[int] = mapped_column(Integer, default=0, index=True)
+    start_date: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    end_date: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    updated_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), onupdate=func.now())
 
 
 class Recommendation(Base):
@@ -57,17 +64,17 @@ class Recommendation(Base):
 
     __tablename__ = "recommendations"
 
-    id = Column(Integer, primary_key=True, index=True)
-    position = Column(String(50), nullable=False)  # home_top, home_trending, etc.
-    video_id = Column(
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    position: Mapped[str] = mapped_column(String(50), nullable=False)  # home_top, home_trending, etc.
+    video_id: Mapped[int] = mapped_column(
         Integer, ForeignKey("videos.id", ondelete="CASCADE"), nullable=False
     )
-    sort_order = Column(Integer, default=0, index=True)
-    is_active = Column(Boolean, default=True)
-    start_date = Column(DateTime(timezone=True), nullable=True)
-    end_date = Column(DateTime(timezone=True), nullable=True)
-    created_at = Column(DateTime(timezone=True), server_default=func.now())
-    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+    sort_order: Mapped[int] = mapped_column(Integer, default=0, index=True)
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+    start_date: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    end_date: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    updated_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), onupdate=func.now())
 
 
 class Announcement(Base):
@@ -75,16 +82,16 @@ class Announcement(Base):
 
     __tablename__ = "announcements"
 
-    id = Column(Integer, primary_key=True, index=True)
-    title = Column(String(200), nullable=False)
-    content = Column(Text, nullable=False)
-    type = Column(String(50), default="info")  # info, warning, success, error
-    is_active = Column(Boolean, default=True)
-    is_pinned = Column(Boolean, default=False)
-    start_date = Column(DateTime(timezone=True), nullable=True)
-    end_date = Column(DateTime(timezone=True), nullable=True)
-    created_at = Column(DateTime(timezone=True), server_default=func.now())
-    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    title: Mapped[str] = mapped_column(String(200), nullable=False)
+    content: Mapped[str] = mapped_column(Text, nullable=False)
+    type: Mapped[str] = mapped_column(String(50), default="info")  # info, warning, success, error
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+    is_pinned: Mapped[bool] = mapped_column(Boolean, default=False)
+    start_date: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    end_date: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    updated_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), onupdate=func.now())
 
 
 class Report(Base):
@@ -92,25 +99,25 @@ class Report(Base):
 
     __tablename__ = "reports"
 
-    id = Column(Integer, primary_key=True, index=True)
-    user_id = Column(
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    user_id: Mapped[Optional[int]] = mapped_column(
         Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True
     )
-    video_id = Column(
+    video_id: Mapped[Optional[int]] = mapped_column(
         Integer, ForeignKey("videos.id", ondelete="SET NULL"), nullable=True
     )
-    comment_id = Column(
+    comment_id: Mapped[Optional[int]] = mapped_column(
         Integer, ForeignKey("comments.id", ondelete="SET NULL"), nullable=True
     )
-    reason = Column(String(100), nullable=False)
-    description = Column(Text, nullable=True)
-    status = Column(
+    reason: Mapped[str] = mapped_column(String(100), nullable=False)
+    description: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    status: Mapped[ReportStatus] = mapped_column(
         Enum(ReportStatus), nullable=False, default=ReportStatus.PENDING, index=True
     )
-    admin_note = Column(Text, nullable=True)
-    created_at = Column(DateTime(timezone=True), server_default=func.now(), index=True)
-    processed_at = Column(DateTime(timezone=True), nullable=True)
+    admin_note: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), index=True)
+    processed_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
 
     # Relationships
-    user = relationship("User", back_populates="reports")
-    video = relationship("Video", back_populates="reports")
+    user: Mapped[Optional[User]] = relationship("User", back_populates="reports")
+    video: Mapped[Optional[Video]] = relationship("Video", back_populates="reports")

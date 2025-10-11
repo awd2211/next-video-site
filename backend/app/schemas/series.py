@@ -52,14 +52,14 @@ class SeriesUpdate(BaseModel):
 class SeriesAddVideos(BaseModel):
     """添加视频到专辑"""
 
-    video_ids: List[int] = Field(..., min_items=1)
+    video_ids: List[int] = Field(..., min_length=1)
     start_episode_number: Optional[int] = None  # 起始集数（自动递增）
 
 
 class SeriesRemoveVideos(BaseModel):
     """从专辑移除视频"""
 
-    video_ids: List[int] = Field(..., min_items=1)
+    video_ids: List[int] = Field(..., min_length=1)
 
 
 class SeriesUpdateVideoOrder(BaseModel):

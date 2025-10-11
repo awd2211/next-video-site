@@ -2,6 +2,7 @@
 视频专辑/系列管理 - 管理员API
 """
 
+import math
 from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
@@ -63,7 +64,7 @@ async def admin_get_series_list(
     # 计数
     count_query = select(func.count()).select_from(query.subquery())
     total_result = await db.execute(count_query)
-    total = total_result.scalar()
+    total = total_result.scalar() or 0
 
     # 排序和分页
     query = (
@@ -79,6 +80,7 @@ async def admin_get_series_list(
         total=total,
         page=page,
         page_size=page_size,
+        pages=math.ceil(total / page_size) if page_size > 0 and total > 0 else 0,
         items=[SeriesListResponse.model_validate(s) for s in series_list],
     )
 

@@ -1,4 +1,5 @@
 from datetime import datetime, timezone
+from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
@@ -212,7 +213,7 @@ async def refresh_token(
         )
 
     # Create new tokens (sub must be string per JWT spec)
-    token_payload = {"sub": str(user_id)}
+    token_payload: dict[str, Any] = {"sub": str(user_id)}
     if is_admin:
         token_payload["is_admin"] = True
 

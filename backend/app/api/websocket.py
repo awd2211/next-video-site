@@ -27,6 +27,9 @@ async def get_current_user_from_token(token: str):
         user_id = payload.get("sub")
         is_admin = payload.get("is_admin", False)
 
+        if not user_id:
+            return None
+
         db = SessionLocal()
         try:
             if is_admin:

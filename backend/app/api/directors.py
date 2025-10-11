@@ -89,8 +89,10 @@ async def get_director(
     videos = [vd.video for vd in director.video_directors if vd.video]
 
     # Build response
+    from app.schemas.video import VideoListResponse
+
     director_data = DirectorDetailResponse.model_validate(director)
-    director_data.videos = videos
+    director_data.videos = [VideoListResponse.model_validate(v) for v in videos]
 
     return director_data
 
