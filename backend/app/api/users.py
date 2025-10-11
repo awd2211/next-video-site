@@ -89,7 +89,7 @@ async def get_user_favorites(
     # Count total
     count_query = select(func.count()).select_from(query.subquery())
     result = await db.execute(count_query)
-    total = result.scalar()
+    total = result.scalar() or 0
 
     # Paginate
     offset = (page - 1) * page_size

@@ -111,7 +111,7 @@ async def get_watch_history(
     # Count total
     count_query = select(func.count()).where(WatchHistory.user_id == current_user.id)
     total_result = await db.execute(count_query)
-    total = total_result.scalar()
+    total = total_result.scalar() or 0
 
     # Get paginated history with video details
     query = (
@@ -132,7 +132,7 @@ async def get_watch_history(
         total=total,
         page=page,
         page_size=page_size,
-        pages=math.ceil(total / page_size) if page_size > 0 else 0,
+        pages=math.ceil(total / page_size) if page_size > 0 and total > 0 else 0,
         items=items,
     )
 
@@ -221,7 +221,7 @@ async def update_watch_progress(
         db.add(history)
 
         # Only increment view count for new history
-        video.view_count += 1
+        video.view_count += 1  # type: ignore[assignment]
 
     await db.commit()
     await db.refresh(history)

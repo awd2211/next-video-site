@@ -173,7 +173,7 @@ async def get_video_danmaku(
         count_query = count_query.filter(Danmaku.time <= end_time)
 
     total_result = await db.execute(count_query)
-    total = total_result.scalar()
+    total = total_result.scalar() or 0
 
     # 执行查询
     result = await db.execute(query)
@@ -231,7 +231,7 @@ async def report_danmaku(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="弹幕不存在")
 
     # 增加举报次数
-    danmaku.report_count += 1
+    danmaku.report_count += 1  # type: ignore[assignment]
 
     # 举报次数达到5次自动屏蔽
     if danmaku.report_count >= 5:

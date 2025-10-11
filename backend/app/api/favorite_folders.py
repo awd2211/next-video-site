@@ -46,7 +46,7 @@ async def create_favorite_folder(
             FavoriteFolder.user_id == current_user.id
         )
     )
-    folder_count = result.scalar()
+    folder_count = result.scalar() or 0
 
     if folder_count >= 50:
         raise HTTPException(
@@ -330,8 +330,8 @@ async def delete_favorite_folder(
         result = await db.execute(
             select(func.count(Favorite.id)).filter(Favorite.folder_id == folder_id)
         )
-        moved_count = result.scalar()
-        default_folder.video_count += moved_count
+        moved_count = result.scalar() or 0
+        default_folder.video_count += moved_count  # type: ignore[assignment]
     else:
         # Delete all favorites in this folder
         await db.execute(
@@ -415,7 +415,7 @@ async def move_favorite_to_folder(
         )
         new_folder = result.scalar_one_or_none()
         if new_folder:
-            new_folder.video_count += 1
+            new_folder.video_count += 1  # type: ignore[assignment]
 
     await db.commit()
 

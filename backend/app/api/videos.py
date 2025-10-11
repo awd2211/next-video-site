@@ -65,7 +65,7 @@ async def list_videos(
     # Count total
     count_query = select(func.count()).select_from(query.subquery())
     result = await db.execute(count_query)
-    total = result.scalar()
+    total = result.scalar() or 0
 
     # Sort
     if sort_by == "view_count":
@@ -86,7 +86,7 @@ async def list_videos(
         "total": total,
         "page": page,
         "page_size": page_size,
-        "pages": math.ceil(total / page_size) if page_size > 0 else 0,
+        "pages": math.ceil(total / page_size) if page_size > 0 and total > 0 else 0,
         "items": [VideoListResponse.model_validate(v) for v in videos],
     }
 
@@ -124,7 +124,7 @@ async def get_trending_videos(
         select(Video).filter(Video.status == VideoStatus.PUBLISHED).subquery()
     )
     result = await db.execute(count_query)
-    total = result.scalar()
+    total = result.scalar() or 0
 
     # Paginate
     offset = (page - 1) * page_size
@@ -137,7 +137,7 @@ async def get_trending_videos(
         "total": total,
         "page": page,
         "page_size": page_size,
-        "pages": math.ceil(total / page_size) if page_size > 0 else 0,
+        "pages": math.ceil(total / page_size) if page_size > 0 and total > 0 else 0,
         "items": [VideoListResponse.model_validate(v) for v in videos],
     }
 
@@ -177,7 +177,7 @@ async def get_featured_videos(
         .subquery()
     )
     result = await db.execute(count_query)
-    total = result.scalar()
+    total = result.scalar() or 0
 
     # Paginate
     offset = (page - 1) * page_size
@@ -190,7 +190,7 @@ async def get_featured_videos(
         "total": total,
         "page": page,
         "page_size": page_size,
-        "pages": math.ceil(total / page_size) if page_size > 0 else 0,
+        "pages": math.ceil(total / page_size) if page_size > 0 and total > 0 else 0,
         "items": [VideoListResponse.model_validate(v) for v in videos],
     }
 
@@ -230,7 +230,7 @@ async def get_recommended_videos(
         .subquery()
     )
     result = await db.execute(count_query)
-    total = result.scalar()
+    total = result.scalar() or 0
 
     # Paginate
     offset = (page - 1) * page_size
@@ -243,7 +243,7 @@ async def get_recommended_videos(
         "total": total,
         "page": page,
         "page_size": page_size,
-        "pages": math.ceil(total / page_size) if page_size > 0 else 0,
+        "pages": math.ceil(total / page_size) if page_size > 0 and total > 0 else 0,
         "items": [VideoListResponse.model_validate(v) for v in videos],
     }
 

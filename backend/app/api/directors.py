@@ -41,7 +41,7 @@ async def get_directors(
     # Count total
     count_query = select(func.count()).select_from(query.subquery())
     total_result = await db.execute(count_query)
-    total = total_result.scalar()
+    total = total_result.scalar() or 0
 
     # Get paginated results
     query = (
@@ -120,7 +120,7 @@ async def get_director_videos(
         .where(VideoDirector.director_id == director_id)
     )
     total_result = await db.execute(count_query)
-    total = total_result.scalar()
+    total = total_result.scalar() or 0
 
     # Get paginated videos
     query = (

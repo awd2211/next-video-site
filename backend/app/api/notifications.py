@@ -47,14 +47,14 @@ async def get_notifications(
     # 查询总数
     count_query = select(func.count(Notification.id)).where(and_(*conditions))
     total_result = await db.execute(count_query)
-    total = total_result.scalar()
+    total = total_result.scalar() or 0
 
     # 查询未读数量
     unread_query = select(func.count(Notification.id)).where(
         and_(Notification.user_id == current_user.id, Notification.is_read.is_(False))
     )
     unread_result = await db.execute(unread_query)
-    unread_count = unread_result.scalar()
+    unread_count = unread_result.scalar() or 0
 
     # 分页查询通知
     offset = (page - 1) * page_size
@@ -93,14 +93,14 @@ async def get_notification_stats(
         Notification.user_id == current_user.id
     )
     total_result = await db.execute(total_query)
-    total = total_result.scalar()
+    total = total_result.scalar() or 0
 
     # 未读数
     unread_query = select(func.count(Notification.id)).where(
         and_(Notification.user_id == current_user.id, Notification.is_read.is_(False))
     )
     unread_result = await db.execute(unread_query)
-    unread = unread_result.scalar()
+    unread = unread_result.scalar() or 0
 
     return NotificationStatsResponse(
         total=total,

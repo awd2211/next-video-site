@@ -41,7 +41,7 @@ async def get_actors(
     # Count total
     count_query = select(func.count()).select_from(query.subquery())
     total_result = await db.execute(count_query)
-    total = total_result.scalar()
+    total = total_result.scalar() or 0
 
     # Get paginated results
     query = query.order_by(Actor.name).offset((page - 1) * page_size).limit(page_size)
@@ -114,7 +114,7 @@ async def get_actor_videos(
         .where(VideoActor.actor_id == actor_id)
     )
     total_result = await db.execute(count_query)
-    total = total_result.scalar()
+    total = total_result.scalar() or 0
 
     # Get paginated videos
     query = (

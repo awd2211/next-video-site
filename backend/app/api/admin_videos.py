@@ -66,7 +66,7 @@ async def list_videos_admin(
     # 统计总数
     count_query = select(func.count()).select_from(query.subquery())
     result = await db.execute(count_query)
-    total = result.scalar()
+    total = result.scalar() or 0
 
     # 排序和分页
     query = query.order_by(desc(Video.created_at))
@@ -80,7 +80,7 @@ async def list_videos_admin(
         "total": total,
         "page": page,
         "page_size": page_size,
-        "pages": math.ceil(total / page_size) if page_size > 0 else 0,
+        "pages": math.ceil(total / page_size) if page_size > 0 and total > 0 else 0,
         "items": videos,
     }
 
@@ -279,19 +279,19 @@ async def get_video_stats(
     """获取视频统计数据"""
     # 总视频数
     total_result = await db.execute(select(func.count(Video.id)))
-    total_videos = total_result.scalar()
+    total_videos = total_result.scalar() or 0
 
     # 已发布视频数
     published_result = await db.execute(
         select(func.count(Video.id)).filter(Video.status == VideoStatus.PUBLISHED)
     )
-    published_videos = published_result.scalar()
+    published_videos = published_result.scalar() or 0
 
     # 草稿数
     draft_result = await db.execute(
         select(func.count(Video.id)).filter(Video.status == VideoStatus.DRAFT)
     )
-    draft_videos = draft_result.scalar()
+    draft_videos = draft_result.scalar() or 0
 
     # 总播放量
     views_result = await db.execute(select(func.sum(Video.view_count)))
