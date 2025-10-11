@@ -26,7 +26,7 @@ async def list_categories(
     # 从数据库查询
     result = await db.execute(
         select(Category)
-        .filter(Category.is_active == True)
+        .filter(Category.is_active.is_(True))
         .order_by(Category.sort_order)
     )
     categories = result.scalars().all()

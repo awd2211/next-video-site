@@ -5,7 +5,7 @@ WebSocket API端点
 
 import logging
 
-from fastapi import APIRouter, Depends, Query, WebSocket, WebSocketDisconnect
+from fastapi import APIRouter, Query, WebSocket, WebSocketDisconnect
 from sqlalchemy import select
 
 from app.database import SessionLocal

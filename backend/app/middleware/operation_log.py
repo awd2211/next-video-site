@@ -6,7 +6,7 @@
 import json
 import re
 
-from fastapi import Request, Response
+from fastapi import Request
 from starlette.middleware.base import BaseHTTPMiddleware
 
 from app.database import async_session_maker

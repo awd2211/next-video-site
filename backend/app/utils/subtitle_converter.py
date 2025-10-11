@@ -62,7 +62,7 @@ class SubtitleConverter:
                 continue
 
         # 默认使用UTF-8
-        logger.warning(f"无法检测编码,默认使用UTF-8")
+        logger.warning("无法检测编码,默认使用UTF-8")
         return "utf-8"
 
     @staticmethod
@@ -136,7 +136,7 @@ class SubtitleConverter:
             # Fallback: 使用UTF-8并忽略错误
             with open(srt_path, "r", encoding="utf-8", errors="ignore") as f:
                 srt_content = f.read()
-            logger.warning(f"使用UTF-8 fallback读取,部分字符可能丢失")
+            logger.warning("使用UTF-8 fallback读取,部分字符可能丢失")
 
         # 转换为VTT
         vtt_content = SubtitleConverter.srt_to_vtt(srt_content)

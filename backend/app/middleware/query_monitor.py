@@ -7,7 +7,6 @@ import logging
 import time
 
 from sqlalchemy import event
-from sqlalchemy.engine import Engine
 
 from app.database import async_engine
 

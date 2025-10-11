@@ -2,13 +2,11 @@
 Captcha generation and validation utilities
 """
 
-import io
 import uuid
 from typing import Tuple
 
 from captcha.image import ImageCaptcha
 
-from app.config import settings
 from app.utils.cache import get_redis
 
 

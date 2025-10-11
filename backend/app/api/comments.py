@@ -15,9 +15,8 @@ from app.schemas.comment import (
     CommentResponse,
     CommentUpdate,
     PaginatedCommentResponse,
-    UserBrief,
 )
-from app.utils.dependencies import get_current_active_user, get_current_user
+from app.utils.dependencies import get_current_active_user
 from app.utils.notification_service import NotificationService
 from app.utils.rate_limit import RateLimitPresets, limiter
 

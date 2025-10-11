@@ -2,19 +2,18 @@
 弹幕管理后台API
 """
 
-from datetime import datetime, timedelta, timezone
-from typing import List, Optional
+from datetime import datetime, timezone
+from typing import List
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
-from sqlalchemy import and_
+from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import delete as sql_delete
-from sqlalchemy import func, or_, select, update
+from sqlalchemy import func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from app.database import get_db
-from app.models.danmaku import BlockedWord, Danmaku, DanmakuStatus, DanmakuType
-from app.models.user import AdminUser, User
+from app.models.danmaku import BlockedWord, Danmaku, DanmakuStatus
+from app.models.user import AdminUser
 from app.schemas.danmaku import (
     BlockedWordCreate,
     BlockedWordResponse,
@@ -23,7 +22,7 @@ from app.schemas.danmaku import (
     DanmakuSearchParams,
     DanmakuStatsResponse,
 )
-from app.utils.dependencies import get_current_admin_user, get_current_superadmin
+from app.utils.dependencies import get_current_admin_user
 
 router = APIRouter()
 
@@ -61,7 +60,7 @@ async def get_danmaku_stats(
 
     # 被屏蔽统计
     blocked_result = await db.execute(
-        select(func.count(Danmaku.id)).filter(Danmaku.is_blocked == True)
+        select(func.count(Danmaku.id)).filter(Danmaku.is_blocked.is_(True))
     )
     blocked = blocked_result.scalar()
 

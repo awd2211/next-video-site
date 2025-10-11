@@ -8,12 +8,11 @@ import re
 from typing import List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
-from sqlalchemy import and_, func, or_, select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import selectinload
 
 from app.database import get_db
-from app.models.danmaku import BlockedWord, Danmaku, DanmakuStatus, DanmakuType
+from app.models.danmaku import BlockedWord, Danmaku, DanmakuStatus
 from app.models.user import User
 from app.models.video import Video
 from app.schemas.danmaku import (
@@ -146,7 +145,7 @@ async def get_video_danmaku(
     query = select(Danmaku).filter(
         Danmaku.video_id == video_id,
         Danmaku.status == DanmakuStatus.APPROVED,
-        Danmaku.is_blocked == False,
+        Danmaku.is_blocked.is_(False),
     )
 
     # 时间段筛选
@@ -165,7 +164,7 @@ async def get_video_danmaku(
         .filter(
             Danmaku.video_id == video_id,
             Danmaku.status == DanmakuStatus.APPROVED,
-            Danmaku.is_blocked == False,
+            Danmaku.is_blocked.is_(False),
         )
     )
     if start_time is not None:

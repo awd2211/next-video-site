@@ -369,7 +369,7 @@ async def admin_upload_video_file(
     allowed_types = ["video/mp4", "video/avi", "video/mkv", "video/mov", "video/flv"]
     if file.content_type not in allowed_types:
         raise HTTPException(
-            status_code=400, detail=f"不支持的视频格式，仅支持 MP4, AVI, MKV, MOV, FLV"
+            status_code=400, detail="不支持的视频格式，仅支持 MP4, AVI, MKV, MOV, FLV"
         )
 
     try:

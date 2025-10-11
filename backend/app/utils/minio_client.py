@@ -5,7 +5,6 @@ MinIO 客户端工具
 使用单例模式和延迟初始化，避免应用启动时阻塞
 """
 
-import io
 import threading
 from datetime import timedelta
 from typing import BinaryIO, Optional

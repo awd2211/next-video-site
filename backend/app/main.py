@@ -52,6 +52,7 @@ from app.api import (
     websocket,
 )
 from app.config import settings
+from app.middleware.http_cache import HTTPCacheMiddleware
 from app.middleware.operation_log import OperationLogMiddleware
 from app.middleware.request_size_limit import RequestSizeLimitMiddleware
 from app.middleware.security_headers import SecurityHeadersMiddleware
@@ -106,8 +107,6 @@ async def global_exception_handler(request: Request, exc: Exception):
 app.add_middleware(SecurityHeadersMiddleware)
 
 # HTTP缓存中间件（优化：减少不必要的请求）
-from app.middleware.http_cache import HTTPCacheMiddleware
-
 app.add_middleware(HTTPCacheMiddleware)
 
 # 请求大小限制中间件

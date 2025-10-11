@@ -12,7 +12,6 @@ from app.schemas.notification import (
     NotificationListResponse,
     NotificationResponse,
     NotificationStatsResponse,
-    NotificationUpdate,
 )
 from app.utils.dependencies import get_current_active_user
 
@@ -52,7 +51,7 @@ async def get_notifications(
 
     # 查询未读数量
     unread_query = select(func.count(Notification.id)).where(
-        and_(Notification.user_id == current_user.id, Notification.is_read == False)
+        and_(Notification.user_id == current_user.id, Notification.is_read.is_(False))
     )
     unread_result = await db.execute(unread_query)
     unread_count = unread_result.scalar()
@@ -98,7 +97,7 @@ async def get_notification_stats(
 
     # 未读数
     unread_query = select(func.count(Notification.id)).where(
-        and_(Notification.user_id == current_user.id, Notification.is_read == False)
+        and_(Notification.user_id == current_user.id, Notification.is_read.is_(False))
     )
     unread_result = await db.execute(unread_query)
     unread = unread_result.scalar()
@@ -153,7 +152,7 @@ async def mark_all_notifications_as_read(
     """
     # 查询所有未读通知
     query = select(Notification).where(
-        and_(Notification.user_id == current_user.id, Notification.is_read == False)
+        and_(Notification.user_id == current_user.id, Notification.is_read.is_(False))
     )
     result = await db.execute(query)
     notifications = result.scalars().all()

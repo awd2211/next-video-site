@@ -1,9 +1,8 @@
-from typing import List, Optional
+from typing import List
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy import and_, delete, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import selectinload
 
 from app.database import get_db
 from app.models.favorite_folder import FavoriteFolder
@@ -298,7 +297,7 @@ async def delete_favorite_folder(
             select(FavoriteFolder).filter(
                 and_(
                     FavoriteFolder.user_id == current_user.id,
-                    FavoriteFolder.is_default == True,
+                    FavoriteFolder.is_default.is_(True),
                 )
             )
         )

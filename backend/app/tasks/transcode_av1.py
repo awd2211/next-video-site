@@ -10,7 +10,6 @@ import logging
 import shutil
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
-from typing import Dict, List
 
 from celery import shared_task
 
@@ -184,7 +183,7 @@ def transcode_video_to_av1(self, video_id: int):
             output_dir.mkdir(parents=True, exist_ok=True)
 
             # 转码为AV1 HLS
-            m3u8_path = AV1Transcoder.transcode_to_hls_av1(
+            AV1Transcoder.transcode_to_hls_av1(
                 original_path, output_dir, resolution, segment_time=6
             )
 
@@ -378,7 +377,7 @@ def upload_hls_directory(
     Returns:
         index.m3u8的URL
     """
-    minio_client = MinIOClient()
+    MinIOClient()
 
     # 上传所有文件
     for file_path in hls_dir.glob("*"):

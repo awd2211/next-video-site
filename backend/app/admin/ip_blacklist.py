@@ -3,7 +3,6 @@ IP黑名单管理 - 管理员API
 """
 
 import time
-from datetime import datetime, timedelta
 from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
@@ -21,7 +20,6 @@ from app.utils.rate_limit import (
     add_to_blacklist,
     check_ip_blacklist,
     get_blacklist,
-    get_redis_client,
     limiter,
     remove_from_blacklist,
 )

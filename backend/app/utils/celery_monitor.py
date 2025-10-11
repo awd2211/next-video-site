@@ -4,8 +4,8 @@ Celery任务监控工具
 """
 
 import logging
-from datetime import datetime, timedelta
-from typing import Dict, List, Optional
+from datetime import datetime
+from typing import Dict
 
 logger = logging.getLogger(__name__)
 

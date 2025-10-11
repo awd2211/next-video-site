@@ -3,10 +3,8 @@
 防止恶意文件上传、文件类型伪造等攻击
 """
 
-import io
-import mimetypes
 import re
-from typing import List, Optional, Tuple
+from typing import List, Tuple
 
 from fastapi import HTTPException, UploadFile, status
 

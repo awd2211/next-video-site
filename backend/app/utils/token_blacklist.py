@@ -4,7 +4,8 @@ JWT Token黑名单管理
 """
 
 import hashlib
-from datetime import datetime, timedelta
+import json
+from datetime import datetime
 from typing import Optional
 
 import redis.asyncio as redis
@@ -135,7 +136,7 @@ async def revoke_all_user_tokens(user_id: int) -> bool:
         key = f"user_token_version:{user_id}"
 
         # 增加版本号
-        version = await client.incr(key)
+        await client.incr(key)
 
         # 设置过期时间（refresh token的过期时间）
         await client.expire(key, settings.REFRESH_TOKEN_EXPIRE_DAYS * 24 * 3600)
@@ -165,6 +166,3 @@ async def get_user_token_version(user_id: int) -> int:
     except Exception as e:
         print(f"Get user token version error: {e}")
         return 0
-
-
-import json

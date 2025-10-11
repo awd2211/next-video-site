@@ -10,7 +10,7 @@ from sqlalchemy import and_, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
-from app.models.share import SharePlatform, VideoShare
+from app.models.share import VideoShare
 from app.models.user import User
 from app.schemas.share import ShareCreate, ShareResponse, ShareStatsResponse
 from app.utils.dependencies import get_current_user, get_current_user_optional

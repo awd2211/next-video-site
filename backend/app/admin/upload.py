@@ -9,10 +9,7 @@ from datetime import datetime, timezone
 from typing import Optional
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
-from sqlalchemy import select
-from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.database import get_db
 from app.models.user import AdminUser
 from app.utils.dependencies import get_current_admin_user
 from app.utils.minio_client import minio_client

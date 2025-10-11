@@ -5,7 +5,6 @@ from fastapi import APIRouter, Depends, Query, Request
 from sqlalchemy import and_, desc, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
-from sqlalchemy.sql import text
 
 from app.database import get_db
 from app.models.video import Video, VideoStatus

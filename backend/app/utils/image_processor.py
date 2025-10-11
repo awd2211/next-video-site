@@ -10,7 +10,7 @@
 
 import io
 import os
-from typing import BinaryIO, Optional, Tuple
+from typing import BinaryIO, Tuple
 
 from PIL import Image
 

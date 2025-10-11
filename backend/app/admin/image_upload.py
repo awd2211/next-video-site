@@ -3,18 +3,14 @@
 """
 
 import io
-from typing import Optional
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile, status
-from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.database import get_db
 from app.models.user import AdminUser
 from app.utils.dependencies import get_current_admin_user
 from app.utils.file_validator import FileValidationPresets
 from app.utils.image_processor import ImageProcessor
 from app.utils.minio_client import minio_client
-from app.utils.rate_limit import RateLimitPresets, limiter
 
 router = APIRouter()
 

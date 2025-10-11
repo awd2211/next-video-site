@@ -8,15 +8,13 @@
 
 """
 
-import math
 from collections import defaultdict
-from typing import Dict, List, Optional, Tuple
+from typing import List, Optional
 
-from sqlalchemy import and_, desc, func, or_, select
+from sqlalchemy import desc, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
-from app.models.comment import Rating
 from app.models.user_activity import Favorite, WatchHistory
 from app.models.video import Video, VideoStatus
 from app.utils.cache import Cache

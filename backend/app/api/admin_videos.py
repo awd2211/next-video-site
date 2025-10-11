@@ -1,10 +1,11 @@
-import math
-
 """
 管理员视频管理 API
 """
+
+import io
+import math
 from datetime import datetime
-from typing import List, Optional
+from typing import Optional
 
 from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile, status
 from sqlalchemy import desc, func, or_, select
@@ -13,9 +14,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.database import get_db
 from app.models.user import AdminUser
 from app.models.video import (
-    Category,
     Country,
-    Tag,
     Video,
     VideoCategory,
     VideoStatus,

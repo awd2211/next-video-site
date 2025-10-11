@@ -6,7 +6,6 @@
 import asyncio
 
 from sqlalchemy import desc, select
-from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from app.database import async_session_maker
@@ -30,7 +29,7 @@ class CacheWarmer:
         async with async_session_maker() as db:
             result = await db.execute(
                 select(Category)
-                .filter(Category.is_active == True)
+                .filter(Category.is_active.is_(True))
                 .order_by(Category.sort_order)
             )
             categories = result.scalars().all()
@@ -103,7 +102,8 @@ class CacheWarmer:
                     select(Video)
                     .options(selectinload(Video.country))
                     .filter(
-                        Video.status == VideoStatus.PUBLISHED, Video.is_featured == True
+                        Video.status == VideoStatus.PUBLISHED,
+                        Video.is_featured.is_(True),
                     )
                     .order_by(desc(Video.sort_order), desc(Video.created_at))
                 )
@@ -138,7 +138,7 @@ class CacheWarmer:
                     .options(selectinload(Video.country))
                     .filter(
                         Video.status == VideoStatus.PUBLISHED,
-                        Video.is_recommended == True,
+                        Video.is_recommended.is_(True),
                     )
                     .order_by(desc(Video.sort_order), desc(Video.created_at))
                 )

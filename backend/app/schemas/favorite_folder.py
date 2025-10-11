@@ -18,8 +18,6 @@ class FavoriteFolderBase(BaseModel):
 class FavoriteFolderCreate(FavoriteFolderBase):
     """Schema for creating a favorite folder"""
 
-    pass
-
 
 class FavoriteFolderUpdate(BaseModel):
     """Schema for updating a favorite folder"""

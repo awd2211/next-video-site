@@ -8,7 +8,6 @@ from sqlalchemy import (
     Float,
     ForeignKey,
     Integer,
-    String,
     Text,
 )
 from sqlalchemy.orm import relationship

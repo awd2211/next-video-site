@@ -11,7 +11,6 @@ from app.models.video import Video
 from app.schemas.rating import (
     RatingCreate,
     RatingResponse,
-    RatingUpdate,
     VideoRatingStats,
 )
 from app.utils.dependencies import get_current_active_user, get_current_user
@@ -54,7 +53,7 @@ async def create_or_update_rating(
 
     if existing_rating:
         # Update existing rating
-        old_score = existing_rating.score
+        existing_rating.score
         existing_rating.score = rating_data.score
         rating = existing_rating
     else:
@@ -65,7 +64,6 @@ async def create_or_update_rating(
             score=rating_data.score,
         )
         db.add(rating)
-        old_score = None
 
     await db.commit()
     await db.refresh(rating)
