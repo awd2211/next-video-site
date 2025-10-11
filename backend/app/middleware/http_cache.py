@@ -3,11 +3,9 @@ HTTP缓存头中间件
 为静态内容添加缓存控制头，减少不必要的服务器请求
 """
 
-import hashlib
 from typing import Callable
 
 from fastapi import Request, Response
-from starlette.datastructures import Headers
 from starlette.middleware.base import BaseHTTPMiddleware
 
 
