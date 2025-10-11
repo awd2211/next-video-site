@@ -73,7 +73,10 @@ class CaptchaManager:
         await redis_client.delete(cache_key)
 
         # Compare (case-insensitive)
-        return stored_text.decode("utf-8").upper() == user_input.upper()
+        # Handle both bytes and str (Redis 6.x returns str directly)
+        if isinstance(stored_text, bytes):
+            stored_text = stored_text.decode("utf-8")
+        return stored_text.upper() == user_input.upper()
 
 
 # Singleton instance
