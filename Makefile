@@ -1,6 +1,6 @@
 # Makefile for VideoSite development
 
-.PHONY: help infra-up infra-down backend-install backend-run frontend-install frontend-run admin-install admin-run db-migrate db-init all-install dev clean
+.PHONY: help infra-up infra-down backend-install backend-run frontend-install frontend-run admin-install admin-run db-migrate db-init all-install dev clean format format-backend format-check
 
 help:
 	@echo "VideoSite Development Commands"
@@ -15,6 +15,11 @@ help:
 	@echo "  make db-migrate        - Create database migration"
 	@echo "  make db-upgrade        - Run database migrations"
 	@echo "  make db-init           - Initialize database with migrations"
+	@echo ""
+	@echo "Code Quality:"
+	@echo "  make format            - Format all code (backend)"
+	@echo "  make format-backend    - Format Python code with Black and isort"
+	@echo "  make format-check      - Check code formatting without changes"
 	@echo ""
 	@echo "Frontend:"
 	@echo "  make frontend-install  - Install frontend dependencies"
@@ -93,6 +98,24 @@ dev: infra-up
 	@echo "  1. make backend-run"
 	@echo "  2. make frontend-run"
 	@echo "  3. make admin-run"
+
+# Code Quality
+format: format-backend
+	@echo "Code formatting complete!"
+
+format-backend:
+	cd backend && \
+	. venv/bin/activate && \
+	pip install -q black isort && \
+	black app/ --line-length 88 --exclude "venv|alembic" && \
+	isort app/ --profile black --skip venv --skip alembic
+
+format-check:
+	cd backend && \
+	. venv/bin/activate && \
+	pip install -q black isort && \
+	black app/ --check --line-length 88 --exclude "venv|alembic" && \
+	isort app/ --check --profile black --skip venv --skip alembic
 
 # Clean
 clean:
