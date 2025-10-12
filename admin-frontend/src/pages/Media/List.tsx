@@ -30,6 +30,8 @@ import {
   PictureOutlined,
   VideoCameraOutlined,
   ReloadOutlined,
+  FolderAddOutlined,
+  SettingOutlined,
 } from '@ant-design/icons'
 import axios from '@/utils/axios'
 import type { UploadFile } from 'antd/es/upload/interface'
@@ -82,9 +84,13 @@ const MediaList = () => {
 
   const [uploadModalVisible, setUploadModalVisible] = useState(false)
   const [editModalVisible, setEditModalVisible] = useState(false)
+  const [folderModalVisible, setFolderModalVisible] = useState(false)
+  const [folderAction, setFolderAction] = useState<'create' | 'rename' | 'delete'>('create')
+  const [selectedFolder, setSelectedFolder] = useState<string>('')
   const [currentMedia, setCurrentMedia] = useState<Media | null>(null)
   const [uploadForm] = Form.useForm()
   const [editForm] = Form.useForm()
+  const [folderForm] = Form.useForm()
   const [fileList, setFileList] = useState<UploadFile[]>([])
   const [uploading, setUploading] = useState(false)
 
@@ -196,6 +202,55 @@ const MediaList = () => {
       fetchStats()
     } catch (error: any) {
       message.error(error.response?.data?.detail || '删除失败')
+    }
+  }
+
+  const handleCreateFolder = () => {
+    setFolderAction('create')
+    folderForm.resetFields()
+    setFolderModalVisible(true)
+  }
+
+  const handleRenameFolder = (folderName: string) => {
+    setFolderAction('rename')
+    setSelectedFolder(folderName)
+    folderForm.setFieldsValue({ old_name: folderName, new_name: '' })
+    setFolderModalVisible(true)
+  }
+
+  const handleDeleteFolder = (folderName: string) => {
+    setFolderAction('delete')
+    setSelectedFolder(folderName)
+    folderForm.setFieldsValue({ folder_name: folderName, move_to: null })
+    setFolderModalVisible(true)
+  }
+
+  const handleFolderSubmit = async () => {
+    try {
+      const values = await folderForm.validateFields()
+
+      if (folderAction === 'create') {
+        await axios.post('/api/v1/admin/media/folders', null, {
+          params: { folder_name: values.folder_name }
+        })
+        message.success('文件夹创建成功')
+      } else if (folderAction === 'rename') {
+        await axios.put(`/api/v1/admin/media/folders/${selectedFolder}`, null, {
+          params: { new_name: values.new_name }
+        })
+        message.success('文件夹重命名成功')
+      } else if (folderAction === 'delete') {
+        await axios.delete(`/api/v1/admin/media/folders/${selectedFolder}`, {
+          params: { move_to: values.move_to || null }
+        })
+        message.success('文件夹删除成功')
+      }
+
+      setFolderModalVisible(false)
+      fetchFolders()
+      fetchData()
+    } catch (error: any) {
+      message.error(error.response?.data?.detail || '操作失败')
     }
   }
 
@@ -423,10 +478,51 @@ const MediaList = () => {
             onChange={setFolder}
             style={{ width: 150 }}
             allowClear
+            dropdownRender={(menu) => (
+              <>
+                {menu}
+                {folders.length > 0 && <div style={{ borderTop: '1px solid #f0f0f0', margin: '4px 0' }} />}
+                <Space style={{ padding: '8px' }}>
+                  <Button
+                    type="text"
+                    size="small"
+                    icon={<FolderAddOutlined />}
+                    onClick={handleCreateFolder}
+                  >
+                    新建文件夹
+                  </Button>
+                </Space>
+              </>
+            )}
           >
             {folders.map((f) => (
               <Option key={f.name} value={f.name}>
-                <FolderOutlined /> {f.name} ({f.count})
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span>
+                    <FolderOutlined /> {f.name} ({f.count})
+                  </span>
+                  <Space size={4} onClick={(e) => e.stopPropagation()}>
+                    <Button
+                      type="text"
+                      size="small"
+                      icon={<EditOutlined />}
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        handleRenameFolder(f.name)
+                      }}
+                    />
+                    <Button
+                      type="text"
+                      size="small"
+                      danger
+                      icon={<DeleteOutlined />}
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        handleDeleteFolder(f.name)
+                      }}
+                    />
+                  </Space>
+                </div>
               </Option>
             ))}
           </Select>
@@ -539,6 +635,73 @@ const MediaList = () => {
           <Form.Item name="tags" label="标签">
             <Input placeholder="标签，逗号分隔" />
           </Form.Item>
+        </Form>
+      </Modal>
+
+      {/* 文件夹管理模态框 */}
+      <Modal
+        title={
+          folderAction === 'create' ? '新建文件夹' :
+          folderAction === 'rename' ? '重命名文件夹' :
+          '删除文件夹'
+        }
+        open={folderModalVisible}
+        onOk={handleFolderSubmit}
+        onCancel={() => setFolderModalVisible(false)}
+        width={500}
+      >
+        <Form form={folderForm} layout="vertical">
+          {folderAction === 'create' && (
+            <Form.Item
+              name="folder_name"
+              label="文件夹名称"
+              rules={[
+                { required: true, message: '请输入文件夹名称' },
+                { max: 255, message: '文件夹名称最多255个字符' }
+              ]}
+            >
+              <Input placeholder="输入文件夹名称" prefix={<FolderOutlined />} />
+            </Form.Item>
+          )}
+
+          {folderAction === 'rename' && (
+            <>
+              <Form.Item label="原文件夹名称">
+                <Input value={selectedFolder} disabled />
+              </Form.Item>
+              <Form.Item
+                name="new_name"
+                label="新文件夹名称"
+                rules={[
+                  { required: true, message: '请输入新文件夹名称' },
+                  { max: 255, message: '文件夹名称最多255个字符' }
+                ]}
+              >
+                <Input placeholder="输入新文件夹名称" prefix={<FolderOutlined />} />
+              </Form.Item>
+            </>
+          )}
+
+          {folderAction === 'delete' && (
+            <>
+              <Form.Item label="要删除的文件夹">
+                <Input value={selectedFolder} disabled />
+              </Form.Item>
+              <Form.Item
+                name="move_to"
+                label="文件移动到"
+                extra="删除文件夹后，其中的文件将移动到指定文件夹。留空则移到根目录。"
+              >
+                <Select placeholder="选择目标文件夹（可选）" allowClear>
+                  {folders.filter(f => f.name !== selectedFolder).map((f) => (
+                    <Option key={f.name} value={f.name}>
+                      <FolderOutlined /> {f.name}
+                    </Option>
+                  ))}
+                </Select>
+              </Form.Item>
+            </>
+          )}
         </Form>
       </Modal>
     </div>

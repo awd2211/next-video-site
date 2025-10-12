@@ -95,6 +95,113 @@ async def get_folders(
     return [{"name": folder, "count": count} for folder, count in folders]
 
 
+@router.post("/media/folders")
+async def create_folder(
+    folder_name: str = Query(..., min_length=1, max_length=255),
+    db: AsyncSession = Depends(get_db),
+    current_user: AdminUser = Depends(get_current_admin_user),
+):
+    """创建新文件夹"""
+    # 检查文件夹是否已存在
+    query = select(Media.folder).where(
+        and_(Media.folder == folder_name, Media.is_deleted == False)
+    ).limit(1)
+    result = await db.execute(query)
+    existing = result.scalar_one_or_none()
+
+    if existing:
+        raise HTTPException(status_code=400, detail="文件夹已存在")
+
+    return {"message": "文件夹可以使用", "folder_name": folder_name}
+
+
+@router.delete("/media/folders/{folder_name}")
+async def delete_folder(
+    folder_name: str,
+    move_to: Optional[str] = Query(None, description="移动文件到此文件夹，不提供则设为空"),
+    db: AsyncSession = Depends(get_db),
+    current_user: AdminUser = Depends(get_current_admin_user),
+):
+    """删除文件夹"""
+    # 检查文件夹是否存在
+    count_query = select(func.count()).select_from(Media).where(
+        and_(Media.folder == folder_name, Media.is_deleted == False)
+    )
+    count_result = await db.execute(count_query)
+    file_count = count_result.scalar()
+
+    if file_count == 0:
+        raise HTTPException(status_code=404, detail="文件夹不存在或为空")
+
+    # 更新该文件夹下的所有文件
+    query = select(Media).where(
+        and_(Media.folder == folder_name, Media.is_deleted == False)
+    )
+    result = await db.execute(query)
+    media_items = result.scalars().all()
+
+    for media in media_items:
+        media.folder = move_to
+        media.updated_at = datetime.utcnow()
+
+    await db.commit()
+
+    return {
+        "message": "文件夹删除成功",
+        "affected_files": file_count,
+        "moved_to": move_to or "根目录"
+    }
+
+
+@router.put("/media/folders/{old_name}")
+async def rename_folder(
+    old_name: str,
+    new_name: str = Query(..., min_length=1, max_length=255),
+    db: AsyncSession = Depends(get_db),
+    current_user: AdminUser = Depends(get_current_admin_user),
+):
+    """重命名文件夹"""
+    # 检查旧文件夹是否存在
+    count_query = select(func.count()).select_from(Media).where(
+        and_(Media.folder == old_name, Media.is_deleted == False)
+    )
+    count_result = await db.execute(count_query)
+    file_count = count_result.scalar()
+
+    if file_count == 0:
+        raise HTTPException(status_code=404, detail="原文件夹不存在或为空")
+
+    # 检查新文件夹名是否已存在
+    new_query = select(Media.folder).where(
+        and_(Media.folder == new_name, Media.is_deleted == False)
+    ).limit(1)
+    new_result = await db.execute(new_query)
+    existing = new_result.scalar_one_or_none()
+
+    if existing:
+        raise HTTPException(status_code=400, detail="新文件夹名已存在")
+
+    # 重命名：更新所有使用该文件夹的文件
+    query = select(Media).where(
+        and_(Media.folder == old_name, Media.is_deleted == False)
+    )
+    result = await db.execute(query)
+    media_items = result.scalars().all()
+
+    for media in media_items:
+        media.folder = new_name
+        media.updated_at = datetime.utcnow()
+
+    await db.commit()
+
+    return {
+        "message": "文件夹重命名成功",
+        "old_name": old_name,
+        "new_name": new_name,
+        "affected_files": file_count
+    }
+
+
 @router.get("/media", response_model=MediaListResponse)
 async def get_media_list(
     page: int = Query(1, ge=1),
