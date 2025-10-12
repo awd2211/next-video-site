@@ -81,6 +81,9 @@ class Media(Base):
     # 分享关系
     shares = relationship("MediaShare", back_populates="media", cascade="all, delete-orphan")
 
+    # 版本历史关系
+    versions = relationship("MediaVersion", back_populates="media", cascade="all, delete-orphan", order_by="desc(MediaVersion.version_number)")
+
     # 时间戳
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False, comment="创建时间")
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, comment="更新时间")
