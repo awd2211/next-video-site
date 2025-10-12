@@ -49,6 +49,7 @@ interface FileListProps {
   onCreateFolder: () => void
   searchText?: string
   currentFolderId?: number
+  mediaTypeFilter?: 'image' | 'video'
 }
 
 const FileList: React.FC<FileListProps> = ({
@@ -70,6 +71,7 @@ const FileList: React.FC<FileListProps> = ({
   onCreateFolder,
   searchText,
   currentFolderId,
+  mediaTypeFilter,
 }) => {
   const [previewImage, setPreviewImage] = useState<string | null>(null)
   const [renameModalVisible, setRenameModalVisible] = useState(false)
@@ -384,7 +386,7 @@ const FileList: React.FC<FileListProps> = ({
   // 网格视图
   return (
     <div className="file-list">
-      <div style={{ marginBottom: 16 }}>
+      <div style={{ marginBottom: 16, display: 'flex', alignItems: 'center', gap: 12 }}>
         <Checkbox
           checked={selectedFiles.length === data.length && data.length > 0}
           indeterminate={selectedFiles.length > 0 && selectedFiles.length < data.length}
@@ -392,6 +394,22 @@ const FileList: React.FC<FileListProps> = ({
         >
           全选 ({selectedFiles.length}/{data.length})
         </Checkbox>
+
+        {/* 筛选器提示 */}
+        {mediaTypeFilter && (
+          <span style={{
+            padding: '2px 8px',
+            borderRadius: 4,
+            background: '#e6f7ff',
+            color: '#1890ff',
+            fontSize: 12,
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: 4,
+          }}>
+            {mediaTypeFilter === 'image' ? '仅显示图片' : '仅显示视频'}
+          </span>
+        )}
       </div>
 
       <div className="file-grid">

@@ -52,6 +52,9 @@ const MediaManager: React.FC = () => {
   // 搜索
   const [searchText, setSearchText] = useState('')
 
+  // 媒体类型筛选
+  const [mediaTypeFilter, setMediaTypeFilter] = useState<'image' | 'video' | undefined>(undefined)
+
   // 视图模式和排序
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid')
   const [sortBy, setSortBy] = useState<'name' | 'size' | 'date'>('name')
@@ -109,6 +112,7 @@ const MediaManager: React.FC = () => {
           page_size: pageSize,
           parent_id: selectedFolderId,
           search: searchText || undefined,
+          media_type: mediaTypeFilter || undefined,
         },
       })
 
@@ -299,7 +303,7 @@ const MediaManager: React.FC = () => {
     } else {
       setBreadcrumbPath([])
     }
-  }, [selectedFolderId, page, pageSize, searchText, sortBy, sortOrder, folderTree])
+  }, [selectedFolderId, page, pageSize, searchText, mediaTypeFilter, sortBy, sortOrder, folderTree])
 
   return (
     <div className="media-manager" ref={dropZoneRef}>
@@ -334,6 +338,8 @@ const MediaManager: React.FC = () => {
           setSortBy(by)
           setSortOrder(order)
         }}
+        mediaTypeFilter={mediaTypeFilter}
+        onMediaTypeFilterChange={setMediaTypeFilter}
       />
 
       <Layout className="media-manager-layout">
@@ -395,6 +401,7 @@ const MediaManager: React.FC = () => {
             onCreateFolder={() => handleCreateFolder('新建文件夹', selectedFolderId)}
             searchText={searchText}
             currentFolderId={selectedFolderId}
+            mediaTypeFilter={mediaTypeFilter}
           />
         </Content>
       </Layout>

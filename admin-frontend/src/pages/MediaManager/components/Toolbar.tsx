@@ -15,6 +15,8 @@ import {
   FileOutlined,
   ClockCircleOutlined,
   DragOutlined,
+  FileImageOutlined,
+  VideoCameraOutlined,
 } from '@ant-design/icons'
 
 interface ToolbarProps {
@@ -31,6 +33,8 @@ interface ToolbarProps {
   sortBy: 'name' | 'size' | 'date'
   sortOrder: 'asc' | 'desc'
   onSortChange: (by: 'name' | 'size' | 'date', order: 'asc' | 'desc') => void
+  mediaTypeFilter?: 'image' | 'video' | undefined
+  onMediaTypeFilterChange: (type: 'image' | 'video' | undefined) => void
 }
 
 const Toolbar: React.FC<ToolbarProps> = ({
@@ -47,6 +51,8 @@ const Toolbar: React.FC<ToolbarProps> = ({
   sortBy,
   sortOrder,
   onSortChange,
+  mediaTypeFilter,
+  onMediaTypeFilterChange,
 }) => {
   const fileInputRef = useRef<HTMLInputElement>(null)
 
@@ -113,6 +119,35 @@ const Toolbar: React.FC<ToolbarProps> = ({
           allowClear
           style={{ width: 300 }}
           onChange={(e) => onSearch(e.target.value)}
+        />
+
+        {/* 媒体类型筛选器 */}
+        <Segmented
+          value={mediaTypeFilter || 'all'}
+          onChange={(value) => {
+            if (value === 'all') {
+              onMediaTypeFilterChange(undefined)
+            } else {
+              onMediaTypeFilterChange(value as 'image' | 'video')
+            }
+          }}
+          options={[
+            {
+              label: '全部',
+              value: 'all',
+              icon: <FileOutlined />,
+            },
+            {
+              label: '图片',
+              value: 'image',
+              icon: <FileImageOutlined />,
+            },
+            {
+              label: '视频',
+              value: 'video',
+              icon: <VideoCameraOutlined />,
+            },
+          ]}
         />
       </div>
 
