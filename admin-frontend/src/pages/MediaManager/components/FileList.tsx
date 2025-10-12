@@ -1,7 +1,6 @@
 import React, { useState } from 'react'
 import {
   Checkbox,
-  Empty,
   Spin,
   Pagination,
   Image,
@@ -11,6 +10,7 @@ import {
   Input,
   message,
 } from 'antd'
+import EmptyState from './EmptyState'
 import type { ColumnsType } from 'antd/es/table'
 import {
   FileImageOutlined,
@@ -45,6 +45,10 @@ interface FileListProps {
   onFolderOpen: (folderId: number) => void
   onRename: (mediaId: number, newTitle: string) => void
   onOpenMoveModal: () => void
+  onUpload: () => void
+  onCreateFolder: () => void
+  searchText?: string
+  currentFolderId?: number
 }
 
 const FileList: React.FC<FileListProps> = ({
@@ -62,6 +66,10 @@ const FileList: React.FC<FileListProps> = ({
   onFolderOpen,
   onRename,
   onOpenMoveModal,
+  onUpload,
+  onCreateFolder,
+  searchText,
+  currentFolderId,
 }) => {
   const [previewImage, setPreviewImage] = useState<string | null>(null)
   const [renameModalVisible, setRenameModalVisible] = useState(false)
@@ -311,10 +319,20 @@ const FileList: React.FC<FileListProps> = ({
   }
 
   if (data.length === 0) {
+    // 确定空状态类型
+    let emptyType: 'root' | 'folder' | 'search' = 'root'
+    if (searchText && searchText.trim()) {
+      emptyType = 'search'
+    } else if (currentFolderId) {
+      emptyType = 'folder'
+    }
+
     return (
-      <Empty
-        description="暂无文件"
-        style={{ margin: '100px 0' }}
+      <EmptyState
+        type={emptyType}
+        onUpload={onUpload}
+        onCreateFolder={onCreateFolder}
+        searchText={searchText}
       />
     )
   }

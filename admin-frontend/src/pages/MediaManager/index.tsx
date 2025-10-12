@@ -381,6 +381,20 @@ const MediaManager: React.FC = () => {
             onFolderOpen={handleFolderOpen}
             onRename={handleRename}
             onOpenMoveModal={handleOpenMoveModal}
+            onUpload={() => {
+              // 触发文件选择器
+              const input = document.createElement('input')
+              input.type = 'file'
+              input.multiple = true
+              input.onchange = (e) => {
+                const files = Array.from((e.target as HTMLInputElement).files || [])
+                handleAddUploadTask(files)
+              }
+              input.click()
+            }}
+            onCreateFolder={() => handleCreateFolder('新建文件夹', selectedFolderId)}
+            searchText={searchText}
+            currentFolderId={selectedFolderId}
           />
         </Content>
       </Layout>
