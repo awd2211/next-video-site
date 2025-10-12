@@ -26,6 +26,7 @@ from app.admin import ip_blacklist as admin_ip_blacklist
 from app.admin import logs as admin_logs
 from app.admin import media as admin_media
 from app.admin import media_share as admin_media_share
+from app.admin import media_version as admin_media_version
 from app.admin import operations as admin_operations
 from app.admin import series as admin_series
 from app.admin import settings as admin_settings
@@ -500,6 +501,11 @@ app.include_router(
     admin_media_share.router,
     prefix=f"{settings.API_V1_PREFIX}/admin",
     tags=["Admin - Media Share"],
+)
+app.include_router(
+    admin_media_version.router,
+    prefix=f"{settings.API_V1_PREFIX}/admin",
+    tags=["Admin - Media Version"],
 )
 
 
