@@ -78,6 +78,9 @@ class Media(Base):
     # 🆕 自引用关系（树形结构）
     parent = relationship("Media", remote_side=[id], backref="children")
 
+    # 分享关系
+    shares = relationship("MediaShare", back_populates="media", cascade="all, delete-orphan")
+
     # 时间戳
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False, comment="创建时间")
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, comment="更新时间")
