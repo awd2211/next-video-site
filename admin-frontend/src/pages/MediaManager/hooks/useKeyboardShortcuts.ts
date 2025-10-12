@@ -4,6 +4,8 @@ interface KeyboardShortcutsOptions {
   onSelectAll: () => void
   onDelete: () => void
   onEscape: () => void
+  onNextItem?: () => void
+  onPrevItem?: () => void
   enabled?: boolean
 }
 
@@ -11,6 +13,8 @@ export function useKeyboardShortcuts({
   onSelectAll,
   onDelete,
   onEscape,
+  onNextItem,
+  onPrevItem,
   enabled = true,
 }: KeyboardShortcutsOptions) {
   useEffect(() => {
@@ -41,6 +45,18 @@ export function useKeyboardShortcuts({
         event.preventDefault()
         onEscape()
       }
+
+      // 左箭头 - 上一项
+      if (event.key === 'ArrowLeft' && onPrevItem) {
+        event.preventDefault()
+        onPrevItem()
+      }
+
+      // 右箭头 - 下一项
+      if (event.key === 'ArrowRight' && onNextItem) {
+        event.preventDefault()
+        onNextItem()
+      }
     }
 
     window.addEventListener('keydown', handleKeyDown)
@@ -48,5 +64,5 @@ export function useKeyboardShortcuts({
     return () => {
       window.removeEventListener('keydown', handleKeyDown)
     }
-  }, [onSelectAll, onDelete, onEscape, enabled])
+  }, [onSelectAll, onDelete, onEscape, onNextItem, onPrevItem, enabled])
 }

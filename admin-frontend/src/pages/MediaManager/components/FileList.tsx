@@ -49,6 +49,7 @@ interface FileListProps {
   onOpenMoveModal: () => void
   onUpload: () => void
   onCreateFolder: () => void
+  onFileClick?: (item: MediaItem) => void
   searchText?: string
   currentFolderId?: number
   mediaTypeFilter?: 'image' | 'video'
@@ -74,6 +75,7 @@ const FileList: React.FC<FileListProps> = ({
   searchText,
   currentFolderId,
   mediaTypeFilter,
+  onFileClick,
 }) => {
   const [renameModalVisible, setRenameModalVisible] = useState(false)
   const [renamingItem, setRenamingItem] = useState<MediaItem | null>(null)
@@ -135,8 +137,10 @@ const FileList: React.FC<FileListProps> = ({
     if (item.is_folder) {
       onFolderOpen(item.id)
     } else {
-      // 文件预览
-      if (item.media_type === 'image') {
+      // 文件双击：打开详情面板（如果有回调）或预览
+      if (onFileClick) {
+        onFileClick(item)
+      } else if (item.media_type === 'image') {
         openImagePreview(item)
       } else if (item.media_type === 'video') {
         openVideoPlayer(item)

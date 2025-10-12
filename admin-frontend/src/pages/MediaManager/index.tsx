@@ -20,6 +20,7 @@ import FilterDrawer, { type FilterOptions } from './components/FilterDrawer'
 import ConflictModal, { type ConflictFile, type ConflictAction } from './components/ConflictModal'
 import QuickActions from './components/QuickActions'
 import TagEditor from './components/TagEditor'
+import FileDetailsDrawer from './components/FileDetailsDrawer'
 import { useDragUpload } from './hooks/useDragUpload'
 import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts'
 import { generateSmartRename, hasFileNameConflict } from './utils/fileUtils'
@@ -100,6 +101,10 @@ const MediaManager: React.FC = () => {
   // 标签管理
   const [tagEditorVisible, setTagEditorVisible] = useState(false)
   const [allTags, setAllTags] = useState<string[]>([])
+
+  // 文件详情面板
+  const [detailsDrawerVisible, setDetailsDrawerVisible] = useState(false)
+  const [currentDetailItem, setCurrentDetailItem] = useState<MediaItem | null>(null)
 
   // 面包屑路径
   const [breadcrumbPath, setBreadcrumbPath] = useState<{ id?: number; title: string }[]>([])
@@ -563,30 +568,71 @@ const MediaManager: React.FC = () => {
     checkAndAddFiles(files)
   }
 
+  // 打开文件详情
+  const handleOpenDetails = (item: MediaItem) => {
+    setCurrentDetailItem(item)
+    setDetailsDrawerVisible(true)
+  }
+
+  // 详情面板中的下一项
+  const handleDetailsNext = () => {
+    if (!currentDetailItem) return
+    const currentIndex = fileList.findIndex((item) => item.id === currentDetailItem.id)
+    if (currentIndex < fileList.length - 1) {
+      setCurrentDetailItem(fileList[currentIndex + 1] || null)
+    }
+  }
+
+  // 详情面板中的上一项
+  const handleDetailsPrev = () => {
+    if (!currentDetailItem) return
+    const currentIndex = fileList.findIndex((item) => item.id === currentDetailItem.id)
+    if (currentIndex > 0) {
+      setCurrentDetailItem(fileList[currentIndex - 1] || null)
+    }
+  }
+
   // 快捷键支持
   useKeyboardShortcuts({
     onSelectAll: () => {
       // Ctrl+A - 全选当前页所有文件
-      const allIds = fileList.map(item => item.id)
-      setSelectedFiles(allIds)
-      if (allIds.length > 0) {
-        message.info(`已选中 ${allIds.length} 项`)
+      if (!detailsDrawerVisible) {
+        const allIds = fileList.map(item => item.id)
+        setSelectedFiles(allIds)
+        if (allIds.length > 0) {
+          message.info(`已选中 ${allIds.length} 项`)
+        }
       }
     },
     onDelete: () => {
       // Delete - 删除选中的文件
-      if (selectedFiles.length > 0) {
+      if (!detailsDrawerVisible && selectedFiles.length > 0) {
         handleDelete(selectedFiles, false)
       }
     },
     onEscape: () => {
-      // Esc - 取消选中
-      if (selectedFiles.length > 0) {
+      // Esc - 关闭详情面板或取消选中
+      if (detailsDrawerVisible) {
+        setDetailsDrawerVisible(false)
+        setCurrentDetailItem(null)
+      } else if (selectedFiles.length > 0) {
         setSelectedFiles([])
         message.info('已取消选中')
       }
     },
-    enabled: !uploadDrawerVisible && !moveModalVisible, // Modal打开时禁用快捷键
+    onNextItem: () => {
+      // 右箭头 - 详情面板中的下一项
+      if (detailsDrawerVisible) {
+        handleDetailsNext()
+      }
+    },
+    onPrevItem: () => {
+      // 左箭头 - 详情面板中的上一项
+      if (detailsDrawerVisible) {
+        handleDetailsPrev()
+      }
+    },
+    enabled: !uploadDrawerVisible && !moveModalVisible && !tagEditorVisible, // Modal打开时禁用快捷键
   })
 
   // 初始化加载
@@ -685,10 +731,7 @@ const MediaManager: React.FC = () => {
           <QuickActions
             recentUploads={recentUploads}
             recentFolders={recentFolders}
-            onFileClick={(item) => {
-              // 双击文件预览逻辑可以在这里添加
-              message.info(`点击了: ${item.title}`)
-            }}
+            onFileClick={handleOpenDetails}
             onFolderClick={(folderId) => {
               setSelectedFolderId(folderId)
               addToRecentFolders(folderId)
@@ -743,6 +786,7 @@ const MediaManager: React.FC = () => {
             searchText={searchText}
             currentFolderId={selectedFolderId}
             mediaTypeFilter={mediaTypeFilter}
+            onFileClick={handleOpenDetails}
           />
         </Content>
       </Layout>
@@ -798,6 +842,27 @@ const MediaManager: React.FC = () => {
         allTags={allTags}
         onClose={() => setTagEditorVisible(false)}
         onSave={handleSaveTags}
+      />
+
+      {/* 文件详情抽屉 */}
+      <FileDetailsDrawer
+        visible={detailsDrawerVisible}
+        item={currentDetailItem}
+        onClose={() => {
+          setDetailsDrawerVisible(false)
+          setCurrentDetailItem(null)
+        }}
+        onDownload={(item) => window.open(item.url, '_blank')}
+        onDelete={(item) => handleDelete([item.id], false)}
+        onRename={(item) => handleRename(item.id, prompt('请输入新名称', item.title) || item.title)}
+        onOpenTags={(item) => {
+          setSelectedFiles([item.id])
+          setTagEditorVisible(true)
+        }}
+        onNext={handleDetailsNext}
+        onPrev={handleDetailsPrev}
+        hasNext={currentDetailItem ? fileList.findIndex(i => i.id === currentDetailItem.id) < fileList.length - 1 : false}
+        hasPrev={currentDetailItem ? fileList.findIndex(i => i.id === currentDetailItem.id) > 0 : false}
       />
 
       {/* 键盘快捷键帮助 */}
