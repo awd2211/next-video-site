@@ -198,6 +198,28 @@ const MediaManager: React.FC = () => {
     }
   }
 
+  // 删除文件夹（从树中删除）
+  const handleDeleteFolder = async (folderId: number) => {
+    try {
+      // 使用批量删除API，传入文件夹的media_id
+      await axios.delete('/api/v1/admin/media/batch/delete', {
+        params: {
+          media_ids: [folderId],
+          permanent: false,
+        },
+      })
+      message.success('文件夹删除成功')
+      loadFolderTree()
+      loadFileList()
+      // 如果删除的是当前选中的文件夹，返回根目录
+      if (selectedFolderId === folderId) {
+        setSelectedFolderId(undefined)
+      }
+    } catch (error: any) {
+      message.error(error.response?.data?.detail || '删除失败')
+    }
+  }
+
   // 添加上传任务
   function handleAddUploadTask(files: File[]) {
     const newTasks: UploadTask[] = files.map((file) => ({
@@ -270,6 +292,8 @@ const MediaManager: React.FC = () => {
             selectedFolderId={selectedFolderId}
             onSelect={setSelectedFolderId}
             onCreateFolder={handleCreateFolder}
+            onRename={handleRename}
+            onDelete={handleDeleteFolder}
             onRefresh={loadFolderTree}
           />
         </Sider>
