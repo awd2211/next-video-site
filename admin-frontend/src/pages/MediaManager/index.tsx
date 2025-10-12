@@ -17,8 +17,10 @@ import MoveModal from './components/MoveModal'
 import KeyboardHelp from './components/KeyboardHelp'
 import StatsPanel from './components/StatsPanel'
 import FilterDrawer, { type FilterOptions } from './components/FilterDrawer'
+import ConflictModal, { type ConflictFile, type ConflictAction } from './components/ConflictModal'
 import { useDragUpload } from './hooks/useDragUpload'
 import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts'
+import { generateSmartRename, hasFileNameConflict } from './utils/fileUtils'
 import axios from '@/utils/axios'
 import type { FolderNode, MediaItem, UploadTask } from './types'
 import './styles.css'
@@ -69,6 +71,11 @@ const MediaManager: React.FC = () => {
   // 高级筛选
   const [filterDrawerVisible, setFilterDrawerVisible] = useState(false)
   const [advancedFilters, setAdvancedFilters] = useState<FilterOptions>({})
+
+  // 文件冲突处理
+  const [conflictModalVisible, setConflictModalVisible] = useState(false)
+  const [currentConflict, setCurrentConflict] = useState<ConflictFile | null>(null)
+  const [pendingFiles, setPendingFiles] = useState<File[]>([])
 
   // 面包屑路径
   const [breadcrumbPath, setBreadcrumbPath] = useState<{ id?: number; title: string }[]>([])
@@ -350,8 +357,74 @@ const MediaManager: React.FC = () => {
     }
   }
 
-  // 添加上传任务
-  function handleAddUploadTask(files: File[]) {
+  // 检查文件冲突并处理
+  const checkAndAddFiles = (files: File[]) => {
+    const filesToCheck = [...files]
+    const existingNames = fileList.map((item) => item.title)
+
+    // 检查第一个文件是否有冲突
+    const checkNextFile = () => {
+      if (filesToCheck.length === 0) return
+
+      const file = filesToCheck[0]
+      if (!file) return
+
+      const fileName = file.name
+
+      if (hasFileNameConflict(fileName, fileList.map((f) => ({ title: f.title })))) {
+        // 有冲突，显示冲突处理 Modal
+        const suggestedName = generateSmartRename(fileName, existingNames)
+        setCurrentConflict({
+          file,
+          existingName: fileName,
+          suggestedName,
+        })
+        setPendingFiles(filesToCheck.slice(1))
+        setConflictModalVisible(true)
+      } else {
+        // 无冲突，直接添加
+        addUploadTask([file])
+        filesToCheck.shift()
+        checkNextFile()
+      }
+    }
+
+    checkNextFile()
+  }
+
+  // 处理冲突解决
+  const handleConflictResolve = (action: ConflictAction, newName?: string) => {
+    if (!currentConflict) return
+
+    const { file } = currentConflict
+
+    if (action === 'skip') {
+      // 跳过此文件
+      message.info(`已跳过: ${file.name}`)
+    } else if (action === 'rename') {
+      // 重命名上传
+      if (newName && newName.trim()) {
+        const renamedFile = new File([file], newName, { type: file.type })
+        addUploadTask([renamedFile])
+      }
+    } else if (action === 'replace') {
+      // 替换（直接上传）
+      addUploadTask([file])
+    }
+
+    // 关闭 Modal
+    setConflictModalVisible(false)
+    setCurrentConflict(null)
+
+    // 继续检查剩余文件
+    if (pendingFiles.length > 0) {
+      checkAndAddFiles(pendingFiles)
+      setPendingFiles([])
+    }
+  }
+
+  // 添加上传任务（内部方法）
+  function addUploadTask(files: File[]) {
     const newTasks: UploadTask[] = files.map((file) => ({
       id: `${Date.now()}_${file.name}`,
       file,
@@ -361,6 +434,11 @@ const MediaManager: React.FC = () => {
 
     setUploadTasks((prev) => [...prev, ...newTasks])
     setUploadDrawerVisible(true)
+  }
+
+  // 添加上传任务（对外接口）
+  function handleAddUploadTask(files: File[]) {
+    checkAndAddFiles(files)
   }
 
   // 快捷键支持
@@ -550,6 +628,18 @@ const MediaManager: React.FC = () => {
         onClose={() => setFilterDrawerVisible(false)}
         onApply={handleApplyFilters}
         currentFilters={advancedFilters}
+      />
+
+      {/* 文件冲突处理 Modal */}
+      <ConflictModal
+        visible={conflictModalVisible}
+        conflictFile={currentConflict}
+        onResolve={handleConflictResolve}
+        onCancel={() => {
+          setConflictModalVisible(false)
+          setCurrentConflict(null)
+          setPendingFiles([])
+        }}
       />
 
       {/* 键盘快捷键帮助 */}
