@@ -156,11 +156,6 @@ const AdminLayout = () => {
           label: t('menu.media'),
         },
         {
-          key: '/media-manager',
-          icon: <FolderOutlined />,
-          label: 'Mega文件管理',
-        },
-        {
           key: '/actors',
           icon: <TeamOutlined />,
           label: t('menu.actors'),
