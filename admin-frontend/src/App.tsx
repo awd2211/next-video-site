@@ -4,6 +4,7 @@ import { useEffect, useState, lazy, Suspense } from 'react'
 import { Spin } from 'antd'
 import ErrorBoundary from './components/ErrorBoundary'
 import AdminLayout from './layouts/AdminLayout'
+import { MenuBadgeProvider } from './contexts/MenuBadgeContext'
 
 // Lazy load pages for better performance
 const Login = lazy(() => import('./pages/Login'))
@@ -22,6 +23,7 @@ const DirectorsList = lazy(() => import('./pages/Directors/List'))
 const IPBlacklist = lazy(() => import('./pages/IPBlacklist'))
 const SeriesList = lazy(() => import('./pages/Series/List'))
 const SeriesEdit = lazy(() => import('./pages/Series/Edit'))
+const MediaList = lazy(() => import('./pages/Media'))
 
 // Loading component for Suspense
 const PageLoading = () => (
@@ -66,7 +68,9 @@ function App() {
                 path="/"
                 element={
                   <ProtectedRoute>
-                    <AdminLayout />
+                    <MenuBadgeProvider>
+                      <AdminLayout />
+                    </MenuBadgeProvider>
                   </ProtectedRoute>
                 }
               >
@@ -88,6 +92,7 @@ function App() {
                 <Route path="series/new" element={<SeriesEdit />} />
                 <Route path="series/:id" element={<SeriesEdit />} />
                 <Route path="series/:id/edit" element={<SeriesEdit />} />
+                <Route path="media" element={<MediaList />} />
               </Route>
             </Routes>
           </Suspense>

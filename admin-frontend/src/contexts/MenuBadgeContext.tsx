@@ -1,0 +1,99 @@
+/**
+ * Menu Badge Context
+ * 管理菜单徽章数据（待处理数量等）
+ */
+
+import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import axios from '@/utils/axios';
+
+interface BadgeData {
+  pendingComments: number;
+  pendingVideos: number;
+  pendingUsers: number;
+  pendingBanners: number;
+}
+
+interface MenuBadgeContextType {
+  badges: BadgeData;
+  refreshBadges: () => Promise<void>;
+  loading: boolean;
+}
+
+const MenuBadgeContext = createContext<MenuBadgeContextType | undefined>(undefined);
+
+export const useMenuBadges = () => {
+  const context = useContext(MenuBadgeContext);
+  if (!context) {
+    throw new Error('useMenuBadges must be used within MenuBadgeProvider');
+  }
+  return context;
+};
+
+interface MenuBadgeProviderProps {
+  children: ReactNode;
+}
+
+export const MenuBadgeProvider = ({ children }: MenuBadgeProviderProps) => {
+  const [badges, setBadges] = useState<BadgeData>({
+    pendingComments: 0,
+    pendingVideos: 0,
+    pendingUsers: 0,
+    pendingBanners: 0,
+  });
+  const [loading, setLoading] = useState(false);
+
+  const fetchBadges = async () => {
+    try {
+      setLoading(true);
+      
+      // 并行获取各类待处理数量
+      const [commentsRes, videosRes] = await Promise.allSettled([
+        // 待审核评论
+        axios.get('/admin/comments', { 
+          params: { page: 1, page_size: 1, status: 'pending' } 
+        }),
+        // 待审核视频（假设有这个状态）
+        axios.get('/admin/videos', { 
+          params: { page: 1, page_size: 1, status: 'pending' } 
+        }),
+      ]);
+
+      setBadges({
+        pendingComments: 
+          commentsRes.status === 'fulfilled' 
+            ? commentsRes.value.data?.total || 0 
+            : 0,
+        pendingVideos: 
+          videosRes.status === 'fulfilled' 
+            ? videosRes.value.data?.total || 0 
+            : 0,
+        pendingUsers: 0, // 可以添加待审核用户逻辑
+        pendingBanners: 0,
+      });
+    } catch (error) {
+      console.error('Failed to fetch menu badges:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const refreshBadges = async () => {
+    await fetchBadges();
+  };
+
+  useEffect(() => {
+    fetchBadges();
+
+    // 每 5 分钟自动刷新一次
+    const interval = setInterval(fetchBadges, 5 * 60 * 1000);
+
+    return () => clearInterval(interval);
+  }, []);
+
+  return (
+    <MenuBadgeContext.Provider value={{ badges, refreshBadges, loading }}>
+      {children}
+    </MenuBadgeContext.Provider>
+  );
+};
+

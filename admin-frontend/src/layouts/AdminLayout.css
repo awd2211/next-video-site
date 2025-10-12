@@ -1,0 +1,645 @@
+/**
+ * AWS Cloudscape 风格的侧边栏样式
+ */
+
+/* ============ Sidebar 容器 ============ */
+.admin-sidebar {
+  box-shadow: 2px 0 8px rgba(0, 0, 0, 0.15);
+  z-index: 10;
+  position: fixed !important;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  height: 100vh !important;
+  overflow: hidden;
+}
+
+/* ============ 拖拽手柄 ============ */
+.sidebar-resize-handle {
+  z-index: 100;
+  transition: background 0.2s;
+}
+
+.sidebar-resize-handle:hover {
+  background: rgba(0, 115, 187, 0.3) !important;
+}
+
+.sidebar-resize-handle:hover > div {
+  opacity: 1 !important;
+  background: rgba(255, 255, 255, 0.4) !important;
+}
+
+/* 拖拽中的全局样式 */
+body.resizing {
+  cursor: col-resize !important;
+  user-select: none !important;
+}
+
+body.resizing * {
+  cursor: col-resize !important;
+}
+
+.admin-sidebar .ant-layout-sider-children {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+}
+
+/* ============ Logo 区域 ============ */
+.sidebar-logo {
+  height: 64px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 24px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  transition: padding 0.2s, border-color 0.3s;
+  flex-shrink: 0; /* 防止压缩 */
+}
+
+.admin-sidebar.ant-layout-sider-collapsed .sidebar-logo {
+  padding: 0 16px;
+  height: 64px; /* 确保收起时高度一致 */
+}
+
+.logo-title {
+  color: white;
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+.logo-subtitle {
+  color: rgba(255, 255, 255, 0.65);
+  font-size: 12px;
+  line-height: 1.2;
+  margin-top: 2px;
+}
+
+/* ============ 搜索栏 ============ */
+.sidebar-search {
+  padding: 16px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  flex-shrink: 0; /* 防止压缩 */
+  min-height: 68px; /* 固定高度 */
+}
+
+.sidebar-search .ant-input-affix-wrapper {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: transparent;
+  transition: all 0.3s;
+  border-radius: 8px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+.sidebar-search .ant-input-affix-wrapper:hover {
+  background: rgba(255, 255, 255, 0.12);
+  border-color: transparent;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
+}
+
+.sidebar-search .ant-input-affix-wrapper-focused {
+  background: rgba(255, 255, 255, 0.15);
+  border-color: #0073bb;
+  box-shadow: 0 0 0 2px rgba(0, 115, 187, 0.3), 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.sidebar-search .ant-input {
+  background: transparent;
+  color: white;
+}
+
+.sidebar-search .ant-input::placeholder {
+  color: rgba(255, 255, 255, 0.45);
+}
+
+.sidebar-search .ant-input-prefix {
+  color: rgba(255, 255, 255, 0.45);
+}
+
+/* ============ 菜单容器 ============ */
+.sidebar-menu {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  border-right: none !important;
+  padding: 8px 0;
+}
+
+/* 自定义滚动条 */
+.sidebar-menu::-webkit-scrollbar {
+  width: 6px;
+}
+
+.sidebar-menu::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.sidebar-menu::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 3px;
+}
+
+.sidebar-menu::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+/* ============ 菜单分组标题 ============ */
+.menu-group-label {
+  color: rgba(255, 255, 255, 0.50);
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1.2px;
+  padding: 16px 0 8px 0;
+  margin-top: 16px;
+  user-select: none;
+}
+
+/* 第一个分组无上边距 */
+.ant-menu-item-group:first-child .menu-group-label {
+  margin-top: 0;
+}
+
+.ant-menu-dark .ant-menu-item-group-title {
+  padding: 12px 16px 8px 16px;
+  background: rgba(255, 255, 255, 0.03);
+  margin: 12px 8px 4px 8px;
+  border-radius: 4px;
+}
+
+/* ============ 菜单项 ============ */
+.ant-menu-dark.ant-menu-inline .ant-menu-item {
+  margin: 3px 12px;
+  width: calc(100% - 24px);
+  height: 40px;
+  line-height: 40px;
+  border-radius: 8px;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+}
+
+.ant-menu-dark.ant-menu-inline .ant-menu-item:hover {
+  background: rgba(255, 255, 255, 0.1);
+  transform: translateX(2px);
+}
+
+/* AWS 风格的选中状态 */
+.ant-menu-dark.ant-menu-inline .ant-menu-item-selected {
+  background: rgba(0, 115, 187, 0.3) !important;
+  border-left: 4px solid #0073bb;
+  color: #ffffff !important;
+  font-weight: 600;
+  box-shadow: inset 0 0 0 1px rgba(0, 115, 187, 0.2);
+}
+
+.ant-menu-dark.ant-menu-inline .ant-menu-item-selected::after {
+  display: none;
+}
+
+.ant-menu-dark.ant-menu-inline .ant-menu-item-selected:hover {
+  transform: none;
+}
+
+/* 收起状态下的选中样式优化 */
+.admin-sidebar.ant-layout-sider-collapsed .ant-menu-item-selected {
+  background: rgba(0, 115, 187, 0.35) !important;
+  border-left: 4px solid #0073bb !important;
+  border-radius: 8px !important;
+}
+
+.admin-sidebar.ant-layout-sider-collapsed .ant-menu-item-selected .anticon {
+  color: #85b7ed !important;
+  font-size: 26px !important;
+}
+
+/* 菜单项内容布局 */
+.menu-item-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+}
+
+/* ============ 菜单图标 ============ */
+.ant-menu-dark .ant-menu-item .anticon {
+  font-size: 18px;
+  min-width: 18px;
+  margin-right: 12px;
+  transition: all 0.3s;
+}
+
+.ant-menu-dark.ant-menu-inline .ant-menu-item-selected .anticon {
+  color: #85b7ed;
+}
+
+.ant-menu-item-group-title .anticon {
+  margin-right: 8px;
+}
+
+/* ============ 徽章样式 ============ */
+.ant-badge-count {
+  font-size: 11px;
+  height: 20px;
+  min-width: 20px;
+  line-height: 20px;
+  padding: 0 6px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  font-weight: 600;
+  border-radius: 10px;
+}
+
+/* ============ 分割线 ============ */
+.ant-menu-dark .ant-menu-item-divider {
+  background: rgba(255, 255, 255, 0.08);
+  margin: 8px 16px;
+}
+
+body:not(.dark) .ant-menu:not(.ant-menu-dark) .ant-menu-item-divider {
+  background: rgba(55, 53, 47, 0.1);
+  margin: 8px 16px;
+}
+
+/* ============ 收起状态优化 ============ */
+.admin-sidebar.ant-layout-sider-collapsed .ant-menu-inline {
+  text-align: center;
+  padding: 0;
+}
+
+/* 收起时完全隐藏分组标题 */
+.admin-sidebar.ant-layout-sider-collapsed .ant-menu-item-group-title {
+  display: none !important;
+}
+
+/* ============ 收起状态统一样式（明亮+暗色）============ */
+.admin-sidebar.ant-layout-sider-collapsed .ant-menu-item {
+  padding: 0 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  height: 48px !important;
+  margin: 6px auto !important;
+  width: 48px !important;
+  border-left: none !important;
+  overflow: visible !important;
+}
+
+/* 收起状态下确保图标容器可见 */
+.admin-sidebar.ant-layout-sider-collapsed .ant-menu-item > .ant-menu-title-content {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 100% !important;
+  height: 100% !important;
+  overflow: visible !important;
+}
+
+.admin-sidebar.ant-layout-sider-collapsed .ant-menu-item > .ant-menu-title-content > span {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 100% !important;
+  height: 100% !important;
+}
+
+/* 收起状态下放大图标并确保可见 */
+.admin-sidebar.ant-layout-sider-collapsed .ant-menu-item .anticon {
+  font-size: 20px !important;
+  margin: 0 !important;
+  min-width: auto !important;
+  color: rgba(255, 255, 255, 0.85) !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: auto !important;
+  height: auto !important;
+}
+
+/* 确保 SVG 图标可见 */
+.admin-sidebar.ant-layout-sider-collapsed .ant-menu-item .anticon svg {
+  display: block !important;
+  width: 1em !important;
+  height: 1em !important;
+}
+
+/* 隐藏收起状态下的文本内容 */
+.admin-sidebar.ant-layout-sider-collapsed .ant-menu-item .menu-item-content {
+  display: none !important;
+}
+
+/* 收起状态悬停效果 */
+.admin-sidebar.ant-layout-sider-collapsed .ant-menu-item:hover {
+  background: rgba(255, 255, 255, 0.15) !important;
+}
+
+.admin-sidebar.ant-layout-sider-collapsed .ant-menu-item:hover .anticon {
+  color: #ffffff !important;
+  transform: scale(1.1);
+}
+
+/* 收起状态选中样式 */
+.admin-sidebar.ant-layout-sider-collapsed .ant-menu-item-selected {
+  background: rgba(0, 115, 187, 0.4) !important;
+  border-left: none !important;
+  border-radius: 8px !important;
+}
+
+.admin-sidebar.ant-layout-sider-collapsed .ant-menu-item-selected .anticon {
+  color: #ffffff !important;
+  font-size: 22px !important;
+  transform: scale(1);
+}
+
+/* 收起时隐藏徽章 */
+.admin-sidebar.ant-layout-sider-collapsed .ant-badge {
+  display: none !important;
+}
+
+/* 收起时隐藏分割线 */
+.admin-sidebar.ant-layout-sider-collapsed .ant-menu-item-divider {
+  display: none !important;
+}
+
+/* 明亮主题收起状态 */
+body:not(.dark) .admin-sidebar.ant-layout-sider-collapsed .ant-menu-item {
+  background: transparent;
+}
+
+body:not(.dark) .admin-sidebar.ant-layout-sider-collapsed .ant-menu-item:hover {
+  background: rgba(55, 53, 47, 0.1) !important;
+}
+
+body:not(.dark) .admin-sidebar.ant-layout-sider-collapsed .ant-menu-item-selected {
+  background: rgba(0, 115, 187, 0.15) !important;
+  border-radius: 8px !important;
+}
+
+body:not(.dark) .admin-sidebar.ant-layout-sider-collapsed .ant-menu-item .anticon {
+  color: rgba(55, 53, 47, 0.65) !important;
+  font-size: 20px !important;
+}
+
+body:not(.dark) .admin-sidebar.ant-layout-sider-collapsed .ant-menu-item:hover .anticon {
+  color: rgba(55, 53, 47, 0.85) !important;
+  transform: scale(1.1);
+}
+
+body:not(.dark) .admin-sidebar.ant-layout-sider-collapsed .ant-menu-item-selected .anticon {
+  color: #0073bb !important;
+  font-size: 22px !important;
+}
+
+/* ============ 收起/展开按钮 ============ */
+.ant-layout-sider-trigger {
+  background: rgba(0, 0, 0, 0.2);
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  transition: all 0.3s;
+}
+
+.ant-layout-sider-trigger:hover {
+  background: rgba(0, 0, 0, 0.3);
+}
+
+/* ============ 主内容区域适配（侧边栏固定后）============ */
+/* 动态宽度通过内联样式控制，这里只保留收起状态 */
+body .ant-layout > .admin-sidebar.ant-layout-sider-collapsed ~ .ant-layout {
+  margin-left: 80px !important; /* 侧边栏收起宽度 */
+  transition: margin-left 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* ============ 响应式优化 ============ */
+@media (max-width: 768px) {
+  /* 移动端侧边栏不固定 */
+  .admin-sidebar {
+    position: relative !important;
+    height: auto !important;
+  }
+
+  body .ant-layout > .admin-sidebar ~ .ant-layout,
+  body .ant-layout > .admin-sidebar.ant-layout-sider-collapsed ~ .ant-layout {
+    margin-left: 0 !important;
+  }
+
+  .sidebar-logo {
+    padding: 0 16px;
+  }
+
+  .logo-title {
+    font-size: 14px;
+  }
+
+  .logo-subtitle {
+    font-size: 11px;
+  }
+
+  .sidebar-search {
+    padding: 12px;
+  }
+
+  .ant-menu-dark.ant-menu-inline .ant-menu-item {
+    margin: 2px 4px;
+    width: calc(100% - 8px);
+  }
+}
+
+/* ============ 明亮模式优化（Notion 风格）============ */
+body:not(.dark) .admin-sidebar {
+  background: #f7f6f3 !important;
+}
+
+body:not(.dark) .admin-sidebar .ant-layout-sider-children {
+  background: #f7f6f3;
+}
+
+body:not(.dark) .sidebar-logo {
+  border-bottom-color: rgba(55, 53, 47, 0.09);
+}
+
+body:not(.dark) .logo-title {
+  color: #37352f;
+}
+
+body:not(.dark) .logo-subtitle {
+  color: rgba(55, 53, 47, 0.65);
+}
+
+body:not(.dark) .sidebar-search {
+  border-bottom-color: rgba(55, 53, 47, 0.09);
+}
+
+body:not(.dark) .sidebar-search .ant-input-affix-wrapper {
+  background: rgba(55, 53, 47, 0.06);
+  border-color: transparent;
+  border-radius: 8px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+}
+
+body:not(.dark) .sidebar-search .ant-input-affix-wrapper:hover {
+  background: rgba(55, 53, 47, 0.08);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.06);
+}
+
+body:not(.dark) .sidebar-search .ant-input {
+  color: #37352f;
+}
+
+body:not(.dark) .sidebar-search .ant-input::placeholder {
+  color: rgba(55, 53, 47, 0.4);
+}
+
+body:not(.dark) .sidebar-search .ant-input-prefix {
+  color: rgba(55, 53, 47, 0.4);
+}
+
+body:not(.dark) .ant-menu:not(.ant-menu-dark) {
+  background: transparent !important;
+}
+
+body:not(.dark) .ant-menu:not(.ant-menu-dark) .ant-menu-item {
+  color: #37352f;
+  margin: 3px 12px;
+  width: calc(100% - 24px);
+  height: 40px;
+  line-height: 40px;
+  border-radius: 8px;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+}
+
+body:not(.dark) .ant-menu:not(.ant-menu-dark) .ant-menu-item:hover {
+  background: rgba(55, 53, 47, 0.06) !important;
+  transform: translateX(2px);
+}
+
+body:not(.dark) .ant-menu:not(.ant-menu-dark) .ant-menu-item-selected {
+  background: rgba(0, 115, 187, 0.12) !important;
+  color: #0073bb !important;
+  border-left: 4px solid #0073bb;
+  font-weight: 600;
+  box-shadow: inset 0 0 0 1px rgba(0, 115, 187, 0.15);
+}
+
+body:not(.dark) .ant-menu:not(.ant-menu-dark) .ant-menu-item-selected::after {
+  display: none;
+}
+
+body:not(.dark) .ant-menu:not(.ant-menu-dark) .ant-menu-item-selected:hover {
+  transform: none;
+}
+
+/* 明亮主题菜单图标 */
+body:not(.dark) .ant-menu:not(.ant-menu-dark) .ant-menu-item .anticon {
+  font-size: 18px;
+  min-width: 18px;
+  margin-right: 12px;
+  transition: all 0.3s;
+}
+
+body:not(.dark) .ant-menu:not(.ant-menu-dark) .ant-menu-item-selected .anticon {
+  color: #0073bb;
+}
+
+body:not(.dark) .menu-group-label {
+  color: rgba(55, 53, 47, 0.5);
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1.2px;
+  padding: 16px 0 8px 0;
+  margin-top: 16px;
+}
+
+/* 明亮主题分组标题 */
+body:not(.dark) .ant-menu-item-group-title {
+  padding: 12px 16px 8px 16px;
+  background: transparent;
+  margin: 12px 8px 4px 8px;
+  border-radius: 4px;
+}
+
+body:not(.dark) .ant-layout-sider-trigger {
+  background: rgba(55, 53, 47, 0.06);
+  border-top-color: rgba(55, 53, 47, 0.09);
+  color: #37352f;
+}
+
+body:not(.dark) .ant-layout-sider-trigger:hover {
+  background: rgba(55, 53, 47, 0.1);
+}
+
+/* ============ 暗黑模式优化（AWS 深蓝黑）============ */
+body.dark .admin-sidebar {
+  background: #0f1b2a;
+}
+
+body.dark .sidebar-logo {
+  border-bottom-color: rgba(255, 255, 255, 0.12);
+}
+
+body.dark .sidebar-search {
+  border-bottom-color: rgba(255, 255, 255, 0.1);
+}
+
+body.dark .sidebar-search .ant-input-affix-wrapper {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+body.dark .sidebar-search .ant-input-affix-wrapper:hover {
+  background: rgba(255, 255, 255, 0.12);
+}
+
+body.dark .ant-menu-dark.ant-menu-inline .ant-menu-item-selected {
+  background: rgba(83, 159, 229, 0.2) !important; /* AWS Blue Dark */
+  border-left-color: #539fe5;
+}
+
+/* ============ 焦点状态 ============ */
+.sidebar-search .ant-input-affix-wrapper:focus-within {
+  border-color: #0073bb;
+  box-shadow: 0 0 0 2px rgba(0, 115, 187, 0.2);
+}
+
+body.dark .sidebar-search .ant-input-affix-wrapper:focus-within {
+  border-color: #539fe5;
+  box-shadow: 0 0 0 2px rgba(83, 159, 229, 0.2);
+}
+
+/* ============ 动画效果 ============ */
+.ant-layout-sider {
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.sidebar-logo,
+.logo-title,
+.logo-subtitle,
+.sidebar-search,
+.ant-menu-item,
+.menu-group-label {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* ============ Tooltip 样式（收起状态）============ */
+.ant-tooltip {
+  z-index: 1050;
+}
+
+.ant-tooltip-inner {
+  background: #0f1b2a;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+}
+
+.ant-tooltip-arrow-content {
+  background: #0f1b2a;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+body.dark .ant-tooltip-inner {
+  background: #192534;
+}
+
+body.dark .ant-tooltip-arrow-content {
+  background: #192534;
+}
+

@@ -15,6 +15,7 @@ if TYPE_CHECKING:
     from app.models.content import Report
     from app.models.danmaku import Danmaku
     from app.models.favorite_folder import FavoriteFolder
+    from app.models.media import Media
     from app.models.share import VideoShare
     from app.models.user_activity import Favorite, WatchHistory
 
@@ -89,4 +90,7 @@ class AdminUser(Base):
     role: Mapped[Optional[Role]] = relationship("Role", back_populates="admin_users")
     operation_logs: Mapped[list[OperationLog]] = relationship(
         "OperationLog", back_populates="admin_user", cascade="all, delete-orphan"
+    )
+    uploaded_media: Mapped[list["Media"]] = relationship(
+        "Media", back_populates="uploader", cascade="all, delete-orphan"
     )

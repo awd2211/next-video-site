@@ -24,6 +24,7 @@ from app.admin import email_config as admin_email
 from app.admin import image_upload as admin_image_upload
 from app.admin import ip_blacklist as admin_ip_blacklist
 from app.admin import logs as admin_logs
+from app.admin import media as admin_media
 from app.admin import operations as admin_operations
 from app.admin import series as admin_series
 from app.admin import settings as admin_settings
@@ -36,6 +37,7 @@ from app.admin import users as admin_users
 from app.admin import videos as admin_videos
 from app.api import (
     actors,
+    announcements,
     auth,
     captcha,
     categories,
@@ -362,6 +364,11 @@ app.include_router(
 app.include_router(
     series.router, prefix=f"{settings.API_V1_PREFIX}/series", tags=["Series"]
 )
+app.include_router(
+    announcements.router,
+    prefix=f"{settings.API_V1_PREFIX}/announcements",
+    tags=["Announcements"],
+)
 
 # Admin API routes
 app.include_router(
@@ -478,6 +485,11 @@ app.include_router(
     admin_batch.router,
     prefix=f"{settings.API_V1_PREFIX}/admin/batch",
     tags=["Admin - Batch Operations"],
+)
+app.include_router(
+    admin_media.router,
+    prefix=f"{settings.API_V1_PREFIX}/admin",
+    tags=["Admin - Media"],
 )
 
 

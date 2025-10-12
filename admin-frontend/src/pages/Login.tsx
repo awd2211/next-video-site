@@ -1,19 +1,28 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Form, Input, Button, Card, message, Space } from 'antd'
-import { UserOutlined, LockOutlined, SafetyOutlined, ReloadOutlined } from '@ant-design/icons'
+import { Form, Input, Button, Card, message, Space, Switch } from 'antd'
+import { UserOutlined, LockOutlined, SafetyOutlined, ReloadOutlined, SunOutlined, MoonOutlined, VideoCameraOutlined } from '@ant-design/icons'
 import axios from 'axios'  // Use native axios for login, not the intercepted instance
+import { useTheme } from '../contexts/ThemeContext'
+import './Login.css'
 
 const Login = () => {
   const navigate = useNavigate()
+  const { theme, toggleTheme } = useTheme()
   const [loading, setLoading] = useState(false)
   const [captchaId, setCaptchaId] = useState('')
   const [captchaUrl, setCaptchaUrl] = useState('')
   const [captchaLoading, setCaptchaLoading] = useState(false)
+  const [form] = Form.useForm()
 
-  // Load captcha on component mount
+  // Load captcha and saved username on component mount
   useEffect(() => {
     loadCaptcha()
+    // Load saved username
+    const savedUsername = localStorage.getItem('admin_saved_username')
+    if (savedUsername) {
+      form.setFieldsValue({ username: savedUsername })
+    }
   }, [])
 
   const loadCaptcha = async () => {
@@ -49,6 +58,9 @@ const Login = () => {
       localStorage.setItem('admin_access_token', response.data.access_token)
       localStorage.setItem('admin_refresh_token', response.data.refresh_token)
 
+      // Save username for next time
+      localStorage.setItem('admin_saved_username', values.username)
+
       message.success('登录成功！')
 
       // Use navigate instead of window.location.href to avoid page reload
@@ -60,34 +72,54 @@ const Login = () => {
       message.error(error.response?.data?.detail || '登录失败，请检查用户名和密码')
       // Reload captcha on error
       loadCaptcha()
+      // Clear password field
+      form.setFieldsValue({ captcha_code: '' })
     } finally {
       setLoading(false)
     }
   }
 
   return (
-    <div style={{
-      display: 'flex',
-      justifyContent: 'center',
-      alignItems: 'center',
-      minHeight: '100vh',
-      background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'
-    }}>
-      <Card
-        style={{
-          width: 450,
-          boxShadow: '0 20px 60px rgba(0,0,0,0.3)',
-          borderRadius: '16px'
-        }}
-      >
-        <div style={{ textAlign: 'center', marginBottom: 32 }}>
-          <h1 style={{ fontSize: 28, fontWeight: 'bold', color: '#1890ff', marginBottom: 8 }}>
-            视频管理后台
-          </h1>
-          <p style={{ color: '#8c8c8c', fontSize: 14 }}>Video Site Admin Panel</p>
+    <div className={`login-container ${theme}`}>
+      {/* Theme toggle button */}
+      <div className="theme-toggle">
+        <Switch
+          checked={theme === 'dark'}
+          onChange={toggleTheme}
+          checkedChildren={<MoonOutlined />}
+          unCheckedChildren={<SunOutlined />}
+        />
+      </div>
+
+      {/* Animated background particles */}
+      <div className="particles">
+        {[...Array(20)].map((_, i) => (
+          <div key={i} className="particle" style={{
+            left: `${Math.random() * 100}%`,
+            top: `${Math.random() * 100}%`,
+            animationDelay: `${Math.random() * 20}s`,
+            animationDuration: `${15 + Math.random() * 10}s`
+          }} />
+        ))}
+      </div>
+
+      <Card className="login-card">
+        {/* Logo and Title */}
+        <div className="login-header">
+          <div className="logo-container">
+            <VideoCameraOutlined className="logo-icon" />
+          </div>
+          <h1 className="login-title">视频管理后台</h1>
+          <p className="login-subtitle">Video Site Admin Panel</p>
         </div>
 
-        <Form name="login" onFinish={onFinish} autoComplete="off">
+        <Form
+          form={form}
+          name="login"
+          onFinish={onFinish}
+          autoComplete="off"
+          className="login-form"
+        >
           <Form.Item
             name="username"
             rules={[{ required: true, message: '请输入用户名！' }]}
@@ -162,16 +194,28 @@ const Login = () => {
               block
               size="large"
               loading={loading}
-              style={{ height: 48, fontSize: 16, fontWeight: 500 }}
+              className="login-button"
             >
-              登 录
+              {loading ? '登录中...' : '登 录'}
             </Button>
           </Form.Item>
         </Form>
 
-        <div style={{ marginTop: 24, textAlign: 'center', fontSize: 13, color: '#8c8c8c' }}>
-          <p style={{ marginBottom: 4 }}>默认账号：admin / admin123456</p>
-          <p>编辑账号：editor / editor123456</p>
+        {/* Default account info */}
+        <div className="account-info">
+          <div className="account-info-item">
+            <span className="account-label">管理员：</span>
+            <span className="account-value">admin / admin123456</span>
+          </div>
+          <div className="account-info-item">
+            <span className="account-label">编辑员：</span>
+            <span className="account-value">editor / editor123456</span>
+          </div>
+        </div>
+
+        {/* Footer */}
+        <div className="login-footer">
+          <p>© 2025 Video Site. All rights reserved.</p>
         </div>
       </Card>
     </div>

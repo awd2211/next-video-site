@@ -25,6 +25,7 @@ const ContactUs = lazy(() => import('./pages/ContactUs'))
 const FAQ = lazy(() => import('./pages/FAQ'))
 const PrivacyPolicy = lazy(() => import('./pages/PrivacyPolicy'))
 const TermsOfService = lazy(() => import('./pages/TermsOfService'))
+const Announcements = lazy(() => import('./pages/Announcements'))
 
 // Preload critical routes
 const preloadCriticalRoutes = () => {
@@ -78,6 +79,7 @@ function App() {
               <Route path="faq" element={<FAQ />} />
               <Route path="privacy" element={<PrivacyPolicy />} />
               <Route path="terms" element={<TermsOfService />} />
+              <Route path="announcements" element={<Announcements />} />
             </Route>
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />

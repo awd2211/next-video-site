@@ -8,11 +8,18 @@
     "announcements": "Announcements",
     "actors": "Actors",
     "directors": "Directors",
+    "media": "Media",
     "statistics": "Statistics",
     "settings": "Settings",
     "logs": "Logs",
     "ipBlacklist": "IP Blacklist",
-    "series": "Series"
+    "series": "Series",
+    "searchPlaceholder": "Search menu...",
+    "groupOverview": "Overview",
+    "groupContent": "Content Management",
+    "groupCommunity": "Users & Community",
+    "groupResources": "Resource Library",
+    "groupSystem": "System"
   },
   "breadcrumb": {
     "home": "Dashboard",
@@ -25,6 +32,7 @@
     "announcements": "Announcements",
     "actors": "Actors",
     "directors": "Directors",
+    "media": "Media",
     "statistics": "Statistics",
     "settings": "Settings",
     "logs": "Logs",
@@ -56,6 +64,27 @@
     "items": "items",
     "logout": "Logout",
     "adminPanel": "Admin Panel"
+  },
+  "settings": {
+    "title": "Settings",
+    "searchPlaceholder": "Search settings...",
+    "groups": {
+      "basic": "Basic Settings",
+      "features": "Feature Settings",
+      "advanced": "Advanced Settings"
+    },
+    "sections": {
+      "siteInfo": "Site Information",
+      "seo": "SEO Settings",
+      "locale": "Locale & Region",
+      "video": "Video Settings",
+      "comment": "Comment Settings",
+      "user": "User Settings",
+      "upload": "Upload Settings",
+      "email": "Email Service",
+      "security": "Security",
+      "other": "Other Settings"
+    }
   },
   "dashboard": {
     "title": "Overview",

@@ -7,6 +7,7 @@ import VideoCard from '@/components/VideoCard'
 import HeroCarousel from '@/components/HeroCarousel'
 import CategoryNav from '@/components/CategoryNav'
 import ContinueWatching from '@/components/ContinueWatching'
+import AnnouncementBanner from '@/components/AnnouncementBanner'
 import { VideoCardSkeleton, HeroSkeleton } from '@/components/Skeleton'
 import EmptyState from '@/components/EmptyState'
 import ErrorState from '@/components/ErrorState'
@@ -173,6 +174,9 @@ const Home = () => {
 
       <BackToTop />
       <div className="space-y-12">
+      {/* Announcement Banner */}
+      <AnnouncementBanner />
+
       {/* Hero Carousel */}
       <section>
         {featuredLoading ? (

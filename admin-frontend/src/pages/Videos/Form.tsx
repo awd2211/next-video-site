@@ -16,7 +16,6 @@ import {
 } from 'antd'
 import { SaveOutlined, ArrowLeftOutlined } from '@ant-design/icons'
 import { useQuery } from '@tanstack/react-query'
-import { useTranslation } from 'react-i18next'
 import { useHotkeys } from 'react-hotkeys-hook'
 import axios from '@/utils/axios'
 import dayjs from 'dayjs'
@@ -26,7 +25,6 @@ const { TextArea } = Input
 const { Option } = Select
 
 const VideoForm = () => {
-  const { t } = useTranslation()
   const navigate = useNavigate()
   const { id } = useParams()
   const [form] = Form.useForm()

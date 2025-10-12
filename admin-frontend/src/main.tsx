@@ -6,6 +6,7 @@ import zhCN from 'antd/locale/zh_CN'
 import enUS from 'antd/locale/en_US'
 import { LanguageProvider, useLanguage } from './contexts/LanguageContext'
 import { ThemeProvider, useTheme } from './contexts/ThemeContext'
+import { getAWSThemeConfig } from './styles/awsTheme'
 import './i18n/config' // Initialize i18next
 import App from './App.tsx'
 import './index.css'
@@ -31,14 +32,14 @@ const AppWithProviders = () => {
   const { theme } = useTheme();
   const antdLocale = language === 'zh-CN' ? zhCN : enUS;
 
+  const isDark = theme === 'dark';
+  
   return (
     <ConfigProvider
       locale={antdLocale}
       theme={{
-        algorithm: theme === 'dark' ? antdTheme.darkAlgorithm : antdTheme.defaultAlgorithm,
-        token: {
-          colorPrimary: '#1890ff',
-        },
+        algorithm: isDark ? antdTheme.darkAlgorithm : antdTheme.defaultAlgorithm,
+        ...getAWSThemeConfig(isDark),
       }}
     >
       <App />

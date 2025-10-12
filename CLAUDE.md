@@ -350,3 +350,17 @@ await client.flushdb()
 - **Operation logs** are automatically recorded for admin actions via middleware
 - **Database pool** is optimized (20+40 connections) - don't create manual connections
 - **Use `pnpm`** not npm for frontend dependencies
+- **Code formatting**: Use `make format-backend` before committing Python code (Black + isort)
+- **i18n changes**: Update both `en-US.json` and `zh-CN.json` when adding new UI text
+
+## Recent Improvements
+
+This project has recently received major enhancements including:
+- Full internationalization (i18n) support with English and Chinese locales
+- Dark/light theme implementation across both frontends
+- Enhanced UX improvements in admin panel (Videos, Users, Banners pages)
+- Fixed pagination issues in admin/videos endpoint
+- Improved caching system with proper type validation
+- Comprehensive API testing infrastructure (see `backend/tests/`)
+
+For detailed feature documentation, see [FEATURE_SHOWCASE.md](FEATURE_SHOWCASE.md) and [README.md](README.md).

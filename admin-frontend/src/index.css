@@ -1,28 +1,215 @@
+/**
+ * AWS Cloudscape Design System - Global Styles
+ * Reference: https://cloudscape.design/
+ */
+
 body {
   margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
-    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
-    sans-serif;
+  /* AWS 官方字体栈 */
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Helvetica Neue", Arial, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  font-size: 14px;
+  line-height: 1.5714;
 }
 
-/* NProgress loading bar customization */
+/* ============ NProgress Loading Bar (AWS Style) ============ */
 #nprogress .bar {
-  background: #1890ff !important;
+  background: #0073bb !important;  /* AWS Blue */
   height: 3px !important;
   z-index: 9999 !important;
 }
 
 #nprogress .peg {
-  box-shadow: 0 0 10px #1890ff, 0 0 5px #1890ff !important;
+  box-shadow: 0 0 10px #0073bb, 0 0 5px #0073bb !important;
+}
+
+#nprogress .spinner-icon {
+  border-top-color: #0073bb !important;
+  border-left-color: #0073bb !important;
 }
 
 /* Dark mode progress bar */
 body.dark #nprogress .bar {
-  background: #177ddc !important;
+  background: #539fe5 !important;  /* AWS Blue Dark */
 }
 
+body.dark #nprogress .peg {
+  box-shadow: 0 0 10px #539fe5, 0 0 5px #539fe5 !important;
+}
+
+body.dark #nprogress .spinner-icon {
+  border-top-color: #539fe5 !important;
+  border-left-color: #539fe5 !important;
+}
+
+/* ============ Root Container ============ */
 #root {
   min-height: 100vh;
+}
+
+/* ============ AWS 滚动条样式 ============ */
+::-webkit-scrollbar {
+  width: 12px;
+  height: 12px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f9fafb;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #d1d5db;
+  border-radius: 6px;
+  border: 2px solid #f9fafb;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #9ba7b6;
+}
+
+/* Dark mode scrollbar */
+body.dark ::-webkit-scrollbar-track {
+  background: #0f1b2a;
+}
+
+body.dark ::-webkit-scrollbar-thumb {
+  background: #414d5c;
+  border-color: #0f1b2a;
+}
+
+body.dark ::-webkit-scrollbar-thumb:hover {
+  background: #5a5f6a;
+}
+
+/* ============ 等宽字体样式（用于代码、日志、ID等） ============ */
+code,
+pre,
+.monospace {
+  font-family: Monaco, Menlo, Consolas, "Courier New", monospace;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ============ 文本选择颜色 ============ */
+::selection {
+  background-color: #d3ebf4;  /* AWS Blue Light */
+  color: #000716;
+}
+
+body.dark ::selection {
+  background-color: #0d2a45;  /* AWS Blue Dark BG */
+  color: #ffffff;
+}
+
+/* ============ 焦点样式（AWS 风格） ============ */
+*:focus-visible {
+  outline: 2px solid #0073bb;
+  outline-offset: 2px;
+}
+
+body.dark *:focus-visible {
+  outline-color: #539fe5;
+}
+
+/* ============ 链接样式 ============ */
+a {
+  color: #0073bb;
+  text-decoration: none;
+  transition: color 0.2s;
+}
+
+a:hover {
+  color: #005a8e;
+  text-decoration: underline;
+}
+
+body.dark a {
+  color: #539fe5;
+}
+
+body.dark a:hover {
+  color: #85b7ed;
+}
+
+/* ============ 表格数字对齐 ============ */
+.ant-table-cell {
+  font-variant-numeric: tabular-nums;
+}
+
+/* 数字列右对齐 */
+.ant-table-cell.numeric {
+  text-align: right;
+  font-family: Monaco, Menlo, Consolas, "Courier New", monospace;
+}
+
+/* ============ AWS 风格的 Badge ============ */
+.ant-badge-status-dot {
+  width: 8px;
+  height: 8px;
+}
+
+/* ============ 卡片阴影优化（AWS 风格） ============ */
+.ant-card {
+  border: 1px solid #e9ebed;
+  box-shadow: 0 0 0 1px rgba(0, 7, 22, 0.05), 0 1px 1px 0 rgba(0, 7, 22, 0.05);
+}
+
+body.dark .ant-card {
+  border-color: #2a2e33;
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.1), 0 1px 1px 0 rgba(0, 0, 0, 0.3);
+}
+
+/* ============ 按钮圆角统一（AWS 风格 8px） ============ */
+.ant-btn {
+  border-radius: 8px;
+  font-weight: 500;
+}
+
+/* ============ 输入框圆角统一 ============ */
+.ant-input,
+.ant-input-number,
+.ant-select-selector,
+.ant-picker {
+  border-radius: 8px;
+}
+
+/* ============ Modal 圆角优化 ============ */
+.ant-modal-content {
+  border-radius: 16px;
+}
+
+/* ============ 下拉菜单阴影（AWS 风格） ============ */
+.ant-dropdown,
+.ant-select-dropdown,
+.ant-picker-dropdown {
+  box-shadow: 0 4px 20px 1px rgba(0, 7, 22, 0.10);
+}
+
+body.dark .ant-dropdown,
+body.dark .ant-select-dropdown,
+body.dark .ant-picker-dropdown {
+  box-shadow: 0 4px 20px 1px rgba(0, 0, 0, 0.30);
+}
+
+/* ============ 表格紧凑布局（AWS 风格） ============ */
+.ant-table-thead > tr > th {
+  font-weight: 700;
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+/* ============ 辅助类 ============ */
+.text-monospace {
+  font-family: Monaco, Menlo, Consolas, "Courier New", monospace;
+}
+
+.text-tabular {
+  font-variant-numeric: tabular-nums;
+}
+
+/* 响应式断点辅助 */
+@media (max-width: 768px) {
+  body {
+    font-size: 13px;
+  }
 }

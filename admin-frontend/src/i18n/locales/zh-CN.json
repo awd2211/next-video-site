@@ -8,11 +8,18 @@
     "announcements": "公告管理",
     "actors": "演员管理",
     "directors": "导演管理",
+    "media": "媒体管理",
     "statistics": "数据统计",
     "settings": "系统设置",
     "logs": "操作日志",
     "ipBlacklist": "IP黑名单",
-    "series": "剧集管理"
+    "series": "剧集管理",
+    "searchPlaceholder": "搜索菜单...",
+    "groupOverview": "概览",
+    "groupContent": "内容管理",
+    "groupCommunity": "用户与社区",
+    "groupResources": "资源库",
+    "groupSystem": "系统"
   },
   "breadcrumb": {
     "home": "控制台",
@@ -25,6 +32,7 @@
     "announcements": "公告管理",
     "actors": "演员管理",
     "directors": "导演管理",
+    "media": "媒体管理",
     "statistics": "数据统计",
     "settings": "系统设置",
     "logs": "操作日志",
@@ -56,6 +64,27 @@
     "items": "项",
     "logout": "退出登录",
     "adminPanel": "管理面板"
+  },
+  "settings": {
+    "title": "系统设置",
+    "searchPlaceholder": "搜索设置...",
+    "groups": {
+      "basic": "基础设置",
+      "features": "功能设置",
+      "advanced": "高级设置"
+    },
+    "sections": {
+      "siteInfo": "网站信息",
+      "seo": "SEO优化",
+      "locale": "区域语言",
+      "video": "视频设置",
+      "comment": "评论设置",
+      "user": "用户设置",
+      "upload": "上传设置",
+      "email": "邮件服务",
+      "security": "安全配置",
+      "other": "其他设置"
+    }
   },
   "dashboard": {
     "title": "数据概览",
