@@ -1,5 +1,5 @@
 import React, { useRef, useState } from 'react'
-import { Button, Space, Popconfirm, Dropdown, Segmented } from 'antd'
+import { Button, Space, Popconfirm, Dropdown, Segmented, Badge } from 'antd'
 import type { MenuProps } from 'antd'
 import SearchInput from './SearchInput'
 import {
@@ -21,6 +21,7 @@ import {
   BarChartOutlined,
   FilterOutlined,
   TagsOutlined,
+  RestOutlined,
 } from '@ant-design/icons'
 
 interface ToolbarProps {
@@ -45,6 +46,8 @@ interface ToolbarProps {
   onOpenFilter: () => void
   hasActiveFilters: boolean
   onOpenTags?: () => void
+  onOpenRecycleBin?: () => void
+  recycleBinCount?: number
 }
 
 const Toolbar: React.FC<ToolbarProps> = ({
@@ -69,6 +72,8 @@ const Toolbar: React.FC<ToolbarProps> = ({
   onOpenFilter,
   hasActiveFilters,
   onOpenTags,
+  onOpenRecycleBin,
+  recycleBinCount = 0,
 }) => {
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [searchValue, setSearchValue] = useState('')
@@ -296,6 +301,17 @@ const Toolbar: React.FC<ToolbarProps> = ({
           >
             筛选
           </Button>
+
+          {onOpenRecycleBin && (
+            <Badge count={recycleBinCount} offset={[-5, 5]}>
+              <Button
+                icon={<RestOutlined />}
+                onClick={onOpenRecycleBin}
+              >
+                回收站
+              </Button>
+            </Badge>
+          )}
         </Space>
       </div>
     </div>

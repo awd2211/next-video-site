@@ -21,6 +21,7 @@ import ConflictModal, { type ConflictFile, type ConflictAction } from './compone
 import QuickActions from './components/QuickActions'
 import TagEditor from './components/TagEditor'
 import FileDetailsDrawer from './components/FileDetailsDrawer'
+import RecycleBin from './components/RecycleBin'
 import { useDragUpload } from './hooks/useDragUpload'
 import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts'
 import { generateSmartRename, hasFileNameConflict } from './utils/fileUtils'
@@ -105,6 +106,10 @@ const MediaManager: React.FC = () => {
   // 文件详情面板
   const [detailsDrawerVisible, setDetailsDrawerVisible] = useState(false)
   const [currentDetailItem, setCurrentDetailItem] = useState<MediaItem | null>(null)
+
+  // 回收站
+  const [recycleBinVisible, setRecycleBinVisible] = useState(false)
+  const [recycleBinCount] = useState(0) // TODO: 从API加载回收站数量
 
   // 面包屑路径
   const [breadcrumbPath, setBreadcrumbPath] = useState<{ id?: number; title: string }[]>([])
@@ -592,6 +597,46 @@ const MediaManager: React.FC = () => {
     }
   }
 
+  // 回收站 - 恢复文件
+  const handleRestoreFiles = async (ids: number[]) => {
+    try {
+      await axios.post('/api/v1/admin/media/batch/restore', { media_ids: ids })
+      message.success(`已恢复 ${ids.length} 个项目`)
+      loadFileList()
+      loadFolderTree()
+      // 重新加载回收站数量
+      // TODO: 调用API获取回收站数量
+    } catch (error: any) {
+      message.error(error.response?.data?.detail || '恢复失败')
+    }
+  }
+
+  // 回收站 - 永久删除
+  const handlePermanentDelete = async (ids: number[]) => {
+    try {
+      await axios.delete('/api/v1/admin/media/batch/delete', {
+        params: { media_ids: ids, permanent: true },
+      })
+      message.success(`已永久删除 ${ids.length} 个项目`)
+      loadFileList()
+      loadFolderTree()
+    } catch (error: any) {
+      message.error(error.response?.data?.detail || '删除失败')
+    }
+  }
+
+  // 回收站 - 清空
+  const handleClearRecycleBin = async () => {
+    try {
+      await axios.delete('/api/v1/admin/media/recycle-bin/clear')
+      message.success('回收站已清空')
+      loadFileList()
+      loadFolderTree()
+    } catch (error: any) {
+      message.error(error.response?.data?.detail || '清空失败')
+    }
+  }
+
   // 快捷键支持
   useKeyboardShortcuts({
     onSelectAll: () => {
@@ -705,6 +750,8 @@ const MediaManager: React.FC = () => {
         onOpenFilter={() => setFilterDrawerVisible(true)}
         hasActiveFilters={hasActiveFilters}
         onOpenTags={() => setTagEditorVisible(true)}
+        onOpenRecycleBin={() => setRecycleBinVisible(true)}
+        recycleBinCount={recycleBinCount}
       />
 
       <Layout className="media-manager-layout">
@@ -863,6 +910,18 @@ const MediaManager: React.FC = () => {
         onPrev={handleDetailsPrev}
         hasNext={currentDetailItem ? fileList.findIndex(i => i.id === currentDetailItem.id) < fileList.length - 1 : false}
         hasPrev={currentDetailItem ? fileList.findIndex(i => i.id === currentDetailItem.id) > 0 : false}
+      />
+
+      {/* 回收站 */}
+      <RecycleBin
+        visible={recycleBinVisible}
+        onClose={() => setRecycleBinVisible(false)}
+        onRestore={handleRestoreFiles}
+        onPermanentDelete={handlePermanentDelete}
+        onClearAll={handleClearRecycleBin}
+        onRefresh={() => {
+          // TODO: 重新加载回收站数据
+        }}
       />
 
       {/* 键盘快捷键帮助 */}
