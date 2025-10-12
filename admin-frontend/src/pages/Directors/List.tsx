@@ -20,6 +20,7 @@ import {
 } from '@ant-design/icons'
 import axios from '@/utils/axios'
 import dayjs from 'dayjs'
+import { formatAWSDate } from '@/utils/awsStyleHelpers'
 
 const { TextArea } = Input
 
@@ -151,7 +152,7 @@ const DirectorsList = () => {
       title: '出生日期',
       dataIndex: 'birth_date',
       key: 'birth_date',
-      render: (date: string) => (date ? dayjs(date).format('YYYY-MM-DD') : '-'),
+      render: (date: string) => (date ? formatAWSDate(date, 'YYYY-MM-DD') : '-'),
     },
     {
       title: '国籍',
@@ -173,7 +174,7 @@ const DirectorsList = () => {
       title: '创建时间',
       dataIndex: 'created_at',
       key: 'created_at',
-      render: (date: string) => dayjs(date).format('YYYY-MM-DD HH:mm'),
+      render: (date: string) => formatAWSDate(date, 'YYYY-MM-DD HH:mm'),
     },
     {
       title: '操作',

@@ -176,11 +176,27 @@ const UserList = () => {
       width: 100,
       render: (isActive: boolean) =>
         isActive ? (
-          <Tag color="green" icon={<CheckCircleOutlined />}>
+          <Tag
+            icon={<CheckCircleOutlined />}
+            style={{
+              backgroundColor: 'rgba(29, 129, 2, 0.1)',
+              color: '#1d8102',
+              border: '1px solid rgba(29, 129, 2, 0.2)',
+              borderRadius: '4px'
+            }}
+          >
             {t('user.active')}
           </Tag>
         ) : (
-          <Tag color="red" icon={<StopOutlined />}>
+          <Tag
+            icon={<StopOutlined />}
+            style={{
+              backgroundColor: 'rgba(209, 50, 18, 0.1)',
+              color: '#d13212',
+              border: '1px solid rgba(209, 50, 18, 0.2)',
+              borderRadius: '4px'
+            }}
+          >
             {t('user.banned')}
           </Tag>
         ),
@@ -191,10 +207,27 @@ const UserList = () => {
       key: 'is_vip',
       width: 100,
       render: (isVip: boolean, record: any) => {
-        if (!isVip) return <Tag>{t('user.normal')}</Tag>
+        if (!isVip) return (
+          <Tag style={{
+            backgroundColor: 'rgba(0, 0, 0, 0.04)',
+            color: '#787774',
+            border: '1px solid rgba(0, 0, 0, 0.1)',
+            borderRadius: '4px'
+          }}>
+            {t('user.normal')}
+          </Tag>
+        )
         const isExpired = record.vip_expires_at && dayjs(record.vip_expires_at).isBefore(dayjs())
         return (
-          <Tag color="gold" icon={<CrownOutlined />}>
+          <Tag
+            icon={<CrownOutlined />}
+            style={{
+              backgroundColor: isExpired ? 'rgba(255, 153, 0, 0.1)' : 'rgba(255, 193, 7, 0.15)',
+              color: isExpired ? '#ff9900' : '#d48806',
+              border: isExpired ? '1px solid rgba(255, 153, 0, 0.2)' : '1px solid rgba(255, 193, 7, 0.3)',
+              borderRadius: '4px'
+            }}
+          >
             {isExpired ? t('user.vipExpired') : t('user.vip')}
           </Tag>
         )
@@ -205,14 +238,22 @@ const UserList = () => {
       dataIndex: 'created_at',
       key: 'created_at',
       width: 180,
-      render: (date: string) => dayjs(date).format('YYYY-MM-DD HH:mm'),
+      render: (date: string) => (
+        <span style={{ fontFamily: 'Monaco, Menlo, Consolas, monospace', color: '#37352f', fontSize: '13px' }}>
+          {dayjs(date).format('YYYY-MM-DD HH:mm')}
+        </span>
+      ),
     },
     {
       title: t('user.lastLogin'),
       dataIndex: 'last_login_at',
       key: 'last_login_at',
       width: 180,
-      render: (date: string) => (date ? dayjs(date).format('YYYY-MM-DD HH:mm') : '-'),
+      render: (date: string) => (
+        <span style={{ fontFamily: 'Monaco, Menlo, Consolas, monospace', color: '#37352f', fontSize: '13px' }}>
+          {date ? dayjs(date).format('YYYY-MM-DD HH:mm') : '-'}
+        </span>
+      ),
     },
     {
       title: t('user.actions'),

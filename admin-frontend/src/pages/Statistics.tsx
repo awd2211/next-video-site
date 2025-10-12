@@ -94,55 +94,59 @@ const Statistics = () => {
         </Space>
       </div>
 
-      {/* Overview Statistics Cards */}
+      {/* Overview Statistics Cards - AWS Style */}
       <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
         <Col xs={24} sm={12} lg={6}>
-          <Card bordered={false} style={{ background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' }}>
+          <Card>
             <Statistic
-              title={<span style={{ color: 'rgba(255,255,255,0.85)' }}>总用户数</span>}
+              title="总用户数"
               value={overviewStats?.total_users || 0}
-              prefix={<UserOutlined />}
-              valueStyle={{ color: '#fff' }}
+              prefix={<UserOutlined style={{ color: '#0073bb', fontSize: 24 }} />}
+              valueStyle={{ color: '#0073bb' }}
               suffix={
-                <span style={{ fontSize: 14, color: 'rgba(255,255,255,0.65)' }}>
-                  <RiseOutlined /> {overviewStats?.user_growth_rate || 0}%
-                </span>
+                overviewStats?.user_growth_rate ? (
+                  <span style={{ fontSize: 14, color: '#1d8102' }}>
+                    <RiseOutlined /> {overviewStats.user_growth_rate}%
+                  </span>
+                ) : null
               }
             />
           </Card>
         </Col>
         <Col xs={24} sm={12} lg={6}>
-          <Card bordered={false} style={{ background: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)' }}>
+          <Card>
             <Statistic
-              title={<span style={{ color: 'rgba(255,255,255,0.85)' }}>总视频数</span>}
+              title="总视频数"
               value={overviewStats?.total_videos || 0}
-              prefix={<VideoCameraOutlined />}
-              valueStyle={{ color: '#fff' }}
+              prefix={<VideoCameraOutlined style={{ color: '#1d8102', fontSize: 24 }} />}
+              valueStyle={{ color: '#1d8102' }}
               suffix={
-                <span style={{ fontSize: 14, color: 'rgba(255,255,255,0.65)' }}>
-                  <RiseOutlined /> {overviewStats?.video_growth_rate || 0}%
-                </span>
+                overviewStats?.video_growth_rate ? (
+                  <span style={{ fontSize: 14, color: '#1d8102' }}>
+                    <RiseOutlined /> {overviewStats.video_growth_rate}%
+                  </span>
+                ) : null
               }
             />
           </Card>
         </Col>
         <Col xs={24} sm={12} lg={6}>
-          <Card bordered={false} style={{ background: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)' }}>
+          <Card>
             <Statistic
-              title={<span style={{ color: 'rgba(255,255,255,0.85)' }}>总评论数</span>}
+              title="总评论数"
               value={overviewStats?.total_comments || 0}
-              prefix={<CommentOutlined />}
-              valueStyle={{ color: '#fff' }}
+              prefix={<CommentOutlined style={{ color: '#ff9900', fontSize: 24 }} />}
+              valueStyle={{ color: '#ff9900' }}
             />
           </Card>
         </Col>
         <Col xs={24} sm={12} lg={6}>
-          <Card bordered={false} style={{ background: 'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)' }}>
+          <Card>
             <Statistic
-              title={<span style={{ color: 'rgba(255,255,255,0.85)' }}>总播放量</span>}
+              title="总播放量"
               value={overviewStats?.total_views || 0}
-              prefix={<EyeOutlined />}
-              valueStyle={{ color: '#fff' }}
+              prefix={<EyeOutlined style={{ color: '#d13212', fontSize: 24 }} />}
+              valueStyle={{ color: '#d13212' }}
               formatter={(value) => `${Number(value).toLocaleString()}`}
             />
           </Card>
@@ -166,7 +170,7 @@ const Statistics = () => {
                     duration: 1000,
                   },
                 }}
-                color={['#667eea', '#f093fb', '#4facfe']}
+                color={['#0073bb', '#1d8102', '#ff9900']}
                 height={300}
                 legend={{
                   position: 'top-right',
@@ -225,11 +229,12 @@ const Statistics = () => {
                 yField="views"
                 seriesField="title"
                 legend={false}
+                color="#0073bb"
                 label={{
                   position: 'top',
                   style: {
-                    fill: '#000',
-                    opacity: 0.6,
+                    fill: '#37352f',
+                    opacity: 0.8,
                   },
                   formatter: (datum: any) => datum.views.toLocaleString(),
                 }}

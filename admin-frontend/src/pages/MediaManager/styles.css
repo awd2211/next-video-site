@@ -6,14 +6,14 @@
   position: relative;
 }
 
-/* 拖拽上传遮罩层 */
+/* 拖拽上传遮罩层 - AWS Blue */
 .drag-overlay {
   position: fixed;
   top: 0;
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(24, 144, 255, 0.1);
+  background: rgba(0, 115, 187, 0.08);
   backdrop-filter: blur(4px);
   z-index: 9999;
   display: flex;
@@ -26,20 +26,21 @@
   background: white;
   padding: 48px 64px;
   border-radius: 16px;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 0 0 1px rgba(0, 7, 22, 0.05), 0 8px 24px rgba(0, 7, 22, 0.12);
   text-align: center;
-  border: 2px dashed #1890ff;
+  border: 2px dashed #0073bb;
 }
 
 .drag-overlay-content h2 {
   margin-top: 16px;
   margin-bottom: 8px;
-  color: #1890ff;
+  color: #0073bb;
   font-size: 24px;
+  font-weight: 600;
 }
 
 .drag-overlay-content p {
-  color: #8c8c8c;
+  color: #787774;
   margin: 0;
   font-size: 14px;
 }
@@ -59,7 +60,7 @@
 }
 
 .media-manager-sider {
-  border-right: 1px solid #d9d9d9;
+  border-right: 1px solid #e9e9e7;
   background: #fff;
   overflow-y: auto;
 }
@@ -67,17 +68,18 @@
 .media-manager-content {
   padding: 16px;
   overflow-y: auto;
-  background: #f0f2f5;
+  background: #f7f6f3;
 }
 
-/* Toolbar 样式 */
+/* Toolbar 样式 - AWS Style */
 .media-toolbar {
   padding: 16px;
   background: #fff;
-  border-bottom: 1px solid #d9d9d9;
+  border-bottom: 1px solid #e9e9e7;
   display: flex;
   align-items: center;
   gap: 12px;
+  box-shadow: 0 0 0 1px rgba(0, 7, 22, 0.05), 0 1px 1px 0 rgba(0, 7, 22, 0.05);
 }
 
 .media-toolbar-left {
@@ -111,8 +113,10 @@
 }
 
 .folder-tree-node.selected {
-  background: #e6f7ff;
-  color: #1890ff;
+  background: rgba(0, 115, 187, 0.12);
+  color: #0073bb;
+  border-left: 4px solid #0073bb;
+  font-weight: 600;
 }
 
 .folder-tree-node-title {
@@ -122,8 +126,9 @@
 }
 
 .folder-tree-node-count {
-  color: #8c8c8c;
+  color: #787774;
   font-size: 12px;
+  font-family: Monaco, Menlo, Consolas, monospace;
 }
 
 /* FileList 样式 */
@@ -141,21 +146,24 @@
 }
 
 .file-card {
-  border: 1px solid #d9d9d9;
+  border: 1px solid #e9e9e7;
   border-radius: 8px;
   padding: 12px;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 0 0 1px rgba(0, 7, 22, 0.05), 0 1px 1px 0 rgba(0, 7, 22, 0.05);
 }
 
 .file-card:hover {
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 0 0 1px rgba(0, 115, 187, 0.2), 0 4px 12px rgba(0, 7, 22, 0.1);
   transform: translateY(-2px);
+  border-color: rgba(0, 115, 187, 0.3);
 }
 
 .file-card.selected {
-  border-color: #1890ff;
-  background: #e6f7ff;
+  border-color: #0073bb;
+  background: rgba(0, 115, 187, 0.04);
+  box-shadow: 0 0 0 2px rgba(0, 115, 187, 0.2), 0 4px 12px rgba(0, 7, 22, 0.1);
 }
 
 .file-card-preview {
@@ -191,7 +199,7 @@
 
 .file-card-info {
   font-size: 12px;
-  color: #8c8c8c;
+  color: #787774;
 }
 
 /* UploadManager 样式 */
@@ -232,26 +240,26 @@
 
 .upload-task-info {
   font-size: 12px;
-  color: #8c8c8c;
+  color: #787774;
   display: flex;
   justify-content: space-between;
 }
 
-/* 拖拽上传区域 */
+/* 拖拽上传区域 - AWS Style */
 .drag-upload-area {
-  border: 2px dashed #d9d9d9;
+  border: 2px dashed #e9e9e7;
   border-radius: 8px;
   padding: 40px;
   text-align: center;
-  background: #fafafa;
+  background: #fafaf9;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .drag-upload-area:hover,
 .drag-upload-area.dragging {
-  border-color: #1890ff;
-  background: #e6f7ff;
+  border-color: #0073bb;
+  background: rgba(0, 115, 187, 0.04);
 }
 
 .drag-upload-area-icon {
@@ -262,16 +270,16 @@
 
 .drag-upload-area-text {
   font-size: 14px;
-  color: #595959;
+  color: #37352f;
 }
 
 .drag-upload-area-hint {
   font-size: 12px;
-  color: #8c8c8c;
+  color: #787774;
   margin-top: 8px;
 }
 
-/* 面包屑导航 */
+/* 面包屑导航 - AWS Style */
 .breadcrumb-nav {
   padding: 12px 0;
   display: flex;
@@ -281,17 +289,17 @@
 
 .breadcrumb-item {
   cursor: pointer;
-  color: #595959;
-  transition: color 0.2s;
+  color: #787774;
+  transition: color 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .breadcrumb-item:hover {
-  color: #1890ff;
+  color: #0073bb;
 }
 
 .breadcrumb-item.active {
-  color: #1890ff;
-  font-weight: 500;
+  color: #0073bb;
+  font-weight: 600;
 }
 
 /* 响应式 */

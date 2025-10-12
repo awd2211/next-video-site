@@ -27,6 +27,7 @@ import { useTranslation } from 'react-i18next'
 import axios from '@/utils/axios'
 import dayjs from 'dayjs'
 import { exportToCSV } from '@/utils/exportUtils'
+import { formatAWSDate, formatAWSNumber } from '@/utils/awsStyleHelpers'
 
 const { TextArea } = Input
 const { Option } = Select
@@ -300,6 +301,7 @@ const BannersList = () => {
       dataIndex: 'sort_order',
       key: 'sort_order',
       width: 80,
+      render: (order: number) => formatAWSNumber(order),
     },
     {
       title: '状态',
@@ -318,12 +320,18 @@ const BannersList = () => {
     {
       title: '显示时间',
       key: 'date_range',
-      width: 200,
+      width: 220,
       render: (_: any, record: any) => {
-        if (!record.start_date && !record.end_date) return '永久'
+        if (!record.start_date && !record.end_date) {
+          return <span style={{ fontFamily: 'Monaco, Menlo, Consolas, monospace', color: '#787774' }}>永久</span>
+        }
         const start = record.start_date ? dayjs(record.start_date).format('YYYY-MM-DD') : '∞'
         const end = record.end_date ? dayjs(record.end_date).format('YYYY-MM-DD') : '∞'
-        return `${start} ~ ${end}`
+        return (
+          <span style={{ fontFamily: 'Monaco, Menlo, Consolas, monospace', color: '#37352f', fontSize: '13px' }}>
+            {start} ~ {end}
+          </span>
+        )
       },
     },
     {
@@ -331,7 +339,7 @@ const BannersList = () => {
       dataIndex: 'created_at',
       key: 'created_at',
       width: 180,
-      render: (date: string) => dayjs(date).format('YYYY-MM-DD HH:mm:ss'),
+      render: (date: string) => formatAWSDate(date, 'YYYY-MM-DD HH:mm:ss'),
     },
     {
       title: '操作',

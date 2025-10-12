@@ -34,6 +34,7 @@ import ipBlacklistService, {
   IPBlacklistItem,
   AddIPBlacklistRequest,
 } from '@/services/ipBlacklistService'
+import { formatAWSDate, formatAWSNumber, AWSTag } from '@/utils/awsStyleHelpers'
 
 const IPBlacklist: React.FC = () => {
   const [loading, setLoading] = useState(false)
@@ -169,6 +170,11 @@ const IPBlacklist: React.FC = () => {
       key: 'ip',
       width: 150,
       fixed: 'left',
+      render: (ip: string) => (
+        <span style={{ fontFamily: 'Monaco, Menlo, Consolas, monospace', fontSize: '13px', color: '#37352f' }}>
+          {ip}
+        </span>
+      ),
     },
     {
       title: '封禁原因',
@@ -182,9 +188,9 @@ const IPBlacklist: React.FC = () => {
       width: 120,
       render: (_, record) =>
         record.is_permanent ? (
-          <Tag color="red">永久封禁</Tag>
+          <AWSTag type="error">永久封禁</AWSTag>
         ) : (
-          <Tag color="orange">临时封禁</Tag>
+          <AWSTag type="warning">临时封禁</AWSTag>
         ),
     },
     {
@@ -192,7 +198,10 @@ const IPBlacklist: React.FC = () => {
       dataIndex: 'banned_at',
       key: 'banned_at',
       width: 180,
-      render: (timestamp: string) => formatTimestamp(timestamp),
+      render: (timestamp: string) => {
+        const date = new Date(parseInt(timestamp) * 1000)
+        return formatAWSDate(date.toISOString(), 'YYYY-MM-DD HH:mm:ss')
+      },
     },
     {
       title: '剩余时间',
@@ -200,13 +209,14 @@ const IPBlacklist: React.FC = () => {
       width: 150,
       render: (_, record) => {
         if (record.is_permanent) {
-          return <span style={{ color: '#ff4d4f' }}>永久</span>
+          return <span style={{ color: '#d13212', fontFamily: 'Monaco, Menlo, Consolas, monospace', fontSize: '13px' }}>永久</span>
         }
         if (record.expires_at) {
           const remaining = getRemainingTime(record.expires_at)
+          const date = new Date(parseInt(record.expires_at) * 1000)
           return (
-            <Tooltip title={`到期时间: ${formatTimestamp(record.expires_at)}`}>
-              <span style={{ color: '#fa8c16' }}>{remaining}</span>
+            <Tooltip title={`到期时间: ${formatAWSDate(date.toISOString(), 'YYYY-MM-DD HH:mm:ss')}`}>
+              <span style={{ color: '#ff9900', fontFamily: 'Monaco, Menlo, Consolas, monospace', fontSize: '13px' }}>{remaining}</span>
             </Tooltip>
           )
         }
@@ -246,8 +256,8 @@ const IPBlacklist: React.FC = () => {
             <Statistic
               title="总封禁数"
               value={stats.total_blacklisted}
-              prefix={<ExclamationCircleOutlined />}
-              valueStyle={{ color: '#cf1322' }}
+              prefix={<ExclamationCircleOutlined style={{ color: '#d13212', fontSize: 24 }} />}
+              valueStyle={{ color: '#d13212', fontFamily: 'Monaco, Menlo, Consolas, monospace' }}
             />
           </Card>
         </Col>
@@ -256,8 +266,8 @@ const IPBlacklist: React.FC = () => {
             <Statistic
               title="永久封禁"
               value={stats.permanent_count}
-              prefix={<CheckCircleOutlined />}
-              valueStyle={{ color: '#fa541c' }}
+              prefix={<CheckCircleOutlined style={{ color: '#d13212', fontSize: 24 }} />}
+              valueStyle={{ color: '#d13212', fontFamily: 'Monaco, Menlo, Consolas, monospace' }}
             />
           </Card>
         </Col>
@@ -266,8 +276,8 @@ const IPBlacklist: React.FC = () => {
             <Statistic
               title="临时封禁"
               value={stats.temporary_count}
-              prefix={<ClockCircleOutlined />}
-              valueStyle={{ color: '#fa8c16' }}
+              prefix={<ClockCircleOutlined style={{ color: '#ff9900', fontSize: 24 }} />}
+              valueStyle={{ color: '#ff9900', fontFamily: 'Monaco, Menlo, Consolas, monospace' }}
             />
           </Card>
         </Col>
@@ -276,7 +286,7 @@ const IPBlacklist: React.FC = () => {
             <Statistic
               title="自动封禁(7天)"
               value={stats.auto_banned_count}
-              valueStyle={{ color: '#1890ff' }}
+              valueStyle={{ color: '#0073bb', fontFamily: 'Monaco, Menlo, Consolas, monospace' }}
             />
           </Card>
         </Col>

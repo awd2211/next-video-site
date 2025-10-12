@@ -237,44 +237,69 @@ export const getAWSThemeConfig = (isDark: boolean) => ({
   
   // 组件级别的配置
   components: {
-    // Button 组件
+    // Button 组件 - AWS 扁平化设计
     Button: {
       primaryShadow: 'none',
       fontWeight: 500,
+      borderRadius: 8,
+      controlHeight: 32,
+      controlHeightLG: 40,
+      controlHeightSM: 24,
+      paddingContentHorizontal: 16,
     },
-    
-    // Table 组件
+
+    // Table 组件 - AWS 紧凑表格
     Table: {
       headerBg: isDark ? '#192534' : '#f9fafb',
       headerColor: isDark ? '#d1d5db' : '#16191f',
+      headerFontWeight: 700,
       cellPaddingBlock: 12,
       cellPaddingInline: 16,
       fontSize: 14,
+      rowHoverBg: isDark ? 'rgba(83, 159, 229, 0.08)' : 'rgba(0, 115, 187, 0.04)',
+      borderColor: isDark ? '#2a2e33' : '#e9e9e7',
     },
-    
-    // Card 组件
+
+    // Card 组件 - AWS Container 样式
     Card: {
       boxShadow: isDark ? awsShadowsDark.boxShadow : awsShadows.boxShadow,
       headerBg: 'transparent',
       headerFontSize: 18,
       headerFontSizeSM: 16,
+      borderRadiusLG: 16,
+      paddingLG: 24,
+      boxShadowTertiary: isDark ? awsShadowsDark.boxShadowTertiary : awsShadows.boxShadowTertiary,
     },
-    
+
     // Menu 组件
     Menu: {
       itemBg: 'transparent',
       itemHeight: 40,
       itemPaddingInline: 16,
       fontSize: 14,
+      borderRadius: 8,
     },
-    
-    // Input 组件
+
+    // Input 组件 - AWS 输入框样式
     Input: {
       controlHeight: 32,
+      controlHeightLG: 40,
+      controlHeightSM: 24,
       paddingBlock: 5,
       paddingInline: 12,
+      borderRadius: 8,
+      hoverBorderColor: isDark ? '#539fe5' : '#0073bb',
+      activeBorderColor: isDark ? '#539fe5' : '#0073bb',
     },
-    
+
+    // Select 组件
+    Select: {
+      controlHeight: 32,
+      controlHeightLG: 40,
+      controlHeightSM: 24,
+      borderRadius: 8,
+    },
+
     // Layout 组件
     Layout: {
       headerBg: isDark ? '#0f1b2a' : '#ffffff',
@@ -282,6 +307,94 @@ export const getAWSThemeConfig = (isDark: boolean) => ({
       headerHeight: 56,
       siderBg: isDark ? '#0f1b2a' : '#f7f6f3',
       bodyBg: isDark ? '#000716' : '#f7f6f3',
+    },
+
+    // Modal 组件 - AWS 对话框样式
+    Modal: {
+      borderRadiusLG: 16,
+      headerBg: 'transparent',
+      contentBg: isDark ? '#0f1b2a' : '#ffffff',
+      titleFontSize: 20,
+    },
+
+    // Drawer 组件
+    Drawer: {
+      paddingLG: 24,
+    },
+
+    // Tag 组件 - AWS 标签样式
+    Tag: {
+      borderRadius: 4,
+      fontSize: 12,
+      lineHeight: '20px',
+      defaultBg: isDark ? 'rgba(83, 159, 229, 0.15)' : 'rgba(0, 115, 187, 0.1)',
+      defaultColor: isDark ? '#85b7ed' : '#0073bb',
+    },
+
+    // Badge 组件
+    Badge: {
+      fontSize: 11,
+      fontWeight: 600,
+    },
+
+    // Statistic 组件 - Dashboard 统计卡片
+    Statistic: {
+      titleFontSize: 14,
+      contentFontSize: 32,
+      contentFontWeight: 700,
+    },
+
+    // Pagination 组件
+    Pagination: {
+      itemSize: 32,
+      itemSizeSM: 24,
+      borderRadius: 8,
+    },
+
+    // Form 组件
+    Form: {
+      labelFontSize: 13,
+      labelColor: isDark ? '#d1d5db' : '#37352f',
+      labelRequiredMarkColor: isDark ? '#ff5d64' : '#d13212',
+    },
+
+    // Tabs 组件
+    Tabs: {
+      titleFontSize: 14,
+      titleFontSizeSM: 13,
+      itemColor: isDark ? '#9ba7b6' : '#787774',
+      itemActiveColor: isDark ? '#539fe5' : '#0073bb',
+      itemHoverColor: isDark ? '#85b7ed' : '#005a8e',
+      inkBarColor: isDark ? '#539fe5' : '#0073bb',
+    },
+
+    // Divider 组件
+    Divider: {
+      colorSplit: isDark ? '#2a2e33' : '#e9e9e7',
+    },
+
+    // Tooltip 组件
+    Tooltip: {
+      colorBgSpotlight: isDark ? '#192534' : '#37352f',
+      colorTextLightSolid: '#ffffff',
+      borderRadius: 8,
+    },
+
+    // Progress 组件
+    Progress: {
+      defaultColor: isDark ? '#539fe5' : '#0073bb',
+      remainingColor: isDark ? 'rgba(255, 255, 255, 0.15)' : 'rgba(0, 0, 0, 0.06)',
+    },
+
+    // Alert 组件
+    Alert: {
+      borderRadiusLG: 8,
+      withDescriptionPadding: '16px 24px',
+    },
+
+    // Spin 组件
+    Spin: {
+      colorPrimary: isDark ? '#539fe5' : '#0073bb',
     },
   },
 });

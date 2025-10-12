@@ -174,7 +174,16 @@ const Settings = () => {
   const renderSaveStatus = (fieldName: string) => {
     if (savedFields.has(fieldName)) {
       return (
-        <Tag color="success" icon={<CheckCircleOutlined />} className="save-status-tag">
+        <Tag
+          icon={<CheckCircleOutlined />}
+          className="save-status-tag"
+          style={{
+            backgroundColor: 'rgba(29, 129, 2, 0.1)',
+            color: '#1d8102',
+            border: '1px solid rgba(29, 129, 2, 0.2)',
+            borderRadius: '4px'
+          }}
+        >
           已保存
         </Tag>
       );
@@ -229,7 +238,7 @@ const Settings = () => {
       {saving && (
         <Card size="small" className="auto-save-indicator">
           <Space>
-            <CheckCircleOutlined spin style={{ color: '#1890ff' }} />
+            <CheckCircleOutlined spin style={{ color: '#0073bb' }} />
             <span>正在保存...</span>
           </Space>
         </Card>

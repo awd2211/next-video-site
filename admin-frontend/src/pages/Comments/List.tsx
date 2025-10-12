@@ -267,7 +267,11 @@ const CommentsList = () => {
       dataIndex: 'rating',
       key: 'rating',
       width: 80,
-      render: (rating: number) => (rating ? `${rating} ★` : '-'),
+      render: (rating: number) => (
+        <span style={{ fontFamily: 'Monaco, Menlo, Consolas, monospace', color: '#37352f' }}>
+          {rating ? `${rating.toFixed(1)} ★` : '-'}
+        </span>
+      ),
     },
     {
       title: '状态',
@@ -275,13 +279,42 @@ const CommentsList = () => {
       key: 'status',
       width: 100,
       render: (status: string) => {
-        const statusMap: { [key: string]: { color: string; text: string } } = {
-          PENDING: { color: 'gold', text: '待审核' },
-          APPROVED: { color: 'green', text: '已通过' },
-          REJECTED: { color: 'red', text: '已拒绝' },
+        const statusMap: { [key: string]: { bg: string; color: string; border: string; text: string } } = {
+          PENDING: {
+            bg: 'rgba(255, 153, 0, 0.1)',
+            color: '#ff9900',
+            border: '1px solid rgba(255, 153, 0, 0.2)',
+            text: '待审核'
+          },
+          APPROVED: {
+            bg: 'rgba(29, 129, 2, 0.1)',
+            color: '#1d8102',
+            border: '1px solid rgba(29, 129, 2, 0.2)',
+            text: '已通过'
+          },
+          REJECTED: {
+            bg: 'rgba(209, 50, 18, 0.1)',
+            color: '#d13212',
+            border: '1px solid rgba(209, 50, 18, 0.2)',
+            text: '已拒绝'
+          },
         }
-        const config = statusMap[status] || { color: 'default', text: status }
-        return <Tag color={config.color}>{config.text}</Tag>
+        const config = statusMap[status] || {
+          bg: 'rgba(0, 0, 0, 0.04)',
+          color: '#787774',
+          border: '1px solid rgba(0, 0, 0, 0.1)',
+          text: status
+        }
+        return (
+          <Tag style={{
+            backgroundColor: config.bg,
+            color: config.color,
+            border: config.border,
+            borderRadius: '4px'
+          }}>
+            {config.text}
+          </Tag>
+        )
       },
     },
     {
@@ -290,13 +323,22 @@ const CommentsList = () => {
       key: 'like_count',
       width: 80,
       sorter: (a: any, b: any) => a.like_count - b.like_count,
+      render: (count: number) => (
+        <span style={{ fontFamily: 'Monaco, Menlo, Consolas, monospace', color: '#37352f' }}>
+          {count || 0}
+        </span>
+      ),
     },
     {
       title: '创建时间',
       dataIndex: 'created_at',
       key: 'created_at',
       width: 180,
-      render: (date: string) => dayjs(date).format('YYYY-MM-DD HH:mm:ss'),
+      render: (date: string) => (
+        <span style={{ fontFamily: 'Monaco, Menlo, Consolas, monospace', color: '#37352f', fontSize: '13px' }}>
+          {dayjs(date).format('YYYY-MM-DD HH:mm:ss')}
+        </span>
+      ),
       sorter: (a: any, b: any) =>
         new Date(a.created_at).getTime() - new Date(b.created_at).getTime(),
     },

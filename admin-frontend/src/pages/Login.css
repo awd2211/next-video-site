@@ -1,25 +1,30 @@
-/* Login Container */
+/* AWS-Style Login Page - Clean & Professional Design */
+
+/* ===========================================
+   Container & Background
+   =========================================== */
 .login-container {
   display: flex;
   justify-content: center;
   align-items: center;
   min-height: 100vh;
   position: relative;
-  overflow: hidden;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: background-color 0.2s ease;
 }
 
-/* Light theme background */
+/* Light theme - clean white background */
 .login-container.light {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background-color: #f5f5f5;
 }
 
-/* Dark theme background */
+/* Dark theme - AWS-inspired dark background */
 .login-container.dark {
-  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+  background-color: #1a1f2e;
 }
 
-/* Theme Toggle Button */
+/* ===========================================
+   Theme Toggle Button
+   =========================================== */
 .theme-toggle {
   position: absolute;
   top: 24px;
@@ -28,98 +33,31 @@
 }
 
 .theme-toggle .ant-switch {
-  background: rgba(255, 255, 255, 0.2);
+  background-color: #d5d5d5;
 }
 
 .theme-toggle .ant-switch-checked {
-  background: rgba(0, 0, 0, 0.3);
+  background-color: #ff9900;
 }
 
-/* Animated Background Particles */
-.particles {
-  position: absolute;
-  width: 100%;
-  height: 100%;
-  overflow: hidden;
-  pointer-events: none;
-}
-
-.particle {
-  position: absolute;
-  width: 10px;
-  height: 10px;
-  background: rgba(255, 255, 255, 0.15);
-  border-radius: 50%;
-  animation: float linear infinite;
-}
-
-@keyframes float {
-  0% {
-    transform: translateY(0) rotate(0deg);
-    opacity: 0;
-  }
-  10% {
-    opacity: 1;
-  }
-  90% {
-    opacity: 1;
-  }
-  100% {
-    transform: translateY(-100vh) rotate(360deg);
-    opacity: 0;
-  }
-}
-
-/* Login Card */
+/* ===========================================
+   Login Card
+   =========================================== */
 .login-card {
   width: 480px;
   max-width: 90vw;
-  border-radius: 24px;
-  box-shadow: 0 30px 90px rgba(0, 0, 0, 0.3), 0 10px 30px rgba(0, 0, 0, 0.15);
-  backdrop-filter: blur(20px);
+  border-radius: 4px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
   position: relative;
   z-index: 1;
-  animation: slideUp 0.6s ease-out;
-  overflow: visible;
-  padding: 40px;
+  padding: 48px 40px;
+  animation: fadeInUp 0.4s ease-out;
 }
 
-.login-container.light .login-card {
-  background: rgba(255, 255, 255, 0.98);
-  border: 1px solid rgba(255, 255, 255, 0.5);
-}
-
-.login-container.dark .login-card {
-  background: rgba(30, 30, 46, 0.98);
-  border: 1px solid rgba(255, 255, 255, 0.12);
-}
-
-.login-card::before {
-  content: '';
-  position: absolute;
-  top: -2px;
-  left: -2px;
-  right: -2px;
-  bottom: -2px;
-  border-radius: 24px;
-  background: linear-gradient(135deg, #667eea, #764ba2);
-  z-index: -1;
-  opacity: 0;
-  transition: opacity 0.3s;
-}
-
-.login-container.dark .login-card::before {
-  background: linear-gradient(135deg, #4facfe, #00f2fe);
-}
-
-.login-card:hover::before {
-  opacity: 0.1;
-}
-
-@keyframes slideUp {
+@keyframes fadeInUp {
   from {
     opacity: 0;
-    transform: translateY(30px);
+    transform: translateY(20px);
   }
   to {
     opacity: 1;
@@ -127,104 +65,114 @@
   }
 }
 
-/* Login Header */
+.login-container.light .login-card {
+  background: #ffffff;
+  border: 1px solid #e0e0e0;
+}
+
+.login-container.dark .login-card {
+  background: #232f3e;
+  border: 1px solid #3f5161;
+}
+
+/* ===========================================
+   Login Header
+   =========================================== */
 .login-header {
   text-align: center;
-  margin-bottom: 40px;
-  padding-top: 16px;
+  margin-bottom: 32px;
 }
 
 .logo-container {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 72px;
-  height: 72px;
-  border-radius: 20px;
-  margin-bottom: 20px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  box-shadow: 0 8px 24px rgba(102, 126, 234, 0.35);
-  animation: pulse 2s ease-in-out infinite;
-}
-
-.login-container.dark .logo-container {
-  background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
-  box-shadow: 0 8px 24px rgba(79, 172, 254, 0.35);
-}
-
-@keyframes pulse {
-  0%, 100% {
-    transform: scale(1);
-  }
-  50% {
-    transform: scale(1.05);
-  }
+  width: 48px;
+  height: 48px;
+  border-radius: 4px;
+  margin-bottom: 16px;
+  background-color: #ff9900;
 }
 
 .logo-icon {
-  font-size: 36px;
+  font-size: 24px;
   color: white;
 }
 
 .login-title {
-  font-size: 32px;
-  font-weight: 700;
-  margin: 0 0 8px 0;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+  font-size: 24px;
+  font-weight: 600;
+  margin: 0 0 4px 0;
+  color: #232f3e;
 }
 
 .login-container.dark .login-title {
-  background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+  color: #ffffff;
 }
 
 .login-subtitle {
   font-size: 14px;
-  color: #8c8c8c;
+  color: #545b64;
   margin: 0;
-  letter-spacing: 0.5px;
+  font-weight: 400;
 }
 
 .login-container.dark .login-subtitle {
-  color: #a0a0a0;
+  color: #aab7b8;
 }
 
-/* Login Form */
+/* ===========================================
+   Login Form
+   =========================================== */
 .login-form {
   margin-bottom: 24px;
 }
 
 .login-form .ant-form-item {
-  margin-bottom: 22px;
+  margin-bottom: 16px;
 }
 
 .login-form .ant-form-item:last-child {
   margin-bottom: 0;
-  margin-top: 28px;
+  margin-top: 24px;
 }
 
-/* Input Fields - Unified Styling */
+/* Form Labels - AWS Style */
+.login-form .ant-form-item-label > label {
+  font-size: 13px;
+  font-weight: 600;
+  color: #16191f;
+  height: auto;
+}
+
+.login-container.dark .login-form .ant-form-item-label > label {
+  color: #ffffff;
+}
+
+.login-form .ant-form-item-label {
+  padding-bottom: 4px;
+}
+
+/* ===========================================
+   Input Fields - AWS Style
+   =========================================== */
 .login-form .ant-input,
 .login-form .ant-input-affix-wrapper {
-  height: 48px !important;
-  border-radius: 12px !important;
-  font-size: 15px;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  border: 2px solid rgba(0, 0, 0, 0.08) !important;
-  background: rgba(0, 0, 0, 0.03) !important;
-  padding: 0 16px !important;
+  height: 40px !important;
+  border-radius: 4px !important;
+  font-size: 14px;
+  transition: all 0.2s ease;
+  border: 1px solid #d5dbdb !important;
+  background: #ffffff !important;
+  padding: 0 12px !important;
+  color: #16191f !important;
 }
 
 .login-form .ant-input-affix-wrapper {
   padding: 0 11px !important;
 }
 
-/* Remove inner input border for affix-wrapper inputs */
+/* Remove inner input borders */
 .login-form .ant-input-affix-wrapper input.ant-input {
   border: none !important;
   padding: 0 !important;
@@ -233,21 +181,13 @@
   outline: none !important;
 }
 
-.login-form .ant-input-affix-wrapper input.ant-input:hover,
-.login-form .ant-input-affix-wrapper input.ant-input:focus {
-  border: none !important;
-  background: transparent !important;
-  box-shadow: none !important;
-  outline: none !important;
-}
-
-/* Password input wrapper - remove ALL borders */
+/* Password input wrapper */
 .login-form .ant-input-password {
   padding: 0 !important;
-  border: 2px solid rgba(0, 0, 0, 0.08) !important;
-  background: rgba(0, 0, 0, 0.03) !important;
-  height: 48px !important;
-  border-radius: 12px !important;
+  border: 1px solid #d5dbdb !important;
+  background: #ffffff !important;
+  height: 40px !important;
+  border-radius: 4px !important;
 }
 
 .login-form .ant-input-password input.ant-input {
@@ -257,420 +197,979 @@
   box-shadow: none !important;
   height: 100% !important;
   outline: none !important;
-}
-
-.login-form .ant-input-password input.ant-input:hover {
-  border: none !important;
-  box-shadow: none !important;
-  background: transparent !important;
-}
-
-.login-form .ant-input-password input.ant-input:focus {
-  border: none !important;
-  box-shadow: none !important;
-  background: transparent !important;
-  outline: none !important;
+  color: #16191f !important;
 }
 
 /* Dark Theme Input Fields */
 .login-container.dark .login-form .ant-input,
 .login-container.dark .login-form .ant-input-affix-wrapper,
 .login-container.dark .login-form .ant-input-password {
-  background: rgba(255, 255, 255, 0.08) !important;
-  border: 2px solid rgba(255, 255, 255, 0.15) !important;
+  background: #37475a !important;
+  border: 1px solid #546277 !important;
   color: #ffffff !important;
 }
 
-/* Dark theme - remove inner input borders */
 .login-container.dark .login-form .ant-input-affix-wrapper input.ant-input,
 .login-container.dark .login-form .ant-input-password input.ant-input {
   color: #ffffff !important;
   background: transparent !important;
-  border: none !important;
-  box-shadow: none !important;
-}
-
-.login-container.dark .login-form .ant-input-affix-wrapper input.ant-input:hover,
-.login-container.dark .login-form .ant-input-affix-wrapper input.ant-input:focus,
-.login-container.dark .login-form .ant-input-password input.ant-input:hover,
-.login-container.dark .login-form .ant-input-password input.ant-input:focus {
-  background: transparent !important;
-  border: none !important;
-  box-shadow: none !important;
 }
 
 /* Placeholder Colors */
 .login-form .ant-input::placeholder,
 .login-form .ant-input-password input::placeholder,
 .login-form .ant-input-affix-wrapper input::placeholder {
-  color: rgba(0, 0, 0, 0.35);
+  color: #879596;
 }
 
 .login-container.dark .login-form .ant-input::placeholder,
 .login-container.dark .login-form .ant-input-password input::placeholder,
 .login-container.dark .login-form .ant-input-affix-wrapper input::placeholder {
-  color: rgba(255, 255, 255, 0.45);
+  color: #aab7b8;
 }
 
 /* Hover States */
 .login-form .ant-input:not(.ant-input-password input):not(.ant-input-affix-wrapper input):hover,
 .login-form .ant-input-affix-wrapper:hover,
 .login-form .ant-input-password:hover {
-  border-color: #667eea !important;
-  background: rgba(102, 126, 234, 0.05) !important;
+  border-color: #ff9900 !important;
 }
 
-.login-form .ant-input-affix-wrapper:hover input.ant-input,
-.login-form .ant-input-password:hover input.ant-input {
-  background: transparent !important;
-  border: none !important;
-  box-shadow: none !important;
-}
-
-.login-container.dark .login-form .ant-input:not(.ant-input-password input):not(.ant-input-affix-wrapper input):hover,
-.login-container.dark .login-form .ant-input-affix-wrapper:hover,
-.login-container.dark .login-form .ant-input-password:hover {
-  border-color: #4facfe !important;
-  background: rgba(79, 172, 254, 0.12) !important;
-}
-
-.login-container.dark .login-form .ant-input-affix-wrapper:hover input.ant-input,
-.login-container.dark .login-form .ant-input-password:hover input.ant-input {
-  background: transparent !important;
-  border: none !important;
-  box-shadow: none !important;
-}
-
-/* Focus States */
+/* Focus States - AWS Orange */
 .login-form .ant-input:not(.ant-input-password input):not(.ant-input-affix-wrapper input):focus,
 .login-form .ant-input-affix-wrapper:focus,
 .login-form .ant-input-affix-wrapper-focused,
 .login-form .ant-input-password:focus,
 .login-form .ant-input-password-focused {
-  border-color: #667eea !important;
-  background: rgba(102, 126, 234, 0.08) !important;
-  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.15) !important;
+  border-color: #ff9900 !important;
+  box-shadow: 0 0 0 2px rgba(255, 153, 0, 0.2) !important;
+  outline: none !important;
 }
 
+/* Ensure inner inputs don't have borders on focus */
 .login-form .ant-input-affix-wrapper:focus input.ant-input,
 .login-form .ant-input-affix-wrapper-focused input.ant-input,
-.login-form .ant-input-affix-wrapper input.ant-input:focus,
 .login-form .ant-input-password:focus input.ant-input,
-.login-form .ant-input-password-focused input.ant-input,
-.login-form .ant-input-password input.ant-input:focus {
+.login-form .ant-input-password-focused input.ant-input {
   background: transparent !important;
   border: none !important;
   box-shadow: none !important;
 }
 
-.login-container.dark .login-form .ant-input:not(.ant-input-password input):not(.ant-input-affix-wrapper input):focus,
-.login-container.dark .login-form .ant-input-affix-wrapper:focus,
-.login-container.dark .login-form .ant-input-affix-wrapper-focused,
-.login-container.dark .login-form .ant-input-password:focus,
-.login-container.dark .login-form .ant-input-password-focused {
-  border-color: #4facfe !important;
-  background: rgba(79, 172, 254, 0.15) !important;
-  box-shadow: 0 0 0 3px rgba(79, 172, 254, 0.2) !important;
-}
-
-.login-container.dark .login-form .ant-input-affix-wrapper:focus input.ant-input,
-.login-container.dark .login-form .ant-input-affix-wrapper-focused input.ant-input,
-.login-container.dark .login-form .ant-input-affix-wrapper input.ant-input:focus,
-.login-container.dark .login-form .ant-input-password:focus input.ant-input,
-.login-container.dark .login-form .ant-input-password-focused input.ant-input,
-.login-container.dark .login-form .ant-input-password input.ant-input:focus {
-  background: transparent !important;
-  border: none !important;
-  box-shadow: none !important;
-}
-
-/* Login Button */
-.login-button {
-  height: 54px;
-  border-radius: 12px;
-  font-size: 17px;
-  font-weight: 600;
-  letter-spacing: 1.5px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  border: none;
-  box-shadow: 0 8px 24px rgba(102, 126, 234, 0.45);
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  position: relative;
-  overflow: hidden;
-}
-
-.login-button::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: -100%;
-  width: 100%;
-  height: 100%;
-  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
-  transition: left 0.5s;
-}
-
-.login-button:hover:not(:disabled)::before {
-  left: 100%;
-}
-
-.login-container.dark .login-button {
-  background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
-  box-shadow: 0 8px 24px rgba(79, 172, 254, 0.45);
-}
-
-.login-button:hover:not(:disabled) {
-  transform: translateY(-3px) scale(1.01);
-  box-shadow: 0 12px 36px rgba(102, 126, 234, 0.6);
-}
-
-.login-container.dark .login-button:hover:not(:disabled) {
-  box-shadow: 0 12px 36px rgba(79, 172, 254, 0.6);
-}
-
-.login-button:active:not(:disabled) {
-  transform: translateY(-1px) scale(0.99);
-}
-
-.login-button:disabled {
-  opacity: 0.7;
+/* Disabled state */
+.login-form .ant-input:disabled,
+.login-form .ant-input-affix-wrapper-disabled,
+.login-form .ant-input-password-disabled {
+  background: #f5f5f5 !important;
+  border-color: #d9d9d9 !important;
+  color: #bfbfbf !important;
   cursor: not-allowed;
 }
 
-/* Captcha Container */
+.login-container.dark .login-form .ant-input:disabled,
+.login-container.dark .login-form .ant-input-affix-wrapper-disabled,
+.login-container.dark .login-form .ant-input-password-disabled {
+  background: #2e3c4e !important;
+  border-color: #3f4f62 !important;
+  color: #666 !important;
+}
+
+/* ===========================================
+   Remember Me Checkbox
+   =========================================== */
+.remember-me-item {
+  margin-bottom: 16px !important;
+}
+
+.remember-me-item .ant-checkbox-wrapper {
+  font-size: 13px;
+  color: #16191f;
+  user-select: none;
+}
+
+.login-container.dark .remember-me-item .ant-checkbox-wrapper {
+  color: #ffffff;
+}
+
+.remember-me-item .ant-checkbox-inner {
+  width: 16px;
+  height: 16px;
+  border-radius: 3px;
+  border: 1px solid #d5dbdb;
+  background-color: #ffffff;
+}
+
+.login-container.dark .remember-me-item .ant-checkbox-inner {
+  background-color: #37475a;
+  border-color: #546277;
+}
+
+.remember-me-item .ant-checkbox-checked .ant-checkbox-inner {
+  background-color: #ff9900;
+  border-color: #ff9900;
+}
+
+.remember-me-item .ant-checkbox:hover .ant-checkbox-inner {
+  border-color: #ff9900;
+}
+
+.remember-me-item .ant-checkbox-wrapper:hover {
+  color: #ff9900;
+}
+
+.login-container.dark .remember-me-item .ant-checkbox-wrapper:hover {
+  color: #ff9900;
+}
+
+/* ===========================================
+   Login Button - AWS Orange
+   =========================================== */
+.login-button {
+  height: 40px;
+  border-radius: 4px;
+  font-size: 14px;
+  font-weight: 600;
+  background-color: #ff9900;
+  border: 1px solid #ec7211;
+  color: #ffffff;
+  box-shadow: 0 1px 1px rgba(0, 0, 0, 0.05);
+  transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.login-button:hover:not(:disabled) {
+  background-color: #ec7211;
+  border-color: #dd6b10;
+  color: #ffffff;
+}
+
+.login-button:active:not(:disabled) {
+  background-color: #dd6b10;
+  border-color: #cc6410;
+}
+
+.login-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Dark theme button - same AWS orange */
+.login-container.dark .login-button {
+  background-color: #ff9900;
+  border-color: #ec7211;
+}
+
+.login-container.dark .login-button:hover:not(:disabled) {
+  background-color: #ec7211;
+  border-color: #dd6b10;
+}
+
+/* Button icon alignment */
+.login-button .anticon,
+.reset-button .anticon,
+.forgot-password-modal .ant-btn .anticon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 6px;
+}
+
+.forgot-password-modal .ant-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ===========================================
+   Captcha Container
+   =========================================== */
 .login-form .ant-space-compact {
-  border-radius: 12px;
-  overflow: visible;
+  border-radius: 4px;
   display: flex;
   gap: 8px;
 }
 
 .login-form .ant-space-compact .ant-input,
 .login-form .ant-space-compact .ant-input-affix-wrapper {
-  border-radius: 12px !important;
+  border-radius: 4px !important;
   flex: 1;
 }
 
-.login-form .ant-space-compact > div:last-child {
+.captcha-image-container {
   width: 40%;
-  height: 48px;
+  height: 40px;
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 12px !important;
-  border: 2px solid rgba(0, 0, 0, 0.08);
-  background: rgba(0, 0, 0, 0.03);
+  border-radius: 4px;
+  border: 1px solid #d5dbdb;
+  background: #ffffff;
   cursor: pointer;
-  position: relative;
   overflow: hidden;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: all 0.2s ease;
+  user-select: none;
 }
 
-.login-container.dark .login-form .ant-space-compact > div:last-child {
-  background: rgba(255, 255, 255, 0.08);
-  border: 2px solid rgba(255, 255, 255, 0.15);
+.login-container.dark .captcha-image-container {
+  background: #37475a;
+  border: 1px solid #546277;
 }
 
-.login-form .ant-space-compact > div:last-child:hover {
-  border-color: #667eea;
-  background: rgba(102, 126, 234, 0.08);
-  transform: scale(1.02);
+.captcha-image-container:hover {
+  border-color: #ff9900;
+  box-shadow: 0 0 0 1px rgba(255, 153, 0, 0.2);
 }
 
-.login-container.dark .login-form .ant-space-compact > div:last-child:hover {
-  border-color: #4facfe;
-  background: rgba(79, 172, 254, 0.15);
+.captcha-image-container:active {
+  transform: scale(0.98);
 }
 
-.login-form .ant-space-compact > div:last-child img {
+.captcha-image-container img {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  border-radius: 8px;
+  pointer-events: none;
 }
 
-.login-form .ant-space-compact > div:last-child .anticon {
+.captcha-image-container .anticon {
+  font-size: 18px;
+  color: #ff9900;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ===========================================
+   Forgot Password Link
+   =========================================== */
+.forgot-password-link {
+  font-size: 13px;
+  color: #ff9900;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-decoration: none;
+  user-select: none;
+}
+
+.forgot-password-link:hover {
+  color: #ec7211;
+  text-decoration: underline;
+}
+
+.forgot-password-link:active {
+  color: #dd6b10;
+}
+
+.login-container.dark .forgot-password-link {
+  color: #ff9900;
+}
+
+.login-container.dark .forgot-password-link:hover {
+  color: #ffa726;
+}
+
+/* ===========================================
+   Forgot Password Modal
+   =========================================== */
+.forgot-password-modal .ant-modal-header {
+  border-bottom: 1px solid #e0e0e0;
+  padding: 20px 24px;
+}
+
+.forgot-password-modal .ant-modal-body {
+  padding: 24px;
+}
+
+.forgot-password-modal .ant-modal-close-x {
+  width: 48px;
+  height: 48px;
+  line-height: 48px;
+}
+
+/* Modal Header with Steps */
+.reset-modal-header {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.reset-modal-title {
   font-size: 20px;
-  color: #667eea;
+  font-weight: 600;
+  color: #16191f;
 }
 
-.login-container.dark .login-form .ant-space-compact > div:last-child .anticon {
-  color: #4facfe;
+.reset-steps {
+  margin: 0;
 }
 
-/* Account Info */
-.account-info {
-  background: linear-gradient(135deg, rgba(102, 126, 234, 0.08) 0%, rgba(118, 75, 162, 0.08) 100%);
-  border-radius: 14px;
-  padding: 18px 20px;
-  margin-bottom: 20px;
-  border: 2px solid rgba(102, 126, 234, 0.2);
-  transition: all 0.3s;
-  position: relative;
-  overflow: hidden;
+.reset-steps .ant-steps-item-icon {
+  width: 28px;
+  height: 28px;
+  line-height: 28px;
+  font-size: 14px;
 }
 
-.account-info::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 4px;
+.reset-steps .ant-steps-item-title {
+  font-size: 13px;
+}
+
+.login-container.dark .reset-modal-title {
+  color: #ffffff;
+}
+
+/* Step Description */
+.reset-step-description {
+  font-size: 14px;
+  color: #545b64;
+  margin-bottom: 24px;
+  line-height: 1.6;
+  padding: 14px 16px;
+  background: #f7f9fa;
+  border-radius: 6px;
+  border-left: 4px solid #ff9900;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.reset-step-description .desc-icon {
+  font-size: 20px;
+  color: #ff9900;
+  margin-top: 2px;
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.reset-step-description .desc-icon.success {
+  color: #52c41a;
+}
+
+.reset-step-description strong {
+  color: #ff9900;
+  font-weight: 600;
+}
+
+.reset-step-description small {
+  color: #879596;
+  font-size: 12px;
+  margin-top: 4px;
+  display: block;
+}
+
+/* Reset button */
+.reset-button {
+  height: 40px;
+  border-radius: 4px;
+  font-size: 14px;
+  font-weight: 600;
+  background-color: #ff9900;
+  border-color: #ec7211;
+}
+
+.reset-button:hover:not(:disabled) {
+  background-color: #ec7211;
+  border-color: #dd6b10;
+}
+
+/* Dark mode for modal */
+.login-container.dark .forgot-password-modal .ant-modal-content {
+  background: #232f3e;
+}
+
+.login-container.dark .forgot-password-modal .ant-modal-header {
+  background: #232f3e;
+  border-bottom-color: #546277;
+}
+
+.login-container.dark .forgot-password-modal .ant-modal-title {
+  color: #ffffff;
+}
+
+.login-container.dark .forgot-password-modal .ant-modal-close-x {
+  color: #aab7b8;
+}
+
+.login-container.dark .forgot-password-modal .ant-modal-close-x:hover {
+  color: #ffffff;
+}
+
+.login-container.dark .reset-step-description {
+  background: #37475a;
+  color: #aab7b8;
+}
+
+.login-container.dark .reset-step-description strong {
+  color: #ff9900;
+}
+
+/* Modal form inputs */
+.forgot-password-modal .ant-input,
+.forgot-password-modal .ant-input-affix-wrapper,
+.forgot-password-modal .ant-input-password {
+  height: 40px !important;
+  border-radius: 4px !important;
+  font-size: 14px;
+  border: 1px solid #d5dbdb !important;
+  background: #ffffff !important;
+}
+
+.login-container.dark .forgot-password-modal .ant-input,
+.login-container.dark .forgot-password-modal .ant-input-affix-wrapper,
+.login-container.dark .forgot-password-modal .ant-input-password {
+  background: #37475a !important;
+  border-color: #546277 !important;
+  color: #ffffff !important;
+}
+
+.forgot-password-modal .ant-input-affix-wrapper input.ant-input,
+.forgot-password-modal .ant-input-password input.ant-input {
+  border: none !important;
+  background: transparent !important;
+  color: inherit !important;
+}
+
+.forgot-password-modal .ant-form-item-label > label {
+  font-size: 13px;
+  font-weight: 600;
+  color: #16191f;
+}
+
+.login-container.dark .forgot-password-modal .ant-form-item-label > label {
+  color: #ffffff;
+}
+
+.forgot-password-modal .ant-input:focus,
+.forgot-password-modal .ant-input-affix-wrapper:focus,
+.forgot-password-modal .ant-input-affix-wrapper-focused,
+.forgot-password-modal .ant-input-password:focus,
+.forgot-password-modal .ant-input-password-focused {
+  border-color: #ff9900 !important;
+  box-shadow: 0 0 0 2px rgba(255, 153, 0, 0.2) !important;
+}
+
+/* Modal prefix/suffix icon alignment */
+.forgot-password-modal .anticon {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  color: #879596;
+  font-size: 16px;
+  line-height: 1;
+  vertical-align: middle;
+}
+
+.login-container.dark .forgot-password-modal .anticon {
+  color: #aab7b8;
+}
+
+.forgot-password-modal .ant-input-prefix,
+.forgot-password-modal .ant-input-suffix {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  margin-right: 8px;
+}
+
+.forgot-password-modal .ant-input-suffix {
+  margin-right: 0;
+  margin-left: 8px;
+}
+
+/* Modal password input wrapper alignment fix */
+.forgot-password-modal .ant-input-password {
+  display: flex !important;
+  align-items: center !important;
+}
+
+.forgot-password-modal .ant-input-password .ant-input-prefix {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
   height: 100%;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.forgot-password-modal .ant-input-password .ant-input-prefix .anticon {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  line-height: 1;
+  vertical-align: middle;
+}
+
+.forgot-password-modal .ant-input-password-icon {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  color: #879596;
+  line-height: 1;
+  vertical-align: middle;
+}
+
+.login-container.dark .forgot-password-modal .ant-input-password-icon {
+  color: #aab7b8;
+}
+
+.forgot-password-modal .ant-input-password-icon:hover,
+.forgot-password-modal .ant-input:focus .anticon,
+.forgot-password-modal .ant-input-affix-wrapper:focus .anticon,
+.forgot-password-modal .ant-input-affix-wrapper-focused .anticon {
+  color: #ff9900;
+}
+
+.forgot-password-modal .ant-btn {
+  height: 40px;
+  border-radius: 4px;
+  font-size: 14px;
+}
+
+.forgot-password-modal .ant-btn-default {
+  border-color: #d5dbdb;
+  color: #16191f;
+}
+
+.forgot-password-modal .ant-btn-default:hover {
+  border-color: #ff9900;
+  color: #ff9900;
+}
+
+.login-container.dark .forgot-password-modal .ant-btn-default {
+  background: #37475a;
+  border-color: #546277;
+  color: #ffffff;
+}
+
+.login-container.dark .forgot-password-modal .ant-btn-default:hover {
+  border-color: #ff9900;
+  color: #ff9900;
+}
+
+/* Countdown Text */
+.countdown-text {
+  margin-left: 12px;
+  font-size: 12px;
+  color: #ff9900;
+  font-weight: 400;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.countdown-text .anticon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Password Strength Indicator */
+.password-strength {
+  margin-top: 8px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.password-strength .ant-progress {
+  flex: 1;
+  margin: 0;
+}
+
+.strength-text {
+  font-size: 12px;
+  font-weight: 600;
+  min-width: 36px;
+  text-align: right;
+}
+
+.strength-text.strength-weak {
+  color: #d13212;
+}
+
+.strength-text.strength-medium {
+  color: #ffa726;
+}
+
+.strength-text.strength-strong {
+  color: #52c41a;
+}
+
+.login-container.dark .password-strength .ant-progress-bg {
+  background: currentColor;
+}
+
+/* Dark theme for steps */
+.login-container.dark .reset-steps .ant-steps-item-icon {
+  background: #37475a;
+  border-color: #546277;
+}
+
+.login-container.dark .reset-steps .ant-steps-item-wait .ant-steps-item-icon {
+  background: #37475a;
+  border-color: #546277;
+}
+
+.login-container.dark .reset-steps .ant-steps-item-wait .ant-steps-item-icon > .ant-steps-icon {
+  color: #aab7b8;
+}
+
+.login-container.dark .reset-steps .ant-steps-item-process .ant-steps-item-icon {
+  background: #ff9900;
+  border-color: #ff9900;
+}
+
+.login-container.dark .reset-steps .ant-steps-item-finish .ant-steps-item-icon {
+  background: #52c41a;
+  border-color: #52c41a;
+}
+
+.login-container.dark .reset-steps .ant-steps-item-title {
+  color: #aab7b8;
+}
+
+.login-container.dark .reset-steps .ant-steps-item-finish .ant-steps-item-title {
+  color: #52c41a;
+}
+
+.login-container.dark .reset-steps .ant-steps-item-process .ant-steps-item-title {
+  color: #ffffff;
+}
+
+/* ===========================================
+   Divider
+   =========================================== */
+.login-divider {
+  margin: 24px 0 20px 0;
+  border-color: #e0e0e0;
+}
+
+.login-container.dark .login-divider {
+  border-color: #546277;
+}
+
+/* ===========================================
+   Account Info - Simplified
+   =========================================== */
+.account-info {
+  background: #f7f9fa;
+  border-radius: 4px;
+  padding: 14px 16px;
+  margin-bottom: 20px;
+  border: 1px solid #e0e0e0;
 }
 
 .login-container.dark .account-info {
-  background: linear-gradient(135deg, rgba(79, 172, 254, 0.1) 0%, rgba(0, 242, 254, 0.08) 100%);
-  border: 2px solid rgba(79, 172, 254, 0.25);
+  background: #37475a;
+  border: 1px solid #546277;
 }
 
-.login-container.dark .account-info::before {
-  background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+.account-info-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: #545b64;
+  margin-bottom: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 
-.account-info:hover {
-  border-color: rgba(102, 126, 234, 0.35);
-  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.15);
-}
-
-.login-container.dark .account-info:hover {
-  border-color: rgba(79, 172, 254, 0.4);
-  box-shadow: 0 4px 12px rgba(79, 172, 254, 0.2);
+.login-container.dark .account-info-title {
+  color: #aab7b8;
 }
 
 .account-info-item {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 8px 0;
+  padding: 5px 0;
   font-size: 13px;
-}
-
-.account-info-item:first-child {
-  margin-bottom: 4px;
-  padding-top: 4px;
 }
 
 .account-info-item:last-child {
-  padding-bottom: 4px;
+  padding-bottom: 0;
 }
 
 .account-label {
-  color: #555;
-  font-weight: 600;
+  color: #545b64;
+  font-weight: 500;
   font-size: 13px;
-  letter-spacing: 0.3px;
+  min-width: 60px;
 }
 
 .login-container.dark .account-label {
-  color: #b0b0b0;
+  color: #aab7b8;
 }
 
 .account-value {
-  color: #667eea;
-  font-family: 'Monaco', 'Menlo', 'Consolas', 'SF Mono', monospace;
-  font-weight: 700;
-  font-size: 13px;
-  padding: 4px 10px;
-  background: rgba(102, 126, 234, 0.1);
-  border-radius: 6px;
-  letter-spacing: 0.5px;
+  color: #232f3e;
+  font-family: 'Monaco', 'Menlo', 'Consolas', monospace;
+  font-weight: 600;
+  font-size: 12px;
+  padding: 3px 8px;
+  background: #e9ecef;
+  border-radius: 3px;
+  user-select: all;
+  cursor: text;
 }
 
 .login-container.dark .account-value {
-  color: #4facfe;
-  background: rgba(79, 172, 254, 0.15);
+  color: #ffffff;
+  background: #2e3c4e;
 }
 
-/* Login Footer */
+/* ===========================================
+   Login Footer
+   =========================================== */
 .login-footer {
   text-align: center;
-  padding-top: 16px;
-  border-top: 1px solid #f0f0f0;
+  padding-top: 20px;
+  border-top: 1px solid #e0e0e0;
 }
 
 .login-container.dark .login-footer {
-  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  border-top: 1px solid #546277;
 }
 
 .login-footer p {
   margin: 0;
   font-size: 12px;
-  color: #999;
-  letter-spacing: 0.3px;
+  color: #879596;
 }
 
 .login-container.dark .login-footer p {
-  color: #666;
+  color: #aab7b8;
 }
 
-/* Error Messages */
+/* ===========================================
+   Error Messages
+   =========================================== */
 .login-form .ant-form-item-explain-error {
-  font-size: 13px;
+  font-size: 12px;
   margin-top: 6px;
+  color: #d13212;
+  font-weight: 400;
+  line-height: 1.4;
 }
 
-/* Responsive Design */
+.login-container.dark .login-form .ant-form-item-explain-error {
+  color: #ff5f52;
+}
+
+/* Error state for inputs */
+.login-form .ant-form-item-has-error .ant-input,
+.login-form .ant-form-item-has-error .ant-input-affix-wrapper,
+.login-form .ant-form-item-has-error .ant-input-password {
+  border-color: #d13212 !important;
+}
+
+.login-form .ant-form-item-has-error .ant-input:focus,
+.login-form .ant-form-item-has-error .ant-input-affix-wrapper:focus,
+.login-form .ant-form-item-has-error .ant-input-affix-wrapper-focused,
+.login-form .ant-form-item-has-error .ant-input-password:focus,
+.login-form .ant-form-item-has-error .ant-input-password-focused {
+  border-color: #d13212 !important;
+  box-shadow: 0 0 0 2px rgba(209, 50, 18, 0.15) !important;
+}
+
+/* ===========================================
+   Prefix Icons - Optimized Alignment
+   =========================================== */
+.login-form .anticon {
+  color: #879596;
+  font-size: 16px;
+  transition: color 0.2s;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.login-container.dark .login-form .anticon {
+  color: #aab7b8;
+}
+
+.login-form .ant-input:focus .anticon,
+.login-form .ant-input-affix-wrapper:focus .anticon,
+.login-form .ant-input-affix-wrapper-focused .anticon {
+  color: #ff9900;
+}
+
+/* Ensure prefix and suffix icons are properly aligned */
+.login-form .ant-input-prefix,
+.login-form .ant-input-suffix {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  margin-right: 8px;
+}
+
+.login-form .ant-input-suffix {
+  margin-right: 0;
+  margin-left: 8px;
+}
+
+/* Password input wrapper alignment fix */
+.login-form .ant-input-password {
+  display: flex !important;
+  align-items: center !important;
+}
+
+.login-form .ant-input-password .ant-input-prefix {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  height: 100%;
+}
+
+.login-form .ant-input-password .ant-input-prefix .anticon {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  line-height: 1;
+  vertical-align: middle;
+}
+
+/* Password input eye icon alignment */
+.login-form .ant-input-password-icon {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  color: #879596;
+  line-height: 1;
+  vertical-align: middle;
+}
+
+.login-container.dark .login-form .ant-input-password-icon {
+  color: #aab7b8;
+}
+
+.login-form .ant-input-password-icon:hover {
+  color: #ff9900;
+}
+
+/* ===========================================
+   Input Autocomplete Background Fix
+   =========================================== */
+.login-form input:-webkit-autofill,
+.login-form input:-webkit-autofill:hover,
+.login-form input:-webkit-autofill:focus {
+  -webkit-box-shadow: 0 0 0 30px white inset !important;
+  -webkit-text-fill-color: #16191f !important;
+  transition: background-color 5000s ease-in-out 0s;
+}
+
+.login-container.dark .login-form input:-webkit-autofill,
+.login-container.dark .login-form input:-webkit-autofill:hover,
+.login-container.dark .login-form input:-webkit-autofill:focus {
+  -webkit-box-shadow: 0 0 0 30px #37475a inset !important;
+  -webkit-text-fill-color: #ffffff !important;
+  transition: background-color 5000s ease-in-out 0s;
+}
+
+/* ===========================================
+   Accessibility & Focus Improvements
+   =========================================== */
+/* Improve keyboard navigation visibility */
+.login-button:focus-visible {
+  outline: 2px solid #ff9900;
+  outline-offset: 2px;
+}
+
+.theme-toggle .ant-switch:focus-visible {
+  outline: 2px solid #ff9900;
+  outline-offset: 2px;
+}
+
+/* Smooth transitions for all interactive elements */
+* {
+  -webkit-tap-highlight-color: transparent;
+}
+
+button, a, input, [role="button"] {
+  -webkit-tap-highlight-color: rgba(255, 153, 0, 0.1);
+}
+
+/* ===========================================
+   Responsive Design
+   =========================================== */
 @media (max-width: 768px) {
   .login-card {
     width: 90vw;
-    margin: 20px;
+    padding: 32px 24px;
   }
 
   .login-title {
-    font-size: 26px;
+    font-size: 20px;
+  }
+
+  .login-subtitle {
+    font-size: 13px;
   }
 
   .logo-container {
-    width: 64px;
-    height: 64px;
+    width: 40px;
+    height: 40px;
+    margin-bottom: 12px;
   }
 
   .logo-icon {
-    font-size: 32px;
+    font-size: 20px;
   }
 
   .theme-toggle {
     top: 16px;
     right: 16px;
   }
+
+  .login-header {
+    margin-bottom: 24px;
+  }
+
+  .login-form .ant-form-item {
+    margin-bottom: 14px;
+  }
+
+  .account-info {
+    padding: 12px 14px;
+  }
+
+  .account-value {
+    font-size: 11px;
+  }
 }
 
-/* Prefix Icons */
-.login-form .anticon {
-  color: #999;
-  font-size: 17px;
-  transition: color 0.3s;
-}
+@media (max-width: 480px) {
+  .login-card {
+    width: 95vw;
+    padding: 24px 20px;
+  }
 
-.login-container.dark .login-form .anticon {
-  color: rgba(255, 255, 255, 0.5);
-}
+  .login-title {
+    font-size: 18px;
+  }
 
-.login-form .ant-input:focus .anticon,
-.login-form .ant-input-affix-wrapper:focus .anticon,
-.login-form .ant-input-affix-wrapper-focused .anticon {
-  color: #667eea;
-}
+  .captcha-image-container {
+    width: 35%;
+  }
 
-.login-container.dark .login-form .ant-input:focus .anticon,
-.login-container.dark .login-form .ant-input-affix-wrapper:focus .anticon,
-.login-container.dark .login-form .ant-input-affix-wrapper-focused .anticon {
-  color: #4facfe;
-}
+  .login-form .ant-space-compact .ant-input,
+  .login-form .ant-space-compact .ant-input-affix-wrapper {
+    width: 65% !important;
+  }
 
-/* Input autocomplete background fix */
-.login-form input:-webkit-autofill,
-.login-form input:-webkit-autofill:hover,
-.login-form input:-webkit-autofill:focus {
-  -webkit-box-shadow: 0 0 0 30px white inset !important;
-  -webkit-text-fill-color: #333 !important;
-}
+  .account-info-item {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+  }
 
-.login-container.dark .login-form input:-webkit-autofill,
-.login-container.dark .login-form input:-webkit-autofill:hover,
-.login-container.dark .login-form input:-webkit-autofill:focus {
-  -webkit-box-shadow: 0 0 0 30px rgba(255, 255, 255, 0.08) inset !important;
-  -webkit-text-fill-color: #fff !important;
+  .account-label {
+    font-size: 12px;
+  }
+
+  .account-value {
+    width: 100%;
+    text-align: left;
+  }
 }

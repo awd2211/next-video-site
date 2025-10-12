@@ -17,7 +17,14 @@ const Breadcrumb: React.FC<BreadcrumbProps> = ({ path, onNavigate }) => {
     {
       title: (
         <span
-          style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4 }}
+          style={{
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            gap: 4,
+            color: '#787774',
+            fontWeight: 400
+          }}
           onClick={() => onNavigate(undefined)}
         >
           <HomeOutlined />
@@ -33,8 +40,8 @@ const Breadcrumb: React.FC<BreadcrumbProps> = ({ path, onNavigate }) => {
             display: 'flex',
             alignItems: 'center',
             gap: 4,
-            color: index === path.length - 1 ? '#1890ff' : undefined,
-            fontWeight: index === path.length - 1 ? 500 : undefined,
+            color: index === path.length - 1 ? '#0073bb' : '#787774',
+            fontWeight: index === path.length - 1 ? 600 : 400,
           }}
           onClick={() => {
             if (index < path.length - 1) {

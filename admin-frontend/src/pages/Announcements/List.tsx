@@ -26,6 +26,7 @@ import {
 } from '@ant-design/icons'
 import axios from '@/utils/axios'
 import dayjs from 'dayjs'
+import { formatAWSDate, AWSTag } from '@/utils/awsStyleHelpers'
 
 const { RangePicker } = DatePicker
 const { TextArea } = Input
@@ -169,18 +170,11 @@ const AnnouncementsList = () => {
     })
   }
 
-  const typeColors: Record<string, string> = {
-    info: 'blue',
-    warning: 'orange',
-    success: 'green',
-    error: 'red',
-  }
-
-  const typeLabels: Record<string, string> = {
-    info: '信息',
-    warning: '警告',
-    success: '成功',
-    error: '错误',
+  const typeMapping: Record<string, { label: string; type: 'info' | 'warning' | 'success' | 'error' }> = {
+    info: { label: '信息', type: 'info' },
+    warning: { label: '警告', type: 'warning' },
+    success: { label: '成功', type: 'success' },
+    error: { label: '错误', type: 'error' },
   }
 
   const columns = [
@@ -198,7 +192,7 @@ const AnnouncementsList = () => {
       render: (text: string, record: Announcement) => (
         <Space>
           {record.is_pinned && (
-            <PushpinOutlined style={{ color: '#ff4d4f', fontSize: 16 }} />
+            <PushpinOutlined style={{ color: '#d13212', fontSize: 16 }} />
           )}
           {text}
         </Space>
@@ -209,9 +203,10 @@ const AnnouncementsList = () => {
       dataIndex: 'type',
       key: 'type',
       width: 100,
-      render: (type: string) => (
-        <Tag color={typeColors[type]}>{typeLabels[type] || type}</Tag>
-      ),
+      render: (type: string) => {
+        const mapping = typeMapping[type]
+        return <AWSTag type={mapping.type}>{mapping.label}</AWSTag>
+      },
     },
     {
       title: '状态',
@@ -234,13 +229,12 @@ const AnnouncementsList = () => {
       render: (_: any, record: Announcement) => {
         if (record.start_date && record.end_date) {
           return (
-            <div style={{ fontSize: 12 }}>
-              {dayjs(record.start_date).format('YYYY-MM-DD')} 至{' '}
-              {dayjs(record.end_date).format('YYYY-MM-DD')}
-            </div>
+            <span style={{ fontFamily: 'Monaco, Menlo, Consolas, monospace', fontSize: '13px', color: '#37352f' }}>
+              {dayjs(record.start_date).format('YYYY-MM-DD')} ~ {dayjs(record.end_date).format('YYYY-MM-DD')}
+            </span>
           )
         }
-        return <span style={{ color: '#999' }}>不限时间</span>
+        return <span style={{ fontFamily: 'Monaco, Menlo, Consolas, monospace', color: '#787774', fontSize: '13px' }}>永久</span>
       },
     },
     {
@@ -248,7 +242,7 @@ const AnnouncementsList = () => {
       dataIndex: 'created_at',
       key: 'created_at',
       width: 180,
-      render: (date: string) => dayjs(date).format('YYYY-MM-DD HH:mm:ss'),
+      render: (date: string) => formatAWSDate(date, 'YYYY-MM-DD HH:mm:ss'),
     },
     {
       title: '操作',
@@ -261,7 +255,7 @@ const AnnouncementsList = () => {
             size="small"
             icon={<PushpinOutlined />}
             onClick={() => togglePinnedMutation.mutate(record.id)}
-            style={{ color: record.is_pinned ? '#ff4d4f' : undefined }}
+            style={{ color: record.is_pinned ? '#d13212' : undefined }}
           >
             {record.is_pinned ? '取消置顶' : '置顶'}
           </Button>

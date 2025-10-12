@@ -27,6 +27,7 @@ import {
 } from '@ant-design/icons'
 import axios from '@/utils/axios'
 import dayjs from 'dayjs'
+import { formatAWSDate, formatAWSNumber, AWSTag } from '@/utils/awsStyleHelpers'
 
 const { RangePicker } = DatePicker
 const { Option } = Select
@@ -224,7 +225,7 @@ const Logs = () => {
       dataIndex: 'module',
       key: 'module',
       width: 120,
-      render: (text: string) => <Tag color="blue">{text}</Tag>,
+      render: (text: string) => <AWSTag type="info">{text}</AWSTag>,
     },
     {
       title: '操作',
@@ -232,16 +233,16 @@ const Logs = () => {
       key: 'action',
       width: 100,
       render: (text: string) => {
-        const colorMap: { [key: string]: string } = {
-          create: 'green',
-          update: 'orange',
-          delete: 'red',
-          login: 'cyan',
+        const typeMap: { [key: string]: 'success' | 'warning' | 'error' | 'info' | 'default' } = {
+          create: 'success',
+          update: 'warning',
+          delete: 'error',
+          login: 'info',
           logout: 'default',
-          view: 'geekblue',
-          cleanup: 'purple',
+          view: 'info',
+          cleanup: 'warning',
         }
-        return <Tag color={colorMap[text] || 'default'}>{text}</Tag>
+        return <AWSTag type={typeMap[text] || 'default'}>{text}</AWSTag>
       },
     },
     {
@@ -260,7 +261,11 @@ const Logs = () => {
       dataIndex: 'ip_address',
       key: 'ip_address',
       width: 140,
-      render: (text: string) => text || '-',
+      render: (text: string) => text ? (
+        <span style={{ fontFamily: 'Monaco, Menlo, Consolas, monospace', fontSize: '13px', color: '#37352f' }}>
+          {text}
+        </span>
+      ) : '-',
     },
     {
       title: '请求方法',
@@ -268,14 +273,14 @@ const Logs = () => {
       key: 'request_method',
       width: 100,
       render: (text: string) => {
-        const colorMap: { [key: string]: string } = {
+        const typeMap: { [key: string]: 'default' | 'success' | 'warning' | 'error' } = {
           GET: 'default',
-          POST: 'green',
-          PUT: 'orange',
-          DELETE: 'red',
-          PATCH: 'purple',
+          POST: 'success',
+          PUT: 'warning',
+          DELETE: 'error',
+          PATCH: 'warning',
         }
-        return text ? <Tag color={colorMap[text] || 'default'}>{text}</Tag> : '-'
+        return text ? <AWSTag type={typeMap[text] || 'default'}>{text}</AWSTag> : '-'
       },
     },
     {
@@ -283,7 +288,7 @@ const Logs = () => {
       dataIndex: 'created_at',
       key: 'created_at',
       width: 180,
-      render: (date: string) => dayjs(date).format('YYYY-MM-DD HH:mm:ss'),
+      render: (date: string) => formatAWSDate(date, 'YYYY-MM-DD HH:mm:ss'),
     },
     {
       title: '操作',
@@ -460,7 +465,7 @@ const Logs = () => {
               )}
             </Descriptions.Item>
             <Descriptions.Item label="创建时间" span={2}>
-              {dayjs(selectedLog.created_at).format('YYYY-MM-DD HH:mm:ss')}
+              {formatAWSDate(selectedLog.created_at, 'YYYY-MM-DD HH:mm:ss')}
             </Descriptions.Item>
           </Descriptions>
         )}
@@ -484,7 +489,11 @@ const Logs = () => {
               <Row gutter={16}>
                 {statsData.module_stats?.map((item: any) => (
                   <Col span={6} key={item.module}>
-                    <Statistic title={item.module} value={item.count} />
+                    <Statistic
+                      title={item.module}
+                      value={item.count}
+                      valueStyle={{ fontFamily: 'Monaco, Menlo, Consolas, monospace', color: '#0073bb' }}
+                    />
                   </Col>
                 ))}
               </Row>
@@ -494,7 +503,11 @@ const Logs = () => {
               <Row gutter={16}>
                 {statsData.action_stats?.map((item: any) => (
                   <Col span={6} key={item.action}>
-                    <Statistic title={item.action} value={item.count} />
+                    <Statistic
+                      title={item.action}
+                      value={item.count}
+                      valueStyle={{ fontFamily: 'Monaco, Menlo, Consolas, monospace', color: '#1d8102' }}
+                    />
                   </Col>
                 ))}
               </Row>
@@ -504,7 +517,11 @@ const Logs = () => {
               <Row gutter={16}>
                 {statsData.admin_stats?.map((item: any) => (
                   <Col span={6} key={item.admin_user_id}>
-                    <Statistic title={`管理员 #${item.admin_user_id}`} value={item.count} />
+                    <Statistic
+                      title={`管理员 #${item.admin_user_id}`}
+                      value={item.count}
+                      valueStyle={{ fontFamily: 'Monaco, Menlo, Consolas, monospace', color: '#ff9900' }}
+                    />
                   </Col>
                 ))}
               </Row>
@@ -514,8 +531,18 @@ const Logs = () => {
               <Table
                 dataSource={statsData.daily_stats}
                 columns={[
-                  { title: '日期', dataIndex: 'date', key: 'date' },
-                  { title: '操作数', dataIndex: 'count', key: 'count' },
+                  {
+                    title: '日期',
+                    dataIndex: 'date',
+                    key: 'date',
+                    render: (date: string) => formatAWSDate(date, 'YYYY-MM-DD')
+                  },
+                  {
+                    title: '操作数',
+                    dataIndex: 'count',
+                    key: 'count',
+                    render: (count: number) => formatAWSNumber(count)
+                  },
                 ]}
                 pagination={false}
                 size="small"

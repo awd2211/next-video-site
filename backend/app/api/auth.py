@@ -11,6 +11,8 @@ from app.database import get_db
 from app.models.user import AdminUser, User
 from app.schemas.auth import (
     AdminLogin,
+    PasswordResetConfirm,
+    PasswordResetRequest,
     RefreshTokenRequest,
     TokenResponse,
     UserLogin,
@@ -277,3 +279,108 @@ async def admin_logout(
     await add_to_blacklist(token, reason="admin_logout", expires_in=expires_in)
 
     return {"message": "Successfully logged out"}
+
+
+@router.post("/admin/password-reset/request", status_code=status.HTTP_200_OK)
+@limiter.limit(RateLimitPresets.STRICT)  # 严格限流: 防止邮件轰炸
+async def request_admin_password_reset(
+    request: Request,
+    reset_request: PasswordResetRequest,
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Request admin password reset - send verification code to email
+    """
+    from app.models.email import EmailConfiguration
+    from app.utils.email_service import send_password_reset_email
+    from app.utils.reset_code_manager import reset_code_manager
+
+    # Check if admin user exists
+    result = await db.execute(
+        select(AdminUser).filter(AdminUser.email == reset_request.email)
+    )
+    admin_user = result.scalar_one_or_none()
+
+    # For security, don't reveal whether email exists or not
+    # Always return success but only send email if user exists
+    if admin_user and admin_user.is_active:
+        # Generate and store verification code
+        code = await reset_code_manager.create_and_store_code(reset_request.email)
+
+        # Get email configuration
+        email_config_result = await db.execute(
+            select(EmailConfiguration).filter(EmailConfiguration.is_active == True)
+        )
+        email_config = email_config_result.scalar_one_or_none()
+
+        if email_config:
+            try:
+                # Send password reset email
+                await send_password_reset_email(
+                    email_config,
+                    reset_request.email,
+                    code,
+                    is_admin=True,
+                )
+            except Exception as e:
+                # Log error but don't expose it to client
+                print(f"Failed to send password reset email: {e}")
+                raise HTTPException(
+                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                    detail="Failed to send verification email. Please try again later or contact support.",
+                )
+        else:
+            raise HTTPException(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail="Email service is not configured. Please contact administrator.",
+            )
+
+    return {"message": "If the email exists, a verification code has been sent."}
+
+
+@router.post("/admin/password-reset/confirm", status_code=status.HTTP_200_OK)
+@limiter.limit(RateLimitPresets.MODERATE)  # 适度限流: 5次验证尝试
+async def confirm_admin_password_reset(
+    request: Request,
+    reset_confirm: PasswordResetConfirm,
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Confirm admin password reset with verification code
+    """
+    from app.utils.reset_code_manager import reset_code_manager
+
+    # Validate verification code
+    is_valid = await reset_code_manager.validate_code(
+        reset_confirm.email, reset_confirm.code
+    )
+
+    if not is_valid:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid or expired verification code",
+        )
+
+    # Find admin user
+    result = await db.execute(
+        select(AdminUser).filter(AdminUser.email == reset_confirm.email)
+    )
+    admin_user = result.scalar_one_or_none()
+
+    if not admin_user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User not found",
+        )
+
+    if not admin_user.is_active:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Account is inactive",
+        )
+
+    # Update password
+    admin_user.hashed_password = get_password_hash(reset_confirm.new_password)
+    await db.commit()
+
+    return {"message": "Password has been reset successfully"}

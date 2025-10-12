@@ -50,11 +50,11 @@ const EmptyState: React.FC<EmptyStateProps> = ({
       image={config.image}
       description={
         <div style={{ padding: '16px 0' }}>
-          <div style={{ fontSize: 16, fontWeight: 500, marginBottom: 8 }}>
+          <div style={{ fontSize: 16, fontWeight: 600, marginBottom: 8, color: '#37352f' }}>
             {config.title}
           </div>
           {config.description && (
-            <div style={{ color: '#999', fontSize: 14 }}>
+            <div style={{ color: '#787774', fontSize: 14 }}>
               {config.description}
             </div>
           )}
@@ -63,12 +63,21 @@ const EmptyState: React.FC<EmptyStateProps> = ({
     >
       <Space>
         {onAction && actionText && (
-          <Button type="primary" icon={<PlusOutlined />} onClick={onAction}>
+          <Button
+            type="primary"
+            icon={<PlusOutlined />}
+            onClick={onAction}
+            style={{ borderRadius: '8px', fontWeight: 500 }}
+          >
             {actionText}
           </Button>
         )}
         {onRefresh && (
-          <Button icon={<ReloadOutlined />} onClick={onRefresh}>
+          <Button
+            icon={<ReloadOutlined />}
+            onClick={onRefresh}
+            style={{ borderRadius: '8px', fontWeight: 500 }}
+          >
             刷新
           </Button>
         )}

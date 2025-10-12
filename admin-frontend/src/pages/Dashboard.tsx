@@ -83,7 +83,7 @@ const Dashboard = () => {
           anime: '动漫',
           documentary: '纪录片',
         }
-        return <Tag color="blue">{typeMap[type] || type}</Tag>
+        return <Tag style={{ backgroundColor: 'rgba(0, 115, 187, 0.1)', color: '#0073bb', border: '1px solid rgba(0, 115, 187, 0.2)' }}>{typeMap[type] || type}</Tag>
       },
     },
     {
@@ -92,13 +92,13 @@ const Dashboard = () => {
       key: 'status',
       width: 100,
       render: (status: string) => {
-        const statusConfig: Record<string, { color: string; text: string }> = {
-          draft: { color: 'default', text: '草稿' },
-          published: { color: 'green', text: '已发布' },
-          archived: { color: 'orange', text: '已归档' },
+        const statusConfig: Record<string, { bg: string; color: string; border: string; text: string }> = {
+          draft: { bg: 'rgba(0, 0, 0, 0.04)', color: '#787774', border: '1px solid rgba(0, 0, 0, 0.1)', text: '草稿' },
+          published: { bg: 'rgba(29, 129, 2, 0.1)', color: '#1d8102', border: '1px solid rgba(29, 129, 2, 0.2)', text: '已发布' },
+          archived: { bg: 'rgba(255, 153, 0, 0.1)', color: '#ff9900', border: '1px solid rgba(255, 153, 0, 0.2)', text: '已归档' },
         }
-        const config = statusConfig[status] || { color: 'default', text: status }
-        return <Tag color={config.color}>{config.text}</Tag>
+        const config = statusConfig[status] || { bg: 'rgba(0, 0, 0, 0.04)', color: '#787774', border: '1px solid rgba(0, 0, 0, 0.1)', text: status }
+        return <Tag style={{ backgroundColor: config.bg, color: config.color, border: config.border }}>{config.text}</Tag>
       },
     },
     {
@@ -116,68 +116,68 @@ const Dashboard = () => {
         {t('dashboard.title')}
       </Title>
 
-      {/* 统计卡片 */}
+      {/* 统计卡片 - AWS Container Style */}
       <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
         <Col xs={24} sm={12} lg={6}>
           {statsLoading ? (
-            <Card bordered={false}>
+            <Card>
               <Skeleton active paragraph={{ rows: 2 }} />
             </Card>
           ) : (
-            <Card bordered={false} style={{ background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' }}>
+            <Card>
               <Statistic
-                title={<span style={{ color: 'rgba(255,255,255,0.85)' }}>{t('dashboard.totalUsers')}</span>}
+                title={t('dashboard.totalUsers')}
                 value={stats?.total_users || 0}
-                prefix={<UserOutlined />}
-                valueStyle={{ color: '#fff' }}
+                prefix={<UserOutlined style={{ color: '#0073bb', fontSize: 24 }} />}
+                valueStyle={{ color: '#0073bb' }}
               />
             </Card>
           )}
         </Col>
         <Col xs={24} sm={12} lg={6}>
           {statsLoading ? (
-            <Card bordered={false}>
+            <Card>
               <Skeleton active paragraph={{ rows: 2 }} />
             </Card>
           ) : (
-            <Card bordered={false} style={{ background: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)' }}>
+            <Card>
               <Statistic
-                title={<span style={{ color: 'rgba(255,255,255,0.85)' }}>{t('dashboard.totalVideos')}</span>}
+                title={t('dashboard.totalVideos')}
                 value={stats?.total_videos || 0}
-                prefix={<VideoCameraOutlined />}
-                valueStyle={{ color: '#fff' }}
+                prefix={<VideoCameraOutlined style={{ color: '#1d8102', fontSize: 24 }} />}
+                valueStyle={{ color: '#1d8102' }}
               />
             </Card>
           )}
         </Col>
         <Col xs={24} sm={12} lg={6}>
           {statsLoading ? (
-            <Card bordered={false}>
+            <Card>
               <Skeleton active paragraph={{ rows: 2 }} />
             </Card>
           ) : (
-            <Card bordered={false} style={{ background: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)' }}>
+            <Card>
               <Statistic
-                title={<span style={{ color: 'rgba(255,255,255,0.85)' }}>{t('dashboard.totalComments')}</span>}
+                title={t('dashboard.totalComments')}
                 value={stats?.total_comments || 0}
-                prefix={<CommentOutlined />}
-                valueStyle={{ color: '#fff' }}
+                prefix={<CommentOutlined style={{ color: '#ff9900', fontSize: 24 }} />}
+                valueStyle={{ color: '#ff9900' }}
               />
             </Card>
           )}
         </Col>
         <Col xs={24} sm={12} lg={6}>
           {statsLoading ? (
-            <Card bordered={false}>
+            <Card>
               <Skeleton active paragraph={{ rows: 2 }} />
             </Card>
           ) : (
-            <Card bordered={false} style={{ background: 'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)' }}>
+            <Card>
               <Statistic
-                title={<span style={{ color: 'rgba(255,255,255,0.85)' }}>{t('dashboard.totalViews')}</span>}
+                title={t('dashboard.totalViews')}
                 value={stats?.total_views || 0}
-                prefix={<EyeOutlined />}
-                valueStyle={{ color: '#fff' }}
+                prefix={<EyeOutlined style={{ color: '#d13212', fontSize: 24 }} />}
+                valueStyle={{ color: '#d13212' }}
               />
             </Card>
           )}
@@ -221,7 +221,7 @@ const Dashboard = () => {
                   duration: 1000,
                 },
               }}
-              color={['#667eea', '#f093fb', '#4facfe']}
+              color={['#0073bb', '#1d8102', '#ff9900']}
               height={300}
             />
           </Card>
@@ -292,19 +292,19 @@ const Dashboard = () => {
                 <a href="/videos/new" style={{ fontSize: 16, fontWeight: 500 }}>
                   ➕ 添加新视频
                 </a>
-                <div style={{ color: '#8c8c8c', marginTop: 4 }}>快速创建新的视频内容</div>
+                <div style={{ color: '#787774', marginTop: 4, fontSize: 13 }}>快速创建新的视频内容</div>
               </div>
               <div>
                 <a href="/users" style={{ fontSize: 16, fontWeight: 500 }}>
                   👥 管理用户
                 </a>
-                <div style={{ color: '#8c8c8c', marginTop: 4 }}>查看和管理系统用户</div>
+                <div style={{ color: '#787774', marginTop: 4, fontSize: 13 }}>查看和管理系统用户</div>
               </div>
               <div>
                 <a href="/comments" style={{ fontSize: 16, fontWeight: 500 }}>
                   💬 审核评论
                 </a>
-                <div style={{ color: '#8c8c8c', marginTop: 4 }}>审核用户提交的评论</div>
+                <div style={{ color: '#787774', marginTop: 4, fontSize: 13 }}>审核用户提交的评论</div>
               </div>
             </Space>
           </Card>
@@ -316,20 +316,20 @@ const Dashboard = () => {
           >
             <Space direction="vertical" style={{ width: '100%' }} size="middle">
               <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                <span style={{ color: '#8c8c8c' }}>数据库状态:</span>
-                <Tag color="green">正常</Tag>
+                <span style={{ color: '#787774' }}>数据库状态:</span>
+                <Tag style={{ backgroundColor: 'rgba(29, 129, 2, 0.1)', color: '#1d8102', border: '1px solid rgba(29, 129, 2, 0.2)' }}>正常</Tag>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                <span style={{ color: '#8c8c8c' }}>缓存服务:</span>
-                <Tag color="green">运行中</Tag>
+                <span style={{ color: '#787774' }}>缓存服务:</span>
+                <Tag style={{ backgroundColor: 'rgba(29, 129, 2, 0.1)', color: '#1d8102', border: '1px solid rgba(29, 129, 2, 0.2)' }}>运行中</Tag>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                <span style={{ color: '#8c8c8c' }}>存储服务:</span>
-                <Tag color="green">可用</Tag>
+                <span style={{ color: '#787774' }}>存储服务:</span>
+                <Tag style={{ backgroundColor: 'rgba(29, 129, 2, 0.1)', color: '#1d8102', border: '1px solid rgba(29, 129, 2, 0.2)' }}>可用</Tag>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                <span style={{ color: '#8c8c8c' }}>API 版本:</span>
-                <span>v1.0.0</span>
+                <span style={{ color: '#787774' }}>API 版本:</span>
+                <span style={{ fontFamily: 'Monaco, Menlo, Consolas, monospace', color: '#37352f' }}>v1.0.0</span>
               </div>
             </Space>
           </Card>

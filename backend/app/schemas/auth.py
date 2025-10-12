@@ -50,3 +50,25 @@ class RefreshTokenRequest(BaseModel):
     """Refresh token request schema"""
 
     refresh_token: str
+
+
+class PasswordResetRequest(BaseModel):
+    """Password reset request schema - send verification code"""
+
+    email: EmailStr
+
+
+class PasswordResetConfirm(BaseModel):
+    """Password reset confirm schema - reset password with code"""
+
+    email: EmailStr
+    code: str = Field(..., min_length=6, max_length=6, description="6-digit verification code")
+    new_password: str = Field(..., min_length=8, max_length=128)
+
+    @field_validator("new_password")
+    @classmethod
+    def validate_password_strength(cls, v: str) -> str:
+        """验证密码强度"""
+        from app.utils.password_validator import validate_password_field
+
+        return validate_password_field(v)

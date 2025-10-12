@@ -192,15 +192,44 @@ const VideoList = () => {
       title: t('video.type'),
       dataIndex: 'video_type',
       key: 'video_type',
-      render: (type: string) => <Tag>{type}</Tag>,
+      render: (type: string) => (
+        <Tag style={{
+          backgroundColor: 'rgba(0, 115, 187, 0.1)',
+          color: '#0073bb',
+          border: '1px solid rgba(0, 115, 187, 0.2)',
+          borderRadius: '4px'
+        }}>
+          {type}
+        </Tag>
+      ),
     },
     {
       title: t('video.status'),
       dataIndex: 'status',
       key: 'status',
-      render: (status: string) => (
-        <Tag color={status === 'published' ? 'green' : 'orange'}>{status}</Tag>
-      ),
+      render: (status: string) => {
+        const statusStyles: Record<string, any> = {
+          published: {
+            backgroundColor: 'rgba(29, 129, 2, 0.1)',
+            color: '#1d8102',
+            border: '1px solid rgba(29, 129, 2, 0.2)'
+          },
+          draft: {
+            backgroundColor: 'rgba(0, 0, 0, 0.04)',
+            color: '#787774',
+            border: '1px solid rgba(0, 0, 0, 0.1)'
+          },
+          archived: {
+            backgroundColor: 'rgba(255, 153, 0, 0.1)',
+            color: '#ff9900',
+            border: '1px solid rgba(255, 153, 0, 0.2)'
+          },
+        }
+        const style = statusStyles[status] || statusStyles.draft
+        return (
+          <Tag style={{ ...style, borderRadius: '4px' }}>{status}</Tag>
+        )
+      },
     },
     {
       title: t('video.views'),
@@ -211,7 +240,11 @@ const VideoList = () => {
       title: 'Rating',
       dataIndex: 'average_rating',
       key: 'average_rating',
-      render: (rating: number) => rating.toFixed(1),
+      render: (rating: number) => (
+        <span style={{ fontFamily: 'Monaco, Menlo, Consolas, monospace', color: '#37352f' }}>
+          {rating?.toFixed(1) || '0.0'}
+        </span>
+      ),
     },
     {
       title: t('table.actions'),

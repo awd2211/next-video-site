@@ -25,6 +25,7 @@ import {
 } from '@ant-design/icons'
 import type { ColumnsType } from 'antd/es/table'
 import seriesService, { SeriesListItem, SeriesType, SeriesStatus } from '@/services/seriesService'
+import { formatAWSDate, formatAWSNumber, AWSTag } from '@/utils/awsStyleHelpers'
 
 const SeriesList: React.FC = () => {
   const navigate = useNavigate()
@@ -74,24 +75,24 @@ const SeriesList: React.FC = () => {
 
   // 类型标签
   const getTypeTag = (type: SeriesType) => {
-    const typeMap = {
-      series: { color: 'blue', text: '系列剧' },
-      collection: { color: 'green', text: '合集' },
-      franchise: { color: 'purple', text: '系列作品' },
+    const typeMap: Record<SeriesType, { type: 'info' | 'success' | 'default'; text: string }> = {
+      series: { type: 'info', text: '系列剧' },
+      collection: { type: 'success', text: '合集' },
+      franchise: { type: 'default', text: '系列作品' },
     }
     const config = typeMap[type]
-    return <Tag color={config.color}>{config.text}</Tag>
+    return <AWSTag type={config.type}>{config.text}</AWSTag>
   }
 
   // 状态标签
   const getStatusTag = (status: SeriesStatus) => {
-    const statusMap = {
-      draft: { color: 'default', text: '草稿' },
-      published: { color: 'success', text: '已发布' },
-      archived: { color: 'warning', text: '已归档' },
+    const statusMap: Record<SeriesStatus, { type: 'default' | 'success' | 'warning'; text: string }> = {
+      draft: { type: 'default', text: '草稿' },
+      published: { type: 'success', text: '已发布' },
+      archived: { type: 'warning', text: '已归档' },
     }
     const config = statusMap[status]
-    return <Tag color={config.color}>{config.text}</Tag>
+    return <AWSTag type={config.type}>{config.text}</AWSTag>
   }
 
   const columns: ColumnsType<SeriesListItem> = [
@@ -149,34 +150,35 @@ const SeriesList: React.FC = () => {
       dataIndex: 'total_episodes',
       key: 'total_episodes',
       width: 80,
+      render: (num: number) => formatAWSNumber(num),
     },
     {
       title: '播放量',
       dataIndex: 'total_views',
       key: 'total_views',
       width: 100,
-      render: (views: number) => views.toLocaleString(),
+      render: (views: number) => formatAWSNumber(views.toLocaleString()),
     },
     {
       title: '收藏数',
       dataIndex: 'total_favorites',
       key: 'total_favorites',
       width: 100,
-      render: (favs: number) => favs.toLocaleString(),
+      render: (favs: number) => formatAWSNumber(favs.toLocaleString()),
     },
     {
       title: '推荐',
       dataIndex: 'is_featured',
       key: 'is_featured',
       width: 80,
-      render: (featured: boolean) => (featured ? <Tag color="red">推荐</Tag> : '-'),
+      render: (featured: boolean) => (featured ? <AWSTag type="error">推荐</AWSTag> : '-'),
     },
     {
       title: '创建时间',
       dataIndex: 'created_at',
       key: 'created_at',
       width: 180,
-      render: (time: string) => new Date(time).toLocaleString('zh-CN'),
+      render: (time: string) => formatAWSDate(time, 'YYYY-MM-DD HH:mm:ss'),
     },
     {
       title: '操作',
