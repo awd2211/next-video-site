@@ -7,8 +7,9 @@ import {
   Image,
   Dropdown,
   Modal,
-  message,
+  Table,
 } from 'antd'
+import type { ColumnsType } from 'antd/es/table'
 import {
   FileImageOutlined,
   VideoCameraOutlined,
@@ -34,6 +35,9 @@ interface FileListProps {
   onMove: (mediaIds: number[], targetParentId?: number) => void
   onDelete: (mediaIds: number[], permanent: boolean) => void
   onRefresh: () => void
+  viewMode: 'grid' | 'list'
+  sortBy: 'name' | 'size' | 'date'
+  sortOrder: 'asc' | 'desc'
 }
 
 const FileList: React.FC<FileListProps> = ({
@@ -46,9 +50,8 @@ const FileList: React.FC<FileListProps> = ({
   onPageSizeChange,
   selectedFiles,
   onSelectChange,
-  onMove,
   onDelete,
-  onRefresh,
+  viewMode,
 }) => {
   const [previewImage, setPreviewImage] = useState<string | null>(null)
 
@@ -122,12 +125,17 @@ const FileList: React.FC<FileListProps> = ({
   ]
 
   // 渲染文件图标
-  const renderFileIcon = (item: MediaItem) => {
+  const renderFileIcon = (item: MediaItem, isListView = false) => {
+    const iconStyle = isListView ? { fontSize: 24 } : {}
+
     if (item.is_folder) {
-      return <FolderOutlined className="file-card-preview-icon" />
+      return <FolderOutlined className="file-card-preview-icon" style={iconStyle} />
     }
 
     if (item.media_type === 'image' && item.thumbnail_url) {
+      if (isListView) {
+        return <img src={item.thumbnail_url || item.url} alt={item.title} style={{ width: 32, height: 32, objectFit: 'cover', borderRadius: 4 }} />
+      }
       return (
         <img
           src={item.thumbnail_url || item.url}
@@ -139,15 +147,79 @@ const FileList: React.FC<FileListProps> = ({
     }
 
     if (item.media_type === 'video') {
+      if (isListView && item.thumbnail_url) {
+        return <img src={item.thumbnail_url} alt={item.title} style={{ width: 32, height: 32, objectFit: 'cover', borderRadius: 4 }} />
+      }
       return item.thumbnail_url ? (
         <img src={item.thumbnail_url} alt={item.title} />
       ) : (
-        <VideoCameraOutlined className="file-card-preview-icon" />
+        <VideoCameraOutlined className="file-card-preview-icon" style={iconStyle} />
       )
     }
 
-    return <FileImageOutlined className="file-card-preview-icon" />
+    return <FileImageOutlined className="file-card-preview-icon" style={iconStyle} />
   }
+
+  // 格式化日期
+  const formatDate = (dateString: string): string => {
+    const date = new Date(dateString)
+    return date.toLocaleString('zh-CN', {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit'
+    })
+  }
+
+  // Table列定义（列表视图）
+  const columns: ColumnsType<MediaItem> = [
+    {
+      title: '名称',
+      dataIndex: 'title',
+      key: 'title',
+      render: (title, record) => (
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          {renderFileIcon(record, true)}
+          <span>{title}</span>
+        </div>
+      ),
+    },
+    {
+      title: '大小',
+      dataIndex: 'file_size',
+      key: 'file_size',
+      width: 120,
+      render: (size) => formatFileSize(size),
+    },
+    {
+      title: '类型',
+      dataIndex: 'media_type',
+      key: 'media_type',
+      width: 100,
+      render: (type, record) => {
+        if (record.is_folder) return '文件夹'
+        return type === 'image' ? '图片' : type === 'video' ? '视频' : '文件'
+      },
+    },
+    {
+      title: '创建时间',
+      dataIndex: 'created_at',
+      key: 'created_at',
+      width: 180,
+      render: (date) => formatDate(date),
+    },
+    {
+      title: '操作',
+      key: 'actions',
+      width: 80,
+      render: (_, record) => (
+        <Dropdown menu={{ items: getContextMenu(record) }} trigger={['click']}>
+          <MoreOutlined style={{ cursor: 'pointer', fontSize: 18 }} />
+        </Dropdown>
+      ),
+    },
+  ]
 
   if (loading) {
     return (
@@ -166,6 +238,47 @@ const FileList: React.FC<FileListProps> = ({
     )
   }
 
+  // 列表视图
+  if (viewMode === 'list') {
+    return (
+      <div className="file-list">
+        <Table
+          rowSelection={{
+            selectedRowKeys: selectedFiles,
+            onChange: (selectedRowKeys) => onSelectChange(selectedRowKeys as number[]),
+          }}
+          columns={columns}
+          dataSource={data}
+          rowKey="id"
+          loading={loading}
+          pagination={{
+            current: page,
+            pageSize: pageSize,
+            total: total,
+            onChange: onPageChange,
+            onShowSizeChange: (_, size) => onPageSizeChange(size),
+            showSizeChanger: true,
+            showQuickJumper: true,
+            showTotal: (total) => `共 ${total} 项`,
+          }}
+        />
+
+        {/* 图片预览 */}
+        <Image
+          style={{ display: 'none' }}
+          preview={{
+            visible: !!previewImage,
+            src: previewImage || '',
+            onVisibleChange: (visible) => {
+              if (!visible) setPreviewImage(null)
+            },
+          }}
+        />
+      </div>
+    )
+  }
+
+  // 网格视图
   return (
     <div className="file-list">
       <div style={{ marginBottom: 16 }}>

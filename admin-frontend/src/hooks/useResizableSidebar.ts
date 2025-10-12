@@ -88,6 +88,7 @@ export const useResizableSidebar = ({
         document.removeEventListener('mouseup', handleMouseUp);
       };
     }
+    return undefined;
   }, [isResizing, handleMouseMove, handleMouseUp]);
 
   // 重置宽度

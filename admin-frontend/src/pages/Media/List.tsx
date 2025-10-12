@@ -31,7 +31,6 @@ import {
   VideoCameraOutlined,
   ReloadOutlined,
   FolderAddOutlined,
-  SettingOutlined,
 } from '@ant-design/icons'
 import axios from '@/utils/axios'
 import type { UploadFile } from 'antd/es/upload/interface'

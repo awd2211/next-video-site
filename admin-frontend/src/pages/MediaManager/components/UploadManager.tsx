@@ -1,9 +1,6 @@
 import React, { useEffect } from 'react'
 import { Drawer, Progress, Button, Space, Tag, message } from 'antd'
 import {
-  PlayCircleOutlined,
-  PauseCircleOutlined,
-  CloseCircleOutlined,
   CheckCircleOutlined,
 } from '@ant-design/icons'
 import { ChunkUploader } from '../utils/ChunkUploader'

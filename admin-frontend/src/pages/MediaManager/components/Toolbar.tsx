@@ -1,11 +1,19 @@
 import React, { useRef } from 'react'
-import { Button, Input, Space, Upload, Popconfirm } from 'antd'
+import { Button, Input, Space, Popconfirm, Dropdown, Segmented } from 'antd'
+import type { MenuProps } from 'antd'
 import {
   SearchOutlined,
   UploadOutlined,
   FolderAddOutlined,
   ReloadOutlined,
   DeleteOutlined,
+  AppstoreOutlined,
+  BarsOutlined,
+  SortAscendingOutlined,
+  SortDescendingOutlined,
+  FontSizeOutlined,
+  FileOutlined,
+  ClockCircleOutlined,
 } from '@ant-design/icons'
 
 interface ToolbarProps {
@@ -15,6 +23,11 @@ interface ToolbarProps {
   onRefresh: () => void
   selectedCount: number
   onBatchDelete: () => void
+  viewMode: 'grid' | 'list'
+  onViewModeChange: (mode: 'grid' | 'list') => void
+  sortBy: 'name' | 'size' | 'date'
+  sortOrder: 'asc' | 'desc'
+  onSortChange: (by: 'name' | 'size' | 'date', order: 'asc' | 'desc') => void
 }
 
 const Toolbar: React.FC<ToolbarProps> = ({
@@ -24,6 +37,11 @@ const Toolbar: React.FC<ToolbarProps> = ({
   onRefresh,
   selectedCount,
   onBatchDelete,
+  viewMode,
+  onViewModeChange,
+  sortBy,
+  sortOrder,
+  onSortChange,
 }) => {
   const fileInputRef = useRef<HTMLInputElement>(null)
 
@@ -34,6 +52,42 @@ const Toolbar: React.FC<ToolbarProps> = ({
     }
     // 清空 input 以便可以重复选择相同文件
     e.target.value = ''
+  }
+
+  // 排序菜单
+  const sortByItems: MenuProps['items'] = [
+    {
+      key: 'name',
+      label: '按名称',
+      icon: <FontSizeOutlined />,
+    },
+    {
+      key: 'size',
+      label: '按大小',
+      icon: <FileOutlined />,
+    },
+    {
+      key: 'date',
+      label: '按日期',
+      icon: <ClockCircleOutlined />,
+    },
+  ]
+
+  const handleSortByClick: MenuProps['onClick'] = ({ key }) => {
+    onSortChange(key as 'name' | 'size' | 'date', sortOrder)
+  }
+
+  const toggleSortOrder = () => {
+    onSortChange(sortBy, sortOrder === 'asc' ? 'desc' : 'asc')
+  }
+
+  const getSortLabel = () => {
+    const labels = {
+      name: '名称',
+      size: '大小',
+      date: '日期',
+    }
+    return labels[sortBy]
   }
 
   return (
@@ -66,6 +120,35 @@ const Toolbar: React.FC<ToolbarProps> = ({
               </Popconfirm>
             </>
           )}
+
+          {/* 视图模式切换 */}
+          <Segmented
+            value={viewMode}
+            onChange={(value) => onViewModeChange(value as 'grid' | 'list')}
+            options={[
+              {
+                value: 'grid',
+                icon: <AppstoreOutlined />,
+              },
+              {
+                value: 'list',
+                icon: <BarsOutlined />,
+              },
+            ]}
+          />
+
+          {/* 排序控制 */}
+          <Space.Compact>
+            <Dropdown menu={{ items: sortByItems, onClick: handleSortByClick }}>
+              <Button>
+                排序: {getSortLabel()}
+              </Button>
+            </Dropdown>
+            <Button
+              icon={sortOrder === 'asc' ? <SortAscendingOutlined /> : <SortDescendingOutlined />}
+              onClick={toggleSortOrder}
+            />
+          </Space.Compact>
 
           <Button
             type="primary"

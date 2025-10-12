@@ -3,6 +3,54 @@
   display: flex;
   flex-direction: column;
   background: #f0f2f5;
+  position: relative;
+}
+
+/* 拖拽上传遮罩层 */
+.drag-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(24, 144, 255, 0.1);
+  backdrop-filter: blur(4px);
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: fadeIn 0.2s ease-in;
+}
+
+.drag-overlay-content {
+  background: white;
+  padding: 48px 64px;
+  border-radius: 16px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+  text-align: center;
+  border: 2px dashed #1890ff;
+}
+
+.drag-overlay-content h2 {
+  margin-top: 16px;
+  margin-bottom: 8px;
+  color: #1890ff;
+  font-size: 24px;
+}
+
+.drag-overlay-content p {
+  color: #8c8c8c;
+  margin: 0;
+  font-size: 14px;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 
 .media-manager-layout {

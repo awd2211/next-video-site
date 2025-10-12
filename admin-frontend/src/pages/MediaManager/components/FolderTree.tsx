@@ -17,7 +17,6 @@ const FolderTree: React.FC<FolderTreeProps> = ({
   selectedFolderId,
   onSelect,
   onCreateFolder,
-  onRefresh,
 }) => {
   const [createModalVisible, setCreateModalVisible] = useState(false)
   const [newFolderName, setNewFolderName] = useState('')
