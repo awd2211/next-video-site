@@ -165,6 +165,14 @@ const FileList: React.FC<FileListProps> = ({
     setNewTitle('')
   }
 
+  // 处理拖拽开始
+  const handleDragStart = (e: React.DragEvent, item: MediaItem) => {
+    // 如果拖拽的项目未被选中，则只拖拽当前项
+    const dragIds = selectedFiles.includes(item.id) ? selectedFiles : [item.id]
+    e.dataTransfer.setData('application/json', JSON.stringify(dragIds))
+    e.dataTransfer.effectAllowed = 'move'
+  }
+
   // 右键菜单
   const getContextMenu = (item: MediaItem): MenuProps['items'] => {
     const menu: MenuProps['items'] = []
@@ -456,6 +464,8 @@ const FileList: React.FC<FileListProps> = ({
           >
             <div
               className={`file-card ${selectedFiles.includes(item.id) ? 'selected' : ''}`}
+              draggable={!item.is_folder}
+              onDragStart={(e) => handleDragStart(e, item)}
               onClick={(e) => {
                 if (e.ctrlKey || e.metaKey) {
                   toggleSelect(item.id)
@@ -464,6 +474,7 @@ const FileList: React.FC<FileListProps> = ({
                 }
               }}
               onDoubleClick={() => handleDoubleClick(item)}
+              style={{ cursor: item.is_folder ? 'pointer' : 'move' }}
             >
               <Checkbox
                 checked={selectedFiles.includes(item.id)}

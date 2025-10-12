@@ -23,6 +23,7 @@ interface FolderTreeProps {
   onRename: (folderId: number, newTitle: string) => void
   onDelete: (folderId: number) => void
   onRefresh: () => void
+  onFileDrop?: (fileIds: number[], targetFolderId?: number) => void
 }
 
 const EXPANDED_KEYS_STORAGE_KEY = 'media-manager-expanded-keys'
@@ -34,6 +35,7 @@ const FolderTree: React.FC<FolderTreeProps> = ({
   onCreateFolder,
   onRename,
   onDelete,
+  onFileDrop,
 }) => {
   const [createModalVisible, setCreateModalVisible] = useState(false)
   const [newFolderName, setNewFolderName] = useState('')
@@ -41,6 +43,9 @@ const FolderTree: React.FC<FolderTreeProps> = ({
   const [renameModalVisible, setRenameModalVisible] = useState(false)
   const [renamingFolderId, setRenamingFolderId] = useState<number | null>(null)
   const [renameValue, setRenameValue] = useState('')
+
+  // 拖拽状态
+  const [dragOverKey, setDragOverKey] = useState<string | null>(null)
 
   // 展开的节点keys
   const [expandedKeys, setExpandedKeys] = useState<React.Key[]>(() => {
@@ -93,6 +98,39 @@ const FolderTree: React.FC<FolderTreeProps> = ({
     message.success('已收起全部文件夹')
   }
 
+  // 处理拖拽放置
+  const handleDrop = (e: React.DragEvent, folderId?: number) => {
+    e.preventDefault()
+    e.stopPropagation()
+    setDragOverKey(null)
+
+    try {
+      const data = e.dataTransfer.getData('application/json')
+      if (data) {
+        const fileIds = JSON.parse(data) as number[]
+        if (fileIds.length > 0 && onFileDrop) {
+          onFileDrop(fileIds, folderId)
+        }
+      }
+    } catch (error) {
+      console.error('拖拽数据解析失败:', error)
+    }
+  }
+
+  // 处理拖拽悬停
+  const handleDragOver = (e: React.DragEvent, key: string) => {
+    e.preventDefault()
+    e.stopPropagation()
+    setDragOverKey(key)
+  }
+
+  // 处理拖拽离开
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    setDragOverKey(null)
+  }
+
   // 获取文件夹右键菜单
   const getFolderContextMenu = (folderId: number, folderTitle: string): MenuProps['items'] => [
     {
@@ -137,24 +175,39 @@ const FolderTree: React.FC<FolderTreeProps> = ({
 
   // 转换数据格式为 Ant Design Tree 需要的格式
   const convertToTreeData = (nodes: FolderNode[]): DataNode[] => {
-    return nodes.map((node) => ({
-      key: node.id.toString(),
-      title: (
-        <Dropdown
-          menu={{ items: getFolderContextMenu(node.id, node.title) }}
-          trigger={['contextMenu']}
-        >
-          <div className="folder-tree-node-title">
-            <span>{node.title}</span>
-            {node.children_count > 0 && (
-              <span className="folder-tree-node-count">({node.children_count})</span>
-            )}
-          </div>
-        </Dropdown>
-      ),
-      icon: selectedFolderId === node.id ? <FolderOpenOutlined /> : <FolderOutlined />,
-      children: node.children && node.children.length > 0 ? convertToTreeData(node.children) : [],
-    }))
+    return nodes.map((node) => {
+      const nodeKey = node.id.toString()
+      const isDragOver = dragOverKey === nodeKey
+
+      return {
+        key: nodeKey,
+        title: (
+          <Dropdown
+            menu={{ items: getFolderContextMenu(node.id, node.title) }}
+            trigger={['contextMenu']}
+          >
+            <div
+              className="folder-tree-node-title"
+              onDrop={(e) => handleDrop(e, node.id)}
+              onDragOver={(e) => handleDragOver(e, nodeKey)}
+              onDragLeave={handleDragLeave}
+              style={{
+                background: isDragOver ? '#e6f7ff' : 'transparent',
+                borderRadius: 4,
+                transition: 'background 0.2s',
+              }}
+            >
+              <span>{node.title}</span>
+              {node.children_count > 0 && (
+                <span className="folder-tree-node-count">({node.children_count})</span>
+              )}
+            </div>
+          </Dropdown>
+        ),
+        icon: selectedFolderId === node.id ? <FolderOpenOutlined /> : <FolderOutlined />,
+        children: node.children && node.children.length > 0 ? convertToTreeData(node.children) : [],
+      }
+    })
   }
 
   const handleSelect = (selectedKeys: React.Key[]) => {
@@ -200,11 +253,22 @@ const FolderTree: React.FC<FolderTreeProps> = ({
   }
 
   // 构建完整的树数据（包含根目录）
+  const isDragOverRoot = dragOverKey === 'root'
   const fullTreeData: DataNode[] = [
     {
       key: 'root',
       title: (
-        <div className="folder-tree-node-title">
+        <div
+          className="folder-tree-node-title"
+          onDrop={(e) => handleDrop(e, undefined)}
+          onDragOver={(e) => handleDragOver(e, 'root')}
+          onDragLeave={handleDragLeave}
+          style={{
+            background: isDragOverRoot ? '#e6f7ff' : 'transparent',
+            borderRadius: 4,
+            transition: 'background 0.2s',
+          }}
+        >
           <HomeOutlined />
           <span>全部文件</span>
         </div>

@@ -428,6 +428,7 @@ const MediaManager: React.FC = () => {
             onRename={handleRename}
             onDelete={handleDeleteFolder}
             onRefresh={loadFolderTree}
+            onFileDrop={handleMove}
           />
         </Sider>
 
