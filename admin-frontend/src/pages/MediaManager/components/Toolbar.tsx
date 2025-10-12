@@ -17,6 +17,7 @@ import {
   DragOutlined,
   FileImageOutlined,
   VideoCameraOutlined,
+  DownloadOutlined,
 } from '@ant-design/icons'
 
 interface ToolbarProps {
@@ -28,6 +29,7 @@ interface ToolbarProps {
   selectedSize: number
   onBatchDelete: () => void
   onBatchMove: () => void
+  onBatchDownload: () => void
   viewMode: 'grid' | 'list'
   onViewModeChange: (mode: 'grid' | 'list') => void
   sortBy: 'name' | 'size' | 'date'
@@ -46,6 +48,7 @@ const Toolbar: React.FC<ToolbarProps> = ({
   selectedSize,
   onBatchDelete,
   onBatchMove,
+  onBatchDownload,
   viewMode,
   onViewModeChange,
   sortBy,
@@ -169,6 +172,12 @@ const Toolbar: React.FC<ToolbarProps> = ({
                   </span>
                 )}
               </span>
+              <Button
+                icon={<DownloadOutlined />}
+                onClick={onBatchDownload}
+              >
+                批量下载
+              </Button>
               <Button
                 icon={<DragOutlined />}
                 onClick={onBatchMove}

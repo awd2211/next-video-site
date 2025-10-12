@@ -7,6 +7,7 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { Layout, message } from 'antd'
 import { CloudUploadOutlined } from '@ant-design/icons'
+import JSZip from 'jszip'
 import FolderTree from './components/FolderTree'
 import FileList from './components/FileList'
 import Toolbar from './components/Toolbar'
@@ -251,6 +252,76 @@ const MediaManager: React.FC = () => {
     setSelectedFiles([]) // 清空选中
   }
 
+  // 批量下载文件
+  const handleBatchDownload = async () => {
+    if (selectedFiles.length === 0) {
+      message.warning('请先选择要下载的文件')
+      return
+    }
+
+    // 过滤出文件（不包括文件夹）
+    const selectedItems = fileList.filter((item) =>
+      selectedFiles.includes(item.id) && !item.is_folder
+    )
+
+    if (selectedItems.length === 0) {
+      message.warning('请选择文件进行下载，文件夹暂不支持下载')
+      return
+    }
+
+    // 单个文件直接下载
+    if (selectedItems.length === 1) {
+      const item = selectedItems[0]
+      if (item) {
+        window.open(item.url, '_blank')
+        message.success('开始下载')
+      }
+      return
+    }
+
+    // 多个文件打包成 zip 下载
+    const hide = message.loading('正在打包文件...', 0)
+
+    try {
+      const zip = new JSZip()
+
+      // 下载所有文件并添加到 zip
+      for (const item of selectedItems) {
+        try {
+          const response = await fetch(item.url)
+          const blob = await response.blob()
+          // 使用文件标题和扩展名
+          const extension = item.url.split('.').pop() || ''
+          const filename = extension ? `${item.title}.${extension}` : item.title
+          zip.file(filename, blob)
+        } catch (error) {
+          console.error(`下载文件失败: ${item.title}`, error)
+        }
+      }
+
+      // 生成 zip 文件
+      const zipBlob = await zip.generateAsync({ type: 'blob' })
+
+      // 创建下载链接
+      const url = window.URL.createObjectURL(zipBlob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `files_${Date.now()}.zip`
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+      window.URL.revokeObjectURL(url)
+
+      hide()
+      message.success(`成功下载 ${selectedItems.length} 个文件`)
+      setSelectedFiles([])
+    } catch (error) {
+      hide()
+      message.error('下载失败，请重试')
+      console.error('批量下载失败:', error)
+    }
+  }
+
   // 添加上传任务
   function handleAddUploadTask(files: File[]) {
     const newTasks: UploadTask[] = files.map((file) => ({
@@ -330,6 +401,7 @@ const MediaManager: React.FC = () => {
         selectedSize={selectedFilesSize}
         onBatchDelete={() => handleDelete(selectedFiles, false)}
         onBatchMove={handleOpenMoveModal}
+        onBatchDownload={handleBatchDownload}
         viewMode={viewMode}
         onViewModeChange={setViewMode}
         sortBy={sortBy}
