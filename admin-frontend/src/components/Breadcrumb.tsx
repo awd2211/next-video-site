@@ -1,27 +1,28 @@
 import { Breadcrumb as AntBreadcrumb } from 'antd'
 import { useLocation, Link } from 'react-router-dom'
 import { HomeOutlined } from '@ant-design/icons'
+import { useTranslation } from 'react-i18next'
 
-// Route name mapping
-const routeNameMap: Record<string, string> = {
-  '/': '控制台',
-  '/videos': '视频管理',
-  '/videos/new': '新增视频',
-  '/videos/:id/edit': '编辑视频',
-  '/users': '用户管理',
-  '/comments': '评论管理',
-  '/banners': '横幅管理',
-  '/announcements': '公告管理',
-  '/actors': '演员管理',
-  '/directors': '导演管理',
-  '/statistics': '数据统计',
-  '/settings': '系统设置',
-  '/logs': '操作日志',
-  '/ip-blacklist': 'IP黑名单',
-  '/series': '剧集管理',
-  '/series/new': '新增剧集',
-  '/series/:id': '剧集详情',
-  '/series/:id/edit': '编辑剧集',
+// Route key mapping (now uses i18n keys)
+const routeKeyMap: Record<string, string> = {
+  '/': 'breadcrumb.home',
+  '/videos': 'breadcrumb.videos',
+  '/videos/new': 'breadcrumb.videosNew',
+  '/videos/:id/edit': 'breadcrumb.videosEdit',
+  '/users': 'breadcrumb.users',
+  '/comments': 'breadcrumb.comments',
+  '/banners': 'breadcrumb.banners',
+  '/announcements': 'breadcrumb.announcements',
+  '/actors': 'breadcrumb.actors',
+  '/directors': 'breadcrumb.directors',
+  '/statistics': 'breadcrumb.statistics',
+  '/settings': 'breadcrumb.settings',
+  '/logs': 'breadcrumb.logs',
+  '/ip-blacklist': 'breadcrumb.ipBlacklist',
+  '/series': 'breadcrumb.series',
+  '/series/new': 'breadcrumb.seriesNew',
+  '/series/:id': 'breadcrumb.seriesDetail',
+  '/series/:id/edit': 'breadcrumb.seriesEdit',
 }
 
 interface BreadcrumbItem {
@@ -30,23 +31,25 @@ interface BreadcrumbItem {
 }
 
 const Breadcrumb = () => {
+  const { t } = useTranslation()
   const location = useLocation()
 
   const getBreadcrumbItems = (): BreadcrumbItem[] => {
     const pathSnippets = location.pathname.split('/').filter((i) => i)
     
     if (pathSnippets.length === 0) {
-      return [{ path: '/', title: '控制台' }]
+      return [{ path: '/', title: t('breadcrumb.home') }]
     }
 
-    const breadcrumbItems: BreadcrumbItem[] = [{ path: '/', title: '控制台' }]
+    const breadcrumbItems: BreadcrumbItem[] = [{ path: '/', title: t('breadcrumb.home') }]
 
     pathSnippets.forEach((snippet, index) => {
       const url = `/${pathSnippets.slice(0, index + 1).join('/')}`
-      let title = routeNameMap[url] || snippet
+      const i18nKey = routeKeyMap[url]
+      let title = i18nKey ? t(i18nKey) : snippet
 
       // Handle dynamic routes
-      if (!routeNameMap[url]) {
+      if (!i18nKey) {
         // Check if it's an ID (numeric)
         if (!isNaN(Number(snippet))) {
           // Don't add numeric IDs to breadcrumb

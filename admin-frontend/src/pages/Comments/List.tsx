@@ -10,6 +10,7 @@ import {
   Card,
   Select,
   Tooltip,
+  Grid,
 } from 'antd'
 import {
   CheckOutlined,
@@ -19,6 +20,7 @@ import {
   ExclamationCircleOutlined,
 } from '@ant-design/icons'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { useTranslation } from 'react-i18next'
 import axios from '@/utils/axios'
 import dayjs from 'dayjs'
 
@@ -26,6 +28,8 @@ const { Search } = Input
 const { Option } = Select
 
 const CommentsList = () => {
+  const { t } = useTranslation()
+  const screens = Grid.useBreakpoint()
   const [page, setPage] = useState(1)
   const [pageSize] = useState(20)
   const [search, setSearch] = useState('')
@@ -46,6 +50,7 @@ const CommentsList = () => {
       const response = await axios.get(`/api/v1/admin/comments?${params}`)
       return response.data
     },
+    placeholderData: (previousData) => previousData, // Keep previous data while loading
   })
 
   // Approve comment mutation
@@ -310,14 +315,14 @@ const CommentsList = () => {
                 icon={<CheckOutlined />}
                 onClick={() => handleApprove(record.id)}
               >
-                通过
+                {t('comment.approve')}
               </Button>
               <Button
                 size="small"
                 icon={<CloseOutlined />}
                 onClick={() => handleReject(record.id)}
               >
-                拒绝
+                {t('comment.reject')}
               </Button>
             </>
           )}
@@ -327,7 +332,7 @@ const CommentsList = () => {
               icon={<CloseOutlined />}
               onClick={() => handleReject(record.id)}
             >
-              拒绝
+              {t('comment.reject')}
             </Button>
           )}
           {record.status === 'REJECTED' && (
@@ -337,7 +342,7 @@ const CommentsList = () => {
               icon={<CheckOutlined />}
               onClick={() => handleApprove(record.id)}
             >
-              通过
+              {t('comment.approve')}
             </Button>
           )}
           <Button
@@ -346,7 +351,7 @@ const CommentsList = () => {
             icon={<DeleteOutlined />}
             onClick={() => handleDelete(record.id)}
           >
-            删除
+            {t('common.delete')}
           </Button>
         </Space>
       ),
@@ -410,11 +415,13 @@ const CommentsList = () => {
           dataSource={data?.items || []}
           rowKey="id"
           loading={isLoading}
-          scroll={{ x: 1400 }}
+          scroll={{ x: screens.xs ? 800 : 1400 }}
+          sticky
           pagination={{
             current: page,
-            pageSize: pageSize,
+            pageSize: screens.xs ? 10 : pageSize,
             total: data?.total || 0,
+            simple: screens.xs,
             showSizeChanger: false,
             showQuickJumper: true,
             showTotal: (total) => `共 ${total} 条`,

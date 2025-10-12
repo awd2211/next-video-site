@@ -9,6 +9,7 @@ from datetime import datetime
 from typing import Optional
 
 import redis.asyncio as redis
+from loguru import logger
 
 from app.config import settings
 
@@ -71,7 +72,7 @@ async def add_to_blacklist(
 
         return True
     except Exception as e:
-        print(f"Add to token blacklist error: {e}")
+        logger.error(f"Add to token blacklist error: {e}", exc_info=True)
         return False
 
 
@@ -93,7 +94,7 @@ async def is_blacklisted(token: str) -> bool:
         exists = await client.exists(key)
         return exists > 0
     except Exception as e:
-        print(f"Check token blacklist error: {e}")
+        logger.error(f"Check token blacklist error: {e}", exc_info=True)
         # 安全起见，如果Redis出错，拒绝token
         return True
 
@@ -116,7 +117,7 @@ async def remove_from_blacklist(token: str) -> bool:
         await client.delete(key)
         return True
     except Exception as e:
-        print(f"Remove from token blacklist error: {e}")
+        logger.error(f"Remove from token blacklist error: {e}", exc_info=True)
         return False
 
 
@@ -143,7 +144,7 @@ async def revoke_all_user_tokens(user_id: int) -> bool:
 
         return True
     except Exception as e:
-        print(f"Revoke all user tokens error: {e}")
+        logger.error(f"Revoke all user tokens error: {e}", exc_info=True)
         return False
 
 
@@ -164,5 +165,5 @@ async def get_user_token_version(user_id: int) -> int:
         version = await client.get(key)
         return int(version) if version else 0
     except Exception as e:
-        print(f"Get user token version error: {e}")
+        logger.error(f"Get user token version error: {e}", exc_info=True)
         return 0

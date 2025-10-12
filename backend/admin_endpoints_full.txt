@@ -1,0 +1,58 @@
+# 所有管理员API端点
+DELETE  /api/v1/admin/announcements/announcements/{announcement_id}            [announcements.py] (params: announcement_id)
+PATCH   /api/v1/admin/announcements/announcements/{announcement_id}/toggle-active [announcements.py] (params: announcement_id)
+PATCH   /api/v1/admin/announcements/announcements/{announcement_id}/toggle-pinned [announcements.py] (params: announcement_id)
+DELETE  /api/v1/admin/banners/banners/{banner_id}                              [banners.py] (params: banner_id)
+PUT     /api/v1/admin/banners/banners/{banner_id}/status                       [banners.py] (params: banner_id)
+PUT     /api/v1/admin/banners/banners/{banner_id}/sort-order                   [banners.py] (params: banner_id)
+POST    /api/v1/admin/banners/banners/upload-image                             [banners.py]
+GET     /api/v1/admin/comments/pending                                         [comments.py]
+PUT     /api/v1/admin/comments/{comment_id}/approve                            [comments.py] (params: comment_id)
+PUT     /api/v1/admin/comments/{comment_id}/reject                             [comments.py] (params: comment_id)
+DELETE  /api/v1/admin/comments/{comment_id}                                    [comments.py] (params: comment_id)
+PUT     /api/v1/admin/comments/batch/approve                                   [comments.py]
+PUT     /api/v1/admin/comments/batch/reject                                    [comments.py]
+DELETE  /api/v1/admin/comments/batch                                           [comments.py]
+GET     /api/v1/admin/email/config                                             [email_config.py]
+POST    /api/v1/admin/email/config                                             [email_config.py]
+PUT     /api/v1/admin/email/config/{config_id}                                 [email_config.py] (params: config_id)
+DELETE  /api/v1/admin/email/config/{config_id}                                 [email_config.py] (params: config_id)
+POST    /api/v1/admin/email/config/{config_id}/test                            [email_config.py] (params: config_id)
+GET     /api/v1/admin/email/templates                                          [email_config.py]
+GET     /api/v1/admin/email/templates/{template_id}                            [email_config.py] (params: template_id)
+POST    /api/v1/admin/email/templates                                          [email_config.py]
+PUT     /api/v1/admin/email/templates/{template_id}                            [email_config.py] (params: template_id)
+DELETE  /api/v1/admin/email/templates/{template_id}                            [email_config.py] (params: template_id)
+POST    /api/v1/admin/email/templates/{template_id}/preview                    [email_config.py] (params: template_id)
+GET     /api/v1/admin/logs/operations                                          [logs.py]
+GET     /api/v1/admin/logs/operations/{log_id}                                 [logs.py] (params: log_id)
+GET     /api/v1/admin/logs/operations/stats/summary                            [logs.py]
+DELETE  /api/v1/admin/logs/operations/cleanup                                  [logs.py]
+GET     /api/v1/admin/logs/operations/modules/list                             [logs.py]
+GET     /api/v1/admin/logs/operations/actions/list                             [logs.py]
+GET     /api/v1/admin/logs/operations/export                                   [logs.py]
+GET     /api/v1/admin/operations/banners                                       [operations.py]
+GET     /api/v1/admin/stats/overview                                           [stats.py]
+GET     /api/v1/admin/stats/trends                                             [stats.py]
+GET     /api/v1/admin/stats/video-categories                                   [stats.py]
+GET     /api/v1/admin/stats/video-types                                        [stats.py]
+GET     /api/v1/admin/stats/top-videos                                         [stats.py]
+GET     /api/v1/admin/stats/database-pool                                      [stats.py]
+GET     /api/v1/admin/stats/cache-stats                                        [stats.py]
+POST    /api/v1/admin/stats/cache-warm                                         [stats.py]
+GET     /api/v1/admin/stats/celery-queue                                       [stats.py]
+GET     /api/v1/admin/stats/celery-workers                                     [stats.py]
+GET     /api/v1/admin/stats/celery-health                                      [stats.py]
+DELETE  /api/v1/admin/subtitles/{subtitle_id}                                  [subtitles.py] (params: subtitle_id)
+POST    /api/v1/admin/subtitles/upload                                         [subtitles.py]
+POST    /api/v1/admin/videos/{video_id}/retry-transcode                        [transcode.py] (params: video_id)
+POST    /api/v1/admin/upload/init-multipart                                    [upload.py]
+POST    /api/v1/admin/upload/upload-chunk                                      [upload.py]
+POST    /api/v1/admin/upload/complete-multipart                                [upload.py]
+GET     /api/v1/admin/upload/upload-status/{upload_id}                         [upload.py] (params: upload_id)
+DELETE  /api/v1/admin/upload/cancel-upload/{upload_id}                         [upload.py] (params: upload_id)
+PUT     /api/v1/admin/users/{user_id}/ban                                      [users.py] (params: user_id)
+PUT     /api/v1/admin/videos/{video_id}/status                                 [videos.py] (params: video_id)
+POST    /api/v1/admin/videos/{video_id}/upload-video                           [videos.py] (params: video_id)
+POST    /api/v1/admin/videos/{video_id}/upload-poster                          [videos.py] (params: video_id)
+POST    /api/v1/admin/videos/{video_id}/upload-backdrop                        [videos.py] (params: video_id)

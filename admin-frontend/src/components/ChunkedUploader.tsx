@@ -1,8 +1,10 @@
 import { useState } from 'react'
 import { Upload, Progress, message, Button } from 'antd'
-import { UploadOutlined, PauseCircleOutlined, PlayCircleOutlined } from '@ant-design/icons'
+import { InboxOutlined, PauseCircleOutlined, PlayCircleOutlined } from '@ant-design/icons'
 import axios from '@/utils/axios'
 import type { UploadFile } from 'antd/es/upload/interface'
+
+const { Dragger } = Upload
 
 interface ChunkedUploaderProps {
   videoId?: number
@@ -149,7 +151,7 @@ const ChunkedUploader = ({
 
   return (
     <div>
-      <Upload
+      <Dragger
         beforeUpload={(file) => {
           handleUpload(file)
           return false
@@ -159,11 +161,18 @@ const ChunkedUploader = ({
         accept={accept}
         maxCount={1}
         disabled={uploading}
+        showUploadList={false}
       >
-        <Button icon={<UploadOutlined />} disabled={uploading}>
-          选择文件
-        </Button>
-      </Upload>
+        <p className="ant-upload-drag-icon">
+          <InboxOutlined style={{ fontSize: 48, color: '#1890ff' }} />
+        </p>
+        <p className="ant-upload-text">点击或拖拽文件到此区域上传</p>
+        <p className="ant-upload-hint">
+          {uploadType === 'video' 
+            ? '支持 MP4, AVI, MOV 等格式，单文件最大 2GB'
+            : '支持 JPG, PNG 等图片格式'}
+        </p>
+      </Dragger>
 
       {uploading && (
         <div style={{ marginTop: 16 }}>

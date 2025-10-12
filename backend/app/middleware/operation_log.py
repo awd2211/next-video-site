@@ -7,6 +7,7 @@ import json
 import re
 
 from fastapi import Request
+from loguru import logger
 from starlette.middleware.base import BaseHTTPMiddleware
 
 from app.database import async_session_maker
@@ -178,6 +179,6 @@ class OperationLogMiddleware(BaseHTTPMiddleware):
 
         except Exception as e:
             # 日志记录失败不应影响主业务
-            print(f"Failed to log operation: {e}")
+            logger.error(f"Failed to log operation: {e}", exc_info=True)
 
         return response

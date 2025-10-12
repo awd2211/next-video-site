@@ -53,7 +53,8 @@ class Country(Base):
     __tablename__ = "countries"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
-    name: Mapped[str] = mapped_column(String(100), unique=True, nullable=False)
+    name: Mapped[str] = mapped_column(String(100), unique=True, nullable=False, comment='中文名称')
+    name_en: Mapped[Optional[str]] = mapped_column(String(100), nullable=True, comment='英文名称')
     code: Mapped[str] = mapped_column(String(10), unique=True, nullable=False)  # ISO code
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
@@ -67,9 +68,11 @@ class Category(Base):
     __tablename__ = "categories"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
-    name: Mapped[str] = mapped_column(String(100), unique=True, nullable=False)
+    name: Mapped[str] = mapped_column(String(100), unique=True, nullable=False, comment='中文名称')
+    name_en: Mapped[Optional[str]] = mapped_column(String(100), nullable=True, comment='英文名称')
     slug: Mapped[str] = mapped_column(String(100), unique=True, nullable=False)
-    description: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    description: Mapped[Optional[str]] = mapped_column(Text, nullable=True, comment='中文描述')
+    description_en: Mapped[Optional[str]] = mapped_column(Text, nullable=True, comment='英文描述')
     parent_id: Mapped[Optional[int]] = mapped_column(
         Integer, ForeignKey("categories.id", ondelete="SET NULL"), nullable=True
     )
@@ -88,7 +91,8 @@ class Tag(Base):
     __tablename__ = "tags"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
-    name: Mapped[str] = mapped_column(String(100), unique=True, nullable=False)
+    name: Mapped[str] = mapped_column(String(100), unique=True, nullable=False, comment='中文名称')
+    name_en: Mapped[Optional[str]] = mapped_column(String(100), nullable=True, comment='英文名称')
     slug: Mapped[str] = mapped_column(String(100), unique=True, nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 

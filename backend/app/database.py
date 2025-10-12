@@ -1,12 +1,9 @@
-import logging
-
+from loguru import logger
 from sqlalchemy import create_engine, event, pool
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy.orm import declarative_base, sessionmaker
 
 from app.config import settings
-
-logger = logging.getLogger(__name__)
 
 # Connection pool configuration
 # 根据应用规模和负载调整这些参数

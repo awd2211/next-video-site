@@ -2,6 +2,7 @@ import math
 from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
+from loguru import logger
 from sqlalchemy import and_, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
@@ -16,6 +17,7 @@ from app.schemas.comment import (
     CommentUpdate,
     PaginatedCommentResponse,
 )
+from app.utils.cache import Cache
 from app.utils.dependencies import get_current_active_user
 from app.utils.notification_service import NotificationService
 from app.utils.rate_limit import RateLimitPresets, limiter
@@ -84,6 +86,9 @@ async def create_comment(
     # Load user relationship
     await db.refresh(new_comment, ["user"])
 
+    # 清除该视频的评论缓存
+    await Cache.delete_pattern(f"video_comments:{comment_data.video_id}:*")
+
     # 🆕 发送通知 (如果是回复评论)
     if parent and parent.user_id != current_user.id:
         try:
@@ -97,7 +102,7 @@ async def create_comment(
             )
         except Exception as e:
             # 通知失败不影响评论创建
-            print(f"发送通知失败: {e}")
+            logger.warning(f"发送通知失败: {e}")
 
     # Build response
     response_data = CommentResponse.model_validate(new_comment)
@@ -118,6 +123,12 @@ async def get_video_comments(
     If parent_id is provided, returns replies to that comment.
     Otherwise, returns top-level comments.
     """
+    # 尝试从缓存获取（2分钟TTL）
+    cache_key = f"video_comments:{video_id}:{page}:{page_size}:{parent_id or 'top'}"
+    cached = await Cache.get(cache_key)
+    if cached is not None:
+        return cached
+
     # Build base query
     query = select(Comment).where(Comment.video_id == video_id)
 
@@ -173,13 +184,18 @@ async def get_video_comments(
         comment_data.reply_count = reply_counts.get(comment.id, 0)
         items.append(comment_data)
 
-    return PaginatedCommentResponse(
+    response = PaginatedCommentResponse(
         total=total,
         page=page,
         page_size=page_size,
         pages=math.ceil(total / page_size) if page_size > 0 and total > 0 else 0,
         items=items,
     )
+
+    # 缓存2分钟
+    await Cache.set(cache_key, response, ttl=120)
+
+    return response
 
 
 @router.get("/{comment_id}", response_model=CommentResponse)
@@ -285,6 +301,9 @@ async def delete_comment(
     # Delete comment (cascade will handle replies)
     await db.delete(comment)
     await db.commit()
+
+    # 清除评论缓存
+    await Cache.delete_pattern(f"video_comments:{comment.video_id}:*")
 
     return None
 

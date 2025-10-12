@@ -7,6 +7,22 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
+/* NProgress loading bar customization */
+#nprogress .bar {
+  background: #1890ff !important;
+  height: 3px !important;
+  z-index: 9999 !important;
+}
+
+#nprogress .peg {
+  box-shadow: 0 0 10px #1890ff, 0 0 5px #1890ff !important;
+}
+
+/* Dark mode progress bar */
+body.dark #nprogress .bar {
+  background: #177ddc !important;
+}
+
 #root {
   min-height: 100vh;
 }

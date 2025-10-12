@@ -1,5 +1,10 @@
 import axios from 'axios'
 import { message } from 'antd'
+import NProgress from 'nprogress'
+import 'nprogress/nprogress.css'
+
+// Configure NProgress
+NProgress.configure({ showSpinner: false, trickleSpeed: 200 })
 
 // Create axios instance with default config
 const axiosInstance = axios.create({
@@ -13,13 +18,23 @@ const axiosInstance = axios.create({
 // Request interceptor - Add token to all requests
 axiosInstance.interceptors.request.use(
   (config) => {
+    // Start progress bar
+    NProgress.start()
+    
     const token = localStorage.getItem('admin_access_token')
     if (token) {
       config.headers.Authorization = `Bearer ${token}`
     }
+    
+    // Add language header for multilingual support
+    const language = localStorage.getItem('language') || navigator.language || 'zh-CN'
+    config.headers['X-Language'] = language
+    config.headers['Accept-Language'] = language
+    
     return config
   },
   (error) => {
+    NProgress.done()
     return Promise.reject(error)
   }
 )
@@ -27,9 +42,13 @@ axiosInstance.interceptors.request.use(
 // Response interceptor - Handle errors globally
 axiosInstance.interceptors.response.use(
   (response) => {
+    // Complete progress bar
+    NProgress.done()
     return response
   },
   async (error) => {
+    // Complete progress bar on error
+    NProgress.done()
     const originalRequest = error.config
 
     // Handle 401 Unauthorized

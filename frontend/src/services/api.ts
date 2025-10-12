@@ -39,6 +39,11 @@ api.interceptors.request.use(
       config.headers['X-CSRF-Token'] = csrfToken
     }
     
+    // Add language header for multilingual support
+    const language = localStorage.getItem('language') || navigator.language || 'zh-CN'
+    config.headers['X-Language'] = language
+    config.headers['Accept-Language'] = language
+    
     return config
   },
   (error) => Promise.reject(error)

@@ -83,8 +83,10 @@ class Announcement(Base):
     __tablename__ = "announcements"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
-    title: Mapped[str] = mapped_column(String(200), nullable=False)
-    content: Mapped[str] = mapped_column(Text, nullable=False)
+    title: Mapped[str] = mapped_column(String(200), nullable=False, comment='中文标题')
+    title_en: Mapped[Optional[str]] = mapped_column(String(200), nullable=True, comment='英文标题')
+    content: Mapped[str] = mapped_column(Text, nullable=False, comment='中文内容')
+    content_en: Mapped[Optional[str]] = mapped_column(Text, nullable=True, comment='英文内容')
     type: Mapped[str] = mapped_column(String(50), default="info")  # info, warning, success, error
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
     is_pinned: Mapped[bool] = mapped_column(Boolean, default=False)

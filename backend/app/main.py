@@ -1,15 +1,20 @@
-import logging
+import uuid
+from datetime import datetime, timezone
 
 from fastapi import FastAPI, Request
+from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.responses import JSONResponse
+from loguru import logger
 from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
+from sqlalchemy.exc import IntegrityError, OperationalError
 
 from app.admin import actors as admin_actors
 from app.admin import announcements as admin_announcements
 from app.admin import banners as admin_banners
+from app.admin import batch_operations as admin_batch
 from app.admin import categories as admin_categories
 from app.admin import comments as admin_comments
 from app.admin import countries as admin_countries
@@ -54,12 +59,13 @@ from app.api import (
 from app.config import settings
 from app.middleware.http_cache import HTTPCacheMiddleware
 from app.middleware.operation_log import OperationLogMiddleware
+from app.middleware.performance_monitor import PerformanceMonitorMiddleware
+from app.middleware.request_id import RequestIDMiddleware
 from app.middleware.request_size_limit import RequestSizeLimitMiddleware
 from app.middleware.security_headers import SecurityHeadersMiddleware
 from app.utils.rate_limit import limiter
 
 # Rate limiter is imported from app.utils.rate_limit
-logger = logging.getLogger(__name__)
 
 app = FastAPI(
     title=settings.APP_NAME,
@@ -74,6 +80,141 @@ app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)  # type: ignore[arg-type]
 
 
+# 数据库异常处理器
+@app.exception_handler(IntegrityError)
+async def integrity_error_handler(request: Request, exc: IntegrityError):
+    """
+    处理数据库完整性错误
+    主要处理唯一约束和外键约束违反
+    """
+    request_id = getattr(request.state, "request_id", str(uuid.uuid4()))
+
+    # 解析错误信息
+    error_msg = str(exc.orig).lower()
+
+    if "unique" in error_msg or "duplicate" in error_msg:
+        # 唯一约束违反
+        field = "resource"
+        if "email" in error_msg:
+            field = "email"
+        elif "username" in error_msg:
+            field = "username"
+        elif "slug" in error_msg:
+            field = "slug"
+
+        logger.warning(
+            f"Unique constraint violation: {field}",
+            extra={
+                "request_id": request_id,
+                "path": request.url.path,
+                "field": field,
+            },
+        )
+
+        return JSONResponse(
+            status_code=409,
+            content={
+                "detail": f"A resource with this {field} already exists",
+                "error_code": "DUPLICATE_RESOURCE",
+                "request_id": request_id,
+            },
+        )
+
+    elif "foreign key" in error_msg or "violates foreign key" in error_msg:
+        # 外键约束违反
+        logger.warning(
+            "Foreign key constraint violation",
+            extra={"request_id": request_id, "path": request.url.path},
+        )
+
+        return JSONResponse(
+            status_code=400,
+            content={
+                "detail": "Referenced resource does not exist",
+                "error_code": "INVALID_REFERENCE",
+                "request_id": request_id,
+            },
+        )
+
+    # 其他完整性错误
+    logger.error("Database integrity error", exc_info=True, extra={"request_id": request_id})
+    return JSONResponse(
+        status_code=500,
+        content={
+            "detail": "Database constraint violation",
+            "error_code": "DATABASE_ERROR",
+            "request_id": request_id,
+        },
+    )
+
+
+@app.exception_handler(OperationalError)
+async def operational_error_handler(request: Request, exc: OperationalError):
+    """
+    处理数据库操作错误
+    通常是连接问题、超时等
+    """
+    request_id = getattr(request.state, "request_id", str(uuid.uuid4()))
+
+    logger.error(
+        "Database operational error",
+        exc_info=True,
+        extra={
+            "request_id": request_id,
+            "path": request.url.path,
+        },
+    )
+
+    return JSONResponse(
+        status_code=503,
+        content={
+            "detail": "Database service temporarily unavailable, please try again later",
+            "error_code": "SERVICE_UNAVAILABLE",
+            "request_id": request_id,
+        },
+    )
+
+
+@app.exception_handler(RequestValidationError)
+async def validation_exception_handler(request: Request, exc: RequestValidationError):
+    """
+    处理请求验证错误
+    提供更友好的错误信息格式
+    """
+    request_id = getattr(request.state, "request_id", str(uuid.uuid4()))
+
+    # 简化错误信息
+    errors = []
+    for error in exc.errors():
+        field_path = ".".join(str(loc) for loc in error["loc"][1:])  # 移除'body'或'query'
+        errors.append(
+            {
+                "field": field_path or error["loc"][0],
+                "message": error["msg"],
+                "type": error["type"],
+            }
+        )
+
+    logger.warning(
+        "Request validation failed",
+        extra={
+            "request_id": request_id,
+            "path": request.url.path,
+            "errors": errors,
+        },
+    )
+
+    return JSONResponse(
+        status_code=422,
+        content={
+            "detail": "Request validation failed",
+            "error_code": "VALIDATION_ERROR",
+            "errors": errors,
+            "request_id": request_id,
+        },
+    )
+
+
 # 全局异常处理器
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):
@@ -81,11 +222,14 @@ async def global_exception_handler(request: Request, exc: Exception):
     全局异常处理器
     捕获所有未处理的异常，避免泄露敏感信息
     """
+    request_id = getattr(request.state, "request_id", str(uuid.uuid4()))
+
     # 记录详细错误到日志
     logger.error(
         f"Unhandled exception: {exc}",
         exc_info=True,
         extra={
+            "request_id": request_id,
             "path": request.url.path,
             "method": request.method,
             "client": request.client.host if request.client else "unknown",
@@ -100,10 +244,24 @@ async def global_exception_handler(request: Request, exc: Exception):
         # 生产环境：返回通用错误信息
         detail = "Internal server error"
 
-    return JSONResponse(status_code=500, content={"detail": detail})
+    return JSONResponse(
+        status_code=500,
+        content={
+            "detail": detail,
+            "error_code": "INTERNAL_ERROR",
+            "request_id": request_id,
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+        },
+    )
 
 
-# 安全头中间件（最先添加）
+# Request ID中间件（最先添加，为所有请求生成追踪ID）
+app.add_middleware(RequestIDMiddleware)
+
+# 性能监控中间件（记录慢API，阈值1秒）
+app.add_middleware(PerformanceMonitorMiddleware, slow_threshold=1.0)
+
+# 安全头中间件
 app.add_middleware(SecurityHeadersMiddleware)
 
 # HTTP缓存中间件（优化：减少不必要的请求）
@@ -316,6 +474,11 @@ app.include_router(
     prefix=f"{settings.API_V1_PREFIX}/admin/images",
     tags=["Admin - Images"],
 )
+app.include_router(
+    admin_batch.router,
+    prefix=f"{settings.API_V1_PREFIX}/admin/batch",
+    tags=["Admin - Batch Operations"],
+)
 
 
 @app.on_event("startup")
@@ -384,6 +547,6 @@ if __name__ == "__main__":
     uvicorn.run(
         "app.main:app",
         host="0.0.0.0",
-        port=8001,
+        port=8000,
         reload=settings.DEBUG,
     )

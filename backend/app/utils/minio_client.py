@@ -9,6 +9,7 @@ import threading
 from datetime import timedelta
 from typing import BinaryIO, Optional
 
+from loguru import logger
 from minio import Minio
 from minio.error import S3Error
 
@@ -60,9 +61,9 @@ class MinIOClient:
         try:
             if not self.client.bucket_exists(self.bucket_name):
                 self.client.make_bucket(self.bucket_name)
-                print(f"Created bucket: {self.bucket_name}")
+                logger.info(f"Created bucket: {self.bucket_name}")
         except S3Error as e:
-            print(f"Error ensuring bucket: {e}")
+            logger.error(f"Error ensuring bucket: {e}", exc_info=True)
 
     def upload_video(
         self,
@@ -103,7 +104,7 @@ class MinIOClient:
             return f"{settings.MINIO_PUBLIC_URL}/{self.bucket_name}/{object_name}"
 
         except S3Error as e:
-            print(f"Error uploading video: {e}")
+            logger.error(f"Error uploading video: {e}", exc_info=True)
             raise
 
     def upload_image(
@@ -244,7 +245,7 @@ class MinIOClient:
             )
             return url
         except S3Error as e:
-            print(f"Error generating presigned URL: {e}")
+            logger.error(f"Error generating presigned URL: {e}", exc_info=True)
             raise
 
     def get_object_size(self, object_name: str) -> int:
@@ -264,7 +265,7 @@ class MinIOClient:
             stat = self.client.stat_object(self.bucket_name, object_name)
             return stat.size
         except S3Error as e:
-            print(f"Error getting object size: {e}")
+            logger.error(f"Error getting object size: {e}", exc_info=True)
             raise
 
     def delete_file(self, object_name: str) -> bool:
@@ -281,7 +282,7 @@ class MinIOClient:
             self.client.remove_object(self.bucket_name, object_name)
             return True
         except S3Error as e:
-            print(f"Error deleting file: {e}")
+            logger.error(f"Error deleting file: {e}", exc_info=True)
             return False
 
     def file_exists(self, object_name: str) -> bool:
@@ -318,7 +319,7 @@ class MinIOClient:
             )
             return [obj.object_name for obj in objects]
         except S3Error as e:
-            print(f"Error listing files: {e}")
+            logger.error(f"Error listing files: {e}", exc_info=True)
             return []
 
 

@@ -12,6 +12,7 @@ from functools import wraps
 from typing import Any, Callable
 
 import redis.asyncio as redis
+from loguru import logger
 
 from app.config import settings
 
@@ -32,9 +33,15 @@ def json_serializer(obj: Any) -> str:
             return {"__type__": "datetime", "value": o.isoformat()}
         elif isinstance(o, Decimal):
             return {"__type__": "decimal", "value": str(o)}
+        elif hasattr(o, "model_dump"):
+            # Pydantic v2 models
+            return o.model_dump(mode="json")
+        elif hasattr(o, "dict"):
+            # Pydantic v1 models (legacy)
+            return o.dict()
         elif hasattr(o, "__dict__"):
-            # Pydantic models and similar objects
-            return {"__type__": "object", "value": str(o)}
+            # Other objects with __dict__
+            return vars(o)
         return str(o)
 
     return json.dumps(obj, default=default, ensure_ascii=False)
@@ -89,7 +96,7 @@ class CacheStats:
             await client.incr(f"cache_stats:hits:{today}")
             await client.expire(f"cache_stats:hits:{today}", 86400 * 7)  # 保留7天
         except Exception as e:
-            print(f"Cache stats record hit error: {e}")
+            logger.error(f"Cache stats record hit error: {e}", exc_info=True)
 
     @staticmethod
     async def record_miss():
@@ -100,7 +107,7 @@ class CacheStats:
             await client.incr(f"cache_stats:misses:{today}")
             await client.expire(f"cache_stats:misses:{today}", 86400 * 7)  # 保留7天
         except Exception as e:
-            print(f"Cache stats record miss error: {e}")
+            logger.error(f"Cache stats record miss error: {e}", exc_info=True)
 
     @staticmethod
     async def get_stats(days: int = 7) -> dict:
@@ -155,7 +162,7 @@ class CacheStats:
                 },
             }
         except Exception as e:
-            print(f"Cache stats get error: {e}")
+            logger.error(f"Cache stats get error: {e}", exc_info=True)
             return {"stats": [], "summary": {}}
 
 
@@ -186,7 +193,7 @@ class Cache:
             # 使用JSON反序列化
             return json_deserializer(value)
         except Exception as e:
-            print(f"Cache get error for key {key}: {e}")
+            logger.error(f"Cache get error for key {key}: {e}", exc_info=True)
             return default
 
     @staticmethod
@@ -209,7 +216,7 @@ class Cache:
             await client.setex(key, ttl, serialized)
             return True
         except Exception as e:
-            print(f"Cache set error for key {key}: {e}")
+            logger.error(f"Cache set error for key {key}: {e}", exc_info=True)
             return False
 
     @staticmethod
@@ -228,7 +235,7 @@ class Cache:
             await client.delete(key)
             return True
         except Exception as e:
-            print(f"Cache delete error for key {key}: {e}")
+            logger.error(f"Cache delete error for key {key}: {e}", exc_info=True)
             return False
 
     @staticmethod
@@ -251,7 +258,7 @@ class Cache:
                 return await client.delete(*keys)
             return 0
         except Exception as e:
-            print(f"Cache delete pattern error for {pattern}: {e}")
+            logger.error(f"Cache delete pattern error for {pattern}: {e}", exc_info=True)
             return 0
 
     @staticmethod
@@ -269,7 +276,7 @@ class Cache:
             client = await get_redis()
             return await client.exists(key) > 0
         except Exception as e:
-            print(f"Cache exists error for key {key}: {e}")
+            logger.error(f"Cache exists error for key {key}: {e}", exc_info=True)
             return False
 
 

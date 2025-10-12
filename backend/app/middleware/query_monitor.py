@@ -3,14 +3,12 @@
 记录执行时间超过阈值的数据库查询
 """
 
-import logging
 import time
 
+from loguru import logger
 from sqlalchemy import event
 
 from app.database import async_engine
-
-logger = logging.getLogger(__name__)
 
 # 慢查询阈值（秒）
 SLOW_QUERY_THRESHOLD = 0.5  # 500ms

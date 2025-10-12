@@ -3,6 +3,7 @@ from datetime import timedelta
 from typing import Optional
 
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query
+from loguru import logger
 from sqlalchemy import desc, func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
@@ -272,6 +273,28 @@ async def get_video(
     db: AsyncSession = Depends(get_db),
 ):
     """Get video details with eagerly loaded relationships"""
+    # 尝试从缓存获取（5分钟TTL）
+    cache_key = f"video_detail:{video_id}"
+    cached = await Cache.get(cache_key)
+    if cached is not None:
+        # 仍然异步增加浏览量
+        async def increment_view():
+            from app.database import AsyncSessionLocal
+
+            async with AsyncSessionLocal() as session:
+                try:
+                    await session.execute(
+                        update(Video)
+                        .where(Video.id == video_id)
+                        .values(view_count=Video.view_count + 1)
+                    )
+                    await session.commit()
+                except Exception as e:
+                    logger.error(f"Failed to increment view count: {e}", exc_info=True)
+
+        background_tasks.add_task(increment_view)
+        return cached
+
     # 使用selectinload预加载所有关联数据，避免N+1查询问题
     result = await db.execute(
         select(Video)
@@ -289,8 +312,17 @@ async def get_video(
     if not video:
         raise HTTPException(status_code=404, detail="Video not found")
 
-    # 使用后台任务异步更新浏览量，避免阻塞响应
-    # 使用原子UPDATE避免竞态条件
+    # Manually extract relationships from association tables
+    video.categories = [vc.category for vc in video.video_categories if vc.category]
+    video.tags = [vt.tag for vt in video.video_tags if vt.tag]
+    video.actors = [va.actor for va in video.video_actors if va.actor]
+    video.directors = [vd.director for vd in video.video_directors if vd.director]
+
+    # 构建响应并缓存
+    response = VideoDetailResponse.model_validate(video)
+    await Cache.set(cache_key, response, ttl=300)  # 缓存5分钟
+
+    # 使用后台任务异步更新浏览量（不缓存时）
     async def increment_view_count():
         from app.database import AsyncSessionLocal
 
@@ -303,17 +335,11 @@ async def get_video(
                 )
                 await session.commit()
             except Exception as e:
-                print(f"Failed to increment view count: {e}")
+                logger.error(f"Failed to increment view count: {e}", exc_info=True)
 
     background_tasks.add_task(increment_view_count)
 
-    # Manually extract relationships from association tables
-    video.categories = [vc.category for vc in video.video_categories if vc.category]
-    video.tags = [vt.tag for vt in video.video_tags if vt.tag]
-    video.actors = [va.actor for va in video.video_actors if va.actor]
-    video.directors = [vd.director for vd in video.video_directors if vd.director]
-
-    return video
+    return response
 
 
 @router.get("/{video_id}/download")

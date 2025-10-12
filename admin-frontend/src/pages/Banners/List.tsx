@@ -21,15 +21,19 @@ import {
   EditOutlined,
   DeleteOutlined,
   UploadOutlined,
+  DownloadOutlined,
 } from '@ant-design/icons'
+import { useTranslation } from 'react-i18next'
 import axios from '@/utils/axios'
 import dayjs from 'dayjs'
+import { exportToCSV } from '@/utils/exportUtils'
 
 const { TextArea } = Input
 const { Option } = Select
 const { RangePicker } = DatePicker
 
 const BannersList = () => {
+  const { t } = useTranslation()
   const [page, setPage] = useState(1)
   const [pageSize] = useState(20)
   const [modalVisible, setModalVisible] = useState(false)
@@ -38,6 +42,7 @@ const BannersList = () => {
   const queryClient = useQueryClient()
   const [uploading, setUploading] = useState(false)
   const [imageUrl, setImageUrl] = useState<string>('')
+  const [selectedRowKeys, setSelectedRowKeys] = useState<number[]>([])
 
   // Handle image upload
   const handleUpload = async (options: any) => {
@@ -74,6 +79,7 @@ const BannersList = () => {
       )
       return response.data
     },
+    placeholderData: (previousData) => previousData,
   })
 
   // Create/Update mutation
@@ -122,6 +128,79 @@ const BannersList = () => {
       message.error(error.response?.data?.detail || '更新失败')
     },
   })
+
+  // Batch enable mutation
+  const batchEnableMutation = useMutation({
+    mutationFn: async (ids: number[]) => {
+      await axios.put('/api/v1/admin/banners/batch/enable', { ids })
+    },
+    onSuccess: () => {
+      message.success(t('message.success'))
+      setSelectedRowKeys([])
+      queryClient.invalidateQueries({ queryKey: ['banners'] })
+    },
+    onError: (error: any) => {
+      message.error(error.response?.data?.detail || t('message.failed'))
+    },
+  })
+
+  // Batch disable mutation
+  const batchDisableMutation = useMutation({
+    mutationFn: async (ids: number[]) => {
+      await axios.put('/api/v1/admin/banners/batch/disable', { ids })
+    },
+    onSuccess: () => {
+      message.success(t('message.success'))
+      setSelectedRowKeys([])
+      queryClient.invalidateQueries({ queryKey: ['banners'] })
+    },
+    onError: (error: any) => {
+      message.error(error.response?.data?.detail || t('message.failed'))
+    },
+  })
+
+  const handleBatchEnable = () => {
+    if (selectedRowKeys.length === 0) {
+      message.warning('请先选择横幅')
+      return
+    }
+    Modal.confirm({
+      title: t('banner.batchEnable'),
+      content: `确定要启用选中的 ${selectedRowKeys.length} 个横幅吗？`,
+      onOk: () => batchEnableMutation.mutate(selectedRowKeys),
+    })
+  }
+
+  const handleBatchDisable = () => {
+    if (selectedRowKeys.length === 0) {
+      message.warning('请先选择横幅')
+      return
+    }
+    Modal.confirm({
+      title: t('banner.batchDisable'),
+      content: `确定要禁用选中的 ${selectedRowKeys.length} 个横幅吗？`,
+      onOk: () => batchDisableMutation.mutate(selectedRowKeys),
+    })
+  }
+
+  // Export to CSV
+  const handleExport = () => {
+    if (!data?.items || data.items.length === 0) {
+      message.warning('没有数据可导出')
+      return
+    }
+
+    const exportData = data.items.map((item: any) => ({
+      ID: item.id,
+      标题: item.title,
+      状态: item.status === 'active' ? '启用' : '禁用',
+      排序: item.sort_order,
+      创建时间: item.created_at,
+    }))
+
+    exportToCSV(exportData, 'banners')
+    message.success(t('message.success'))
+  }
 
   const handleCreate = () => {
     setEditingBanner(null)
@@ -279,30 +358,72 @@ const BannersList = () => {
     },
   ]
 
+  const rowSelection = {
+    selectedRowKeys,
+    onChange: (keys: React.Key[]) => setSelectedRowKeys(keys as number[]),
+  }
+
   return (
     <div>
-      <h2 style={{ marginBottom: 24 }}>Banner管理</h2>
+      <h2 style={{ marginBottom: 24 }}>{t('menu.banners')}</h2>
+
+      {/* Batch operations */}
+      {selectedRowKeys.length > 0 && (
+        <div style={{ marginBottom: 16 }}>
+          <Space>
+            <Button
+              type="primary"
+              onClick={handleBatchEnable}
+            >
+              {t('banner.batchEnable')} ({selectedRowKeys.length})
+            </Button>
+            <Button
+              onClick={handleBatchDisable}
+            >
+              {t('banner.batchDisable')} ({selectedRowKeys.length})
+            </Button>
+            <Button
+              icon={<DownloadOutlined />}
+              onClick={handleExport}
+            >
+              {t('video.exportExcel')}
+            </Button>
+          </Space>
+        </div>
+      )}
 
       <Card
         extra={
-          <Button type="primary" icon={<PlusOutlined />} onClick={handleCreate}>
-            创建Banner
-          </Button>
+          <Space>
+            {selectedRowKeys.length === 0 && (
+              <Button
+                icon={<DownloadOutlined />}
+                onClick={handleExport}
+              >
+                {t('video.exportExcel')}
+              </Button>
+            )}
+            <Button type="primary" icon={<PlusOutlined />} onClick={handleCreate}>
+              {t('common.create')} Banner
+            </Button>
+          </Space>
         }
       >
         <Table
+          rowSelection={rowSelection}
           columns={columns}
           dataSource={data?.items || []}
           rowKey="id"
           loading={isLoading}
           scroll={{ x: 1200 }}
+          sticky
           pagination={{
             current: page,
             pageSize: pageSize,
             total: data?.total || 0,
             showSizeChanger: false,
             showQuickJumper: true,
-            showTotal: (total) => `共 ${total} 条`,
+            showTotal: (total) => `${t('common.total')} ${total} ${t('common.items')}`,
             onChange: (newPage) => setPage(newPage),
           }}
         />

@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
-import { Card, Row, Col, Statistic, Table, Tag, Space, Typography } from 'antd'
+import { Card, Row, Col, Statistic, Table, Tag, Space, Typography, Skeleton, Grid } from 'antd'
 import {
   UserOutlined,
   VideoCameraOutlined,
@@ -10,11 +10,14 @@ import {
   CheckCircleOutlined,
 } from '@ant-design/icons'
 import { Line, Column, Pie } from '@ant-design/charts'
+import { useTranslation } from 'react-i18next'
 import axios from '@/utils/axios'
 
 const { Title } = Typography
 
 const Dashboard = () => {
+  const { t } = useTranslation()
+  const screens = Grid.useBreakpoint()
   const { data: stats, isLoading: statsLoading } = useQuery({
     queryKey: ['overview-stats'],
     queryFn: async () => {
@@ -110,51 +113,74 @@ const Dashboard = () => {
   return (
     <div>
       <Title level={2} style={{ marginBottom: 24 }}>
-        数据概览
+        {t('dashboard.title')}
       </Title>
 
       {/* 统计卡片 */}
       <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
         <Col xs={24} sm={12} lg={6}>
-          <Card loading={statsLoading} bordered={false} style={{ background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' }}>
-            <Statistic
-              title={<span style={{ color: 'rgba(255,255,255,0.85)' }}>总用户数</span>}
-              value={stats?.total_users || 0}
-              prefix={<UserOutlined />}
-              valueStyle={{ color: '#fff' }}
-            />
-          </Card>
+          {statsLoading ? (
+            <Card bordered={false}>
+              <Skeleton active paragraph={{ rows: 2 }} />
+            </Card>
+          ) : (
+            <Card bordered={false} style={{ background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' }}>
+              <Statistic
+                title={<span style={{ color: 'rgba(255,255,255,0.85)' }}>{t('dashboard.totalUsers')}</span>}
+                value={stats?.total_users || 0}
+                prefix={<UserOutlined />}
+                valueStyle={{ color: '#fff' }}
+              />
+            </Card>
+          )}
         </Col>
         <Col xs={24} sm={12} lg={6}>
-          <Card loading={statsLoading} bordered={false} style={{ background: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)' }}>
-            <Statistic
-              title={<span style={{ color: 'rgba(255,255,255,0.85)' }}>总视频数</span>}
-              value={stats?.total_videos || 0}
-              prefix={<VideoCameraOutlined />}
-              valueStyle={{ color: '#fff' }}
-            />
-          </Card>
+          {statsLoading ? (
+            <Card bordered={false}>
+              <Skeleton active paragraph={{ rows: 2 }} />
+            </Card>
+          ) : (
+            <Card bordered={false} style={{ background: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)' }}>
+              <Statistic
+                title={<span style={{ color: 'rgba(255,255,255,0.85)' }}>{t('dashboard.totalVideos')}</span>}
+                value={stats?.total_videos || 0}
+                prefix={<VideoCameraOutlined />}
+                valueStyle={{ color: '#fff' }}
+              />
+            </Card>
+          )}
         </Col>
         <Col xs={24} sm={12} lg={6}>
-          <Card loading={statsLoading} bordered={false} style={{ background: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)' }}>
-            <Statistic
-              title={<span style={{ color: 'rgba(255,255,255,0.85)' }}>总评论数</span>}
-              value={stats?.total_comments || 0}
-              prefix={<CommentOutlined />}
-              valueStyle={{ color: '#fff' }}
-            />
-          </Card>
+          {statsLoading ? (
+            <Card bordered={false}>
+              <Skeleton active paragraph={{ rows: 2 }} />
+            </Card>
+          ) : (
+            <Card bordered={false} style={{ background: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)' }}>
+              <Statistic
+                title={<span style={{ color: 'rgba(255,255,255,0.85)' }}>{t('dashboard.totalComments')}</span>}
+                value={stats?.total_comments || 0}
+                prefix={<CommentOutlined />}
+                valueStyle={{ color: '#fff' }}
+              />
+            </Card>
+          )}
         </Col>
         <Col xs={24} sm={12} lg={6}>
-          <Card loading={statsLoading} bordered={false} style={{ background: 'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)' }}>
-            <Statistic
-              title={<span style={{ color: 'rgba(255,255,255,0.85)' }}>总播放量</span>}
-              value={stats?.total_views || 0}
-              prefix={<EyeOutlined />}
-              valueStyle={{ color: '#fff' }}
-              suffix={<span style={{ color: 'rgba(255,255,255,0.65)', fontSize: 14 }}>次</span>}
-            />
-          </Card>
+          {statsLoading ? (
+            <Card bordered={false}>
+              <Skeleton active paragraph={{ rows: 2 }} />
+            </Card>
+          ) : (
+            <Card bordered={false} style={{ background: 'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)' }}>
+              <Statistic
+                title={<span style={{ color: 'rgba(255,255,255,0.85)' }}>{t('dashboard.totalViews')}</span>}
+                value={stats?.total_views || 0}
+                prefix={<EyeOutlined />}
+                valueStyle={{ color: '#fff' }}
+              />
+            </Card>
+          )}
         </Col>
       </Row>
 
@@ -163,7 +189,7 @@ const Dashboard = () => {
         title={
           <Space>
             <FileTextOutlined />
-            <span>最近添加的视频</span>
+            <span>{t('dashboard.recentVideos')}</span>
           </Space>
         }
         style={{ marginBottom: 24 }}
@@ -175,6 +201,7 @@ const Dashboard = () => {
           rowKey="id"
           pagination={false}
           size="middle"
+          scroll={{ x: screens.xs ? 600 : undefined }}
         />
       </Card>
 

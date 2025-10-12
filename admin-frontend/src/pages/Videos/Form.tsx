@@ -16,6 +16,8 @@ import {
 } from 'antd'
 import { SaveOutlined, ArrowLeftOutlined } from '@ant-design/icons'
 import { useQuery } from '@tanstack/react-query'
+import { useTranslation } from 'react-i18next'
+import { useHotkeys } from 'react-hotkeys-hook'
 import axios from '@/utils/axios'
 import dayjs from 'dayjs'
 import ChunkedUploader from '../../components/ChunkedUploader'
@@ -24,11 +26,18 @@ const { TextArea } = Input
 const { Option } = Select
 
 const VideoForm = () => {
+  const { t } = useTranslation()
   const navigate = useNavigate()
   const { id } = useParams()
   const [form] = Form.useForm()
   const [loading, setLoading] = useState(false)
   const isEdit = !!id
+  
+  // Ctrl+S to save
+  useHotkeys('ctrl+s', (e) => {
+    e.preventDefault()
+    form.submit()
+  }, { enableOnFormTags: true })
 
   // 获取分类列表
   const { data: categories } = useQuery({
@@ -124,7 +133,13 @@ const VideoForm = () => {
         <h2 style={{ margin: 0 }}>{isEdit ? '编辑视频' : '新增视频'}</h2>
       </Space>
 
-      <Form form={form} layout="vertical" onFinish={onFinish} autoComplete="off">
+      <Form 
+        form={form} 
+        layout="vertical" 
+        onFinish={onFinish} 
+        autoComplete="off"
+        validateTrigger="onBlur"
+      >
         <Row gutter={24}>
           {/* 左侧列 */}
           <Col span={16}>
@@ -132,17 +147,48 @@ const VideoForm = () => {
               <Form.Item
                 name="title"
                 label="标题"
-                rules={[{ required: true, message: '请输入标题' }]}
+                rules={[
+                  { required: true, message: '请输入标题' },
+                  { min: 2, message: '标题至少2个字符' },
+                  { max: 500, message: '标题不能超过500个字符' },
+                ]}
+                hasFeedback
               >
-                <Input placeholder="请输入视频标题" size="large" />
+                <Input 
+                  placeholder="请输入视频标题" 
+                  size="large"
+                  showCount
+                  maxLength={500}
+                />
               </Form.Item>
 
-              <Form.Item name="original_title" label="原始标题">
-                <Input placeholder="请输入原始标题（如外文标题）" />
+              <Form.Item 
+                name="original_title" 
+                label="原始标题"
+                rules={[
+                  { max: 500, message: '原始标题不能超过500个字符' },
+                ]}
+              >
+                <Input 
+                  placeholder="请输入原始标题（如外文标题）"
+                  showCount
+                  maxLength={500}
+                />
               </Form.Item>
 
-              <Form.Item name="description" label="简介">
-                <TextArea rows={6} placeholder="请输入视频简介" />
+              <Form.Item 
+                name="description" 
+                label="简介"
+                rules={[
+                  { max: 2000, message: '简介不能超过2000个字符' },
+                ]}
+              >
+                <TextArea 
+                  rows={6} 
+                  placeholder="请输入视频简介"
+                  showCount
+                  maxLength={2000}
+                />
               </Form.Item>
 
               <Row gutter={16}>
@@ -151,6 +197,7 @@ const VideoForm = () => {
                     name="video_type"
                     label="类型"
                     rules={[{ required: true, message: '请选择类型' }]}
+                    hasFeedback
                   >
                     <Select placeholder="请选择视频类型">
                       <Option value="movie">电影</Option>
@@ -165,6 +212,7 @@ const VideoForm = () => {
                     name="status"
                     label="状态"
                     rules={[{ required: true, message: '请选择状态' }]}
+                    hasFeedback
                   >
                     <Select placeholder="请选择状态">
                       <Option value="draft">草稿</Option>

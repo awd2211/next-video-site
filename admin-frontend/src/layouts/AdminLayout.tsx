@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Outlet, useNavigate, useLocation } from 'react-router-dom'
-import { Layout, Menu, theme } from 'antd'
+import { Layout, Menu, theme, Space, Button, Tooltip } from 'antd'
+import { QuestionCircleOutlined } from '@ant-design/icons'
 import {
   DashboardOutlined,
   VideoCameraOutlined,
@@ -16,17 +17,28 @@ import {
   StopOutlined,
   AppstoreOutlined,
 } from '@ant-design/icons'
+import { useTranslation } from 'react-i18next'
 import Breadcrumb from '../components/Breadcrumb'
+import LanguageSwitcher from '../components/LanguageSwitcher'
+import ThemeSwitcher from '../components/ThemeSwitcher'
+import HotkeysHelp from '../components/HotkeysHelp'
+import PageTransition from '../components/PageTransition'
+import { useGlobalHotkeys } from '../hooks/useGlobalHotkeys'
 
 const { Header, Content, Sider } = Layout
 
 const AdminLayout = () => {
+  const { t } = useTranslation()
   const navigate = useNavigate()
   const location = useLocation()
   const [collapsed, setCollapsed] = useState(false)
+  const [hotkeysHelpVisible, setHotkeysHelpVisible] = useState(false)
   const {
     token: { colorBgContainer, borderRadiusLG },
   } = theme.useToken()
+  
+  // Enable global hotkeys
+  useGlobalHotkeys()
 
   // Get the current selected menu key based on path
   const getSelectedKey = () => {
@@ -47,67 +59,67 @@ const AdminLayout = () => {
     {
       key: '/',
       icon: <DashboardOutlined />,
-      label: 'Dashboard',
+      label: t('menu.dashboard'),
     },
     {
       key: '/videos',
       icon: <VideoCameraOutlined />,
-      label: 'Videos',
+      label: t('menu.videos'),
     },
     {
       key: '/users',
       icon: <UserOutlined />,
-      label: 'Users',
+      label: t('menu.users'),
     },
     {
       key: '/comments',
       icon: <CommentOutlined />,
-      label: 'Comments',
+      label: t('menu.comments'),
     },
     {
       key: '/banners',
       icon: <PictureOutlined />,
-      label: 'Banners',
+      label: t('menu.banners'),
     },
     {
       key: '/announcements',
       icon: <SoundOutlined />,
-      label: 'Announcements',
+      label: t('menu.announcements'),
     },
     {
       key: '/actors',
       icon: <TeamOutlined />,
-      label: 'Actors',
+      label: t('menu.actors'),
     },
     {
       key: '/directors',
       icon: <TeamOutlined />,
-      label: 'Directors',
+      label: t('menu.directors'),
     },
     {
       key: '/statistics',
       icon: <BarChartOutlined />,
-      label: 'Statistics',
+      label: t('menu.statistics'),
     },
     {
       key: '/settings',
       icon: <SettingOutlined />,
-      label: 'Settings',
+      label: t('menu.settings'),
     },
     {
       key: '/logs',
       icon: <FileTextOutlined />,
-      label: 'Logs',
+      label: t('menu.logs'),
     },
     {
       key: '/ip-blacklist',
       icon: <StopOutlined />,
-      label: 'IP Blacklist',
+      label: t('menu.ipBlacklist'),
     },
     {
       key: '/series',
       icon: <AppstoreOutlined />,
-      label: 'Series',
+      label: t('menu.series'),
     },
   ]
 
@@ -138,13 +150,22 @@ const AdminLayout = () => {
       <Layout>
         <Header style={{ padding: '0 24px', background: colorBgContainer, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <div style={{ fontSize: '18px', fontWeight: 'bold' }}>
-            Admin Panel
+            {t('common.adminPanel')}
           </div>
-          <div>
+          <Space size="large">
+            <Tooltip title="快捷键帮助 (Shift+?)">
+              <Button
+                type="text"
+                icon={<QuestionCircleOutlined />}
+                onClick={() => setHotkeysHelpVisible(true)}
+              />
+            </Tooltip>
+            <ThemeSwitcher />
+            <LanguageSwitcher />
             <a onClick={handleLogout} style={{ color: 'inherit', cursor: 'pointer' }}>
-              <LogoutOutlined /> Logout
+              <LogoutOutlined /> {t('common.logout')}
             </a>
-          </div>
+          </Space>
         </Header>
         <Content style={{ margin: '24px 16px' }}>
           <Breadcrumb />
@@ -156,10 +177,15 @@ const AdminLayout = () => {
               borderRadius: borderRadiusLG,
             }}
           >
-            <Outlet />
+            <PageTransition>
+              <Outlet />
+            </PageTransition>
           </div>
         </Content>
       </Layout>
+      
+      {/* Hotkeys Help Modal */}
+      <HotkeysHelp visible={hotkeysHelpVisible} onClose={() => setHotkeysHelpVisible(false)} />
     </Layout>
   )
 }

@@ -1,10 +1,10 @@
 import io
-import logging
 import math
 from datetime import datetime, timezone
 from typing import Optional
 
 from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile, status
+from loguru import logger
 from slugify import slugify
 from sqlalchemy import desc, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -25,7 +25,6 @@ from app.utils.dependencies import get_current_admin_user
 from app.utils.minio_client import minio_client
 
 router = APIRouter()
-logger = logging.getLogger(__name__)
 
 
 @router.get("", response_model=PaginatedResponse)
@@ -193,7 +192,17 @@ async def admin_get_video(
     current_admin: AdminUser = Depends(get_current_admin_user),
 ):
     """Admin: Get video details"""
-    result = await db.execute(select(Video).filter(Video.id == video_id))
+    result = await db.execute(
+        select(Video)
+        .options(
+            selectinload(Video.video_categories).selectinload(VideoCategory.category),
+            selectinload(Video.video_actors).selectinload(VideoActor.actor),
+            selectinload(Video.video_directors).selectinload(VideoDirector.director),
+            selectinload(Video.video_tags).selectinload(VideoTag.tag),
+            selectinload(Video.country),
+        )
+        .filter(Video.id == video_id)
+    )
     video = result.scalar_one_or_none()
 
     if not video:

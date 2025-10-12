@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>API测试</title>
+    <style>
+        body { font-family: Arial; padding: 20px; }
+        .result { margin: 10px 0; padding: 10px; background: #f0f0f0; }
+        .error { background: #ffdddd; color: red; }
+        .success { background: #ddffdd; color: green; }
+    </style>
+</head>
+<body>
+    <h1>VideoSite API 测试</h1>
+    <button onclick="testTrending()">测试热门视频API</button>
+    <button onclick="testFeatured()">测试精选视频API</button>
+    <button onclick="testLatest()">测试最新视频API</button>
+    <div id="results"></div>
+
+    <script>
+        const resultsDiv = document.getElementById('results');
+
+        async function testTrending() {
+            addResult('正在测试热门视频API...', 'result');
+            try {
+                const response = await fetch('/api/v1/videos/trending?page=1&page_size=5');
+                const data = await response.json();
+                addResult(`✅ 热门视频API正常: 返回${data.total}个视频，第一页${data.items.length}条`, 'success');
+                addResult(`第一个视频: ${data.items[0].title}`, 'result');
+            } catch (error) {
+                addResult(`❌ 热门视频API错误: ${error.message}`, 'error');
+            }
+        }
+
+        async function testFeatured() {
+            addResult('正在测试精选视频API...', 'result');
+            try {
+                const response = await fetch('/api/v1/videos/featured?page=1&page_size=5');
+                const data = await response.json();
+                addResult(`✅ 精选视频API正常: 返回${data.items.length}条`, 'success');
+            } catch (error) {
+                addResult(`❌ 精选视频API错误: ${error.message}`, 'error');
+            }
+        }
+
+        async function testLatest() {
+            addResult('正在测试最新视频API...', 'result');
+            try {
+                const response = await fetch('/api/v1/videos?page=1&page_size=5&sort_by=created_at');
+                const data = await response.json();
+                addResult(`✅ 最新视频API正常: 返回${data.total}个视频`, 'success');
+            } catch (error) {
+                addResult(`❌ 最新视频API错误: ${error.message}`, 'error');
+            }
+        }
+
+        function addResult(message, className) {
+            const div = document.createElement('div');
+            div.className = className;
+            div.textContent = message;
+            resultsDiv.appendChild(div);
+        }
+
+        // 自动运行测试
+        window.onload = () => {
+            testTrending();
+            setTimeout(testFeatured, 1000);
+            setTimeout(testLatest, 2000);
+        };
+    </script>
+</body>
+</html>

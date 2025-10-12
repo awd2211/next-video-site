@@ -8,6 +8,7 @@ from typing import Any, Callable, Dict, List, Optional
 
 import redis.asyncio as redis
 from fastapi import HTTPException, Request, status
+from loguru import logger
 from slowapi import Limiter
 from slowapi.util import get_remote_address
 
@@ -76,7 +77,7 @@ async def check_ip_blacklist(ip: str) -> bool:
         result = await client.sismember("ip_blacklist", ip)
         return bool(result)
     except Exception as e:
-        print(f"Check IP blacklist error: {e}")
+        logger.error(f"Check IP blacklist error: {e}", exc_info=True)
         return False
 
 
@@ -113,7 +114,7 @@ async def add_to_blacklist(
             await client.setex(f"ip_blacklist_temp:{ip}", duration, "1")
 
     except Exception as e:
-        print(f"Add to blacklist error: {e}")
+        logger.error(f"Add to blacklist error: {e}", exc_info=True)
 
 
 async def remove_from_blacklist(ip: str) -> None:
@@ -129,7 +130,7 @@ async def remove_from_blacklist(ip: str) -> None:
         await client.delete(f"ip_blacklist_info:{ip}")
         await client.delete(f"ip_blacklist_temp:{ip}")
     except Exception as e:
-        print(f"Remove from blacklist error: {e}")
+        logger.error(f"Remove from blacklist error: {e}", exc_info=True)
 
 
 async def get_blacklist() -> List[Dict[str, Any]]:
@@ -155,7 +156,7 @@ async def get_blacklist() -> List[Dict[str, Any]]:
             )
         return result
     except Exception as e:
-        print(f"Get blacklist error: {e}")
+        logger.error(f"Get blacklist error: {e}", exc_info=True)
         return []
 
 
@@ -225,7 +226,7 @@ class AutoBanDetector:
                 await client.delete(key)
 
         except Exception as e:
-            print(f"Record failed attempt error: {e}")
+            logger.error(f"Record failed attempt error: {e}", exc_info=True)
 
     @staticmethod
     async def clear_failed_attempts(ip: str, attempt_type: str = "login") -> None:
@@ -234,7 +235,7 @@ class AutoBanDetector:
             client = await get_redis_client()
             await client.delete(f"failed_attempts:{attempt_type}:{ip}")
         except Exception as e:
-            print(f"Clear failed attempts error: {e}")
+            logger.error(f"Clear failed attempts error: {e}", exc_info=True)
 
 
 # 用户级别限流 (基于用户ID)

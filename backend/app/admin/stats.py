@@ -133,16 +133,33 @@ async def admin_get_video_category_stats(
     db: AsyncSession = Depends(get_db),
     current_admin: AdminUser = Depends(get_current_admin_user),
 ):
-    """Admin: Get video count by category"""
-    # This is a simplified version - in production you'd join video_categories table
+    """Admin: Get video count by category (cached for 10 minutes)"""
+    # 尝试从缓存获取
+    cache_key = "admin:stats:video_categories"
+    cached = await Cache.get(cache_key)
+    if cached is not None:
+        return cached
+
+    # 正确的查询：JOIN video_categories表
+    from app.models.video import VideoCategory
+
     result = await db.execute(
-        select(Category.name, func.count(Category.id).label("count"))
+        select(
+            Category.name,
+            func.count(VideoCategory.video_id).label("count")
+        )
+        .join(VideoCategory, Category.id == VideoCategory.category_id)
         .group_by(Category.id, Category.name)
-        .order_by(func.count(Category.id).desc())
+        .order_by(func.count(VideoCategory.video_id).desc())
         .limit(10)
     )
 
-    return [{"category": row.name, "count": row.count} for row in result.all()]
+    data = [{"category": row.name, "count": row.count} for row in result.all()]
+
+    # 缓存10分钟
+    await Cache.set(cache_key, data, ttl=600)
+
+    return data
 
 
 @router.get("/video-types")

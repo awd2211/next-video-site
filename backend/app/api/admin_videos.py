@@ -8,6 +8,7 @@ from datetime import datetime
 from typing import Optional
 
 from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile, status
+from loguru import logger
 from sqlalchemy import desc, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -215,7 +216,7 @@ async def delete_video(
             object_name = video.video_url.split("/")[-1]
             minio_client.delete_file(f"videos/{object_name}")
         except Exception as e:
-            print(f"删除视频文件失败: {e}")
+            logger.warning(f"删除视频文件失败: {e}")
 
     # 删除封面图片
     if video.cover_image:
@@ -223,7 +224,7 @@ async def delete_video(
             object_name = video.cover_image.split("/")[-1]
             minio_client.delete_file(f"covers/{object_name}")
         except Exception as e:
-            print(f"删除封面图片失败: {e}")
+            logger.warning(f"删除封面图片失败: {e}")
 
     await db.delete(video)
     await db.commit()

@@ -1,53 +1,21 @@
-from datetime import datetime
 from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query
-from pydantic import BaseModel
 from sqlalchemy import desc, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
 from app.models.content import Announcement
 from app.models.user import AdminUser
+from app.schemas.admin_content import (
+    AnnouncementCreate,
+    AnnouncementResponse,
+    AnnouncementUpdate,
+    PaginatedAnnouncementResponse,
+)
 from app.utils.dependencies import get_current_admin_user
 
 router = APIRouter()
-
-
-class AnnouncementCreate(BaseModel):
-    title: str
-    content: str
-    type: str = "info"
-    is_active: bool = True
-    is_pinned: bool = False
-    start_date: Optional[datetime] = None
-    end_date: Optional[datetime] = None
-
-
-class AnnouncementUpdate(BaseModel):
-    title: Optional[str] = None
-    content: Optional[str] = None
-    type: Optional[str] = None
-    is_active: Optional[bool] = None
-    is_pinned: Optional[bool] = None
-    start_date: Optional[datetime] = None
-    end_date: Optional[datetime] = None
-
-
-class AnnouncementResponse(BaseModel):
-    id: int
-    title: str
-    content: str
-    type: str
-    is_active: bool
-    is_pinned: bool
-    start_date: Optional[datetime]
-    end_date: Optional[datetime]
-    created_at: datetime
-    updated_at: Optional[datetime]
-
-    class Config:
-        from_attributes = True
 
 
 @router.get("/announcements", response_model=dict)
