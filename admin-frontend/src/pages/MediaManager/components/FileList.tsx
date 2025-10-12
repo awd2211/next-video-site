@@ -21,6 +21,7 @@ import {
   DownloadOutlined,
   EyeOutlined,
   EditOutlined,
+  DragOutlined,
 } from '@ant-design/icons'
 import type { MenuProps } from 'antd'
 import type { MediaItem } from '../types'
@@ -43,6 +44,7 @@ interface FileListProps {
   sortOrder: 'asc' | 'desc'
   onFolderOpen: (folderId: number) => void
   onRename: (mediaId: number, newTitle: string) => void
+  onOpenMoveModal: () => void
 }
 
 const FileList: React.FC<FileListProps> = ({
@@ -59,6 +61,7 @@ const FileList: React.FC<FileListProps> = ({
   viewMode,
   onFolderOpen,
   onRename,
+  onOpenMoveModal,
 }) => {
   const [previewImage, setPreviewImage] = useState<string | null>(null)
   const [renameModalVisible, setRenameModalVisible] = useState(false)
@@ -170,6 +173,16 @@ const FileList: React.FC<FileListProps> = ({
         label: '重命名',
         icon: <EditOutlined />,
         onClick: () => handleRename(item),
+      },
+      {
+        key: 'move',
+        label: '移动到',
+        icon: <DragOutlined />,
+        onClick: () => {
+          // 选中当前项并打开移动Modal
+          onSelectChange([item.id])
+          onOpenMoveModal()
+        },
       },
       { type: 'divider' },
       {

@@ -23,6 +23,7 @@ interface ToolbarProps {
   onCreateFolder: () => void
   onRefresh: () => void
   selectedCount: number
+  selectedSize: number
   onBatchDelete: () => void
   onBatchMove: () => void
   viewMode: 'grid' | 'list'
@@ -38,6 +39,7 @@ const Toolbar: React.FC<ToolbarProps> = ({
   onCreateFolder,
   onRefresh,
   selectedCount,
+  selectedSize,
   onBatchDelete,
   onBatchMove,
   viewMode,
@@ -47,6 +49,15 @@ const Toolbar: React.FC<ToolbarProps> = ({
   onSortChange,
 }) => {
   const fileInputRef = useRef<HTMLInputElement>(null)
+
+  // 格式化文件大小
+  const formatFileSize = (bytes: number): string => {
+    if (bytes === 0) return '0 B'
+    const k = 1024
+    const sizes = ['B', 'KB', 'MB', 'GB', 'TB']
+    const i = Math.floor(Math.log(bytes) / Math.log(k))
+    return `${(bytes / Math.pow(k, i)).toFixed(2)} ${sizes[i]}`
+  }
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || [])
@@ -109,7 +120,20 @@ const Toolbar: React.FC<ToolbarProps> = ({
         <Space>
           {selectedCount > 0 && (
             <>
-              <span style={{ color: '#8c8c8c' }}>已选 {selectedCount} 项</span>
+              <span style={{
+                color: '#1890ff',
+                fontWeight: 500,
+                padding: '4px 12px',
+                background: '#e6f7ff',
+                borderRadius: 4,
+              }}>
+                已选 {selectedCount} 项
+                {selectedSize > 0 && (
+                  <span style={{ marginLeft: 8, color: '#8c8c8c', fontWeight: 400 }}>
+                    ({formatFileSize(selectedSize)})
+                  </span>
+                )}
+              </span>
               <Button
                 icon={<DragOutlined />}
                 onClick={onBatchMove}

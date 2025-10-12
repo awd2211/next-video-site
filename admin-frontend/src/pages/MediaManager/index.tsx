@@ -42,6 +42,11 @@ const MediaManager: React.FC = () => {
   // 移动文件Modal
   const [moveModalVisible, setMoveModalVisible] = useState(false)
 
+  // 计算选中文件的总大小
+  const selectedFilesSize = fileList
+    .filter(item => selectedFiles.includes(item.id))
+    .reduce((total, item) => total + (item.file_size || 0), 0)
+
   // 搜索
   const [searchText, setSearchText] = useState('')
 
@@ -290,6 +295,7 @@ const MediaManager: React.FC = () => {
           loadFileList()
         }}
         selectedCount={selectedFiles.length}
+        selectedSize={selectedFilesSize}
         onBatchDelete={() => handleDelete(selectedFiles, false)}
         onBatchMove={handleOpenMoveModal}
         viewMode={viewMode}
@@ -346,6 +352,7 @@ const MediaManager: React.FC = () => {
             sortOrder={sortOrder}
             onFolderOpen={handleFolderOpen}
             onRename={handleRename}
+            onOpenMoveModal={handleOpenMoveModal}
           />
         </Content>
       </Layout>
