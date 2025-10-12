@@ -18,6 +18,7 @@ import {
   FileImageOutlined,
   VideoCameraOutlined,
   DownloadOutlined,
+  BarChartOutlined,
 } from '@ant-design/icons'
 
 interface ToolbarProps {
@@ -37,6 +38,8 @@ interface ToolbarProps {
   onSortChange: (by: 'name' | 'size' | 'date', order: 'asc' | 'desc') => void
   mediaTypeFilter?: 'image' | 'video' | undefined
   onMediaTypeFilterChange: (type: 'image' | 'video' | undefined) => void
+  showStats: boolean
+  onToggleStats: () => void
 }
 
 const Toolbar: React.FC<ToolbarProps> = ({
@@ -56,6 +59,8 @@ const Toolbar: React.FC<ToolbarProps> = ({
   onSortChange,
   mediaTypeFilter,
   onMediaTypeFilterChange,
+  showStats,
+  onToggleStats,
 }) => {
   const fileInputRef = useRef<HTMLInputElement>(null)
 
@@ -255,6 +260,14 @@ const Toolbar: React.FC<ToolbarProps> = ({
             onClick={onRefresh}
           >
             刷新
+          </Button>
+
+          <Button
+            icon={<BarChartOutlined />}
+            onClick={onToggleStats}
+            type={showStats ? 'primary' : 'default'}
+          >
+            统计
           </Button>
         </Space>
       </div>

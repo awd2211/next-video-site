@@ -15,6 +15,7 @@ import UploadManager from './components/UploadManager'
 import Breadcrumb from './components/Breadcrumb'
 import MoveModal from './components/MoveModal'
 import KeyboardHelp from './components/KeyboardHelp'
+import StatsPanel from './components/StatsPanel'
 import { useDragUpload } from './hooks/useDragUpload'
 import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts'
 import axios from '@/utils/axios'
@@ -60,6 +61,9 @@ const MediaManager: React.FC = () => {
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid')
   const [sortBy, setSortBy] = useState<'name' | 'size' | 'date'>('name')
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc')
+
+  // 统计面板显示
+  const [showStats, setShowStats] = useState(false)
 
   // 面包屑路径
   const [breadcrumbPath, setBreadcrumbPath] = useState<{ id?: number; title: string }[]>([])
@@ -412,6 +416,8 @@ const MediaManager: React.FC = () => {
         }}
         mediaTypeFilter={mediaTypeFilter}
         onMediaTypeFilterChange={setMediaTypeFilter}
+        showStats={showStats}
+        onToggleStats={() => setShowStats(!showStats)}
       />
 
       <Layout className="media-manager-layout">
@@ -440,6 +446,9 @@ const MediaManager: React.FC = () => {
               onNavigate={setSelectedFolderId}
             />
           )}
+
+          {/* 统计面板 */}
+          <StatsPanel data={fileList} visible={showStats} />
 
           <FileList
             data={fileList}
