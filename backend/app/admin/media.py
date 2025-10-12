@@ -1,12 +1,17 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import List, Optional
+import uuid
+import os
+import shutil
 
 from fastapi import APIRouter, Depends, HTTPException, Query, UploadFile, File, Form
 from sqlalchemy import and_, desc, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
 from app.database import get_db
 from app.models.media import Media, MediaStatus, MediaType
+from app.models.upload_session import UploadSession
 from app.models.user import AdminUser
 from app.schemas.media import (
     MediaCreate,
@@ -20,6 +25,203 @@ from app.utils.dependencies import get_current_admin_user
 from app.utils.minio_client import minio_client
 
 router = APIRouter()
+
+
+# ==================== 文件夹树形结构 API ====================
+
+@router.get("/media/tree")
+async def get_media_tree(
+    parent_id: Optional[int] = Query(None, description="父文件夹ID，NULL获取根目录"),
+    db: AsyncSession = Depends(get_db),
+    current_user: AdminUser = Depends(get_current_admin_user),
+):
+    """
+    获取文件夹树形结构
+    - 返回指定父文件夹下的所有子文件夹（递归）
+    - parent_id=None 返回根目录
+    """
+
+    async def build_tree(parent_id: Optional[int]) -> List[dict]:
+        """递归构建文件夹树"""
+        query = select(Media).where(
+            and_(
+                Media.parent_id == parent_id,
+                Media.is_folder == True,
+                Media.is_deleted == False
+            )
+        ).order_by(Media.title)
+
+        result = await db.execute(query)
+        folders = result.scalars().all()
+
+        tree = []
+        for folder in folders:
+            # 统计子项数量（文件夹 + 文件）
+            count_query = select(func.count()).select_from(Media).where(
+                and_(Media.parent_id == folder.id, Media.is_deleted == False)
+            )
+            count_result = await db.execute(count_query)
+            children_count = count_result.scalar()
+
+            # 递归获取子文件夹
+            children = await build_tree(folder.id)
+
+            tree.append({
+                "id": folder.id,
+                "title": folder.title,
+                "parent_id": folder.parent_id,
+                "path": folder.path or folder.get_full_path(),
+                "children_count": children_count,
+                "children": children,
+                "created_at": folder.created_at.isoformat() if folder.created_at else None,
+            })
+
+        return tree
+
+    tree = await build_tree(parent_id)
+
+    return {
+        "tree": tree,
+        "parent_id": parent_id
+    }
+
+
+@router.post("/media/folders/create")
+async def create_folder(
+    title: str = Query(..., min_length=1, max_length=255),
+    parent_id: Optional[int] = Query(None, description="父文件夹ID"),
+    description: Optional[str] = Query(None),
+    db: AsyncSession = Depends(get_db),
+    current_user: AdminUser = Depends(get_current_admin_user),
+):
+    """创建文件夹"""
+
+    # 检查父文件夹是否存在
+    if parent_id is not None:
+        parent_query = select(Media).where(
+            and_(Media.id == parent_id, Media.is_folder == True, Media.is_deleted == False)
+        )
+        parent_result = await db.execute(parent_query)
+        parent = parent_result.scalar_one_or_none()
+
+        if not parent:
+            raise HTTPException(status_code=404, detail="父文件夹不存在")
+
+        # 构建路径
+        path = f"{parent.path or parent.get_full_path()}/{title}"
+    else:
+        path = f"/{title}"
+
+    # 检查同级是否存在同名文件夹
+    check_query = select(Media).where(
+        and_(
+            Media.parent_id == parent_id,
+            Media.title == title,
+            Media.is_folder == True,
+            Media.is_deleted == False
+        )
+    )
+    check_result = await db.execute(check_query)
+    existing = check_result.scalar_one_or_none()
+
+    if existing:
+        raise HTTPException(status_code=400, detail="同名文件夹已存在")
+
+    # 创建文件夹
+    folder = Media(
+        title=title,
+        description=description,
+        filename=title,
+        file_path=f"folders/{uuid.uuid4()}",  # 虚拟路径
+        file_size=0,
+        media_type=MediaType.IMAGE,  # 文件夹默认类型
+        status=MediaStatus.READY,
+        is_folder=True,
+        parent_id=parent_id,
+        path=path,
+        uploader_id=current_user.id,
+    )
+
+    db.add(folder)
+    await db.commit()
+    await db.refresh(folder)
+
+    return {
+        "id": folder.id,
+        "title": folder.title,
+        "path": folder.path,
+        "parent_id": folder.parent_id,
+        "message": "文件夹创建成功"
+    }
+
+
+@router.put("/media/{media_id}/move")
+async def move_media(
+    media_id: int,
+    target_parent_id: Optional[int] = Query(None, description="目标父文件夹ID"),
+    db: AsyncSession = Depends(get_db),
+    current_user: AdminUser = Depends(get_current_admin_user),
+):
+    """移动文件或文件夹"""
+
+    # 获取要移动的项
+    media_query = select(Media).where(
+        and_(Media.id == media_id, Media.is_deleted == False)
+    )
+    media_result = await db.execute(media_query)
+    media = media_result.scalar_one_or_none()
+
+    if not media:
+        raise HTTPException(status_code=404, detail="文件或文件夹不存在")
+
+    # 检查目标父文件夹
+    if target_parent_id is not None:
+        target_query = select(Media).where(
+            and_(Media.id == target_parent_id, Media.is_folder == True, Media.is_deleted == False)
+        )
+        target_result = await db.execute(target_query)
+        target = target_result.scalar_one_or_none()
+
+        if not target:
+            raise HTTPException(status_code=404, detail="目标文件夹不存在")
+
+        # 防止将文件夹移动到自己的子文件夹
+        if media.is_folder:
+            if target.path and media.path and target.path.startswith(media.path):
+                raise HTTPException(status_code=400, detail="不能将文件夹移动到其子文件夹")
+
+        new_path = f"{target.path or target.get_full_path()}/{media.title}"
+    else:
+        new_path = f"/{media.title}"
+
+    # 更新路径
+    media.parent_id = target_parent_id
+    media.path = new_path
+    media.updated_at = datetime.utcnow()
+
+    # 如果是文件夹，递归更新所有子项的路径
+    if media.is_folder:
+        async def update_children_paths(folder_id: int, parent_path: str):
+            children_query = select(Media).where(
+                and_(Media.parent_id == folder_id, Media.is_deleted == False)
+            )
+            children_result = await db.execute(children_query)
+            children = children_result.scalars().all()
+
+            for child in children:
+                child.path = f"{parent_path}/{child.title}"
+                if child.is_folder:
+                    await update_children_paths(child.id, child.path)
+
+        await update_children_paths(media.id, new_path)
+
+    await db.commit()
+
+    return {
+        "message": "移动成功",
+        "id": media.id,
+        "new_path": new_path
+    }
 
 
 @router.get("/media/stats", response_model=MediaStatsResponse)
@@ -430,3 +632,406 @@ async def restore_media(
     await db.commit()
 
     return {"message": "恢复成功"}
+
+
+# ==================== 分块上传 API ====================
+
+@router.post("/media/upload/init")
+async def init_chunk_upload(
+    filename: str = Query(...),
+    file_size: int = Query(..., gt=0),
+    mime_type: str = Query(...),
+    title: str = Query(...),
+    parent_id: Optional[int] = Query(None),
+    description: Optional[str] = Query(None),
+    tags: Optional[str] = Query(None),
+    chunk_size: int = Query(5242880, description="分块大小，默认5MB"),
+    db: AsyncSession = Depends(get_db),
+    current_user: AdminUser = Depends(get_current_admin_user),
+):
+    """
+    初始化分块上传会话
+    返回 upload_id 用于后续上传
+    """
+
+    # 计算总分块数
+    total_chunks = (file_size + chunk_size - 1) // chunk_size
+
+    # 生成唯一上传ID
+    upload_id = str(uuid.uuid4())
+
+    # 创建临时目录
+    temp_dir = f"/tmp/uploads/{upload_id}"
+    os.makedirs(temp_dir, exist_ok=True)
+
+    # 计算过期时间（24小时）
+    expires_at = datetime.utcnow() + timedelta(hours=24)
+
+    # 创建上传会话
+    session = UploadSession(
+        upload_id=upload_id,
+        filename=filename,
+        file_size=file_size,
+        mime_type=mime_type,
+        chunk_size=chunk_size,
+        total_chunks=total_chunks,
+        uploaded_chunks=[],
+        title=title,
+        description=description,
+        parent_id=parent_id,
+        tags=tags,
+        temp_dir=temp_dir,
+        uploader_id=current_user.id,
+        expires_at=expires_at,
+    )
+
+    db.add(session)
+    await db.commit()
+    await db.refresh(session)
+
+    return {
+        "upload_id": upload_id,
+        "chunk_size": chunk_size,
+        "total_chunks": total_chunks,
+        "expires_at": expires_at.isoformat(),
+        "message": "上传会话初始化成功"
+    }
+
+
+@router.post("/media/upload/chunk")
+async def upload_chunk(
+    upload_id: str = Query(...),
+    chunk_index: int = Query(..., ge=0),
+    chunk: UploadFile = File(...),
+    db: AsyncSession = Depends(get_db),
+    current_user: AdminUser = Depends(get_current_admin_user),
+):
+    """
+    上传单个文件分块
+    chunk_index 从 0 开始
+    """
+
+    # 获取上传会话
+    session_query = select(UploadSession).where(
+        and_(
+            UploadSession.upload_id == upload_id,
+            UploadSession.uploader_id == current_user.id
+        )
+    )
+    session_result = await db.execute(session_query)
+    session = session_result.scalar_one_or_none()
+
+    if not session:
+        raise HTTPException(status_code=404, detail="上传会话不存在")
+
+    # 检查是否过期
+    if datetime.utcnow() > session.expires_at:
+        raise HTTPException(status_code=410, detail="上传会话已过期")
+
+    # 检查分块索引
+    if chunk_index >= session.total_chunks:
+        raise HTTPException(status_code=400, detail="分块索引超出范围")
+
+    # 检查是否已上传
+    if session.is_chunk_uploaded(chunk_index):
+        return {
+            "message": "分块已存在",
+            "chunk_index": chunk_index,
+            "progress": session.get_progress()
+        }
+
+    # 保存分块到临时目录
+    chunk_path = os.path.join(session.temp_dir, f"chunk_{chunk_index}")
+
+    try:
+        content = await chunk.read()
+        with open(chunk_path, "wb") as f:
+            f.write(content)
+
+        # 标记分块已上传
+        session.mark_chunk_uploaded(chunk_index)
+        session.updated_at = datetime.utcnow()
+
+        # 检查是否所有分块都已上传
+        if session.is_upload_complete():
+            session.is_completed = True
+
+        await db.commit()
+
+        return {
+            "message": "分块上传成功",
+            "chunk_index": chunk_index,
+            "progress": session.get_progress(),
+            "is_completed": session.is_completed
+        }
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"分块保存失败: {str(e)}")
+
+
+@router.post("/media/upload/complete")
+async def complete_chunk_upload(
+    upload_id: str = Query(...),
+    db: AsyncSession = Depends(get_db),
+    current_user: AdminUser = Depends(get_current_admin_user),
+):
+    """
+    完成分块上传，合并文件并创建媒体记录
+    """
+
+    # 获取上传会话
+    session_query = select(UploadSession).where(
+        and_(
+            UploadSession.upload_id == upload_id,
+            UploadSession.uploader_id == current_user.id
+        )
+    )
+    session_result = await db.execute(session_query)
+    session = session_result.scalar_one_or_none()
+
+    if not session:
+        raise HTTPException(status_code=404, detail="上传会话不存在")
+
+    if not session.is_completed:
+        raise HTTPException(status_code=400, detail="还有分块未上传完成")
+
+    if session.is_merged:
+        raise HTTPException(status_code=400, detail="文件已合并")
+
+    try:
+        # 合并所有分块
+        merged_file_path = os.path.join(session.temp_dir, "merged_file")
+
+        with open(merged_file_path, "wb") as merged_file:
+            for i in range(session.total_chunks):
+                chunk_path = os.path.join(session.temp_dir, f"chunk_{i}")
+                with open(chunk_path, "rb") as chunk_file:
+                    merged_file.write(chunk_file.read())
+
+        # 上传到 MinIO
+        with open(merged_file_path, "rb") as file:
+            file_content = file.read()
+
+        # 生成存储路径
+        file_ext = os.path.splitext(session.filename)[1]
+        object_name = f"media/{uuid.uuid4()}{file_ext}"
+
+        # 上传到MinIO
+        minio_client.upload_file(
+            file_content=file_content,
+            object_name=object_name,
+            content_type=session.mime_type
+        )
+
+        # 获取URL
+        url = minio_client.get_file_url(object_name)
+
+        # 确定媒体类型
+        if session.mime_type.startswith('image/'):
+            media_type = MediaType.IMAGE
+        elif session.mime_type.startswith('video/'):
+            media_type = MediaType.VIDEO
+        else:
+            media_type = MediaType.IMAGE  # 默认
+
+        # 创建媒体记录
+        media = Media(
+            title=session.title,
+            description=session.description,
+            filename=session.filename,
+            file_path=object_name,
+            file_size=session.file_size,
+            mime_type=session.mime_type,
+            media_type=media_type,
+            status=MediaStatus.READY,
+            url=url,
+            parent_id=session.parent_id,
+            tags=session.tags,
+            uploader_id=current_user.id,
+            is_folder=False,
+        )
+
+        # 设置路径
+        if session.parent_id:
+            parent_query = select(Media).where(Media.id == session.parent_id)
+            parent_result = await db.execute(parent_query)
+            parent = parent_result.scalar_one_or_none()
+            if parent:
+                media.path = f"{parent.path or parent.get_full_path()}/{session.filename}"
+
+        db.add(media)
+        session.is_merged = True
+        session.media_id = media.id
+
+        await db.commit()
+        await db.refresh(media)
+
+        # 清理临时文件
+        try:
+            shutil.rmtree(session.temp_dir)
+        except Exception as e:
+            print(f"清理临时文件失败: {e}")
+
+        return {
+            "message": "上传完成",
+            "media_id": media.id,
+            "url": url,
+            "media": {
+                "id": media.id,
+                "title": media.title,
+                "filename": media.filename,
+                "file_size": media.file_size,
+                "mime_type": media.mime_type,
+                "url": media.url,
+            }
+        }
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"文件合并失败: {str(e)}")
+
+
+@router.get("/media/upload/status/{upload_id}")
+async def get_upload_status(
+    upload_id: str,
+    db: AsyncSession = Depends(get_db),
+    current_user: AdminUser = Depends(get_current_admin_user),
+):
+    """获取上传进度"""
+
+    session_query = select(UploadSession).where(
+        and_(
+            UploadSession.upload_id == upload_id,
+            UploadSession.uploader_id == current_user.id
+        )
+    )
+    session_result = await db.execute(session_query)
+    session = session_result.scalar_one_or_none()
+
+    if not session:
+        raise HTTPException(status_code=404, detail="上传会话不存在")
+
+    return {
+        "upload_id": session.upload_id,
+        "filename": session.filename,
+        "file_size": session.file_size,
+        "total_chunks": session.total_chunks,
+        "uploaded_chunks": session.uploaded_chunks,
+        "progress": session.get_progress(),
+        "is_completed": session.is_completed,
+        "is_merged": session.is_merged,
+        "created_at": session.created_at.isoformat(),
+        "expires_at": session.expires_at.isoformat(),
+    }
+
+
+# ==================== 批量操作 API ====================
+
+@router.post("/media/batch/move")
+async def batch_move_media(
+    media_ids: List[int] = Query(...),
+    target_parent_id: Optional[int] = Query(None),
+    db: AsyncSession = Depends(get_db),
+    current_user: AdminUser = Depends(get_current_admin_user),
+):
+    """批量移动文件/文件夹"""
+
+    moved_count = 0
+    errors = []
+
+    for media_id in media_ids:
+        try:
+            # 获取媒体
+            media_query = select(Media).where(
+                and_(Media.id == media_id, Media.is_deleted == False)
+            )
+            media_result = await db.execute(media_query)
+            media = media_result.scalar_one_or_none()
+
+            if not media:
+                errors.append({"id": media_id, "error": "不存在"})
+                continue
+
+            # 构建新路径
+            if target_parent_id:
+                target_query = select(Media).where(
+                    and_(Media.id == target_parent_id, Media.is_folder == True)
+                )
+                target_result = await db.execute(target_query)
+                target = target_result.scalar_one_or_none()
+
+                if not target:
+                    errors.append({"id": media_id, "error": "目标文件夹不存在"})
+                    continue
+
+                new_path = f"{target.path or target.get_full_path()}/{media.title}"
+            else:
+                new_path = f"/{media.title}"
+
+            media.parent_id = target_parent_id
+            media.path = new_path
+            media.updated_at = datetime.utcnow()
+
+            moved_count += 1
+
+        except Exception as e:
+            errors.append({"id": media_id, "error": str(e)})
+
+    await db.commit()
+
+    return {
+        "message": "批量移动完成",
+        "moved_count": moved_count,
+        "total_count": len(media_ids),
+        "errors": errors
+    }
+
+
+@router.delete("/media/batch/delete")
+async def batch_delete_media(
+    media_ids: List[int] = Query(...),
+    permanent: bool = Query(False),
+    db: AsyncSession = Depends(get_db),
+    current_user: AdminUser = Depends(get_current_admin_user),
+):
+    """批量删除文件/文件夹"""
+
+    deleted_count = 0
+    errors = []
+
+    for media_id in media_ids:
+        try:
+            media_query = select(Media).where(Media.id == media_id)
+            media_result = await db.execute(media_query)
+            media = media_result.scalar_one_or_none()
+
+            if not media:
+                errors.append({"id": media_id, "error": "不存在"})
+                continue
+
+            if permanent:
+                # 永久删除
+                if not media.is_folder:
+                    try:
+                        minio_client.delete_file(media.file_path)
+                    except Exception as e:
+                        print(f"删除文件失败: {e}")
+
+                await db.delete(media)
+            else:
+                # 软删除
+                media.is_deleted = True
+                media.deleted_at = datetime.utcnow()
+
+            deleted_count += 1
+
+        except Exception as e:
+            errors.append({"id": media_id, "error": str(e)})
+
+    await db.commit()
+
+    return {
+        "message": "批量删除完成",
+        "deleted_count": deleted_count,
+        "total_count": len(media_ids),
+        "errors": errors
+    }
