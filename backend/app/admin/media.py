@@ -1220,3 +1220,60 @@ async def get_recycle_bin_count(
     return {
         "count": count or 0
     }
+
+
+@router.post("/media/batch/download")
+async def batch_download_media(
+    media_ids: List[int] = Query(...),
+    db: AsyncSession = Depends(get_db),
+    current_user: AdminUser = Depends(get_current_admin_user),
+):
+    """批量下载文件为 ZIP（后端生成）"""
+    import zipfile
+    import io
+    from fastapi.responses import StreamingResponse
+
+    # 查询所有文件
+    query = select(Media).where(
+        and_(
+            Media.id.in_(media_ids),
+            Media.is_deleted == False,
+            Media.is_folder == False  # 只下载文件，不包括文件夹
+        )
+    )
+    result = await db.execute(query)
+    media_items = result.scalars().all()
+
+    if not media_items:
+        raise HTTPException(status_code=404, detail="没有可下载的文件")
+
+    # 创建内存中的 ZIP 文件
+    zip_buffer = io.BytesIO()
+
+    with zipfile.ZipFile(zip_buffer, 'w', zipfile.ZIP_DEFLATED) as zip_file:
+        for media in media_items:
+            try:
+                # 从 MinIO 获取文件内容
+                file_data = minio_client.get_file(media.file_path)
+
+                # 使用文件标题作为 ZIP 中的文件名
+                file_ext = os.path.splitext(media.filename)[1]
+                zip_filename = f"{media.title}{file_ext}"
+
+                # 添加到 ZIP
+                zip_file.writestr(zip_filename, file_data)
+            except Exception as e:
+                print(f"添加文件到 ZIP 失败: {media.title}, {e}")
+                continue
+
+    # 重置指针到开始
+    zip_buffer.seek(0)
+
+    # 返回 ZIP 文件
+    return StreamingResponse(
+        zip_buffer,
+        media_type="application/zip",
+        headers={
+            "Content-Disposition": f"attachment; filename=files_{datetime.utcnow().strftime('%Y%m%d_%H%M%S')}.zip"
+        }
+    )

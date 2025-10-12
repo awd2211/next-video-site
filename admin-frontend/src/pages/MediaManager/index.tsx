@@ -7,7 +7,6 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { Layout, message } from 'antd'
 import { CloudUploadOutlined } from '@ant-design/icons'
-import JSZip from 'jszip'
 import FolderTree from './components/FolderTree'
 import FileList from './components/FileList'
 import Toolbar from './components/Toolbar'
@@ -458,31 +457,22 @@ const MediaManager: React.FC = () => {
       return
     }
 
-    // 多个文件打包成 zip 下载
+    // 多个文件打包成 zip 下载（使用后端 API）
     const hide = message.loading('正在打包文件...', 0)
 
     try {
-      const zip = new JSZip()
-
-      // 下载所有文件并添加到 zip
-      for (const item of selectedItems) {
-        try {
-          const response = await fetch(item.url)
-          const blob = await response.blob()
-          // 使用文件标题和扩展名
-          const extension = item.url.split('.').pop() || ''
-          const filename = extension ? `${item.title}.${extension}` : item.title
-          zip.file(filename, blob)
-        } catch (error) {
-          console.error(`下载文件失败: ${item.title}`, error)
+      const response = await axios.post(
+        '/api/v1/admin/media/batch/download',
+        null,
+        {
+          params: { media_ids: selectedItems.map((item) => item.id) },
+          responseType: 'blob',
         }
-      }
-
-      // 生成 zip 文件
-      const zipBlob = await zip.generateAsync({ type: 'blob' })
+      )
 
       // 创建下载链接
-      const url = window.URL.createObjectURL(zipBlob)
+      const blob = new Blob([response.data], { type: 'application/zip' })
+      const url = window.URL.createObjectURL(blob)
       const a = document.createElement('a')
       a.href = url
       a.download = `files_${Date.now()}.zip`
@@ -494,9 +484,9 @@ const MediaManager: React.FC = () => {
       hide()
       message.success(`成功下载 ${selectedItems.length} 个文件`)
       setSelectedFiles([])
-    } catch (error) {
+    } catch (error: any) {
       hide()
-      message.error('下载失败，请重试')
+      message.error(error.response?.data?.detail || '下载失败，请重试')
       console.error('批量下载失败:', error)
     }
   }

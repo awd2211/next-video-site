@@ -319,6 +319,29 @@ class MinIOClient:
             logger.error(f"Error getting object size: {e}", exc_info=True)
             raise
 
+    def get_file(self, object_name: str) -> bytes:
+        """
+        获取文件内容（字节）
+
+        Args:
+            object_name: 对象名称
+
+        Returns:
+            bytes: 文件内容
+
+        Raises:
+            S3Error: 如果文件不存在或获取失败
+        """
+        try:
+            response = self.client.get_object(self.bucket_name, object_name)
+            data = response.read()
+            response.close()
+            response.release_conn()
+            return data
+        except S3Error as e:
+            logger.error(f"Error getting file: {e}", exc_info=True)
+            raise
+
     def delete_file(self, object_name: str) -> bool:
         """
         删除文件
