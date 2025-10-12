@@ -1,0 +1,261 @@
+.media-manager {
+  height: calc(100vh - 64px);
+  display: flex;
+  flex-direction: column;
+  background: #f0f2f5;
+}
+
+.media-manager-layout {
+  flex: 1;
+  overflow: hidden;
+}
+
+.media-manager-sider {
+  border-right: 1px solid #d9d9d9;
+  background: #fff;
+  overflow-y: auto;
+}
+
+.media-manager-content {
+  padding: 16px;
+  overflow-y: auto;
+  background: #f0f2f5;
+}
+
+/* Toolbar 样式 */
+.media-toolbar {
+  padding: 16px;
+  background: #fff;
+  border-bottom: 1px solid #d9d9d9;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.media-toolbar-left {
+  flex: 1;
+  display: flex;
+  gap: 8px;
+}
+
+.media-toolbar-right {
+  display: flex;
+  gap: 8px;
+}
+
+/* FolderTree 样式 */
+.folder-tree {
+  padding: 16px;
+}
+
+.folder-tree-node {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 4px 8px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.folder-tree-node:hover {
+  background: #f5f5f5;
+}
+
+.folder-tree-node.selected {
+  background: #e6f7ff;
+  color: #1890ff;
+}
+
+.folder-tree-node-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.folder-tree-node-count {
+  color: #8c8c8c;
+  font-size: 12px;
+}
+
+/* FileList 样式 */
+.file-list {
+  background: #fff;
+  border-radius: 8px;
+  padding: 16px;
+}
+
+.file-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 16px;
+  margin-top: 16px;
+}
+
+.file-card {
+  border: 1px solid #d9d9d9;
+  border-radius: 8px;
+  padding: 12px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.file-card:hover {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  transform: translateY(-2px);
+}
+
+.file-card.selected {
+  border-color: #1890ff;
+  background: #e6f7ff;
+}
+
+.file-card-preview {
+  width: 100%;
+  height: 140px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #fafafa;
+  border-radius: 4px;
+  margin-bottom: 8px;
+  overflow: hidden;
+}
+
+.file-card-preview img {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: cover;
+}
+
+.file-card-preview-icon {
+  font-size: 48px;
+  color: #bfbfbf;
+}
+
+.file-card-title {
+  font-weight: 500;
+  margin-bottom: 4px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.file-card-info {
+  font-size: 12px;
+  color: #8c8c8c;
+}
+
+/* UploadManager 样式 */
+.upload-manager {
+  padding: 16px;
+}
+
+.upload-task {
+  padding: 12px;
+  border: 1px solid #d9d9d9;
+  border-radius: 4px;
+  margin-bottom: 12px;
+}
+
+.upload-task-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.upload-task-name {
+  font-weight: 500;
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.upload-task-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.upload-task-progress {
+  margin-bottom: 4px;
+}
+
+.upload-task-info {
+  font-size: 12px;
+  color: #8c8c8c;
+  display: flex;
+  justify-content: space-between;
+}
+
+/* 拖拽上传区域 */
+.drag-upload-area {
+  border: 2px dashed #d9d9d9;
+  border-radius: 8px;
+  padding: 40px;
+  text-align: center;
+  background: #fafafa;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.drag-upload-area:hover,
+.drag-upload-area.dragging {
+  border-color: #1890ff;
+  background: #e6f7ff;
+}
+
+.drag-upload-area-icon {
+  font-size: 48px;
+  color: #bfbfbf;
+  margin-bottom: 16px;
+}
+
+.drag-upload-area-text {
+  font-size: 14px;
+  color: #595959;
+}
+
+.drag-upload-area-hint {
+  font-size: 12px;
+  color: #8c8c8c;
+  margin-top: 8px;
+}
+
+/* 面包屑导航 */
+.breadcrumb-nav {
+  padding: 12px 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.breadcrumb-item {
+  cursor: pointer;
+  color: #595959;
+  transition: color 0.2s;
+}
+
+.breadcrumb-item:hover {
+  color: #1890ff;
+}
+
+.breadcrumb-item.active {
+  color: #1890ff;
+  font-weight: 500;
+}
+
+/* 响应式 */
+@media (max-width: 768px) {
+  .media-manager-sider {
+    position: absolute;
+    z-index: 100;
+    height: 100%;
+  }
+
+  .file-grid {
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 12px;
+  }
+}
