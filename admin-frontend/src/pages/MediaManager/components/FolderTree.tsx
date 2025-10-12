@@ -1,5 +1,5 @@
-import React, { useState } from 'react'
-import { Tree, Button, Input, Modal, message, Dropdown } from 'antd'
+import React, { useState, useEffect } from 'react'
+import { Tree, Button, Input, Modal, message, Dropdown, Space, Tooltip } from 'antd'
 import type { MenuProps } from 'antd'
 import {
   FolderOutlined,
@@ -8,7 +8,9 @@ import {
   PlusOutlined,
   EditOutlined,
   DeleteOutlined,
-  FolderAddOutlined
+  FolderAddOutlined,
+  ExpandAltOutlined,
+  ShrinkOutlined,
 } from '@ant-design/icons'
 import type { DataNode } from 'antd/es/tree'
 import type { FolderNode } from '../types'
@@ -22,6 +24,8 @@ interface FolderTreeProps {
   onDelete: (folderId: number) => void
   onRefresh: () => void
 }
+
+const EXPANDED_KEYS_STORAGE_KEY = 'media-manager-expanded-keys'
 
 const FolderTree: React.FC<FolderTreeProps> = ({
   treeData,
@@ -37,6 +41,57 @@ const FolderTree: React.FC<FolderTreeProps> = ({
   const [renameModalVisible, setRenameModalVisible] = useState(false)
   const [renamingFolderId, setRenamingFolderId] = useState<number | null>(null)
   const [renameValue, setRenameValue] = useState('')
+
+  // 展开的节点keys
+  const [expandedKeys, setExpandedKeys] = useState<React.Key[]>(() => {
+    // 从 localStorage 加载保存的展开状态
+    try {
+      const saved = localStorage.getItem(EXPANDED_KEYS_STORAGE_KEY)
+      if (saved) {
+        return JSON.parse(saved)
+      }
+    } catch (error) {
+      console.error('Failed to load expanded keys:', error)
+    }
+    return ['root'] // 默认展开根目录
+  })
+
+  // 保存展开状态到 localStorage
+  useEffect(() => {
+    try {
+      localStorage.setItem(EXPANDED_KEYS_STORAGE_KEY, JSON.stringify(expandedKeys))
+    } catch (error) {
+      console.error('Failed to save expanded keys:', error)
+    }
+  }, [expandedKeys])
+
+  // 获取所有节点keys（用于全部展开）
+  const getAllKeys = (nodes: FolderNode[]): string[] => {
+    const keys: string[] = []
+    const traverse = (items: FolderNode[]) => {
+      items.forEach((item) => {
+        keys.push(item.id.toString())
+        if (item.children && item.children.length > 0) {
+          traverse(item.children)
+        }
+      })
+    }
+    traverse(nodes)
+    return ['root', ...keys]
+  }
+
+  // 展开全部
+  const handleExpandAll = () => {
+    const allKeys = getAllKeys(treeData)
+    setExpandedKeys(allKeys)
+    message.success('已展开全部文件夹')
+  }
+
+  // 收起全部
+  const handleCollapseAll = () => {
+    setExpandedKeys(['root'])
+    message.success('已收起全部文件夹')
+  }
 
   // 获取文件夹右键菜单
   const getFolderContextMenu = (folderId: number, folderTitle: string): MenuProps['items'] => [
@@ -161,7 +216,7 @@ const FolderTree: React.FC<FolderTreeProps> = ({
 
   return (
     <div className="folder-tree">
-      <div style={{ marginBottom: 12, display: 'flex', justifyContent: 'space-between' }}>
+      <div style={{ marginBottom: 12, display: 'flex', justifyContent: 'space-between', gap: 8 }}>
         <Button
           type="primary"
           size="small"
@@ -170,11 +225,27 @@ const FolderTree: React.FC<FolderTreeProps> = ({
         >
           新建文件夹
         </Button>
+
+        <Space.Compact size="small">
+          <Tooltip title="展开全部">
+            <Button
+              icon={<ExpandAltOutlined />}
+              onClick={handleExpandAll}
+            />
+          </Tooltip>
+          <Tooltip title="收起全部">
+            <Button
+              icon={<ShrinkOutlined />}
+              onClick={handleCollapseAll}
+            />
+          </Tooltip>
+        </Space.Compact>
       </div>
 
       <Tree
         showIcon
-        defaultExpandAll
+        expandedKeys={expandedKeys}
+        onExpand={(keys) => setExpandedKeys(keys)}
         selectedKeys={selectedFolderId ? [selectedFolderId.toString()] : ['root']}
         treeData={fullTreeData}
         onSelect={handleSelect}
