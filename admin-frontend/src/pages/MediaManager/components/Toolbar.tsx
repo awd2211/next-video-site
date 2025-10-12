@@ -20,6 +20,7 @@ import {
   DownloadOutlined,
   BarChartOutlined,
   FilterOutlined,
+  TagsOutlined,
 } from '@ant-design/icons'
 
 interface ToolbarProps {
@@ -43,6 +44,7 @@ interface ToolbarProps {
   onToggleStats: () => void
   onOpenFilter: () => void
   hasActiveFilters: boolean
+  onOpenTags?: () => void
 }
 
 const Toolbar: React.FC<ToolbarProps> = ({
@@ -66,6 +68,7 @@ const Toolbar: React.FC<ToolbarProps> = ({
   onToggleStats,
   onOpenFilter,
   hasActiveFilters,
+  onOpenTags,
 }) => {
   const fileInputRef = useRef<HTMLInputElement>(null)
 
@@ -205,6 +208,14 @@ const Toolbar: React.FC<ToolbarProps> = ({
                   批量删除
                 </Button>
               </Popconfirm>
+              {onOpenTags && (
+                <Button
+                  icon={<TagsOutlined />}
+                  onClick={onOpenTags}
+                >
+                  标签
+                </Button>
+              )}
             </>
           )}
 

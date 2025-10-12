@@ -19,6 +19,7 @@ import StatsPanel from './components/StatsPanel'
 import FilterDrawer, { type FilterOptions } from './components/FilterDrawer'
 import ConflictModal, { type ConflictFile, type ConflictAction } from './components/ConflictModal'
 import QuickActions from './components/QuickActions'
+import TagEditor from './components/TagEditor'
 import { useDragUpload } from './hooks/useDragUpload'
 import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts'
 import { generateSmartRename, hasFileNameConflict } from './utils/fileUtils'
@@ -96,6 +97,10 @@ const MediaManager: React.FC = () => {
     }
   })
 
+  // 标签管理
+  const [tagEditorVisible, setTagEditorVisible] = useState(false)
+  const [allTags, setAllTags] = useState<string[]>([])
+
   // 面包屑路径
   const [breadcrumbPath, setBreadcrumbPath] = useState<{ id?: number; title: string }[]>([])
 
@@ -138,6 +143,68 @@ const MediaManager: React.FC = () => {
     setRecentUploads([])
     setRecentFolders([])
     message.success('已清空历史记录')
+  }
+
+  // 获取当前选中文件的标签
+  const getCurrentTags = (): string[] => {
+    if (selectedFiles.length === 0) return []
+
+    // 获取所有选中文件的标签
+    const selectedItems = fileList.filter((item) => selectedFiles.includes(item.id))
+    const allTagSets = selectedItems.map((item) => {
+      if (!item.tags) return []
+      return item.tags.split(',').map((tag) => tag.trim()).filter(Boolean)
+    })
+
+    // 如果只选中一个文件，返回该文件的标签
+    if (allTagSets.length === 1) {
+      return allTagSets[0] || []
+    }
+
+    // 多个文件：返回共同的标签
+    const commonTags = allTagSets[0] || []
+    return commonTags.filter((tag) => allTagSets.every((tags) => tags.includes(tag)))
+  }
+
+  // 保存标签
+  const handleSaveTags = async (tags: string[]) => {
+    try {
+      // 批量更新标签
+      await axios.post('/api/v1/admin/media/batch/tags', {
+        media_ids: selectedFiles,
+        tags: tags.join(','),
+      })
+      message.success('标签更新成功')
+      loadFileList()
+
+      // 更新所有标签列表
+      const newTags = tags.filter((tag) => !allTags.includes(tag))
+      if (newTags.length > 0) {
+        setAllTags([...allTags, ...newTags])
+      }
+    } catch (error: any) {
+      message.error(error.response?.data?.detail || '标签更新失败')
+    }
+  }
+
+  // 加载所有标签
+  const loadAllTags = async () => {
+    try {
+      // 从文件列表中提取所有唯一标签
+      const tagSet = new Set<string>()
+      fileList.forEach((item) => {
+        if (item.tags) {
+          item.tags
+            .split(',')
+            .map((tag) => tag.trim())
+            .filter(Boolean)
+            .forEach((tag) => tagSet.add(tag))
+        }
+      })
+      setAllTags(Array.from(tagSet))
+    } catch (error) {
+      console.error('加载标签失败:', error)
+    }
   }
 
   // 构建面包屑路径
@@ -537,6 +604,11 @@ const MediaManager: React.FC = () => {
     }
   }, [selectedFolderId, page, pageSize, searchText, mediaTypeFilter, advancedFilters, sortBy, sortOrder, folderTree])
 
+  // 当文件列表更新时，重新加载标签
+  useEffect(() => {
+    loadAllTags()
+  }, [fileList])
+
   // 处理高级筛选应用
   const handleApplyFilters = (filters: FilterOptions) => {
     setAdvancedFilters(filters)
@@ -586,6 +658,7 @@ const MediaManager: React.FC = () => {
         onToggleStats={() => setShowStats(!showStats)}
         onOpenFilter={() => setFilterDrawerVisible(true)}
         hasActiveFilters={hasActiveFilters}
+        onOpenTags={() => setTagEditorVisible(true)}
       />
 
       <Layout className="media-manager-layout">
@@ -715,6 +788,16 @@ const MediaManager: React.FC = () => {
           setCurrentConflict(null)
           setPendingFiles([])
         }}
+      />
+
+      {/* 标签编辑器 */}
+      <TagEditor
+        visible={tagEditorVisible}
+        selectedFiles={selectedFiles}
+        currentTags={getCurrentTags()}
+        allTags={allTags}
+        onClose={() => setTagEditorVisible(false)}
+        onSave={handleSaveTags}
       />
 
       {/* 键盘快捷键帮助 */}

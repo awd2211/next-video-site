@@ -8,6 +8,7 @@ import {
   Table,
   Input,
   message,
+  Tag,
 } from 'antd'
 import EmptyState from './EmptyState'
 import ImagePreview from './ImagePreview'
@@ -337,6 +338,33 @@ const FileList: React.FC<FileListProps> = ({
       render: (date) => formatDate(date),
     },
     {
+      title: '标签',
+      dataIndex: 'tags',
+      key: 'tags',
+      width: 200,
+      render: (tags: string) => {
+        if (!tags || !tags.trim()) return '-'
+        const tagList = tags
+          .split(',')
+          .map((tag) => tag.trim())
+          .filter(Boolean)
+        return (
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
+            {tagList.slice(0, 3).map((tag) => (
+              <Tag key={tag} color="blue" style={{ fontSize: 11, margin: 0 }}>
+                {tag}
+              </Tag>
+            ))}
+            {tagList.length > 3 && (
+              <Tag style={{ fontSize: 11, margin: 0 }}>
+                +{tagList.length - 3}
+              </Tag>
+            )}
+          </div>
+        )
+      },
+    },
+    {
       title: '操作',
       key: 'actions',
       width: 80,
@@ -501,6 +529,27 @@ const FileList: React.FC<FileListProps> = ({
                     : ''}
                 </div>
               </div>
+
+              {/* 标签显示 */}
+              {item.tags && item.tags.trim() && (
+                <div style={{ marginTop: 8, display: 'flex', flexWrap: 'wrap', gap: 4 }}>
+                  {item.tags
+                    .split(',')
+                    .map((tag) => tag.trim())
+                    .filter(Boolean)
+                    .slice(0, 3)
+                    .map((tag) => (
+                      <Tag key={tag} color="blue" style={{ fontSize: 11, padding: '0 4px', margin: 0 }}>
+                        {tag}
+                      </Tag>
+                    ))}
+                  {item.tags.split(',').filter(Boolean).length > 3 && (
+                    <Tag style={{ fontSize: 11, padding: '0 4px', margin: 0 }}>
+                      +{item.tags.split(',').filter(Boolean).length - 3}
+                    </Tag>
+                  )}
+                </div>
+              )}
             </div>
           </Dropdown>
         ))}
