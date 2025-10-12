@@ -161,24 +161,28 @@ const BannersList = () => {
 
   const handleBatchEnable = () => {
     if (selectedRowKeys.length === 0) {
-      message.warning('请先选择横幅')
+      message.warning(t('message.pleaseSelect'))
       return
     }
     Modal.confirm({
       title: t('banner.batchEnable'),
-      content: `确定要启用选中的 ${selectedRowKeys.length} 个横幅吗？`,
+      content: `${t('common.confirm')} ${selectedRowKeys.length} ${t('menu.banners')}?`,
+      okText: t('common.confirm'),
+      cancelText: t('common.cancel'),
       onOk: () => batchEnableMutation.mutate(selectedRowKeys),
     })
   }
-
+  
   const handleBatchDisable = () => {
     if (selectedRowKeys.length === 0) {
-      message.warning('请先选择横幅')
+      message.warning(t('message.pleaseSelect'))
       return
     }
     Modal.confirm({
       title: t('banner.batchDisable'),
-      content: `确定要禁用选中的 ${selectedRowKeys.length} 个横幅吗？`,
+      content: `${t('common.confirm')} ${selectedRowKeys.length} ${t('menu.banners')}?`,
+      okText: t('common.confirm'),
+      cancelText: t('common.cancel'),
       onOk: () => batchDisableMutation.mutate(selectedRowKeys),
     })
   }
@@ -186,20 +190,20 @@ const BannersList = () => {
   // Export to CSV
   const handleExport = () => {
     if (!data?.items || data.items.length === 0) {
-      message.warning('没有数据可导出')
+      message.warning(t('message.noDataToExport'))
       return
     }
 
     const exportData = data.items.map((item: any) => ({
       ID: item.id,
-      标题: item.title,
-      状态: item.status === 'active' ? '启用' : '禁用',
-      排序: item.sort_order,
-      创建时间: item.created_at,
+      [t('banner.title')]: item.title,
+      [t('banner.status')]: item.status === 'active' ? t('banner.active') : t('banner.inactive'),
+      [t('banner.sortOrder')]: item.sort_order,
+      [t('table.createdAt')]: item.created_at,
     }))
 
     exportToCSV(exportData, 'banners')
-    message.success(t('message.success'))
+    message.success(t('message.exportSuccess'))
   }
 
   const handleCreate = () => {

@@ -40,9 +40,10 @@ const UserList = () => {
   })
 
   const handleBanUser = async (userId: number, username: string, isActive: boolean) => {
+    const action = isActive ? t('user.batchBan') : t('user.batchUnban')
     Modal.confirm({
-      title: `确认${isActive ? '封禁' : '解封'}用户`,
-      content: `您确定要${isActive ? '封禁' : '解封'}用户 "${username}" 吗？`,
+      title: action,
+      content: `${t('common.confirm')} "${username}"?`,
       okText: t('common.confirm'),
       cancelText: t('common.cancel'),
       okButtonProps: { danger: isActive },
@@ -52,7 +53,7 @@ const UserList = () => {
             `/api/v1/admin/users/${userId}/ban`,
             {}
           )
-          message.success(`用户${isActive ? '封禁' : '解封'}成功`)
+          message.success(t('message.success'))
           refetch()
         } catch (error: any) {
           message.error(error.response?.data?.detail || t('message.failed'))
@@ -93,26 +94,29 @@ const UserList = () => {
   
   const handleBatchBan = () => {
     if (selectedRowKeys.length === 0) {
-      message.warning('请先选择用户')
+      message.warning(t('message.pleaseSelect'))
       return
     }
     Modal.confirm({
       title: t('user.batchBan'),
-      content: `确定要封禁选中的 ${selectedRowKeys.length} 个用户吗？`,
+      content: `${t('common.confirm')} ${selectedRowKeys.length} ${t('menu.users')}?`,
       okText: t('common.confirm'),
       okType: 'danger',
+      cancelText: t('common.cancel'),
       onOk: () => batchBanMutation.mutate(selectedRowKeys),
     })
   }
   
   const handleBatchUnban = () => {
     if (selectedRowKeys.length === 0) {
-      message.warning('请先选择用户')
+      message.warning(t('message.pleaseSelect'))
       return
     }
     Modal.confirm({
       title: t('user.batchUnban'),
-      content: `确定要解封选中的 ${selectedRowKeys.length} 个用户吗？`,
+      content: `${t('common.confirm')} ${selectedRowKeys.length} ${t('menu.users')}?`,
+      okText: t('common.confirm'),
+      cancelText: t('common.cancel'),
       onOk: () => batchUnbanMutation.mutate(selectedRowKeys),
     })
   }
@@ -120,32 +124,31 @@ const UserList = () => {
   // Export to CSV
   const handleExport = () => {
     if (!data?.items || data.items.length === 0) {
-      message.warning('没有数据可导出')
+      message.warning(t('message.noDataToExport'))
       return
     }
     
     const exportData = data.items.map((item: any) => ({
       ID: item.id,
-      用户名: item.username,
-      邮箱: item.email,
-      全名: item.full_name || '',
-      状态: item.is_active ? '正常' : '已封禁',
-      注册时间: item.created_at,
+      [t('user.username')]: item.username,
+      [t('user.email')]: item.email,
+      [t('user.status')]: item.is_active ? t('user.active') : t('user.banned'),
+      [t('user.createdAt')]: item.created_at,
     }))
     
     exportToCSV(exportData, 'users')
-    message.success(t('message.success'))
+    message.success(t('message.exportSuccess'))
   }
 
   const columns = [
     {
-      title: 'ID',
+      title: t('table.id'),
       dataIndex: 'id',
       key: 'id',
       width: 80,
     },
     {
-      title: '用户名',
+      title: t('user.username'),
       dataIndex: 'username',
       key: 'username',
       render: (text: string) => (
@@ -156,63 +159,63 @@ const UserList = () => {
       ),
     },
     {
-      title: '邮箱',
+      title: t('user.email'),
       dataIndex: 'email',
       key: 'email',
     },
     {
-      title: '全名',
+      title: t('user.fullName'),
       dataIndex: 'full_name',
       key: 'full_name',
       render: (text: string) => text || '-',
     },
     {
-      title: '状态',
+      title: t('user.status'),
       dataIndex: 'is_active',
       key: 'is_active',
       width: 100,
       render: (isActive: boolean) =>
         isActive ? (
           <Tag color="green" icon={<CheckCircleOutlined />}>
-            正常
+            {t('user.active')}
           </Tag>
         ) : (
           <Tag color="red" icon={<StopOutlined />}>
-            已封禁
+            {t('user.banned')}
           </Tag>
         ),
     },
     {
-      title: 'VIP',
+      title: t('user.vip'),
       dataIndex: 'is_vip',
       key: 'is_vip',
       width: 100,
       render: (isVip: boolean, record: any) => {
-        if (!isVip) return <Tag>普通</Tag>
+        if (!isVip) return <Tag>{t('user.normal')}</Tag>
         const isExpired = record.vip_expires_at && dayjs(record.vip_expires_at).isBefore(dayjs())
         return (
           <Tag color="gold" icon={<CrownOutlined />}>
-            {isExpired ? 'VIP(已过期)' : 'VIP'}
+            {isExpired ? t('user.vipExpired') : t('user.vip')}
           </Tag>
         )
       },
     },
     {
-      title: '注册时间',
+      title: t('user.createdAt'),
       dataIndex: 'created_at',
       key: 'created_at',
       width: 180,
       render: (date: string) => dayjs(date).format('YYYY-MM-DD HH:mm'),
     },
     {
-      title: '最后登录',
+      title: t('user.lastLogin'),
       dataIndex: 'last_login_at',
       key: 'last_login_at',
       width: 180,
       render: (date: string) => (date ? dayjs(date).format('YYYY-MM-DD HH:mm') : '-'),
     },
     {
-      title: '操作',
+      title: t('user.actions'),
       key: 'actions',
       width: 150,
       render: (_: any, record: any) => (
@@ -224,7 +227,7 @@ const UserList = () => {
             icon={record.is_active ? <StopOutlined /> : <CheckCircleOutlined />}
             onClick={() => handleBanUser(record.id, record.username, record.is_active)}
           >
-            {record.is_active ? '封禁' : '解封'}
+            {record.is_active ? t('user.ban') : t('user.unban')}
           </Button>
         </Space>
       ),

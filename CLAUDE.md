@@ -13,6 +13,8 @@ The architecture uses PostgreSQL for data, Redis for caching, MinIO for object s
 
 ## Development Commands
 
+> **Tip**: Run `make help` to see all available commands with descriptions.
+
 ### Quick Start
 ```bash
 # Start infrastructure (PostgreSQL, Redis, MinIO)
@@ -45,10 +47,17 @@ make db-upgrade                       # Apply migrations
 alembic downgrade -1                  # Rollback one migration
 alembic history                       # View migration history
 
+# Code formatting
+make format-backend                   # Format with Black and isort
+make format-check                     # Check formatting without changes
+make format                           # Format all code
+
 # Run tests
-pytest
+pytest                                # Run all tests
 pytest tests/test_specific.py         # Run specific test file
 pytest -v                             # Verbose output
+pytest -k "test_name"                 # Run tests matching pattern
+pytest --cov=app --cov-report=html    # Generate coverage report
 ```
 
 ### Frontend Development
@@ -142,6 +151,7 @@ docker-compose restart backend                 # Restart service
 - **TanStack Query** for data fetching and caching
 - **React Router** for navigation
 - **Video.js** for video playback with YouTube-like controls
+- **i18n** for internationalization (locale files in `src/i18n/locales/`)
 
 **Key Components:**
 - `VideoPlayer/` - Full-featured video player with keyboard shortcuts
@@ -153,11 +163,18 @@ docker-compose restart backend                 # Restart service
 - API client configuration (axios with baseURL)
 - Query hooks for videos, categories, search
 
+**Internationalization:**
+- Locale files: `src/i18n/locales/en-US.json`, `zh-CN.json`
+- Add new translations by updating locale JSON files
+- Use i18n hooks in components for translated text
+
 ### Admin Frontend Structure (`/admin-frontend/src`)
 
 - **Ant Design** UI component library
 - **Ant Design Charts** for data visualization
 - **React Router** for navigation
+- **i18n** for internationalization (locale files in `src/i18n/locales/`)
+- **Dark/Light theme** support with theme context
 
 **Key Pages:**
 - `Dashboard/` - Statistics and analytics
@@ -167,6 +184,11 @@ docker-compose restart backend                 # Restart service
 - `Settings/` - System configuration
 - `Logs/` - Operation logs
 - `Banners/`, `Announcements/` - Content management
+
+**Internationalization:**
+- Same i18n setup as user frontend
+- Supports both English and Chinese locales
+- Theme preferences persisted in localStorage
 
 ### Database Models
 

@@ -93,11 +93,18 @@
   "user": {
     "username": "Username",
     "email": "Email",
+    "fullName": "Full Name",
     "status": "Status",
+    "vip": "VIP",
+    "normal": "Normal",
+    "vipExpired": "VIP(Expired)",
     "createdAt": "Registered At",
+    "lastLogin": "Last Login",
     "actions": "Actions",
     "active": "Active",
     "banned": "Banned",
+    "ban": "Ban",
+    "unban": "Unban",
     "batchBan": "Batch Ban",
     "batchUnban": "Batch Unban",
     "confirmBan": "Confirm Ban?"
@@ -150,7 +157,17 @@
     "deleteConfirm": "Confirm delete?",
     "saveSuccess": "Saved successfully",
     "createSuccess": "Created successfully",
-    "updateSuccess": "Updated successfully"
+    "updateSuccess": "Updated successfully",
+    "pleaseSelect": "Please select",
+    "confirmOperation": "Confirm to {action} {count} selected {type}?",
+    "cannotUndo": "This action cannot be undone",
+    "noDataToExport": "No data to export",
+    "exportSuccess": "Export successful",
+    "adjustSearchFilter": "Try adjusting search criteria or filters",
+    "createFirst": "Create your first {type} to get started",
+    "noVideosYet": "No videos yet",
+    "noUsersYet": "No users yet",
+    "noBannersYet": "No banners yet"
   }
 }
 

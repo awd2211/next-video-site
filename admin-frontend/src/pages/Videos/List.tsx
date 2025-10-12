@@ -115,38 +115,43 @@ const VideoList = () => {
   // Batch operations handlers
   const handleBatchPublish = () => {
     if (selectedRowKeys.length === 0) {
-      message.warning('请先选择视频')
+      message.warning(t('message.pleaseSelect'))
       return
     }
     Modal.confirm({
       title: t('video.batchPublish'),
-      content: `确定要发布选中的 ${selectedRowKeys.length} 个视频吗？`,
+      content: `${t('common.confirm')} ${selectedRowKeys.length} ${t('menu.videos')}?`,
+      okText: t('common.confirm'),
+      cancelText: t('common.cancel'),
       onOk: () => batchPublishMutation.mutate(selectedRowKeys),
     })
   }
   
   const handleBatchArchive = () => {
     if (selectedRowKeys.length === 0) {
-      message.warning('请先选择视频')
+      message.warning(t('message.pleaseSelect'))
       return
     }
     Modal.confirm({
       title: t('video.batchArchive'),
-      content: `确定要下架选中的 ${selectedRowKeys.length} 个视频吗？`,
+      content: `${t('common.confirm')} ${selectedRowKeys.length} ${t('menu.videos')}?`,
+      okText: t('common.confirm'),
+      cancelText: t('common.cancel'),
       onOk: () => batchArchiveMutation.mutate(selectedRowKeys),
     })
   }
   
   const handleBatchDelete = () => {
     if (selectedRowKeys.length === 0) {
-      message.warning('请先选择视频')
+      message.warning(t('message.pleaseSelect'))
       return
     }
     Modal.confirm({
       title: t('video.batchDelete'),
-      content: `确定要删除选中的 ${selectedRowKeys.length} 个视频吗？此操作不可恢复。`,
+      content: `${t('common.confirm')} ${selectedRowKeys.length} ${t('menu.videos')}? ${t('message.cannotUndo')}`,
       okText: t('common.delete'),
       okType: 'danger',
+      cancelText: t('common.cancel'),
       onOk: () => batchDeleteMutation.mutate(selectedRowKeys),
     })
   }
@@ -154,44 +159,43 @@ const VideoList = () => {
   // Export to CSV
   const handleExport = () => {
     if (!data?.items || data.items.length === 0) {
-      message.warning('没有数据可导出')
+      message.warning(t('message.noDataToExport'))
       return
     }
     
     const exportData = data.items.map((item: any) => ({
       ID: item.id,
-      标题: item.title,
-      类型: item.video_type,
-      状态: item.status,
-      播放量: item.view_count,
-      评分: item.average_rating?.toFixed(1) || '0.0',
-      创建时间: item.created_at,
+      [t('video.title')]: item.title,
+      [t('video.type')]: item.video_type,
+      [t('video.status')]: item.status,
+      [t('video.views')]: item.view_count,
+      [t('table.createdAt')]: item.created_at,
     }))
     
     exportToCSV(exportData, 'videos')
-    message.success(t('message.success'))
+    message.success(t('message.exportSuccess'))
   }
 
   const columns = [
     {
-      title: 'ID',
+      title: t('table.id'),
       dataIndex: 'id',
       key: 'id',
       width: 80,
     },
     {
-      title: 'Title',
+      title: t('video.title'),
       dataIndex: 'title',
       key: 'title',
     },
     {
-      title: 'Type',
+      title: t('video.type'),
       dataIndex: 'video_type',
       key: 'video_type',
       render: (type: string) => <Tag>{type}</Tag>,
     },
     {
-      title: 'Status',
+      title: t('video.status'),
       dataIndex: 'status',
       key: 'status',
       render: (status: string) => (
@@ -199,7 +203,7 @@ const VideoList = () => {
       ),
     },
     {
-      title: 'Views',
+      title: t('video.views'),
       dataIndex: 'view_count',
       key: 'view_count',
     },
@@ -210,7 +214,7 @@ const VideoList = () => {
       render: (rating: number) => rating.toFixed(1),
     },
     {
-      title: 'Actions',
+      title: t('table.actions'),
       key: 'actions',
       render: (_: any, record: any) => (
         <Space>
@@ -219,7 +223,7 @@ const VideoList = () => {
             icon={<EditOutlined />}
             onClick={() => navigate(`/videos/${record.id}/edit`)}
           >
-            Edit
+            {t('common.edit')}
           </Button>
           <Button
             type="link"
@@ -227,7 +231,7 @@ const VideoList = () => {
             icon={<DeleteOutlined />}
             onClick={() => handleDelete(record.id)}
           >
-            Delete
+            {t('common.delete')}
           </Button>
         </Space>
       ),
@@ -325,7 +329,7 @@ const VideoList = () => {
             <EmptyState
               type="no-search-results"
               title={t('common.noData')}
-              description="尝试调整搜索条件或筛选条件"
+              description={t('message.adjustSearchFilter')}
               onRefresh={() => {
                 setSearch('')
                 setStatus(undefined)
@@ -333,9 +337,9 @@ const VideoList = () => {
             />
           ) : (
             <EmptyState
-              title="还没有视频"
-              description="创建第一个视频，开始您的内容之旅"
-              actionText="创建视频"
+              title={t('message.noVideosYet')}
+              description={t('message.createFirst').replace('{type}', t('menu.videos').toLowerCase())}
+              actionText={t('common.create') + ' ' + t('menu.videos')}
               onAction={() => navigate('/videos/new')}
             />
           ),
