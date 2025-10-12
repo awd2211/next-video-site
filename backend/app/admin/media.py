@@ -284,10 +284,10 @@ async def delete_media(
     if permanent:
         # 永久删除
         try:
-            # 从 MinIO 删除文件
-            await minio_client.delete_file(media.file_path)
+            # 从 MinIO 删除文件（同步方法）
+            minio_client.delete_file(media.file_path)
             if media.thumbnail_path:
-                await minio_client.delete_file(media.thumbnail_path)
+                minio_client.delete_file(media.thumbnail_path)
         except Exception as e:
             print(f"删除文件失败: {e}")
 

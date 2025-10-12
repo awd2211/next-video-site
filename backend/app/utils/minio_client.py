@@ -126,6 +126,45 @@ class MinIOClient:
         """
         return self.upload_video(file, object_name, content_type)
 
+    def upload_file(
+        self,
+        file_content: bytes,
+        object_name: str,
+        content_type: str = "application/octet-stream",
+    ) -> str:
+        """
+        通用文件上传方法（支持字节内容）
+
+        Args:
+            file_content: 文件字节内容
+            object_name: 对象名称（存储路径）
+            content_type: 文件类型
+
+        Returns:
+            str: 对象名称
+        """
+        from io import BytesIO
+
+        try:
+            file_size = len(file_content)
+            file_obj = BytesIO(file_content)
+
+            # 上传文件
+            self.client.put_object(
+                self.bucket_name,
+                object_name,
+                file_obj,
+                file_size,
+                content_type=content_type,
+            )
+
+            # 返回对象名称
+            return object_name
+
+        except S3Error as e:
+            logger.error(f"Error uploading file: {e}", exc_info=True)
+            raise
+
     def upload_subtitle(
         self,
         file: BinaryIO,
@@ -221,6 +260,18 @@ class MinIOClient:
         """
         object_name = f"thumbnails/video_{video_id}_{thumbnail_type}.jpg"
         return self.delete_file(object_name)
+
+    def get_file_url(self, object_name: str) -> str:
+        """
+        获取文件的公共访问 URL
+
+        Args:
+            object_name: 对象名称
+
+        Returns:
+            str: 文件访问 URL
+        """
+        return f"{settings.MINIO_PUBLIC_URL}/{self.bucket_name}/{object_name}"
 
     def get_presigned_url(
         self,
