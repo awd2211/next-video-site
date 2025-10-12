@@ -12,6 +12,7 @@ import FileList from './components/FileList'
 import Toolbar from './components/Toolbar'
 import UploadManager from './components/UploadManager'
 import Breadcrumb from './components/Breadcrumb'
+import MoveModal from './components/MoveModal'
 import { useDragUpload } from './hooks/useDragUpload'
 import axios from '@/utils/axios'
 import type { FolderNode, MediaItem, UploadTask } from './types'
@@ -37,6 +38,9 @@ const MediaManager: React.FC = () => {
 
   // 选中的文件
   const [selectedFiles, setSelectedFiles] = useState<number[]>([])
+
+  // 移动文件Modal
+  const [moveModalVisible, setMoveModalVisible] = useState(false)
 
   // 搜索
   const [searchText, setSearchText] = useState('')
@@ -220,6 +224,22 @@ const MediaManager: React.FC = () => {
     }
   }
 
+  // 打开批量移动Modal
+  const handleOpenMoveModal = () => {
+    if (selectedFiles.length === 0) {
+      message.warning('请先选择要移动的文件')
+      return
+    }
+    setMoveModalVisible(true)
+  }
+
+  // 确认批量移动
+  const handleConfirmMove = async (targetFolderId?: number) => {
+    await handleMove(selectedFiles, targetFolderId)
+    setMoveModalVisible(false)
+    setSelectedFiles([]) // 清空选中
+  }
+
   // 添加上传任务
   function handleAddUploadTask(files: File[]) {
     const newTasks: UploadTask[] = files.map((file) => ({
@@ -271,6 +291,7 @@ const MediaManager: React.FC = () => {
         }}
         selectedCount={selectedFiles.length}
         onBatchDelete={() => handleDelete(selectedFiles, false)}
+        onBatchMove={handleOpenMoveModal}
         viewMode={viewMode}
         onViewModeChange={setViewMode}
         sortBy={sortBy}
@@ -339,6 +360,15 @@ const MediaManager: React.FC = () => {
           loadFileList()
           loadFolderTree()
         }}
+      />
+
+      <MoveModal
+        visible={moveModalVisible}
+        onCancel={() => setMoveModalVisible(false)}
+        onConfirm={handleConfirmMove}
+        folderTree={folderTree}
+        selectedCount={selectedFiles.length}
+        currentFolderId={selectedFolderId}
       />
     </div>
   )

@@ -14,6 +14,7 @@ import {
   FontSizeOutlined,
   FileOutlined,
   ClockCircleOutlined,
+  DragOutlined,
 } from '@ant-design/icons'
 
 interface ToolbarProps {
@@ -23,6 +24,7 @@ interface ToolbarProps {
   onRefresh: () => void
   selectedCount: number
   onBatchDelete: () => void
+  onBatchMove: () => void
   viewMode: 'grid' | 'list'
   onViewModeChange: (mode: 'grid' | 'list') => void
   sortBy: 'name' | 'size' | 'date'
@@ -37,6 +39,7 @@ const Toolbar: React.FC<ToolbarProps> = ({
   onRefresh,
   selectedCount,
   onBatchDelete,
+  onBatchMove,
   viewMode,
   onViewModeChange,
   sortBy,
@@ -107,6 +110,12 @@ const Toolbar: React.FC<ToolbarProps> = ({
           {selectedCount > 0 && (
             <>
               <span style={{ color: '#8c8c8c' }}>已选 {selectedCount} 项</span>
+              <Button
+                icon={<DragOutlined />}
+                onClick={onBatchMove}
+              >
+                移动到
+              </Button>
               <Popconfirm
                 title="确认删除"
                 description={`确定要删除选中的 ${selectedCount} 个项目吗？`}
