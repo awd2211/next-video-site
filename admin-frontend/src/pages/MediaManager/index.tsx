@@ -109,7 +109,7 @@ const MediaManager: React.FC = () => {
 
   // 回收站
   const [recycleBinVisible, setRecycleBinVisible] = useState(false)
-  const [recycleBinCount] = useState(0) // TODO: 从API加载回收站数量
+  const [recycleBinCount, setRecycleBinCount] = useState(0)
 
   // 面包屑路径
   const [breadcrumbPath, setBreadcrumbPath] = useState<{ id?: number; title: string }[]>([])
@@ -248,6 +248,16 @@ const MediaManager: React.FC = () => {
     }
   }
 
+  // 加载回收站数量
+  const loadRecycleBinCount = async () => {
+    try {
+      const response = await axios.get('/api/v1/admin/media/recycle-bin/count')
+      setRecycleBinCount(response.data.count || 0)
+    } catch (error) {
+      console.error('加载回收站数量失败:', error)
+    }
+  }
+
   // 加载文件列表
   const loadFileList = async () => {
     setLoading(true)
@@ -356,6 +366,7 @@ const MediaManager: React.FC = () => {
       message.success('删除成功')
       loadFileList()
       loadFolderTree()
+      loadRecycleBinCount()
       setSelectedFiles([])
     } catch (error: any) {
       message.error(error.response?.data?.detail || '删除失败')
@@ -394,6 +405,7 @@ const MediaManager: React.FC = () => {
       message.success('文件夹删除成功')
       loadFolderTree()
       loadFileList()
+      loadRecycleBinCount()
       // 如果删除的是当前选中的文件夹，返回根目录
       if (selectedFolderId === folderId) {
         setSelectedFolderId(undefined)
@@ -604,8 +616,7 @@ const MediaManager: React.FC = () => {
       message.success(`已恢复 ${ids.length} 个项目`)
       loadFileList()
       loadFolderTree()
-      // 重新加载回收站数量
-      // TODO: 调用API获取回收站数量
+      loadRecycleBinCount()
     } catch (error: any) {
       message.error(error.response?.data?.detail || '恢复失败')
     }
@@ -620,6 +631,7 @@ const MediaManager: React.FC = () => {
       message.success(`已永久删除 ${ids.length} 个项目`)
       loadFileList()
       loadFolderTree()
+      loadRecycleBinCount()
     } catch (error: any) {
       message.error(error.response?.data?.detail || '删除失败')
     }
@@ -632,6 +644,7 @@ const MediaManager: React.FC = () => {
       message.success('回收站已清空')
       loadFileList()
       loadFolderTree()
+      loadRecycleBinCount()
     } catch (error: any) {
       message.error(error.response?.data?.detail || '清空失败')
     }
@@ -683,6 +696,7 @@ const MediaManager: React.FC = () => {
   // 初始化加载
   useEffect(() => {
     loadFolderTree()
+    loadRecycleBinCount()
   }, [])
 
   useEffect(() => {
@@ -919,9 +933,7 @@ const MediaManager: React.FC = () => {
         onRestore={handleRestoreFiles}
         onPermanentDelete={handlePermanentDelete}
         onClearAll={handleClearRecycleBin}
-        onRefresh={() => {
-          // TODO: 重新加载回收站数据
-        }}
+        onRefresh={loadRecycleBinCount}
       />
 
       {/* 键盘快捷键帮助 */}

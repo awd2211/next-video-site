@@ -1204,3 +1204,19 @@ async def clear_recycle_bin(
         "cleared_count": cleared_count,
         "errors": errors
     }
+
+
+@router.get("/media/recycle-bin/count")
+async def get_recycle_bin_count(
+    db: AsyncSession = Depends(get_db),
+    current_user: AdminUser = Depends(get_current_admin_user),
+):
+    """获取回收站文件数量"""
+
+    count_query = select(func.count()).select_from(Media).where(Media.is_deleted == True)
+    count_result = await db.execute(count_query)
+    count = count_result.scalar()
+
+    return {
+        "count": count or 0
+    }
