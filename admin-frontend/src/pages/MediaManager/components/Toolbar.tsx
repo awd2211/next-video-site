@@ -1,8 +1,8 @@
-import React, { useRef } from 'react'
-import { Button, Input, Space, Popconfirm, Dropdown, Segmented } from 'antd'
+import React, { useRef, useState } from 'react'
+import { Button, Space, Popconfirm, Dropdown, Segmented } from 'antd'
 import type { MenuProps } from 'antd'
+import SearchInput from './SearchInput'
 import {
-  SearchOutlined,
   UploadOutlined,
   FolderAddOutlined,
   ReloadOutlined,
@@ -71,6 +71,7 @@ const Toolbar: React.FC<ToolbarProps> = ({
   onOpenTags,
 }) => {
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const [searchValue, setSearchValue] = useState('')
 
   // 格式化文件大小
   const formatFileSize = (bytes: number): string => {
@@ -129,12 +130,14 @@ const Toolbar: React.FC<ToolbarProps> = ({
   return (
     <div className="media-toolbar">
       <div className="media-toolbar-left">
-        <Input
-          placeholder="搜索文件或文件夹..."
-          prefix={<SearchOutlined />}
-          allowClear
+        <SearchInput
+          value={searchValue}
+          onChange={(value) => {
+            setSearchValue(value)
+            onSearch(value)
+          }}
+          onSearch={onSearch}
           style={{ width: 300 }}
-          onChange={(e) => onSearch(e.target.value)}
         />
 
         {/* 媒体类型筛选器 */}
