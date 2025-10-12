@@ -3,7 +3,6 @@ import {
   Checkbox,
   Spin,
   Pagination,
-  Image,
   Dropdown,
   Modal,
   Table,
@@ -11,6 +10,8 @@ import {
   message,
 } from 'antd'
 import EmptyState from './EmptyState'
+import ImagePreview from './ImagePreview'
+import VideoPlayer from './VideoPlayer'
 import type { ColumnsType } from 'antd/es/table'
 import {
   FileImageOutlined,
@@ -73,10 +74,18 @@ const FileList: React.FC<FileListProps> = ({
   currentFolderId,
   mediaTypeFilter,
 }) => {
-  const [previewImage, setPreviewImage] = useState<string | null>(null)
   const [renameModalVisible, setRenameModalVisible] = useState(false)
   const [renamingItem, setRenamingItem] = useState<MediaItem | null>(null)
   const [newTitle, setNewTitle] = useState('')
+
+  // 图片预览状态
+  const [imagePreviewVisible, setImagePreviewVisible] = useState(false)
+  const [currentImageIndex, setCurrentImageIndex] = useState(0)
+  const imageFiles = data.filter((item) => !item.is_folder && item.media_type === 'image')
+
+  // 视频播放状态
+  const [videoPlayerVisible, setVideoPlayerVisible] = useState(false)
+  const [currentVideo, setCurrentVideo] = useState<MediaItem | null>(null)
 
   // 格式化文件大小
   const formatFileSize = (bytes: number): string => {
@@ -105,6 +114,21 @@ const FileList: React.FC<FileListProps> = ({
     }
   }
 
+  // 打开图片预览
+  const openImagePreview = (item: MediaItem) => {
+    const index = imageFiles.findIndex((img) => img.id === item.id)
+    if (index !== -1) {
+      setCurrentImageIndex(index)
+      setImagePreviewVisible(true)
+    }
+  }
+
+  // 打开视频播放器
+  const openVideoPlayer = (item: MediaItem) => {
+    setCurrentVideo(item)
+    setVideoPlayerVisible(true)
+  }
+
   // 处理双击 - 文件夹打开，文件预览
   const handleDoubleClick = (item: MediaItem) => {
     if (item.is_folder) {
@@ -112,7 +136,9 @@ const FileList: React.FC<FileListProps> = ({
     } else {
       // 文件预览
       if (item.media_type === 'image') {
-        setPreviewImage(item.url)
+        openImagePreview(item)
+      } else if (item.media_type === 'video') {
+        openVideoPlayer(item)
       } else {
         window.open(item.url, '_blank')
       }
@@ -159,7 +185,9 @@ const FileList: React.FC<FileListProps> = ({
         icon: <EyeOutlined />,
         onClick: () => {
           if (item.media_type === 'image') {
-            setPreviewImage(item.url)
+            openImagePreview(item)
+          } else if (item.media_type === 'video') {
+            openVideoPlayer(item)
           } else {
             window.open(item.url, '_blank')
           }
@@ -232,7 +260,7 @@ const FileList: React.FC<FileListProps> = ({
           src={item.thumbnail_url || item.url}
           alt={item.title}
           style={{ cursor: 'pointer' }}
-          onClick={() => setPreviewImage(item.url)}
+          onClick={() => openImagePreview(item)}
         />
       )
     }
@@ -369,14 +397,21 @@ const FileList: React.FC<FileListProps> = ({
         />
 
         {/* 图片预览 */}
-        <Image
-          style={{ display: 'none' }}
-          preview={{
-            visible: !!previewImage,
-            src: previewImage || '',
-            onVisibleChange: (visible) => {
-              if (!visible) setPreviewImage(null)
-            },
+        <ImagePreview
+          visible={imagePreviewVisible}
+          current={currentImageIndex}
+          images={imageFiles}
+          onClose={() => setImagePreviewVisible(false)}
+          onChange={setCurrentImageIndex}
+        />
+
+        {/* 视频播放器 */}
+        <VideoPlayer
+          visible={videoPlayerVisible}
+          video={currentVideo}
+          onClose={() => {
+            setVideoPlayerVisible(false)
+            setCurrentVideo(null)
           }}
         />
       </div>
@@ -474,14 +509,21 @@ const FileList: React.FC<FileListProps> = ({
       </div>
 
       {/* 图片预览 */}
-      <Image
-        style={{ display: 'none' }}
-        preview={{
-          visible: !!previewImage,
-          src: previewImage || '',
-          onVisibleChange: (visible) => {
-            if (!visible) setPreviewImage(null)
-          },
+      <ImagePreview
+        visible={imagePreviewVisible}
+        current={currentImageIndex}
+        images={imageFiles}
+        onClose={() => setImagePreviewVisible(false)}
+        onChange={setCurrentImageIndex}
+      />
+
+      {/* 视频播放器 */}
+      <VideoPlayer
+        visible={videoPlayerVisible}
+        video={currentVideo}
+        onClose={() => {
+          setVideoPlayerVisible(false)
+          setCurrentVideo(null)
         }}
       />
 
