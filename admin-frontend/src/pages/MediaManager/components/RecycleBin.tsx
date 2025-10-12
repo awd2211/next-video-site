@@ -26,6 +26,7 @@ import {
   FileImageOutlined,
   VideoCameraOutlined,
 } from '@ant-design/icons'
+import axios from '@/utils/axios'
 import type { MediaItem } from '../types'
 
 const { Text } = Typography
@@ -57,12 +58,13 @@ const RecycleBin: React.FC<RecycleBinProps> = ({
   const loadDeletedItems = async () => {
     setLoading(true)
     try {
-      // 模拟 API 调用 - 实际应该调用后端接口获取已删除的文件
-      // const response = await axios.get('/api/v1/admin/media/deleted')
-      // setDeletedItems(response.data.items || [])
-
-      // 临时使用空数据
-      setDeletedItems([])
+      const response = await axios.get('/api/v1/admin/media/deleted', {
+        params: {
+          page: 1,
+          page_size: 100,
+        },
+      })
+      setDeletedItems(response.data.items || [])
     } catch (error) {
       message.error('加载回收站失败')
     } finally {

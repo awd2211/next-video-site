@@ -1035,3 +1035,172 @@ async def batch_delete_media(
         "total_count": len(media_ids),
         "errors": errors
     }
+
+
+@router.post("/media/batch/restore")
+async def batch_restore_media(
+    media_ids: List[int] = Query(...),
+    db: AsyncSession = Depends(get_db),
+    current_user: AdminUser = Depends(get_current_admin_user),
+):
+    """批量恢复已删除的文件/文件夹"""
+
+    restored_count = 0
+    errors = []
+
+    for media_id in media_ids:
+        try:
+            media_query = select(Media).where(
+                and_(Media.id == media_id, Media.is_deleted == True)
+            )
+            media_result = await db.execute(media_query)
+            media = media_result.scalar_one_or_none()
+
+            if not media:
+                errors.append({"id": media_id, "error": "不存在或未被删除"})
+                continue
+
+            media.is_deleted = False
+            media.deleted_at = None
+            media.updated_at = datetime.utcnow()
+
+            restored_count += 1
+
+        except Exception as e:
+            errors.append({"id": media_id, "error": str(e)})
+
+    await db.commit()
+
+    return {
+        "message": "批量恢复完成",
+        "restored_count": restored_count,
+        "total_count": len(media_ids),
+        "errors": errors
+    }
+
+
+@router.post("/media/batch/tags")
+async def batch_update_tags(
+    media_ids: List[int] = Query(...),
+    tags: str = Query(""),
+    db: AsyncSession = Depends(get_db),
+    current_user: AdminUser = Depends(get_current_admin_user),
+):
+    """批量更新文件标签"""
+
+    updated_count = 0
+    errors = []
+
+    for media_id in media_ids:
+        try:
+            media_query = select(Media).where(
+                and_(Media.id == media_id, Media.is_deleted == False)
+            )
+            media_result = await db.execute(media_query)
+            media = media_result.scalar_one_or_none()
+
+            if not media:
+                errors.append({"id": media_id, "error": "不存在"})
+                continue
+
+            media.tags = tags
+            media.updated_at = datetime.utcnow()
+
+            updated_count += 1
+
+        except Exception as e:
+            errors.append({"id": media_id, "error": str(e)})
+
+    await db.commit()
+
+    return {
+        "message": "批量更新标签完成",
+        "updated_count": updated_count,
+        "total_count": len(media_ids),
+        "errors": errors
+    }
+
+
+@router.get("/media/deleted", response_model=MediaListResponse)
+async def get_deleted_media(
+    page: int = Query(1, ge=1),
+    page_size: int = Query(50, ge=1, le=100),
+    search: Optional[str] = None,
+    db: AsyncSession = Depends(get_db),
+    current_user: AdminUser = Depends(get_current_admin_user),
+):
+    """获取回收站中的已删除文件"""
+
+    # 构建查询
+    query = select(Media).where(Media.is_deleted == True)
+
+    # 搜索
+    if search:
+        search_filter = or_(
+            Media.title.ilike(f"%{search}%"),
+            Media.filename.ilike(f"%{search}%"),
+        )
+        query = query.where(search_filter)
+
+    # 总数
+    count_query = select(func.count()).select_from(query.subquery())
+    total_result = await db.execute(count_query)
+    total = total_result.scalar()
+
+    # 排序：按删除时间倒序
+    query = query.order_by(desc(Media.deleted_at))
+    query = query.offset((page - 1) * page_size).limit(page_size)
+
+    # 执行查询
+    result = await db.execute(query)
+    items = result.scalars().all()
+
+    return MediaListResponse(
+        items=[MediaResponse.model_validate(item) for item in items],
+        total=total,
+        page=page,
+        page_size=page_size,
+        pages=(total + page_size - 1) // page_size,
+    )
+
+
+@router.delete("/media/recycle-bin/clear")
+async def clear_recycle_bin(
+    db: AsyncSession = Depends(get_db),
+    current_user: AdminUser = Depends(get_current_admin_user),
+):
+    """清空回收站 - 永久删除所有已删除的文件"""
+
+    # 获取所有已删除的文件
+    query = select(Media).where(Media.is_deleted == True)
+    result = await db.execute(query)
+    deleted_items = result.scalars().all()
+
+    cleared_count = 0
+    errors = []
+
+    for media in deleted_items:
+        try:
+            # 删除实际文件
+            if not media.is_folder and media.file_path:
+                try:
+                    minio_client.delete_file(media.file_path)
+                    if media.thumbnail_path:
+                        minio_client.delete_file(media.thumbnail_path)
+                except Exception as e:
+                    print(f"删除文件失败: {e}")
+
+            # 从数据库删除
+            await db.delete(media)
+            cleared_count += 1
+
+        except Exception as e:
+            errors.append({"id": media.id, "title": media.title, "error": str(e)})
+
+    await db.commit()
+
+    return {
+        "message": "回收站已清空",
+        "cleared_count": cleared_count,
+        "errors": errors
+    }
