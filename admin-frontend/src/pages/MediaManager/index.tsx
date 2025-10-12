@@ -13,7 +13,9 @@ import Toolbar from './components/Toolbar'
 import UploadManager from './components/UploadManager'
 import Breadcrumb from './components/Breadcrumb'
 import MoveModal from './components/MoveModal'
+import KeyboardHelp from './components/KeyboardHelp'
 import { useDragUpload } from './hooks/useDragUpload'
+import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts'
 import axios from '@/utils/axios'
 import type { FolderNode, MediaItem, UploadTask } from './types'
 import './styles.css'
@@ -258,6 +260,32 @@ const MediaManager: React.FC = () => {
     setUploadDrawerVisible(true)
   }
 
+  // 快捷键支持
+  useKeyboardShortcuts({
+    onSelectAll: () => {
+      // Ctrl+A - 全选当前页所有文件
+      const allIds = fileList.map(item => item.id)
+      setSelectedFiles(allIds)
+      if (allIds.length > 0) {
+        message.info(`已选中 ${allIds.length} 项`)
+      }
+    },
+    onDelete: () => {
+      // Delete - 删除选中的文件
+      if (selectedFiles.length > 0) {
+        handleDelete(selectedFiles, false)
+      }
+    },
+    onEscape: () => {
+      // Esc - 取消选中
+      if (selectedFiles.length > 0) {
+        setSelectedFiles([])
+        message.info('已取消选中')
+      }
+    },
+    enabled: !uploadDrawerVisible && !moveModalVisible, // Modal打开时禁用快捷键
+  })
+
   // 初始化加载
   useEffect(() => {
     loadFolderTree()
@@ -377,6 +405,9 @@ const MediaManager: React.FC = () => {
         selectedCount={selectedFiles.length}
         currentFolderId={selectedFolderId}
       />
+
+      {/* 键盘快捷键帮助 */}
+      <KeyboardHelp />
     </div>
   )
 }
