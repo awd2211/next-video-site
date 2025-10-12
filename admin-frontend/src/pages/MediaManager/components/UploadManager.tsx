@@ -36,14 +36,33 @@ const UploadManager: React.FC<UploadManagerProps> = ({
   const startUpload = async (task: UploadTask) => {
     if (task.status === 'uploading') return
 
-    updateTask(task.id, { status: 'uploading', progress: 0 })
+    const startTime = Date.now()
+    updateTask(task.id, {
+      status: 'uploading',
+      progress: 0,
+      startTime,
+      totalSize: task.file.size,
+      uploadedSize: 0,
+    })
 
     const uploader = new ChunkUploader({
       file: task.file,
       parentId,
       title: task.file.name,
       onProgress: (progress) => {
-        updateTask(task.id, { progress })
+        const now = Date.now()
+        const elapsedTime = (now - startTime) / 1000 // 秒
+        const uploadedSize = (task.file.size * progress) / 100
+        const speed = elapsedTime > 0 ? uploadedSize / elapsedTime : 0
+        const remainingSize = task.file.size - uploadedSize
+        const estimatedTime = speed > 0 ? remainingSize / speed : 0
+
+        updateTask(task.id, {
+          progress,
+          uploadedSize,
+          speed,
+          estimatedTime,
+        })
       },
       onComplete: (mediaId, url) => {
         updateTask(task.id, {
@@ -51,6 +70,9 @@ const UploadManager: React.FC<UploadManagerProps> = ({
           progress: 100,
           mediaId,
           url,
+          uploadedSize: task.file.size,
+          speed: 0,
+          estimatedTime: 0,
         })
         message.success(`${task.file.name} 上传成功`)
         onComplete()
@@ -94,6 +116,18 @@ const UploadManager: React.FC<UploadManagerProps> = ({
     const sizes = ['B', 'KB', 'MB', 'GB']
     const i = Math.floor(Math.log(bytes) / Math.log(k))
     return `${(bytes / Math.pow(k, i)).toFixed(2)} ${sizes[i]}`
+  }
+
+  // 格式化速度
+  const formatSpeed = (bytesPerSecond: number): string => {
+    return `${formatFileSize(bytesPerSecond)}/s`
+  }
+
+  // 格式化时间
+  const formatTime = (seconds: number): string => {
+    if (seconds < 60) return `${Math.round(seconds)}秒`
+    if (seconds < 3600) return `${Math.round(seconds / 60)}分钟`
+    return `${Math.round(seconds / 3600)}小时`
   }
 
   // 获取状态标签
@@ -184,7 +218,19 @@ const UploadManager: React.FC<UploadManagerProps> = ({
 
               <div className="upload-task-info">
                 <span>{formatFileSize(task.file.size)}</span>
-                <span>{task.file.type}</span>
+                {task.status === 'uploading' && task.speed && (
+                  <>
+                    <span>·</span>
+                    <span style={{ color: '#52c41a' }}>{formatSpeed(task.speed)}</span>
+                    {task.estimatedTime && task.estimatedTime > 0 && (
+                      <>
+                        <span>·</span>
+                        <span style={{ color: '#1890ff' }}>剩余 {formatTime(task.estimatedTime)}</span>
+                      </>
+                    )}
+                  </>
+                )}
+                {task.status !== 'uploading' && <span>{task.file.type}</span>}
               </div>
 
               {task.status === 'error' && (

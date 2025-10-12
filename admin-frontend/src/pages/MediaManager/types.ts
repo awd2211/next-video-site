@@ -45,6 +45,11 @@ export interface UploadTask {
   error?: string
   mediaId?: number
   url?: string
+  uploadedSize?: number
+  totalSize?: number
+  speed?: number
+  startTime?: number
+  estimatedTime?: number
 }
 
 export interface MediaTreeResponse {
