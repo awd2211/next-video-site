@@ -42,6 +42,7 @@ const Login = () => {
       const timer = setTimeout(() => setCountdown(countdown - 1), 1000)
       return () => clearTimeout(timer)
     }
+    return undefined
   }, [countdown])
 
   // Auto focus on input when modal opens or step changes

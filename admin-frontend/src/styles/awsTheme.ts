@@ -326,7 +326,6 @@ export const getAWSThemeConfig = (isDark: boolean) => ({
     Tag: {
       borderRadius: 4,
       fontSize: 12,
-      lineHeight: '20px',
       defaultBg: isDark ? 'rgba(83, 159, 229, 0.15)' : 'rgba(0, 115, 187, 0.1)',
       defaultColor: isDark ? '#85b7ed' : '#0073bb',
     },

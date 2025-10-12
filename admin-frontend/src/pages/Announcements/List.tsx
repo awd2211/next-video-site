@@ -205,6 +205,7 @@ const AnnouncementsList = () => {
       width: 100,
       render: (type: string) => {
         const mapping = typeMapping[type]
+        if (!mapping) return <AWSTag type="default">{type}</AWSTag>
         return <AWSTag type={mapping.type}>{mapping.label}</AWSTag>
       },
     },

@@ -12,7 +12,6 @@ import {
   Input,
   InputNumber,
   message,
-  Tag,
   Popconfirm,
   Statistic,
   Row,
@@ -34,7 +33,7 @@ import ipBlacklistService, {
   IPBlacklistItem,
   AddIPBlacklistRequest,
 } from '@/services/ipBlacklistService'
-import { formatAWSDate, formatAWSNumber, AWSTag } from '@/utils/awsStyleHelpers'
+import { formatAWSDate, AWSTag } from '@/utils/awsStyleHelpers'
 
 const IPBlacklist: React.FC = () => {
   const [loading, setLoading] = useState(false)
@@ -136,12 +135,6 @@ const IPBlacklist: React.FC = () => {
         }
       },
     })
-  }
-
-  // 格式化时间
-  const formatTimestamp = (timestamp: string) => {
-    const date = new Date(parseInt(timestamp) * 1000)
-    return date.toLocaleString('zh-CN')
   }
 
   // 计算剩余时间
