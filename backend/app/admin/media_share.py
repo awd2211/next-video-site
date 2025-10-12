@@ -33,7 +33,7 @@ async def create_media_share(
     db: AsyncSession = Depends(get_db),
     current_user: AdminUser = Depends(get_current_admin_user),
 ):
-    """创建文件分享链接"""
+    """创建文件/文件夹分享链接"""
 
     # 检查媒体文件是否存在
     media_query = select(Media).where(and_(Media.id == media_id, Media.is_deleted == False))
@@ -42,9 +42,6 @@ async def create_media_share(
 
     if not media:
         raise HTTPException(status_code=404, detail="文件不存在")
-
-    if media.is_folder:
-        raise HTTPException(status_code=400, detail="不支持分享文件夹")
 
     # 生成唯一的分享码
     share_code = generate_share_code()

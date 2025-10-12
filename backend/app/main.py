@@ -53,6 +53,7 @@ from app.api import (
     recommendations,
     search,
     series,
+    share,
     shares,
     subtitles,
     users,
@@ -361,6 +362,9 @@ app.include_router(
 )
 app.include_router(
     shares.router, prefix=f"{settings.API_V1_PREFIX}/shares", tags=["Shares"]
+)
+app.include_router(
+    share.router, prefix=f"{settings.API_V1_PREFIX}", tags=["Public Share"]
 )
 app.include_router(
     series.router, prefix=f"{settings.API_V1_PREFIX}/series", tags=["Series"]
