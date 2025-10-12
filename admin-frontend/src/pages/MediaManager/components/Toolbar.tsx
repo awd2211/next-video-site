@@ -19,6 +19,7 @@ import {
   VideoCameraOutlined,
   DownloadOutlined,
   BarChartOutlined,
+  FilterOutlined,
 } from '@ant-design/icons'
 
 interface ToolbarProps {
@@ -40,6 +41,8 @@ interface ToolbarProps {
   onMediaTypeFilterChange: (type: 'image' | 'video' | undefined) => void
   showStats: boolean
   onToggleStats: () => void
+  onOpenFilter: () => void
+  hasActiveFilters: boolean
 }
 
 const Toolbar: React.FC<ToolbarProps> = ({
@@ -61,6 +64,8 @@ const Toolbar: React.FC<ToolbarProps> = ({
   onMediaTypeFilterChange,
   showStats,
   onToggleStats,
+  onOpenFilter,
+  hasActiveFilters,
 }) => {
   const fileInputRef = useRef<HTMLInputElement>(null)
 
@@ -268,6 +273,14 @@ const Toolbar: React.FC<ToolbarProps> = ({
             type={showStats ? 'primary' : 'default'}
           >
             统计
+          </Button>
+
+          <Button
+            icon={<FilterOutlined />}
+            onClick={onOpenFilter}
+            type={hasActiveFilters ? 'primary' : 'default'}
+          >
+            筛选
           </Button>
         </Space>
       </div>

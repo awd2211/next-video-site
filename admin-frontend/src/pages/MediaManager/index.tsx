@@ -16,6 +16,7 @@ import Breadcrumb from './components/Breadcrumb'
 import MoveModal from './components/MoveModal'
 import KeyboardHelp from './components/KeyboardHelp'
 import StatsPanel from './components/StatsPanel'
+import FilterDrawer, { type FilterOptions } from './components/FilterDrawer'
 import { useDragUpload } from './hooks/useDragUpload'
 import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts'
 import axios from '@/utils/axios'
@@ -64,6 +65,10 @@ const MediaManager: React.FC = () => {
 
   // 统计面板显示
   const [showStats, setShowStats] = useState(false)
+
+  // 高级筛选
+  const [filterDrawerVisible, setFilterDrawerVisible] = useState(false)
+  const [advancedFilters, setAdvancedFilters] = useState<FilterOptions>({})
 
   // 面包屑路径
   const [breadcrumbPath, setBreadcrumbPath] = useState<{ id?: number; title: string }[]>([])
@@ -117,12 +122,31 @@ const MediaManager: React.FC = () => {
           page_size: pageSize,
           parent_id: selectedFolderId,
           search: searchText || undefined,
-          media_type: mediaTypeFilter || undefined,
+          media_type: mediaTypeFilter || advancedFilters.mediaType || undefined,
         },
       })
 
       const data = response.data
       let items = data.items || []
+
+      // 应用高级筛选（前端筛选）
+      if (advancedFilters.sizeMin !== undefined) {
+        items = items.filter((item: MediaItem) =>
+          !item.is_folder && item.file_size >= (advancedFilters.sizeMin || 0)
+        )
+      }
+      if (advancedFilters.sizeMax !== undefined) {
+        items = items.filter((item: MediaItem) =>
+          !item.is_folder && item.file_size <= (advancedFilters.sizeMax || Infinity)
+        )
+      }
+      if (advancedFilters.dateRange) {
+        const [start, end] = advancedFilters.dateRange
+        items = items.filter((item: MediaItem) => {
+          const itemDate = new Date(item.created_at).getTime()
+          return itemDate >= start.valueOf() && itemDate <= end.valueOf()
+        })
+      }
 
       // 前端排序（如果后端不支持排序）
       items = items.sort((a: MediaItem, b: MediaItem) => {
@@ -378,7 +402,16 @@ const MediaManager: React.FC = () => {
     } else {
       setBreadcrumbPath([])
     }
-  }, [selectedFolderId, page, pageSize, searchText, mediaTypeFilter, sortBy, sortOrder, folderTree])
+  }, [selectedFolderId, page, pageSize, searchText, mediaTypeFilter, advancedFilters, sortBy, sortOrder, folderTree])
+
+  // 处理高级筛选应用
+  const handleApplyFilters = (filters: FilterOptions) => {
+    setAdvancedFilters(filters)
+    setPage(1) // 重置到第一页
+  }
+
+  // 判断是否有激活的筛选器
+  const hasActiveFilters = Object.keys(advancedFilters).length > 0
 
   return (
     <div className="media-manager" ref={dropZoneRef}>
@@ -418,6 +451,8 @@ const MediaManager: React.FC = () => {
         onMediaTypeFilterChange={setMediaTypeFilter}
         showStats={showStats}
         onToggleStats={() => setShowStats(!showStats)}
+        onOpenFilter={() => setFilterDrawerVisible(true)}
+        hasActiveFilters={hasActiveFilters}
       />
 
       <Layout className="media-manager-layout">
@@ -507,6 +542,14 @@ const MediaManager: React.FC = () => {
         folderTree={folderTree}
         selectedCount={selectedFiles.length}
         currentFolderId={selectedFolderId}
+      />
+
+      {/* 高级筛选抽屉 */}
+      <FilterDrawer
+        visible={filterDrawerVisible}
+        onClose={() => setFilterDrawerVisible(false)}
+        onApply={handleApplyFilters}
+        currentFilters={advancedFilters}
       />
 
       {/* 键盘快捷键帮助 */}
