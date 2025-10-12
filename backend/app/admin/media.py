@@ -22,6 +22,79 @@ from app.utils.minio_client import minio_client
 router = APIRouter()
 
 
+@router.get("/media/stats", response_model=MediaStatsResponse)
+async def get_media_stats(
+    db: AsyncSession = Depends(get_db),
+    current_user: AdminUser = Depends(get_current_admin_user),
+):
+    """获取媒体统计信息"""
+    # 总数
+    total_count_query = select(func.count()).select_from(Media).where(Media.is_deleted == False)
+    total_count_result = await db.execute(total_count_query)
+    total_count = total_count_result.scalar()
+
+    # 图片数量
+    image_count_query = (
+        select(func.count())
+        .select_from(Media)
+        .where(and_(Media.media_type == MediaType.IMAGE, Media.is_deleted == False))
+    )
+    image_count_result = await db.execute(image_count_query)
+    image_count = image_count_result.scalar()
+
+    # 视频数量
+    video_count_query = (
+        select(func.count())
+        .select_from(Media)
+        .where(and_(Media.media_type == MediaType.VIDEO, Media.is_deleted == False))
+    )
+    video_count_result = await db.execute(video_count_query)
+    video_count = video_count_result.scalar()
+
+    # 总大小
+    total_size_query = select(func.sum(Media.file_size)).where(Media.is_deleted == False)
+    total_size_result = await db.execute(total_size_query)
+    total_size = total_size_result.scalar() or 0
+
+    # 总查看次数
+    total_views_query = select(func.sum(Media.view_count)).where(Media.is_deleted == False)
+    total_views_result = await db.execute(total_views_query)
+    total_views = total_views_result.scalar() or 0
+
+    # 总下载次数
+    total_downloads_query = select(func.sum(Media.download_count)).where(Media.is_deleted == False)
+    total_downloads_result = await db.execute(total_downloads_query)
+    total_downloads = total_downloads_result.scalar() or 0
+
+    return MediaStatsResponse(
+        total_count=total_count,
+        image_count=image_count,
+        video_count=video_count,
+        total_size=total_size,
+        total_views=total_views,
+        total_downloads=total_downloads,
+    )
+
+
+@router.get("/media/folders")
+async def get_folders(
+    db: AsyncSession = Depends(get_db),
+    current_user: AdminUser = Depends(get_current_admin_user),
+):
+    """获取所有文件夹列表"""
+    query = (
+        select(Media.folder, func.count(Media.id).label("count"))
+        .where(and_(Media.folder.is_not(None), Media.is_deleted == False))
+        .group_by(Media.folder)
+        .order_by(Media.folder)
+    )
+
+    result = await db.execute(query)
+    folders = result.all()
+
+    return [{"name": folder, "count": count} for folder, count in folders]
+
+
 @router.get("/media", response_model=MediaListResponse)
 async def get_media_list(
     page: int = Query(1, ge=1),
@@ -250,76 +323,3 @@ async def restore_media(
     await db.commit()
 
     return {"message": "恢复成功"}
-
-
-@router.get("/media/stats", response_model=MediaStatsResponse)
-async def get_media_stats(
-    db: AsyncSession = Depends(get_db),
-    current_user: AdminUser = Depends(get_current_admin_user),
-):
-    """获取媒体统计信息"""
-    # 总数
-    total_count_query = select(func.count()).select_from(Media).where(Media.is_deleted == False)
-    total_count_result = await db.execute(total_count_query)
-    total_count = total_count_result.scalar()
-
-    # 图片数量
-    image_count_query = (
-        select(func.count())
-        .select_from(Media)
-        .where(and_(Media.media_type == MediaType.IMAGE, Media.is_deleted == False))
-    )
-    image_count_result = await db.execute(image_count_query)
-    image_count = image_count_result.scalar()
-
-    # 视频数量
-    video_count_query = (
-        select(func.count())
-        .select_from(Media)
-        .where(and_(Media.media_type == MediaType.VIDEO, Media.is_deleted == False))
-    )
-    video_count_result = await db.execute(video_count_query)
-    video_count = video_count_result.scalar()
-
-    # 总大小
-    total_size_query = select(func.sum(Media.file_size)).where(Media.is_deleted == False)
-    total_size_result = await db.execute(total_size_query)
-    total_size = total_size_result.scalar() or 0
-
-    # 总查看次数
-    total_views_query = select(func.sum(Media.view_count)).where(Media.is_deleted == False)
-    total_views_result = await db.execute(total_views_query)
-    total_views = total_views_result.scalar() or 0
-
-    # 总下载次数
-    total_downloads_query = select(func.sum(Media.download_count)).where(Media.is_deleted == False)
-    total_downloads_result = await db.execute(total_downloads_query)
-    total_downloads = total_downloads_result.scalar() or 0
-
-    return MediaStatsResponse(
-        total_count=total_count,
-        image_count=image_count,
-        video_count=video_count,
-        total_size=total_size,
-        total_views=total_views,
-        total_downloads=total_downloads,
-    )
-
-
-@router.get("/media/folders")
-async def get_folders(
-    db: AsyncSession = Depends(get_db),
-    current_user: AdminUser = Depends(get_current_admin_user),
-):
-    """获取所有文件夹列表"""
-    query = (
-        select(Media.folder, func.count(Media.id).label("count"))
-        .where(and_(Media.folder.is_not(None), Media.is_deleted == False))
-        .group_by(Media.folder)
-        .order_by(Media.folder)
-    )
-
-    result = await db.execute(query)
-    folders = result.all()
-
-    return [{"name": folder, "count": count} for folder, count in folders]
