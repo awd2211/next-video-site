@@ -8,6 +8,8 @@ import {
   Dropdown,
   Modal,
   Table,
+  Input,
+  message,
 } from 'antd'
 import type { ColumnsType } from 'antd/es/table'
 import {
@@ -18,6 +20,7 @@ import {
   DeleteOutlined,
   DownloadOutlined,
   EyeOutlined,
+  EditOutlined,
 } from '@ant-design/icons'
 import type { MenuProps } from 'antd'
 import type { MediaItem } from '../types'
@@ -38,6 +41,8 @@ interface FileListProps {
   viewMode: 'grid' | 'list'
   sortBy: 'name' | 'size' | 'date'
   sortOrder: 'asc' | 'desc'
+  onFolderOpen: (folderId: number) => void
+  onRename: (mediaId: number, newTitle: string) => void
 }
 
 const FileList: React.FC<FileListProps> = ({
@@ -52,8 +57,13 @@ const FileList: React.FC<FileListProps> = ({
   onSelectChange,
   onDelete,
   viewMode,
+  onFolderOpen,
+  onRename,
 }) => {
   const [previewImage, setPreviewImage] = useState<string | null>(null)
+  const [renameModalVisible, setRenameModalVisible] = useState(false)
+  const [renamingItem, setRenamingItem] = useState<MediaItem | null>(null)
+  const [newTitle, setNewTitle] = useState('')
 
   // 格式化文件大小
   const formatFileSize = (bytes: number): string => {
@@ -82,47 +92,105 @@ const FileList: React.FC<FileListProps> = ({
     }
   }
 
-  // 右键菜单
-  const getContextMenu = (item: MediaItem): MenuProps['items'] => [
-    {
-      key: 'preview',
-      label: '预览',
-      icon: <EyeOutlined />,
-      onClick: () => {
-        if (item.media_type === 'image') {
-          setPreviewImage(item.url)
-        } else {
-          window.open(item.url, '_blank')
-        }
-      },
-    },
-    {
-      key: 'download',
-      label: '下载',
-      icon: <DownloadOutlined />,
-      onClick: () => {
+  // 处理双击 - 文件夹打开，文件预览
+  const handleDoubleClick = (item: MediaItem) => {
+    if (item.is_folder) {
+      onFolderOpen(item.id)
+    } else {
+      // 文件预览
+      if (item.media_type === 'image') {
+        setPreviewImage(item.url)
+      } else {
         window.open(item.url, '_blank')
+      }
+    }
+  }
+
+  // 打开重命名对话框
+  const handleRename = (item: MediaItem) => {
+    setRenamingItem(item)
+    setNewTitle(item.title)
+    setRenameModalVisible(true)
+  }
+
+  // 确认重命名
+  const confirmRename = () => {
+    if (!renamingItem) return
+    if (!newTitle.trim()) {
+      message.error('名称不能为空')
+      return
+    }
+    onRename(renamingItem.id, newTitle.trim())
+    setRenameModalVisible(false)
+    setRenamingItem(null)
+    setNewTitle('')
+  }
+
+  // 右键菜单
+  const getContextMenu = (item: MediaItem): MenuProps['items'] => {
+    const menu: MenuProps['items'] = []
+
+    // 文件夹：打开
+    if (item.is_folder) {
+      menu.push({
+        key: 'open',
+        label: '打开',
+        icon: <FolderOutlined />,
+        onClick: () => onFolderOpen(item.id),
+      })
+    } else {
+      // 文件：预览和下载
+      menu.push({
+        key: 'preview',
+        label: '预览',
+        icon: <EyeOutlined />,
+        onClick: () => {
+          if (item.media_type === 'image') {
+            setPreviewImage(item.url)
+          } else {
+            window.open(item.url, '_blank')
+          }
+        },
+      })
+      menu.push({
+        key: 'download',
+        label: '下载',
+        icon: <DownloadOutlined />,
+        onClick: () => {
+          window.open(item.url, '_blank')
+        },
+      })
+    }
+
+    // 通用操作
+    menu.push(
+      { type: 'divider' },
+      {
+        key: 'rename',
+        label: '重命名',
+        icon: <EditOutlined />,
+        onClick: () => handleRename(item),
       },
-    },
-    {
-      type: 'divider',
-    },
-    {
-      key: 'delete',
-      label: '删除',
-      icon: <DeleteOutlined />,
-      danger: true,
-      onClick: () => {
-        Modal.confirm({
-          title: '确认删除',
-          content: `确定要删除 "${item.title}" 吗？`,
-          okText: '确认',
-          cancelText: '取消',
-          onOk: () => onDelete([item.id], false),
-        })
-      },
-    },
-  ]
+      { type: 'divider' },
+      {
+        key: 'delete',
+        label: '删除',
+        icon: <DeleteOutlined />,
+        danger: true,
+        onClick: () => {
+          Modal.confirm({
+            title: '确认删除',
+            content: `确定要删除 "${item.title}" 吗？${item.is_folder ? ' 文件夹中的所有内容也会被删除。' : ''}`,
+            okText: '确认',
+            cancelText: '取消',
+            onOk: () => onDelete([item.id], false),
+          })
+        },
+      }
+    )
+
+    return menu
+  }
 
   // 渲染文件图标
   const renderFileIcon = (item: MediaItem, isListView = false) => {
@@ -251,6 +319,10 @@ const FileList: React.FC<FileListProps> = ({
           dataSource={data}
           rowKey="id"
           loading={loading}
+          onRow={(record) => ({
+            onDoubleClick: () => handleDoubleClick(record),
+            style: { cursor: 'pointer' },
+          })}
           pagination={{
             current: page,
             pageSize: pageSize,
@@ -307,6 +379,7 @@ const FileList: React.FC<FileListProps> = ({
                   onSelectChange([item.id])
                 }
               }}
+              onDoubleClick={() => handleDoubleClick(item)}
             >
               <Checkbox
                 checked={selectedFiles.includes(item.id)}
@@ -362,6 +435,28 @@ const FileList: React.FC<FileListProps> = ({
           },
         }}
       />
+
+      {/* 重命名对话框 */}
+      <Modal
+        title="重命名"
+        open={renameModalVisible}
+        onOk={confirmRename}
+        onCancel={() => {
+          setRenameModalVisible(false)
+          setRenamingItem(null)
+          setNewTitle('')
+        }}
+        okText="确认"
+        cancelText="取消"
+      >
+        <Input
+          value={newTitle}
+          onChange={(e) => setNewTitle(e.target.value)}
+          placeholder="请输入新名称"
+          onPressEnter={confirmRename}
+          autoFocus
+        />
+      </Modal>
     </div>
   )
 }

@@ -179,6 +179,25 @@ const MediaManager: React.FC = () => {
     }
   }
 
+  // 打开文件夹（双击进入）
+  const handleFolderOpen = (folderId: number) => {
+    setSelectedFolderId(folderId)
+    setPage(1) // 重置到第一页
+    setSelectedFiles([]) // 清空选中
+  }
+
+  // 重命名文件/文件夹
+  const handleRename = async (mediaId: number, newTitle: string) => {
+    try {
+      await axios.put(`/api/v1/admin/media/${mediaId}`, { title: newTitle })
+      message.success('重命名成功')
+      loadFileList()
+      loadFolderTree()
+    } catch (error: any) {
+      message.error(error.response?.data?.detail || '重命名失败')
+    }
+  }
+
   // 添加上传任务
   function handleAddUploadTask(files: File[]) {
     const newTasks: UploadTask[] = files.map((file) => ({
@@ -280,6 +299,8 @@ const MediaManager: React.FC = () => {
             viewMode={viewMode}
             sortBy={sortBy}
             sortOrder={sortOrder}
+            onFolderOpen={handleFolderOpen}
+            onRename={handleRename}
           />
         </Content>
       </Layout>
