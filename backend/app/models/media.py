@@ -21,7 +21,7 @@ class MediaStatus(str, enum.Enum):
 
 
 class Media(Base):
-    """媒体资源模型"""
+    """媒体资源模型 - 支持树形文件夹结构"""
     __tablename__ = "media"
 
     id = Column(Integer, primary_key=True, index=True)
@@ -58,8 +58,13 @@ class Media(Base):
     url = Column(String(512), comment="访问URL")
     thumbnail_url = Column(String(512), comment="缩略图URL")
 
-    # 分类和标签
-    folder = Column(String(255), index=True, comment="文件夹/分类")
+    # 🆕 树形结构支持
+    parent_id = Column(Integer, ForeignKey("media.id"), nullable=True, index=True, comment="父文件夹ID（NULL表示根目录）")
+    is_folder = Column(Boolean, default=False, index=True, comment="是否为文件夹")
+    path = Column(String(1024), nullable=True, comment="完整路径（如：/root/folder1/folder2）")
+
+    # 🔄 保留旧字段以向后兼容
+    folder = Column(String(255), index=True, comment="文件夹/分类（旧字段，向后兼容）")
     tags = Column(String(512), comment="标签(逗号分隔)")
 
     # 使用统计
@@ -70,6 +75,9 @@ class Media(Base):
     uploader_id = Column(Integer, ForeignKey("admin_users.id"), nullable=False, comment="上传者ID")
     uploader = relationship("AdminUser", back_populates="uploaded_media")
 
+    # 🆕 自引用关系（树形结构）
+    parent = relationship("Media", remote_side=[id], backref="children")
+
     # 时间戳
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False, comment="创建时间")
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, comment="更新时间")
@@ -79,4 +87,17 @@ class Media(Base):
     deleted_at = Column(DateTime, comment="删除时间")
 
     def __repr__(self):
-        return f"<Media(id={self.id}, title='{self.title}', type={self.media_type})>"
+        type_str = "Folder" if self.is_folder else self.media_type.value if hasattr(self, 'media_type') else "Unknown"
+        return f"<Media(id={self.id}, title='{self.title}', type={type_str}, parent_id={self.parent_id})>"
+
+    def get_full_path(self):
+        """获取文件/文件夹的完整路径"""
+        if self.path:
+            return self.path
+
+        # 递归构建路径
+        if self.parent_id is None:
+            return f"/{self.title}"
+        elif self.parent:
+            return f"{self.parent.get_full_path()}/{self.title}"
+        return f"/{self.title}"
