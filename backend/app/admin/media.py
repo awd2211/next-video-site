@@ -1277,3 +1277,174 @@ async def batch_download_media(
             "Content-Disposition": f"attachment; filename=files_{datetime.utcnow().strftime('%Y%m%d_%H%M%S')}.zip"
         }
     )
+
+
+@router.post("/media/batch/copy")
+async def batch_copy_media(
+    media_ids: List[int] = Query(...),
+    target_parent_id: Optional[int] = Query(None, description="目标文件夹ID"),
+    db: AsyncSession = Depends(get_db),
+    current_user: AdminUser = Depends(get_current_admin_user),
+):
+    """批量复制文件/文件夹"""
+
+    copied_count = 0
+    errors = []
+
+    async def copy_media_recursive(media_id: int, target_parent_id: Optional[int]) -> Optional[int]:
+        """递归复制媒体（包括文件夹及其内容）"""
+        try:
+            # 获取原始媒体
+            media_query = select(Media).where(
+                and_(Media.id == media_id, Media.is_deleted == False)
+            )
+            media_result = await db.execute(media_query)
+            original = media_result.scalar_one_or_none()
+
+            if not original:
+                return None
+
+            # 生成新标题（避免重名）
+            base_title = original.title
+            new_title = f"{base_title} - 副本"
+
+            # 检查同级是否有重名
+            counter = 1
+            while True:
+                check_query = select(Media).where(
+                    and_(
+                        Media.parent_id == target_parent_id,
+                        Media.title == new_title,
+                        Media.is_deleted == False
+                    )
+                )
+                check_result = await db.execute(check_query)
+                if not check_result.scalar_one_or_none():
+                    break
+                counter += 1
+                new_title = f"{base_title} - 副本{counter}"
+
+            # 创建副本
+            if original.is_folder:
+                # 复制文件夹
+                new_folder = Media(
+                    title=new_title,
+                    description=original.description,
+                    filename=new_title,
+                    file_path=f"folders/{uuid.uuid4()}",
+                    file_size=0,
+                    media_type=original.media_type,
+                    status=MediaStatus.READY,
+                    is_folder=True,
+                    parent_id=target_parent_id,
+                    tags=original.tags,
+                    uploader_id=current_user.id,
+                )
+
+                # 设置路径
+                if target_parent_id:
+                    parent_query = select(Media).where(Media.id == target_parent_id)
+                    parent_result = await db.execute(parent_query)
+                    parent = parent_result.scalar_one_or_none()
+                    if parent:
+                        new_folder.path = f"{parent.path or parent.get_full_path()}/{new_title}"
+                else:
+                    new_folder.path = f"/{new_title}"
+
+                db.add(new_folder)
+                await db.flush()
+
+                # 递归复制子项
+                children_query = select(Media).where(
+                    and_(Media.parent_id == original.id, Media.is_deleted == False)
+                )
+                children_result = await db.execute(children_query)
+                children = children_result.scalars().all()
+
+                for child in children:
+                    await copy_media_recursive(child.id, new_folder.id)
+
+                return new_folder.id
+
+            else:
+                # 复制文件
+                # 从 MinIO 复制文件
+                try:
+                    file_data = minio_client.get_file(original.file_path)
+
+                    # 生成新的文件路径
+                    file_ext = os.path.splitext(original.filename)[1]
+                    new_file_path = f"media/{uuid.uuid4()}{file_ext}"
+
+                    # 上传副本到 MinIO
+                    minio_client.upload_file(
+                        file_content=file_data,
+                        object_name=new_file_path,
+                        content_type=original.mime_type or "application/octet-stream"
+                    )
+
+                    # 获取新 URL
+                    new_url = minio_client.get_file_url(new_file_path)
+
+                    # 创建数据库记录
+                    new_media = Media(
+                        title=new_title,
+                        description=original.description,
+                        filename=original.filename,
+                        file_path=new_file_path,
+                        file_size=original.file_size,
+                        mime_type=original.mime_type,
+                        media_type=original.media_type,
+                        status=MediaStatus.READY,
+                        url=new_url,
+                        parent_id=target_parent_id,
+                        tags=original.tags,
+                        width=original.width,
+                        height=original.height,
+                        duration=original.duration,
+                        uploader_id=current_user.id,
+                        is_folder=False,
+                    )
+
+                    # 设置路径
+                    if target_parent_id:
+                        parent_query = select(Media).where(Media.id == target_parent_id)
+                        parent_result = await db.execute(parent_query)
+                        parent = parent_result.scalar_one_or_none()
+                        if parent:
+                            new_media.path = f"{parent.path or parent.get_full_path()}/{new_title}"
+                    else:
+                        new_media.path = f"/{new_title}"
+
+                    db.add(new_media)
+                    await db.flush()
+
+                    return new_media.id
+
+                except Exception as e:
+                    print(f"复制文件失败: {e}")
+                    return None
+
+        except Exception as e:
+            print(f"复制媒体失败: {e}")
+            return None
+
+    # 复制每个选中的媒体
+    for media_id in media_ids:
+        try:
+            new_id = await copy_media_recursive(media_id, target_parent_id)
+            if new_id:
+                copied_count += 1
+            else:
+                errors.append({"id": media_id, "error": "复制失败"})
+        except Exception as e:
+            errors.append({"id": media_id, "error": str(e)})
+
+    await db.commit()
+
+    return {
+        "message": "批量复制完成",
+        "copied_count": copied_count,
+        "total_count": len(media_ids),
+        "errors": errors
+    }
