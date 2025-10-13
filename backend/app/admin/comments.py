@@ -180,3 +180,41 @@ async def admin_batch_delete_comments(
 
     await db.commit()
     return {"message": f"{len(comments)} comments deleted"}
+
+
+@router.get("/stats")
+async def admin_get_comment_stats(
+    db: AsyncSession = Depends(get_db),
+    current_admin: AdminUser = Depends(get_current_admin_user),
+):
+    """Admin: Get comment statistics"""
+    from app.models.comment import CommentStatus
+
+    # Total comments
+    total_result = await db.execute(select(func.count(Comment.id)))
+    total_comments = total_result.scalar() or 0
+
+    # Pending comments
+    pending_result = await db.execute(
+        select(func.count(Comment.id)).where(Comment.status == CommentStatus.PENDING)
+    )
+    pending_comments = pending_result.scalar() or 0
+
+    # Approved comments
+    approved_result = await db.execute(
+        select(func.count(Comment.id)).where(Comment.status == CommentStatus.APPROVED)
+    )
+    approved_comments = approved_result.scalar() or 0
+
+    # Rejected comments
+    rejected_result = await db.execute(
+        select(func.count(Comment.id)).where(Comment.status == CommentStatus.REJECTED)
+    )
+    rejected_comments = rejected_result.scalar() or 0
+
+    return {
+        "total_comments": total_comments,
+        "pending_comments": pending_comments,
+        "approved_comments": approved_comments,
+        "rejected_comments": rejected_comments,
+    }
