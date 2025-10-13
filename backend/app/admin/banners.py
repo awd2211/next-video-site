@@ -59,7 +59,15 @@ class BannerResponse(BaseModel):
         from_attributes = True
 
 
-@router.get("/banners", response_model=dict)
+class BannerListResponse(BaseModel):
+    items: list[BannerResponse]
+    total: int
+    page: int
+    page_size: int
+    total_pages: int
+
+
+@router.get("/banners", response_model=BannerListResponse)
 async def get_banners(
     page: int = Query(1, ge=1),
     page_size: int = Query(20, ge=1, le=100),
@@ -83,7 +91,7 @@ async def get_banners(
     banners = result.scalars().all()
 
     return {
-        "items": banners,
+        "items": [BannerResponse.model_validate(banner) for banner in banners],
         "total": total,
         "page": page,
         "page_size": page_size,
@@ -238,3 +246,55 @@ async def upload_banner_image(
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"上传失败: {str(e)}")
+
+
+class BatchRequest(BaseModel):
+    ids: list[int]
+
+
+@router.put("/batch/enable")
+async def batch_enable_banners(
+    request: BatchRequest,
+    db: AsyncSession = Depends(get_db),
+    current_admin: AdminUser = Depends(get_current_admin_user),
+):
+    """批量启用Banner"""
+    if not request.ids:
+        raise HTTPException(status_code=400, detail="ID列表不能为空")
+
+    result = await db.execute(select(Banner).where(Banner.id.in_(request.ids)))
+    banners = result.scalars().all()
+
+    if not banners:
+        raise HTTPException(status_code=404, detail="未找到任何Banner")
+
+    for banner in banners:
+        banner.status = BannerStatus.ACTIVE
+
+    await db.commit()
+
+    return {"message": f"成功启用 {len(banners)} 个Banner"}
+
+
+@router.put("/batch/disable")
+async def batch_disable_banners(
+    request: BatchRequest,
+    db: AsyncSession = Depends(get_db),
+    current_admin: AdminUser = Depends(get_current_admin_user),
+):
+    """批量停用Banner"""
+    if not request.ids:
+        raise HTTPException(status_code=400, detail="ID列表不能为空")
+
+    result = await db.execute(select(Banner).where(Banner.id.in_(request.ids)))
+    banners = result.scalars().all()
+
+    if not banners:
+        raise HTTPException(status_code=404, detail="未找到任何Banner")
+
+    for banner in banners:
+        banner.status = BannerStatus.INACTIVE
+
+    await db.commit()
+
+    return {"message": f"成功停用 {len(banners)} 个Banner"}
