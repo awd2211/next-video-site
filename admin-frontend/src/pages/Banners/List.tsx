@@ -15,6 +15,11 @@ import {
   message,
   Switch,
   Image,
+  Tag,
+  Statistic,
+  Row,
+  Col,
+  Tooltip,
 } from 'antd'
 import {
   PlusOutlined,
@@ -22,12 +27,16 @@ import {
   DeleteOutlined,
   UploadOutlined,
   DownloadOutlined,
+  EyeOutlined,
+  FilterOutlined,
+  ReloadOutlined,
 } from '@ant-design/icons'
 import { useTranslation } from 'react-i18next'
 import axios from '@/utils/axios'
 import dayjs from 'dayjs'
 import { exportToCSV } from '@/utils/exportUtils'
 import { formatAWSDate, formatAWSNumber } from '@/utils/awsStyleHelpers'
+import { BannerPreviewButton } from './BannerPreview'
 
 const { TextArea } = Input
 const { Option } = Select
@@ -44,6 +53,7 @@ const BannersList = () => {
   const [uploading, setUploading] = useState(false)
   const [imageUrl, setImageUrl] = useState<string>('')
   const [selectedRowKeys, setSelectedRowKeys] = useState<number[]>([])
+  const [statusFilter, setStatusFilter] = useState<string | undefined>(undefined)
 
   // Handle image upload
   const handleUpload = async (options: any) => {
@@ -72,12 +82,14 @@ const BannersList = () => {
   }
 
   // Fetch banners
-  const { data, isLoading } = useQuery({
-    queryKey: ['banners', page, pageSize],
+  const { data, isLoading, refetch } = useQuery({
+    queryKey: ['banners', page, pageSize, statusFilter],
     queryFn: async () => {
-      const response = await axios.get(
-        `/api/v1/admin/banners/banners?page=${page}&page_size=${pageSize}`
-      )
+      let url = `/api/v1/admin/banners/banners?page=${page}&page_size=${pageSize}`
+      if (statusFilter) {
+        url += `&status=${statusFilter}`
+      }
+      const response = await axios.get(url)
       return response.data
     },
     placeholderData: (previousData) => previousData,
@@ -344,10 +356,11 @@ const BannersList = () => {
     {
       title: '操作',
       key: 'actions',
-      width: 150,
+      width: 200,
       fixed: 'right' as const,
       render: (_: any, record: any) => (
-        <Space>
+        <Space size="small">
+          <BannerPreviewButton banner={record} />
           <Button
             type="link"
             size="small"
@@ -375,9 +388,87 @@ const BannersList = () => {
     onChange: (keys: React.Key[]) => setSelectedRowKeys(keys as number[]),
   }
 
+  // 统计数据
+  const activeCount = data?.items?.filter((item: any) => item.status === 'active').length || 0
+  const inactiveCount = data?.items?.filter((item: any) => item.status === 'inactive').length || 0
+
   return (
     <div>
       <h2 style={{ marginBottom: 24 }}>{t('menu.banners')}</h2>
+
+      {/* 统计卡片 */}
+      <Row gutter={16} style={{ marginBottom: 24 }}>
+        <Col span={6}>
+          <Card size="small" style={{ borderRadius: 8 }}>
+            <Statistic
+              title="总横幅数"
+              value={data?.total || 0}
+              valueStyle={{ color: '#0073bb', fontSize: 28 }}
+            />
+          </Card>
+        </Col>
+        <Col span={6}>
+          <Card size="small" style={{ borderRadius: 8 }}>
+            <Statistic
+              title="激活状态"
+              value={activeCount}
+              valueStyle={{ color: '#1d8102', fontSize: 28 }}
+              suffix={<Tag color="success" style={{ marginLeft: 8 }}>Active</Tag>}
+            />
+          </Card>
+        </Col>
+        <Col span={6}>
+          <Card size="small" style={{ borderRadius: 8 }}>
+            <Statistic
+              title="停用状态"
+              value={inactiveCount}
+              valueStyle={{ color: '#d13212', fontSize: 28 }}
+              suffix={<Tag color="error" style={{ marginLeft: 8 }}>Inactive</Tag>}
+            />
+          </Card>
+        </Col>
+        <Col span={6}>
+          <Card size="small" style={{ borderRadius: 8 }}>
+            <Statistic
+              title="当前页"
+              value={page}
+              valueStyle={{ color: '#37352f', fontSize: 28 }}
+              suffix={`/ ${data?.total_pages || 0}`}
+            />
+          </Card>
+        </Col>
+      </Row>
+
+      {/* 筛选和操作栏 */}
+      <div style={{ marginBottom: 16 }}>
+        <Space>
+          <Select
+            placeholder="按状态筛选"
+            allowClear
+            style={{ width: 150 }}
+            value={statusFilter}
+            onChange={(value) => {
+              setStatusFilter(value)
+              setPage(1)
+            }}
+          >
+            <Option value="active">
+              <Tag color="success">激活</Tag>
+            </Option>
+            <Option value="inactive">
+              <Tag color="error">停用</Tag>
+            </Option>
+          </Select>
+          <Tooltip title="刷新数据">
+            <Button
+              icon={<ReloadOutlined />}
+              onClick={() => refetch()}
+            >
+              刷新
+            </Button>
+          </Tooltip>
+        </Space>
+      </div>
 
       {/* Batch operations */}
       {selectedRowKeys.length > 0 && (
