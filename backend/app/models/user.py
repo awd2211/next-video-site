@@ -13,6 +13,7 @@ if TYPE_CHECKING:
     from app.models.admin import OperationLog, Role
     from app.models.comment import Comment, Rating
     from app.models.content import Report
+    from app.models.dashboard import DashboardLayout
     from app.models.danmaku import Danmaku
     from app.models.favorite_folder import FavoriteFolder
     from app.models.media import Media
@@ -93,4 +94,7 @@ class AdminUser(Base):
     )
     uploaded_media: Mapped[list["Media"]] = relationship(
         "Media", back_populates="uploader", cascade="all, delete-orphan"
+    )
+    dashboard_layout: Mapped[Optional[DashboardLayout]] = relationship(
+        "DashboardLayout", back_populates="admin_user", uselist=False, cascade="all, delete-orphan"
     )

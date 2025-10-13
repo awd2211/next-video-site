@@ -2,6 +2,7 @@ import { Breadcrumb as AntBreadcrumb } from 'antd'
 import { useLocation, Link } from 'react-router-dom'
 import { HomeOutlined } from '@ant-design/icons'
 import { useTranslation } from 'react-i18next'
+import type { ItemType } from 'antd/es/breadcrumb/Breadcrumb'
 
 // Route key mapping (now uses i18n keys)
 const routeKeyMap: Record<string, string> = {
@@ -23,6 +24,7 @@ const routeKeyMap: Record<string, string> = {
   '/series/new': 'breadcrumb.seriesNew',
   '/series/:id': 'breadcrumb.seriesDetail',
   '/series/:id/edit': 'breadcrumb.seriesEdit',
+  '/ai-management': 'breadcrumb.aiManagement',
 }
 
 interface BreadcrumbItem {
@@ -36,7 +38,7 @@ const Breadcrumb = () => {
 
   const getBreadcrumbItems = (): BreadcrumbItem[] => {
     const pathSnippets = location.pathname.split('/').filter((i) => i)
-    
+
     if (pathSnippets.length === 0) {
       return [{ path: '/', title: t('breadcrumb.home') }]
     }
@@ -67,28 +69,25 @@ const Breadcrumb = () => {
 
   const breadcrumbItems = getBreadcrumbItems()
 
-  return (
-    <AntBreadcrumb style={{ margin: '16px 0' }}>
-      {breadcrumbItems.map((item, index) => {
-        const isLast = index === breadcrumbItems.length - 1
-        const icon = index === 0 ? <HomeOutlined /> : null
+  // Convert to Ant Design items format
+  const items: ItemType[] = breadcrumbItems.map((item, index) => {
+    const isLast = index === breadcrumbItems.length - 1
+    const icon = index === 0 ? <HomeOutlined /> : undefined
 
-        return (
-          <AntBreadcrumb.Item key={item.path}>
-            {isLast ? (
-              <span>
-                {icon} {item.title}
-              </span>
-            ) : (
-              <Link to={item.path}>
-                {icon} {item.title}
-              </Link>
-            )}
-          </AntBreadcrumb.Item>
-        )
-      })}
-    </AntBreadcrumb>
-  )
+    return {
+      title: isLast ? (
+        <span>
+          {icon} {item.title}
+        </span>
+      ) : (
+        <Link to={item.path}>
+          {icon} {item.title}
+        </Link>
+      ),
+    }
+  })
+
+  return <AntBreadcrumb style={{ margin: '16px 0' }} items={items} />
 }
 
 export default Breadcrumb

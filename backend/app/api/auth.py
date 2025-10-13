@@ -20,6 +20,7 @@ from app.schemas.auth import (
 )
 from app.schemas.user import AdminUserResponse, UserResponse
 from app.utils.dependencies import get_current_admin_user, get_current_user
+from app.utils.logging_utils import log_login_attempt
 from app.utils.rate_limit import AutoBanDetector, RateLimitPresets, limiter
 from app.utils.security import (
     create_access_token,
@@ -29,6 +30,7 @@ from app.utils.security import (
     verify_password,
 )
 from app.utils.token_blacklist import add_to_blacklist
+from app.utils.admin_notification_service import AdminNotificationService
 
 router = APIRouter()
 security = HTTPBearer()
@@ -71,6 +73,18 @@ async def register(
     await db.commit()
     await db.refresh(new_user)
 
+    # Send notification to admins about new user registration
+    try:
+        await AdminNotificationService.notify_new_user_registration(
+            db=db,
+            user_id=new_user.id,
+            username=new_user.username,
+            email=new_user.email,
+        )
+    except Exception as e:
+        # Log error but don't fail registration
+        print(f"Failed to send new user notification: {e}")
+
     return new_user
 
 
@@ -90,12 +104,34 @@ async def login(
         ip = request.client.host if request.client else "unknown"
         await AutoBanDetector.record_failed_attempt(ip, "login")
 
+        # Log failed login attempt
+        await log_login_attempt(
+            db=db,
+            user_type="user",
+            status="failed",
+            request=request,
+            email=credentials.email,
+            failure_reason="Incorrect email or password",
+        )
+
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Incorrect email or password",
         )
 
     if not user.is_active:
+        # Log blocked login attempt
+        await log_login_attempt(
+            db=db,
+            user_type="user",
+            status="blocked",
+            request=request,
+            user_id=user.id,
+            username=user.username,
+            email=user.email,
+            failure_reason="User account is inactive",
+        )
+
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="User account is inactive",
@@ -108,6 +144,17 @@ async def login(
     # Update last login
     user.last_login_at = datetime.now(timezone.utc)
     await db.commit()
+
+    # Log successful login
+    await log_login_attempt(
+        db=db,
+        user_type="user",
+        status="success",
+        request=request,
+        user_id=user.id,
+        username=user.username,
+        email=user.email,
+    )
 
     # Create tokens (sub must be string per JWT spec)
     access_token = create_access_token({"sub": str(user.id)})
@@ -136,6 +183,16 @@ async def admin_login(
     )
 
     if not is_valid:
+        # Log failed login due to captcha
+        await log_login_attempt(
+            db=db,
+            user_type="admin",
+            status="failed",
+            request=request,
+            username=credentials.username,
+            failure_reason="Invalid or expired captcha code",
+        )
+
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Invalid or expired captcha code",
@@ -153,12 +210,35 @@ async def admin_login(
         ip = request.client.host if request.client else "unknown"
         await AutoBanDetector.record_failed_attempt(ip, "admin_login")
 
+        # Log failed admin login attempt
+        await log_login_attempt(
+            db=db,
+            user_type="admin",
+            status="failed",
+            request=request,
+            username=credentials.username,
+            email=admin_user.email if admin_user else None,
+            failure_reason="Incorrect username or password",
+        )
+
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Incorrect username or password",
         )
 
     if not admin_user.is_active:
+        # Log blocked admin login attempt
+        await log_login_attempt(
+            db=db,
+            user_type="admin",
+            status="blocked",
+            request=request,
+            user_id=admin_user.id,
+            username=admin_user.username,
+            email=admin_user.email,
+            failure_reason="Admin account is inactive",
+        )
+
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Admin account is inactive",
@@ -171,6 +251,17 @@ async def admin_login(
     # Update last login
     admin_user.last_login_at = datetime.now(timezone.utc)
     await db.commit()
+
+    # Log successful admin login
+    await log_login_attempt(
+        db=db,
+        user_type="admin",
+        status="success",
+        request=request,
+        user_id=admin_user.id,
+        username=admin_user.username,
+        email=admin_user.email,
+    )
 
     # Create tokens with admin flag (sub must be string per JWT spec)
     access_token = create_access_token({"sub": str(admin_user.id), "is_admin": True})

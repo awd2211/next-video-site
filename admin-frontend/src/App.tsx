@@ -11,6 +11,7 @@ const Login = lazy(() => import('./pages/Login'))
 const Dashboard = lazy(() => import('./pages/Dashboard'))
 const VideoList = lazy(() => import('./pages/Videos/List'))
 const VideoEdit = lazy(() => import('./pages/Videos/Edit'))
+const VideoAnalytics = lazy(() => import('./pages/Videos/Analytics'))
 const UserList = lazy(() => import('./pages/Users/List'))
 const CommentList = lazy(() => import('./pages/Comments/List'))
 const Statistics = lazy(() => import('./pages/Statistics'))
@@ -25,6 +26,13 @@ const SeriesList = lazy(() => import('./pages/Series/List'))
 const SeriesEdit = lazy(() => import('./pages/Series/Edit'))
 const MediaManager = lazy(() => import('./pages/MediaManager'))
 const Profile = lazy(() => import('./pages/Profile'))
+const AIManagement = lazy(() => import('./pages/AIManagement'))
+const SystemHealth = lazy(() => import('./pages/SystemHealth'))
+const UserDetail = lazy(() => import('./pages/Users/Detail'))
+const RolesList = lazy(() => import('./pages/Roles/List'))
+const ReportsDashboard = lazy(() => import('./pages/Reports/Dashboard'))
+const EmailManagement = lazy(() => import('./pages/Email/Management'))
+const SchedulingList = lazy(() => import('./pages/Scheduling/List'))
 
 // Loading component for Suspense
 const PageLoading = () => (
@@ -79,7 +87,9 @@ function App() {
                 <Route path="videos" element={<VideoList />} />
                 <Route path="videos/new" element={<VideoEdit />} />
                 <Route path="videos/:id/edit" element={<VideoEdit />} />
+                <Route path="videos/:id/analytics" element={<VideoAnalytics />} />
                 <Route path="users" element={<UserList />} />
+                <Route path="users/:id" element={<UserDetail />} />
                 <Route path="comments" element={<CommentList />} />
                 <Route path="banners" element={<BannersList />} />
                 <Route path="announcements" element={<AnnouncementsList />} />
@@ -95,6 +105,12 @@ function App() {
                 <Route path="series/:id/edit" element={<SeriesEdit />} />
                 <Route path="media" element={<MediaManager />} />
                 <Route path="profile" element={<Profile />} />
+                <Route path="ai-management" element={<AIManagement />} />
+                <Route path="system-health" element={<SystemHealth />} />
+                <Route path="roles" element={<RolesList />} />
+                <Route path="reports" element={<ReportsDashboard />} />
+                <Route path="email-management" element={<EmailManagement />} />
+                <Route path="scheduling" element={<SchedulingList />} />
               </Route>
             </Routes>
           </Suspense>

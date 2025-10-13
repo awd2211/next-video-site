@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Table, Button, Space, Tag, Input, Select, message, Modal, Grid } from 'antd'
-import { PlusOutlined, EditOutlined, DeleteOutlined, DownloadOutlined } from '@ant-design/icons'
+import { PlusOutlined, EditOutlined, DeleteOutlined, DownloadOutlined, UploadOutlined, LineChartOutlined } from '@ant-design/icons'
 import { useNavigate } from 'react-router-dom'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
@@ -9,6 +9,8 @@ import axios from '@/utils/axios'
 import { useDebounce } from '@/hooks/useDebounce'
 import { exportToCSV } from '@/utils/exportUtils'
 import EmptyState from '@/components/EmptyState'
+import VideoPreviewPopover from '@/components/VideoPreviewPopover'
+import BatchUploader from '@/components/BatchUploader'
 
 const VideoList = () => {
   const { t } = useTranslation()
@@ -19,7 +21,8 @@ const VideoList = () => {
   const [search, setSearch] = useState('')
   const [status, setStatus] = useState<string>()
   const [selectedRowKeys, setSelectedRowKeys] = useState<number[]>([])
-  
+  const [batchUploadVisible, setBatchUploadVisible] = useState(false)
+
   // Debounce search to reduce API calls
   const debouncedSearch = useDebounce(search, 500)
   
@@ -187,6 +190,13 @@ const VideoList = () => {
       title: t('video.title'),
       dataIndex: 'title',
       key: 'title',
+      render: (title: string, record: any) => (
+        <VideoPreviewPopover video={record} hoverDelay={300}>
+          <div className="video-preview-trigger" style={{ cursor: 'pointer', padding: '4px 0' }}>
+            {title}
+          </div>
+        </VideoPreviewPopover>
+      ),
     },
     {
       title: t('video.type'),
@@ -253,6 +263,13 @@ const VideoList = () => {
         <Space>
           <Button
             type="link"
+            icon={<LineChartOutlined />}
+            onClick={() => navigate(`/videos/${record.id}/analytics`)}
+          >
+            分析
+          </Button>
+          <Button
+            type="link"
             icon={<EditOutlined />}
             onClick={() => navigate(`/videos/${record.id}/edit`)}
           >
@@ -301,13 +318,21 @@ const VideoList = () => {
             ]}
           />
         </Space>
-        <Button
-          type="primary"
-          icon={<PlusOutlined />}
-          onClick={() => navigate('/videos/new')}
-        >
-          {t('common.add')} Video
-        </Button>
+        <Space>
+          <Button
+            icon={<UploadOutlined />}
+            onClick={() => setBatchUploadVisible(true)}
+          >
+            {t('video.batchUpload') || '批量上传'}
+          </Button>
+          <Button
+            type="primary"
+            icon={<PlusOutlined />}
+            onClick={() => navigate('/videos/new')}
+          >
+            {t('common.add')} Video
+          </Button>
+        </Space>
       </div>
 
       {/* Batch operations */}
@@ -378,6 +403,26 @@ const VideoList = () => {
           ),
         }}
       />
+
+      {/* Batch Upload Modal */}
+      <Modal
+        title={t('video.batchUpload') || '批量上传视频'}
+        open={batchUploadVisible}
+        onCancel={() => setBatchUploadVisible(false)}
+        footer={null}
+        width={900}
+        destroyOnClose
+      >
+        <BatchUploader
+          onAllComplete={(urls) => {
+            message.success(`成功上传 ${urls.length} 个视频`)
+            setBatchUploadVisible(false)
+            refetch()
+          }}
+          maxSize={2048}
+          maxCount={10}
+        />
+      </Modal>
     </div>
   )
 }

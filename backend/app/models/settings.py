@@ -76,6 +76,23 @@ class SystemSettings(Base):
     custom_css: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     custom_js: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
 
+    # 速率限制配置
+    rate_limit_config: Mapped[Optional[dict[str, Any]]] = mapped_column(
+        JSON, nullable=True
+    )  # {"strict": "5/minute", "moderate": "60/minute", ...}
+
+    # 缓存配置
+    cache_config: Mapped[Optional[dict[str, Any]]] = mapped_column(
+        JSON, nullable=True
+    )  # {"default_ttl": 3600, "enabled": true}
+
+    # SMTP配置字段（用于快速测试）
+    smtp_test_email: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)  # 测试邮箱
+    smtp_last_test_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)  # 上次测试时间
+    smtp_last_test_status: Mapped[Optional[str]] = mapped_column(
+        String(20), nullable=True
+    )  # success/failed
+
     created_at: Mapped[datetime] = mapped_column(DateTime, nullable=False, server_default=func.now())
     updated_at: Mapped[datetime] = mapped_column(
         DateTime, nullable=False, server_default=func.now(), onupdate=func.now()

@@ -40,12 +40,14 @@ email-validator==2.3.0
 python-slugify==8.0.4
 Pillow==11.3.0
 pytz==2025.2
+psutil==7.1.0
+user-agents==2.2.0
 
 # Logging
 loguru==0.7.3
 
 # AI Providers
-openai==1.70.1
+openai==1.70.0
 google-generativeai==0.8.4
 
 # Testing

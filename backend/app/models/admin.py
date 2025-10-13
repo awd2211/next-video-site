@@ -96,3 +96,78 @@ class OperationLog(Base):
 
     # Relationships
     admin_user: Mapped[Optional[AdminUser]] = relationship("AdminUser", back_populates="operation_logs")
+
+
+class LoginLog(Base):
+    """Login log for tracking all login attempts"""
+
+    __tablename__ = "login_logs"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    user_type: Mapped[str] = mapped_column(
+        String(20), nullable=False, index=True
+    )  # 'admin' or 'user'
+    user_id: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    username: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
+    email: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
+    status: Mapped[str] = mapped_column(
+        String(20), nullable=False, index=True
+    )  # 'success', 'failed', 'blocked'
+    failure_reason: Mapped[Optional[str]] = mapped_column(String(200), nullable=True)
+    ip_address: Mapped[str] = mapped_column(String(50), nullable=False, index=True)
+    user_agent: Mapped[Optional[str]] = mapped_column(String(500), nullable=True)
+    location: Mapped[Optional[str]] = mapped_column(String(200), nullable=True)  # Country/City if available
+    device_type: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)  # desktop, mobile, tablet
+    browser: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
+    os: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), index=True)
+
+
+class SystemLog(Base):
+    """System log for tracking system events"""
+
+    __tablename__ = "system_logs"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    level: Mapped[str] = mapped_column(
+        String(20), nullable=False, index=True
+    )  # 'info', 'warning', 'error', 'critical'
+    category: Mapped[str] = mapped_column(
+        String(50), nullable=False, index=True
+    )  # 'startup', 'shutdown', 'database', 'cache', 'storage', 'security', etc.
+    event: Mapped[str] = mapped_column(String(100), nullable=False)
+    message: Mapped[str] = mapped_column(Text, nullable=False)
+    details: Mapped[Optional[str]] = mapped_column(Text, nullable=True)  # JSON for additional info
+    source: Mapped[Optional[str]] = mapped_column(String(200), nullable=True)  # module/file that logged
+    user_id: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)  # if related to user action
+    user_type: Mapped[Optional[str]] = mapped_column(String(20), nullable=True)  # 'admin' or 'user'
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), index=True)
+
+
+class ErrorLog(Base):
+    """Error log for tracking application errors and exceptions"""
+
+    __tablename__ = "error_logs"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    level: Mapped[str] = mapped_column(
+        String(20), nullable=False, index=True
+    )  # 'error', 'critical'
+    error_type: Mapped[str] = mapped_column(String(100), nullable=False, index=True)  # Exception class name
+    error_message: Mapped[str] = mapped_column(Text, nullable=False)
+    traceback: Mapped[Optional[str]] = mapped_column(Text, nullable=True)  # Full stack trace
+    request_method: Mapped[Optional[str]] = mapped_column(String(10), nullable=True)
+    request_url: Mapped[Optional[str]] = mapped_column(String(500), nullable=True)
+    request_data: Mapped[Optional[str]] = mapped_column(Text, nullable=True)  # JSON
+    user_id: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    user_type: Mapped[Optional[str]] = mapped_column(String(20), nullable=True)  # 'admin' or 'user'
+    ip_address: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
+    user_agent: Mapped[Optional[str]] = mapped_column(String(500), nullable=True)
+    status_code: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)  # HTTP status code
+    resolved: Mapped[bool] = mapped_column(Boolean, default=False, index=True)
+    resolved_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    resolved_by: Mapped[Optional[int]] = mapped_column(
+        Integer, ForeignKey("admin_users.id", ondelete="SET NULL"), nullable=True
+    )
+    notes: Mapped[Optional[str]] = mapped_column(Text, nullable=True)  # Admin notes
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), index=True)

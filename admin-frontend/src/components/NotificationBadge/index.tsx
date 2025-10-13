@@ -2,41 +2,60 @@
  * 实时通知徽章组件
  * 显示在管理后台Header,展示WebSocket连接状态和未读消息数
  */
-import React from 'react'
-import { Badge, Tooltip, Space } from 'antd'
-import { BellOutlined, WifiOutlined } from '@ant-design/icons'
-import { useWebSocketContext } from '@/contexts/WebSocketContext'
+import React, { useState, useEffect } from 'react'
+import { Badge, Tooltip, Button } from 'antd'
+import { BellOutlined } from '@ant-design/icons'
+import { useQuery } from '@tanstack/react-query'
+import { useTranslation } from 'react-i18next'
+import axios from '@/utils/axios'
+import NotificationDrawer from '../NotificationDrawer'
 import './index.css'
 
 const NotificationBadge: React.FC = () => {
-  const { isConnected, unreadCount, markAsRead } = useWebSocketContext()
+  const { t } = useTranslation()
+  const [drawerOpen, setDrawerOpen] = useState(false)
+
+  // Fetch notification stats
+  const { data: stats, refetch } = useQuery({
+    queryKey: ['admin-notification-stats'],
+    queryFn: async () => {
+      const response = await axios.get('/api/v1/admin/notifications/stats')
+      return response.data
+    },
+    refetchInterval: 30000, // Refetch every 30 seconds
+  })
+
+  const unreadCount = stats?.unread || 0
+
+  // Refetch when drawer opens
+  useEffect(() => {
+    if (drawerOpen) {
+      refetch()
+    }
+  }, [drawerOpen, refetch])
 
   return (
-    <Space size="large">
-      {/* WebSocket连接状态 */}
-      <Tooltip title={isConnected ? 'WebSocket已连接' : 'WebSocket已断开'}>
-        <WifiOutlined
-          className={`websocket-status ${isConnected ? 'connected' : 'disconnected'}`}
-          style={{
-            fontSize: '18px',
-            color: isConnected ? '#52c41a' : '#d9d9d9',
-          }}
-        />
-      </Tooltip>
-
-      {/* 通知铃铛 */}
-      <Tooltip title={unreadCount > 0 ? `${unreadCount} 条未读通知` : '暂无通知'}>
-        <Badge count={unreadCount} offset={[-3, 3]} onClick={markAsRead}>
-          <BellOutlined
+    <>
+      <Tooltip title={unreadCount > 0 ? t('notifications.unreadCount', { count: unreadCount }) : t('notifications.noNew')}>
+        <Badge count={unreadCount} offset={[-3, 3]}>
+          <Button
+            type="text"
+            icon={<BellOutlined style={{ fontSize: 20 }} />}
+            onClick={() => setDrawerOpen(true)}
             style={{
-              fontSize: '20px',
-              color: '#1890ff',
-              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
             }}
           />
         </Badge>
       </Tooltip>
-    </Space>
+
+      <NotificationDrawer
+        open={drawerOpen}
+        onClose={() => setDrawerOpen(false)}
+      />
+    </>
   )
 }
 

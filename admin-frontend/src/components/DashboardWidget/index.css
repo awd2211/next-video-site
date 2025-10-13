@@ -1,0 +1,123 @@
+/* Dashboard Widget Styles */
+
+.dashboard-widget {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  transition: all 0.3s ease;
+}
+
+.dashboard-widget.widget-edit-mode {
+  cursor: move;
+  border: 2px dashed #1890ff;
+}
+
+.dashboard-widget.widget-edit-mode:hover {
+  box-shadow: 0 4px 12px rgba(24, 144, 255, 0.3);
+}
+
+.dashboard-widget.widget-hidden {
+  opacity: 0.4;
+  background: repeating-linear-gradient(
+    45deg,
+    transparent,
+    transparent 10px,
+    rgba(0, 0, 0, 0.02) 10px,
+    rgba(0, 0, 0, 0.02) 20px
+  );
+}
+
+.widget-header-edit {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.widget-header-edit .drag-handle {
+  cursor: move;
+  color: #1890ff;
+  font-size: 16px;
+}
+
+.visibility-toggle {
+  transition: all 0.2s;
+}
+
+.visibility-toggle:hover {
+  transform: scale(1.2);
+}
+
+.widget-hidden-overlay {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  color: #999;
+  font-size: 18px;
+  font-weight: 500;
+}
+
+/* Grid layout specific */
+.react-grid-item {
+  transition: all 200ms ease;
+  transition-property: left, top;
+}
+
+.react-grid-item.cssTransforms {
+  transition-property: transform;
+}
+
+.react-grid-item.resizing {
+  z-index: 100;
+  will-change: width, height;
+}
+
+.react-grid-item.react-draggable-dragging {
+  transition: none;
+  z-index: 100;
+  will-change: transform;
+}
+
+.react-grid-item.react-grid-placeholder {
+  background: rgba(24, 144, 255, 0.2);
+  opacity: 0.2;
+  transition-duration: 100ms;
+  z-index: 2;
+  border-radius: 8px;
+  border: 2px dashed #1890ff;
+}
+
+.react-grid-item > .react-resizable-handle {
+  position: absolute;
+  width: 20px;
+  height: 20px;
+}
+
+.react-grid-item > .react-resizable-handle::after {
+  content: "";
+  position: absolute;
+  right: 3px;
+  bottom: 3px;
+  width: 8px;
+  height: 8px;
+  border-right: 2px solid rgba(0, 0, 0, 0.4);
+  border-bottom: 2px solid rgba(0, 0, 0, 0.4);
+}
+
+/* Dark theme support */
+.dark .dashboard-widget.widget-edit-mode {
+  border-color: #177ddc;
+}
+
+.dark .widget-header-edit .drag-handle {
+  color: #177ddc;
+}
+
+.dark .widget-hidden-overlay {
+  color: #666;
+}
+
+.dark .react-grid-item.react-grid-placeholder {
+  background: rgba(23, 125, 220, 0.2);
+  border-color: #177ddc;
+}

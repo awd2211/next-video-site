@@ -1,3 +1,4 @@
+import asyncio
 import uuid
 from datetime import datetime, timezone
 
@@ -12,11 +13,15 @@ from slowapi.errors import RateLimitExceeded
 from sqlalchemy.exc import IntegrityError, OperationalError
 
 from app.admin import actors as admin_actors
+from app.admin import admin_notifications
+from app.admin import dashboard_config as admin_dashboard
 from app.admin import ai_management as admin_ai
 from app.admin import announcements as admin_announcements
 from app.admin import banners as admin_banners
 from app.admin import batch_operations as admin_batch
+from app.admin import batch_upload as admin_batch_upload
 from app.admin import categories as admin_categories
+from app.admin import video_analytics as admin_video_analytics
 from app.admin import comments as admin_comments
 from app.admin import countries as admin_countries
 from app.admin import danmaku as admin_danmaku
@@ -30,10 +35,15 @@ from app.admin import media_share as admin_media_share
 from app.admin import media_version as admin_media_version
 from app.admin import operations as admin_operations
 from app.admin import profile as admin_profile
+# from app.admin import rbac as admin_rbac  # Temporarily disabled due to missing models
+from app.admin import reports as admin_reports
+from app.admin import scheduled_content as admin_scheduled
 from app.admin import series as admin_series
 from app.admin import settings as admin_settings
+from app.admin import settings_enhanced as admin_settings_enhanced
 from app.admin import stats as admin_stats
 from app.admin import subtitles as admin_subtitles
+from app.admin import system_health as admin_system_health
 from app.admin import tags as admin_tags
 from app.admin import transcode as admin_transcode
 from app.admin import upload as admin_upload
@@ -243,6 +253,63 @@ async def global_exception_handler(request: Request, exc: Exception):
         },
     )
 
+    # Log error to database and send notification
+    try:
+        from app.database import SessionLocal
+        from app.utils.logging_utils import log_error
+        from app.utils.admin_notification_service import AdminNotificationService
+        import traceback
+
+        db = SessionLocal()
+        try:
+            # Get user info if available
+            user_id = None
+            user_type = None
+            if hasattr(request.state, "user"):
+                user_id = request.state.user.id
+                user_type = "admin" if getattr(request.state, "is_admin", False) else "user"
+
+            # Get traceback
+            tb = traceback.format_exception(type(exc), exc, exc.__traceback__)
+            traceback_str = ''.join(tb)
+
+            # Determine error level
+            level = "critical" if isinstance(exc, (SystemError, MemoryError, KeyboardInterrupt)) else "error"
+
+            # Get status code
+            status_code = getattr(exc, "status_code", 500)
+
+            # Log to database
+            error_log = await log_error(
+                db=db,
+                error_type=exc.__class__.__name__,
+                error_message=str(exc),
+                level=level,
+                traceback_str=traceback_str,
+                request=request,
+                user_id=user_id,
+                user_type=user_type,
+                status_code=status_code,
+            )
+
+            # Send notification for critical/error level issues
+            if level in ("critical", "error"):
+                try:
+                    await AdminNotificationService.notify_system_error(
+                        db=db,
+                        error_type=exc.__class__.__name__,
+                        error_message=str(exc)[:200],  # Truncate to 200 chars
+                        error_id=error_log.id if error_log else None,
+                    )
+                except Exception as notify_exc:
+                    logger.error(f"Failed to send error notification: {notify_exc}")
+
+        finally:
+            await db.close()
+    except Exception as log_exc:
+        # If logging fails, log to console but don't break the app
+        logger.error(f"Failed to log error to database: {log_exc}")
+
     # 根据DEBUG模式决定返回的错误详情
     if settings.DEBUG:
         # 开发环境：返回详细错误信息
@@ -405,6 +472,11 @@ app.include_router(
     tags=["Admin - System Settings"],
 )
 app.include_router(
+    admin_settings_enhanced.router,
+    prefix=f"{settings.API_V1_PREFIX}/admin/system",
+    tags=["Admin - System Settings Enhanced"],
+)
+app.include_router(
     admin_operations.router,
     prefix=f"{settings.API_V1_PREFIX}/admin/operations",
     tags=["Admin - Operations"],
@@ -519,6 +591,47 @@ app.include_router(
     prefix=f"{settings.API_V1_PREFIX}/admin/ai",
     tags=["Admin - AI Management"],
 )
+app.include_router(
+    admin_system_health.router,
+    prefix=f"{settings.API_V1_PREFIX}/admin/system",
+    tags=["Admin - System Health"],
+)
+app.include_router(
+    admin_notifications.router,
+    prefix=f"{settings.API_V1_PREFIX}/admin/notifications",
+    tags=["Admin - Notifications"],
+)
+app.include_router(
+    admin_dashboard.router,
+    prefix=f"{settings.API_V1_PREFIX}/admin/dashboard",
+    tags=["Admin - Dashboard Configuration"],
+)
+app.include_router(
+    admin_batch_upload.router,
+    prefix=f"{settings.API_V1_PREFIX}/admin/upload",
+    tags=["Admin - Batch Upload"],
+)
+app.include_router(
+    admin_video_analytics.router,
+    prefix=f"{settings.API_V1_PREFIX}/admin/analytics",
+    tags=["Admin - Video Analytics"],
+)
+app.include_router(
+    admin_reports.router,
+    prefix=f"{settings.API_V1_PREFIX}/admin/reports",
+    tags=["Admin - Reports"],
+)
+app.include_router(
+    admin_scheduled.router,
+    prefix=f"{settings.API_V1_PREFIX}/admin/scheduling",
+    tags=["Admin - Content Scheduling"],
+)
+# Temporarily disabled due to missing RBAC models (admin_roles, role_permissions tables)
+# app.include_router(
+#     admin_rbac.router,
+#     prefix=f"{settings.API_V1_PREFIX}/admin/rbac",
+#     tags=["Admin - RBAC (Role-Based Access Control)"],
+# )
 
 
 @app.on_event("startup")
@@ -530,6 +643,16 @@ async def startup_event():
 
         setup_query_monitoring(threshold=0.5)  # 500ms阈值
         logger.info("Slow query monitoring enabled")
+
+    # 启动存储监控（定期检查MinIO存储使用情况）
+    try:
+        from app.utils.storage_monitor import start_storage_monitoring
+
+        # Start storage monitoring in background
+        asyncio.create_task(start_storage_monitoring())
+        logger.info("Storage monitoring started")
+    except Exception as e:
+        logger.error(f"Failed to start storage monitoring: {e}")
 
 
 @app.get("/")

@@ -33,6 +33,10 @@ import {
   AppstoreOutlined,
   UserAddOutlined,
   FolderOutlined,
+  RobotOutlined,
+  ApiOutlined,
+  MailOutlined,
+  ClockCircleOutlined,
 } from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';
 import Breadcrumb from '../components/Breadcrumb';
@@ -40,6 +44,7 @@ import LanguageSwitcher from '../components/LanguageSwitcher';
 import ThemeSwitcher from '../components/ThemeSwitcher';
 import HotkeysHelp from '../components/HotkeysHelp';
 import PageTransition from '../components/PageTransition';
+import NotificationBadge from '../components/NotificationBadge';
 import { useGlobalHotkeys } from '../hooks/useGlobalHotkeys';
 import { useMenuBadges } from '../contexts/MenuBadgeContext';
 import { useTheme } from '../contexts/ThemeContext';
@@ -127,6 +132,11 @@ const AdminLayout = () => {
           icon: <SoundOutlined />,
           label: t('menu.announcements'),
         },
+        {
+          key: '/scheduling',
+          icon: <ClockCircleOutlined />,
+          label: t('menu.scheduling') || '内容调度',
+        },
       ],
     },
     {
@@ -171,6 +181,31 @@ const AdminLayout = () => {
       key: 'system',
       label: t('menu.groupSystem'),
       items: [
+        {
+          key: '/system-health',
+          icon: <ApiOutlined />,
+          label: t('menu.systemHealth'),
+        },
+        {
+          key: '/ai-management',
+          icon: <RobotOutlined />,
+          label: t('menu.aiManagement'),
+        },
+        {
+          key: '/roles',
+          icon: <TeamOutlined />,
+          label: t('menu.roles') || '角色权限',
+        },
+        {
+          key: '/reports',
+          icon: <FileTextOutlined />,
+          label: t('menu.reports') || '数据报表',
+        },
+        {
+          key: '/email-management',
+          icon: <MailOutlined />,
+          label: t('menu.emailManagement') || '邮件管理',
+        },
         {
           key: '/statistics',
           icon: <BarChartOutlined />,
@@ -444,6 +479,7 @@ const AdminLayout = () => {
                 }}
               />
             </Tooltip>
+            <NotificationBadge />
             <ThemeSwitcher />
             <LanguageSwitcher />
             <Button

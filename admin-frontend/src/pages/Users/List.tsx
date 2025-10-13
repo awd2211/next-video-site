@@ -8,8 +8,10 @@ import {
   CrownOutlined,
   SearchOutlined,
   DownloadOutlined,
+  EyeOutlined,
 } from '@ant-design/icons'
 import { useTranslation } from 'react-i18next'
+import { useNavigate } from 'react-router-dom'
 import axios from '@/utils/axios'
 import dayjs from 'dayjs'
 import { useDebounce } from '@/hooks/useDebounce'
@@ -19,12 +21,13 @@ const { Title } = Typography
 
 const UserList = () => {
   const { t } = useTranslation()
+  const navigate = useNavigate()
   const queryClient = useQueryClient()
   const screens = Grid.useBreakpoint()
   const [page, setPage] = useState(1)
   const [search, setSearch] = useState('')
   const [selectedRowKeys, setSelectedRowKeys] = useState<number[]>([])
-  
+
   // Debounce search to reduce API calls
   const debouncedSearch = useDebounce(search, 500)
 
@@ -258,9 +261,18 @@ const UserList = () => {
     {
       title: t('user.actions'),
       key: 'actions',
-      width: 150,
+      width: 200,
+      fixed: 'right' as const,
       render: (_: any, record: any) => (
         <Space>
+          <Button
+            type="link"
+            size="small"
+            icon={<EyeOutlined />}
+            onClick={() => navigate(`/users/${record.id}`)}
+          >
+            {t('common.view')}
+          </Button>
           <Button
             type={record.is_active ? 'default' : 'primary'}
             danger={record.is_active}

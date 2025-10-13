@@ -13,6 +13,9 @@ from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
 from app.models.user import AdminUser
 from app.utils.dependencies import get_current_admin_user
 from app.utils.minio_client import minio_client
+from app.utils.admin_notification_service import AdminNotificationService
+from app.database import get_db
+from sqlalchemy.ext.asyncio import AsyncSession
 
 router = APIRouter()
 
@@ -97,6 +100,7 @@ async def complete_multipart_upload(
     video_id: Optional[int] = Form(None),
     upload_type: str = Form("video"),  # video, poster, backdrop
     current_admin: AdminUser = Depends(get_current_admin_user),
+    db: AsyncSession = Depends(get_db),
 ):
     """完成分片上传并合并文件"""
     if upload_id not in upload_sessions:
@@ -157,6 +161,19 @@ async def complete_multipart_upload(
         return {"url": url, "message": "文件上传完成"}
 
     except Exception as e:
+        # Send notification to admins about upload failure
+        try:
+            await AdminNotificationService.notify_upload_failed(
+                db=db,
+                filename=session["filename"],
+                file_type=upload_type,
+                error_message=str(e),
+                admin_user_id=current_admin.id,
+            )
+        except Exception as notify_error:
+            # Log notification error but don't fail the request
+            print(f"Failed to send upload failure notification: {notify_error}")
+
         raise HTTPException(status_code=500, detail=f"上传失败: {str(e)}")
 
 

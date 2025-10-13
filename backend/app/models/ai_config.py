@@ -29,7 +29,7 @@ class AIProvider(Base):
     # 基本信息
     name: Mapped[str] = mapped_column(String(100), nullable=False, comment="配置名称")
     provider_type: Mapped[str] = mapped_column(
-        SQLEnum(AIProviderType), nullable=False, comment="提供商类型"
+        String(20), nullable=False, comment="提供商类型", index=True
     )
     description: Mapped[Optional[str]] = mapped_column(Text, nullable=True, comment="配置描述")
 

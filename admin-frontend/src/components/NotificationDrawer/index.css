@@ -1,0 +1,52 @@
+/* Notification Drawer Styles */
+
+.notification-item {
+  transition: background-color 0.2s ease;
+  border-bottom: 1px solid #f0f0f0;
+  padding: 12px 16px !important;
+}
+
+.notification-item:hover {
+  background-color: #fafafa;
+}
+
+.notification-item.unread {
+  background-color: #e6f7ff;
+  border-left: 3px solid #1890ff;
+}
+
+.notification-item.unread:hover {
+  background-color: #d6f0ff;
+}
+
+.notification-item .ant-list-item-meta-avatar {
+  display: flex;
+  align-items: center;
+}
+
+.notification-item .ant-list-item-action {
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.notification-item:hover .ant-list-item-action {
+  opacity: 1;
+}
+
+/* Dark theme support */
+.dark .notification-item {
+  border-bottom-color: rgba(255, 255, 255, 0.08);
+}
+
+.dark .notification-item:hover {
+  background-color: rgba(255, 255, 255, 0.04);
+}
+
+.dark .notification-item.unread {
+  background-color: rgba(24, 144, 255, 0.1);
+  border-left-color: #1890ff;
+}
+
+.dark .notification-item.unread:hover {
+  background-color: rgba(24, 144, 255, 0.15);
+}

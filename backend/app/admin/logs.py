@@ -11,7 +11,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from app.database import get_db
-from app.models.admin import OperationLog
+from app.models.admin import OperationLog, LoginLog, SystemLog, ErrorLog
 from app.models.user import AdminUser
 from app.utils.dependencies import get_current_admin_user
 
@@ -351,3 +351,347 @@ async def export_logs(
             "Content-Disposition": f"attachment; filename=operation_logs_{datetime.now(timezone.utc).strftime('%Y%m%d_%H%M%S')}.csv"
         },
     )
+
+
+# ==================== Login Logs ====================
+
+@router.get("/logins")
+async def get_login_logs(
+    page: int = Query(1, ge=1),
+    page_size: int = Query(20, ge=1, le=100),
+    user_type: str = Query(None),  # 'admin' or 'user'
+    status: str = Query(None),  # 'success', 'failed', 'blocked'
+    search: str = Query(""),  # search by username, email, or IP
+    start_date: str = Query(None),
+    end_date: str = Query(None),
+    db: AsyncSession = Depends(get_db),
+    current_admin: AdminUser = Depends(get_current_admin_user),
+):
+    """获取登录日志列表"""
+    query = select(LoginLog)
+
+    # 筛选用户类型
+    if user_type:
+        query = query.filter(LoginLog.user_type == user_type)
+
+    # 筛选状态
+    if status:
+        query = query.filter(LoginLog.status == status)
+
+    # 搜索
+    if search:
+        query = query.filter(
+            or_(
+                LoginLog.username.ilike(f"%{search}%"),
+                LoginLog.email.ilike(f"%{search}%"),
+                LoginLog.ip_address.ilike(f"%{search}%"),
+            )
+        )
+
+    # 日期范围
+    if start_date:
+        start_datetime = datetime.fromisoformat(start_date.replace("Z", "+00:00"))
+        query = query.filter(LoginLog.created_at >= start_datetime)
+
+    if end_date:
+        end_datetime = datetime.fromisoformat(end_date.replace("Z", "+00:00"))
+        query = query.filter(LoginLog.created_at <= end_datetime)
+
+    # 获取总数
+    count_result = await db.execute(select(func.count()).select_from(query.subquery()))
+    total = count_result.scalar() or 0
+
+    # 分页和排序
+    offset = (page - 1) * page_size
+    query = query.order_by(desc(LoginLog.created_at)).offset(offset).limit(page_size)
+    result = await db.execute(query)
+    logs = result.scalars().all()
+
+    return {"total": total, "page": page, "page_size": page_size, "items": logs}
+
+
+@router.get("/logins/stats")
+async def get_login_stats(
+    days: int = Query(7, ge=1, le=90),
+    db: AsyncSession = Depends(get_db),
+    current_admin: AdminUser = Depends(get_current_admin_user),
+):
+    """获取登录统计"""
+    start_date = datetime.now(timezone.utc) - timedelta(days=days)
+
+    # 按状态统计
+    status_stats = await db.execute(
+        select(LoginLog.status, func.count(LoginLog.id).label("count"))
+        .filter(LoginLog.created_at >= start_date)
+        .group_by(LoginLog.status)
+    )
+
+    # 按用户类型统计
+    user_type_stats = await db.execute(
+        select(LoginLog.user_type, func.count(LoginLog.id).label("count"))
+        .filter(LoginLog.created_at >= start_date)
+        .group_by(LoginLog.user_type)
+    )
+
+    # 每日登录趋势
+    daily_stats = await db.execute(
+        select(
+            func.date(LoginLog.created_at).label("date"),
+            func.count(LoginLog.id).label("count"),
+        )
+        .filter(LoginLog.created_at >= start_date)
+        .group_by(func.date(LoginLog.created_at))
+        .order_by("date")
+    )
+
+    # 失败登录Top IPs
+    failed_ips = await db.execute(
+        select(LoginLog.ip_address, func.count(LoginLog.id).label("count"))
+        .filter(LoginLog.created_at >= start_date, LoginLog.status == "failed")
+        .group_by(LoginLog.ip_address)
+        .order_by(desc("count"))
+        .limit(10)
+    )
+
+    return {
+        "status_stats": [{"status": row.status, "count": row.count} for row in status_stats.all()],
+        "user_type_stats": [{"user_type": row.user_type, "count": row.count} for row in user_type_stats.all()],
+        "daily_stats": [{"date": str(row.date), "count": row.count} for row in daily_stats.all()],
+        "failed_ips": [{"ip": row.ip_address, "count": row.count} for row in failed_ips.all()],
+    }
+
+
+# ==================== System Logs ====================
+
+@router.get("/system")
+async def get_system_logs(
+    page: int = Query(1, ge=1),
+    page_size: int = Query(20, ge=1, le=100),
+    level: str = Query(None),  # 'info', 'warning', 'error', 'critical'
+    category: str = Query(None),
+    search: str = Query(""),
+    start_date: str = Query(None),
+    end_date: str = Query(None),
+    db: AsyncSession = Depends(get_db),
+    current_admin: AdminUser = Depends(get_current_admin_user),
+):
+    """获取系统日志列表"""
+    query = select(SystemLog)
+
+    # 筛选级别
+    if level:
+        query = query.filter(SystemLog.level == level)
+
+    # 筛选分类
+    if category:
+        query = query.filter(SystemLog.category == category)
+
+    # 搜索
+    if search:
+        query = query.filter(
+            or_(
+                SystemLog.event.ilike(f"%{search}%"),
+                SystemLog.message.ilike(f"%{search}%"),
+            )
+        )
+
+    # 日期范围
+    if start_date:
+        start_datetime = datetime.fromisoformat(start_date.replace("Z", "+00:00"))
+        query = query.filter(SystemLog.created_at >= start_datetime)
+
+    if end_date:
+        end_datetime = datetime.fromisoformat(end_date.replace("Z", "+00:00"))
+        query = query.filter(SystemLog.created_at <= end_datetime)
+
+    # 获取总数
+    count_result = await db.execute(select(func.count()).select_from(query.subquery()))
+    total = count_result.scalar() or 0
+
+    # 分页和排序
+    offset = (page - 1) * page_size
+    query = query.order_by(desc(SystemLog.created_at)).offset(offset).limit(page_size)
+    result = await db.execute(query)
+    logs = result.scalars().all()
+
+    return {"total": total, "page": page, "page_size": page_size, "items": logs}
+
+
+@router.get("/system/categories")
+async def get_system_log_categories(
+    db: AsyncSession = Depends(get_db),
+    current_admin: AdminUser = Depends(get_current_admin_user),
+):
+    """获取所有系统日志分类"""
+    result = await db.execute(
+        select(SystemLog.category).distinct().order_by(SystemLog.category)
+    )
+    categories = [row[0] for row in result.all()]
+    return {"categories": categories}
+
+
+# ==================== Error Logs ====================
+
+@router.get("/errors")
+async def get_error_logs(
+    page: int = Query(1, ge=1),
+    page_size: int = Query(20, ge=1, le=100),
+    level: str = Query(None),  # 'error', 'critical'
+    error_type: str = Query(None),
+    resolved: bool = Query(None),
+    search: str = Query(""),
+    start_date: str = Query(None),
+    end_date: str = Query(None),
+    db: AsyncSession = Depends(get_db),
+    current_admin: AdminUser = Depends(get_current_admin_user),
+):
+    """获取错误日志列表"""
+    query = select(ErrorLog)
+
+    # 筛选级别
+    if level:
+        query = query.filter(ErrorLog.level == level)
+
+    # 筛选错误类型
+    if error_type:
+        query = query.filter(ErrorLog.error_type == error_type)
+
+    # 筛选是否已解决
+    if resolved is not None:
+        query = query.filter(ErrorLog.resolved == resolved)
+
+    # 搜索
+    if search:
+        query = query.filter(
+            or_(
+                ErrorLog.error_type.ilike(f"%{search}%"),
+                ErrorLog.error_message.ilike(f"%{search}%"),
+            )
+        )
+
+    # 日期范围
+    if start_date:
+        start_datetime = datetime.fromisoformat(start_date.replace("Z", "+00:00"))
+        query = query.filter(ErrorLog.created_at >= start_datetime)
+
+    if end_date:
+        end_datetime = datetime.fromisoformat(end_date.replace("Z", "+00:00"))
+        query = query.filter(ErrorLog.created_at <= end_datetime)
+
+    # 获取总数
+    count_result = await db.execute(select(func.count()).select_from(query.subquery()))
+    total = count_result.scalar() or 0
+
+    # 分页和排序
+    offset = (page - 1) * page_size
+    query = query.order_by(desc(ErrorLog.created_at)).offset(offset).limit(page_size)
+    result = await db.execute(query)
+    logs = result.scalars().all()
+
+    return {"total": total, "page": page, "page_size": page_size, "items": logs}
+
+
+@router.get("/errors/{error_id}")
+async def get_error_log_detail(
+    error_id: int,
+    db: AsyncSession = Depends(get_db),
+    current_admin: AdminUser = Depends(get_current_admin_user),
+):
+    """获取错误日志详情"""
+    result = await db.execute(select(ErrorLog).filter(ErrorLog.id == error_id))
+    log = result.scalar_one_or_none()
+
+    if not log:
+        from fastapi import HTTPException
+        raise HTTPException(status_code=404, detail="错误日志不存在")
+
+    return log
+
+
+@router.put("/errors/{error_id}/resolve")
+async def resolve_error_log(
+    error_id: int,
+    notes: str = Query(None),
+    db: AsyncSession = Depends(get_db),
+    current_admin: AdminUser = Depends(get_current_admin_user),
+):
+    """标记错误日志为已解决"""
+    result = await db.execute(select(ErrorLog).filter(ErrorLog.id == error_id))
+    log = result.scalar_one_or_none()
+
+    if not log:
+        from fastapi import HTTPException
+        raise HTTPException(status_code=404, detail="错误日志不存在")
+
+    log.resolved = True
+    log.resolved_at = datetime.now(timezone.utc)
+    log.resolved_by = current_admin.id
+    if notes:
+        log.notes = notes
+
+    await db.commit()
+    return {"message": "已标记为已解决", "log": log}
+
+
+@router.get("/errors/stats")
+async def get_error_stats(
+    days: int = Query(7, ge=1, le=90),
+    db: AsyncSession = Depends(get_db),
+    current_admin: AdminUser = Depends(get_current_admin_user),
+):
+    """获取错误统计"""
+    start_date = datetime.now(timezone.utc) - timedelta(days=days)
+
+    # 按错误类型统计
+    error_type_stats = await db.execute(
+        select(ErrorLog.error_type, func.count(ErrorLog.id).label("count"))
+        .filter(ErrorLog.created_at >= start_date)
+        .group_by(ErrorLog.error_type)
+        .order_by(desc("count"))
+        .limit(10)
+    )
+
+    # 按级别统计
+    level_stats = await db.execute(
+        select(ErrorLog.level, func.count(ErrorLog.id).label("count"))
+        .filter(ErrorLog.created_at >= start_date)
+        .group_by(ErrorLog.level)
+    )
+
+    # 解决状态统计
+    resolved_stats = await db.execute(
+        select(ErrorLog.resolved, func.count(ErrorLog.id).label("count"))
+        .filter(ErrorLog.created_at >= start_date)
+        .group_by(ErrorLog.resolved)
+    )
+
+    # 每日错误趋势
+    daily_stats = await db.execute(
+        select(
+            func.date(ErrorLog.created_at).label("date"),
+            func.count(ErrorLog.id).label("count"),
+        )
+        .filter(ErrorLog.created_at >= start_date)
+        .group_by(func.date(ErrorLog.created_at))
+        .order_by("date")
+    )
+
+    return {
+        "error_type_stats": [{"error_type": row.error_type, "count": row.count} for row in error_type_stats.all()],
+        "level_stats": [{"level": row.level, "count": row.count} for row in level_stats.all()],
+        "resolved_stats": [{"resolved": row.resolved, "count": row.count} for row in resolved_stats.all()],
+        "daily_stats": [{"date": str(row.date), "count": row.count} for row in daily_stats.all()],
+    }
+
+
+@router.get("/errors/types")
+async def get_error_types(
+    db: AsyncSession = Depends(get_db),
+    current_admin: AdminUser = Depends(get_current_admin_user),
+):
+    """获取所有错误类型"""
+    result = await db.execute(
+        select(ErrorLog.error_type).distinct().order_by(ErrorLog.error_type)
+    )
+    error_types = [row[0] for row in result.all()]
+    return {"error_types": error_types}

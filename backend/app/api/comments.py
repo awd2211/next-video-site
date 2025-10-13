@@ -20,6 +20,7 @@ from app.schemas.comment import (
 from app.utils.cache import Cache
 from app.utils.dependencies import get_current_active_user
 from app.utils.notification_service import NotificationService
+from app.utils.admin_notification_service import AdminNotificationService
 from app.utils.rate_limit import RateLimitPresets, limiter
 
 router = APIRouter()
@@ -66,13 +67,13 @@ async def create_comment(
                 status_code=status.HTTP_404_NOT_FOUND, detail="Parent comment not found"
             )
 
-    # Create comment
+    # Create comment with PENDING status for moderation
     new_comment = Comment(
         video_id=comment_data.video_id,
         user_id=current_user.id,
         parent_id=comment_data.parent_id,
         content=comment_data.content,
-        status=CommentStatus.APPROVED,  # Auto-approve for now
+        status=CommentStatus.PENDING,  # Require moderation
     )
 
     db.add(new_comment)
@@ -88,6 +89,19 @@ async def create_comment(
 
     # 清除该视频的评论缓存
     await Cache.delete_pattern(f"video_comments:{comment_data.video_id}:*")
+
+    # Send admin notification for pending comment review
+    try:
+        await AdminNotificationService.notify_pending_comment_review(
+            db=db,
+            comment_id=new_comment.id,
+            user_name=current_user.username or current_user.email,
+            video_title=video.title,
+            comment_content=comment_data.content[:100],  # Truncate to 100 chars
+        )
+    except Exception as e:
+        # Notification failure doesn't affect comment creation
+        logger.warning(f"Failed to send admin notification: {e}")
 
     # 🆕 发送通知 (如果是回复评论)
     if parent and parent.user_id != current_user.id:

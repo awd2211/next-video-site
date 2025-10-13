@@ -159,6 +159,11 @@ class Video(Base):
     poster_url: Mapped[Optional[str]] = mapped_column(String(500), nullable=True)
     backdrop_url: Mapped[Optional[str]] = mapped_column(String(500), nullable=True)
 
+    # 🆕 Video Hash fields (for duplicate detection)
+    file_hash_md5: Mapped[Optional[str]] = mapped_column(String(32), index=True, nullable=True, comment="完整文件MD5哈希")
+    partial_hash: Mapped[Optional[str]] = mapped_column(String(32), index=True, nullable=True, comment="部分内容哈希(头+尾)")
+    metadata_hash: Mapped[Optional[str]] = mapped_column(String(32), index=True, nullable=True, comment="元数据哈希(标题+时长+大小)")
+
     # AV1 support (新增)
     av1_master_url: Mapped[Optional[str]] = mapped_column(Text, nullable=True, comment="AV1 HLS master playlist URL")
     av1_resolutions: Mapped[dict[str, Any]] = mapped_column(JSONB, default={}, comment="AV1分辨率URL映射")

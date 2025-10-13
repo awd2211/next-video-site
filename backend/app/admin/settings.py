@@ -1,15 +1,19 @@
-from typing import List, Optional
+import json
+from datetime import datetime
+from typing import Any, Dict, List, Optional
 
-from fastapi import APIRouter, Depends
-from pydantic import BaseModel
+from fastapi import APIRouter, Depends, HTTPException, status
+from pydantic import BaseModel, EmailStr
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
+from app.models.email import EmailConfiguration
 from app.models.settings import SystemSettings
 from app.models.user import AdminUser
-from app.utils.cache import Cache
+from app.utils.cache import Cache, CacheStats
 from app.utils.dependencies import get_current_admin_user
+from app.utils.email_service import send_test_email
 
 router = APIRouter()
 
@@ -60,6 +64,14 @@ class SystemSettingsResponse(BaseModel):
     analytics_code: Optional[str]
     custom_css: Optional[str]
     custom_js: Optional[str]
+    # 速率限制配置
+    rate_limit_config: Optional[Dict[str, Any]]
+    # 缓存配置
+    cache_config: Optional[Dict[str, Any]]
+    # SMTP测试配置
+    smtp_test_email: Optional[str]
+    smtp_last_test_at: Optional[datetime]
+    smtp_last_test_status: Optional[str]
 
     class Config:
         from_attributes = True
@@ -109,6 +121,12 @@ class SystemSettingsUpdate(BaseModel):
     analytics_code: Optional[str] = None
     custom_css: Optional[str] = None
     custom_js: Optional[str] = None
+    # 速率限制配置
+    rate_limit_config: Optional[Dict[str, Any]] = None
+    # 缓存配置
+    cache_config: Optional[Dict[str, Any]] = None
+    # SMTP测试配置
+    smtp_test_email: Optional[str] = None
 
 
 async def get_or_create_settings(db: AsyncSession) -> SystemSettings:

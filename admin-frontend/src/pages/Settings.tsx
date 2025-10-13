@@ -21,6 +21,10 @@ import {
   Row,
   Col,
   Card,
+  Modal,
+  Upload,
+  Statistic,
+  Typography,
 } from 'antd';
 import {
   SearchOutlined,
@@ -28,6 +32,10 @@ import {
   SaveOutlined,
   ReloadOutlined,
   MailOutlined,
+  DownloadOutlined,
+  UploadOutlined,
+  ClearOutlined,
+  DatabaseOutlined,
 } from '@ant-design/icons';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { debounce } from 'lodash';
@@ -37,6 +45,7 @@ import './SettingsNotion.css';
 const { Panel } = Collapse;
 const { TextArea } = Input;
 const { Option } = Select;
+const { Text } = Typography;
 
 const Settings = () => {
   const [form] = Form.useForm();
@@ -44,6 +53,14 @@ const Settings = () => {
   const [savedFields, setSavedFields] = useState<Set<string>>(new Set());
   const [saving, setSaving] = useState(false);
   const queryClient = useQueryClient();
+
+  // 新增状态：邮件测试
+  const [emailTestModalVisible, setEmailTestModalVisible] = useState(false);
+  const [emailTestLoading, setEmailTestLoading] = useState(false);
+
+  // 新增状态：缓存管理
+  const [cacheStatsModalVisible, setCacheStatsModalVisible] = useState(false);
+  const [cacheStats, setCacheStats] = useState<any>(null);
 
   // Fetch system settings
   const { data: settings, isLoading } = useQuery({
@@ -121,6 +138,96 @@ const Settings = () => {
     }
   };
 
+  // ===== 新增功能：邮件测试 =====
+  const handleTestEmail = async (email: string) => {
+    try {
+      setEmailTestLoading(true);
+      await axios.post('/api/v1/admin/system/settings/test-email', {
+        to_email: email
+      });
+      message.success('测试邮件发送成功！请检查收件箱。');
+      setEmailTestModalVisible(false);
+      // 刷新设置以显示最后测试状态
+      queryClient.invalidateQueries({ queryKey: ['system-settings'] });
+    } catch (error: any) {
+      message.error(error.response?.data?.detail || '测试邮件发送失败');
+    } finally {
+      setEmailTestLoading(false);
+    }
+  };
+
+  // ===== 新增功能：缓存统计 =====
+  const fetchCacheStats = async () => {
+    try {
+      const response = await axios.get('/api/v1/admin/system/cache/stats');
+      setCacheStats(response.data);
+      setCacheStatsModalVisible(true);
+    } catch (error: any) {
+      message.error('获取缓存统计失败');
+    }
+  };
+
+  // ===== 新增功能：清除缓存 =====
+  const handleClearCache = async (patterns: string[]) => {
+    try {
+      const response = await axios.post('/api/v1/admin/system/cache/clear', {
+        patterns
+      });
+      if (response.data.cleared_keys === -1) {
+        message.success('所有缓存已清除');
+      } else {
+        message.success(`已清除 ${response.data.cleared_keys} 个缓存键`);
+      }
+    } catch (error: any) {
+      message.error('清除缓存失败');
+    }
+  };
+
+  // ===== 新增功能：导出备份 =====
+  const handleExportBackup = async () => {
+    try {
+      const response = await axios.get('/api/v1/admin/system/settings/backup');
+      const dataStr = JSON.stringify(response.data.backup_data, null, 2);
+      const dataBlob = new Blob([dataStr], { type: 'application/json' });
+      const url = URL.createObjectURL(dataBlob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `settings-backup-${new Date().toISOString().split('T')[0]}.json`;
+      link.click();
+      URL.revokeObjectURL(url);
+      message.success('备份文件已下载');
+    } catch (error: any) {
+      message.error('导出备份失败');
+    }
+  };
+
+  // ===== 新增功能：恢复备份 =====
+  const handleRestoreBackup = async (file: File) => {
+    try {
+      const text = await file.text();
+      const backup_data = JSON.parse(text);
+
+      Modal.confirm({
+        title: '确认恢复设置？',
+        content: '此操作将覆盖当前设置，是否继续？',
+        onOk: async () => {
+          try {
+            await axios.post('/api/v1/admin/system/settings/restore', {
+              backup_data
+            });
+            message.success('设置恢复成功');
+            queryClient.invalidateQueries({ queryKey: ['system-settings'] });
+          } catch (error: any) {
+            message.error('恢复设置失败');
+          }
+        }
+      });
+    } catch (error: any) {
+      message.error('备份文件格式错误');
+    }
+    return false; // 阻止自动上传
+  };
+
   // 设置分组配置
   const sections = [
     {
@@ -151,6 +258,18 @@ const Settings = () => {
       key: 'security',
       title: '🔒 安全配置',
       keywords: '安全 security 验证码 captcha',
+      defaultOpen: false,
+    },
+    {
+      key: 'cache',
+      title: '🗄️ 缓存管理',
+      keywords: '缓存 cache redis 清除 统计',
+      defaultOpen: false,
+    },
+    {
+      key: 'backup',
+      title: '💾 备份恢复',
+      keywords: '备份 恢复 导出 导入 backup restore',
       defaultOpen: false,
     },
     {
@@ -529,6 +648,38 @@ const Settings = () => {
               <Form.Item label="发件人名称" name="from_name">
                 <Input placeholder="VideoSite" />
               </Form.Item>
+
+              <Divider orientation="left" plain>
+                测试邮件配置
+              </Divider>
+
+              <Card
+                size="small"
+                style={{
+                  marginBottom: 16,
+                  background: 'var(--card-bg, #f5f5f5)'
+                }}
+              >
+                <Space direction="vertical" style={{ width: '100%' }}>
+                  <Text type="secondary">发送测试邮件以验证 SMTP 配置是否正确</Text>
+                  <Button
+                    icon={<MailOutlined />}
+                    onClick={() => setEmailTestModalVisible(true)}
+                  >
+                    发送测试邮件
+                  </Button>
+                  {settings?.smtp_last_test_at && (
+                    <div style={{ marginTop: 8 }}>
+                      <Text type="secondary">最后测试: </Text>
+                      <Text>{new Date(settings.smtp_last_test_at).toLocaleString()}</Text>
+                      {' '}
+                      <Tag color={settings.smtp_last_test_status === 'success' ? 'success' : 'error'}>
+                        {settings.smtp_last_test_status === 'success' ? '成功' : '失败'}
+                      </Tag>
+                    </div>
+                  )}
+                </Space>
+              </Card>
             </Panel>
           )}
 
@@ -578,7 +729,111 @@ const Settings = () => {
             </Panel>
           )}
 
-          {/* Panel 6: 其他设置 */}
+          {/* Panel 6: 缓存管理 */}
+          {filteredSections.find((s) => s.key === 'cache') && (
+            <Panel header="🗄️ 缓存管理" key="cache" className="settings-panel">
+              <p className="panel-description">管理Redis缓存并查看统计信息</p>
+
+              <Card size="small" style={{ marginBottom: 16 }}>
+                <Space direction="vertical" style={{ width: '100%' }} size="middle">
+                  <div>
+                    <Button
+                      icon={<DatabaseOutlined />}
+                      onClick={fetchCacheStats}
+                      style={{ marginRight: 8 }}
+                    >
+                      查看缓存统计
+                    </Button>
+                    <Text type="secondary">查看缓存命中率和性能指标</Text>
+                  </div>
+
+                  <Divider style={{ margin: '8px 0' }} />
+
+                  <div>
+                    <Text strong>清除缓存</Text>
+                    <div style={{ marginTop: 8 }}>
+                      <Space wrap>
+                        <Button
+                          danger
+                          icon={<ClearOutlined />}
+                          onClick={() => {
+                            Modal.confirm({
+                              title: '确认清除所有缓存？',
+                              content: '此操作将清除Redis中的所有缓存数据',
+                              onOk: () => handleClearCache(['all'])
+                            });
+                          }}
+                        >
+                          清除所有缓存
+                        </Button>
+                        <Button onClick={() => handleClearCache(['videos:*'])}>
+                          清除视频缓存
+                        </Button>
+                        <Button onClick={() => handleClearCache(['categories:*'])}>
+                          清除分类缓存
+                        </Button>
+                        <Button onClick={() => handleClearCache(['users:*'])}>
+                          清除用户缓存
+                        </Button>
+                        <Button onClick={() => handleClearCache(['system_settings'])}>
+                          清除设置缓存
+                        </Button>
+                      </Space>
+                    </div>
+                  </div>
+                </Space>
+              </Card>
+            </Panel>
+          )}
+
+          {/* Panel 7: 备份与恢复 */}
+          {filteredSections.find((s) => s.key === 'backup') && (
+            <Panel header="💾 备份与恢复" key="backup" className="settings-panel">
+              <p className="panel-description">导出和导入系统设置</p>
+
+              <Card size="small">
+                <Space direction="vertical" style={{ width: '100%' }} size="large">
+                  <div>
+                    <Text strong style={{ fontSize: 16 }}>导出备份</Text>
+                    <div style={{ marginTop: 8 }}>
+                      <Text type="secondary" style={{ display: 'block', marginBottom: 8 }}>
+                        将当前所有设置导出为 JSON 文件
+                      </Text>
+                      <Button
+                        type="primary"
+                        icon={<DownloadOutlined />}
+                        onClick={handleExportBackup}
+                      >
+                        下载备份文件
+                      </Button>
+                    </div>
+                  </div>
+
+                  <Divider style={{ margin: '8px 0' }} />
+
+                  <div>
+                    <Text strong style={{ fontSize: 16 }}>导入备份</Text>
+                    <div style={{ marginTop: 8 }}>
+                      <Text type="secondary" style={{ display: 'block', marginBottom: 8 }}>
+                        从备份文件恢复设置（将覆盖当前设置）
+                      </Text>
+                      <Upload
+                        accept=".json"
+                        showUploadList={false}
+                        beforeUpload={handleRestoreBackup}
+                      >
+                        <Button icon={<UploadOutlined />}>
+                          选择备份文件
+                        </Button>
+                      </Upload>
+                    </div>
+                  </div>
+                </Space>
+              </Card>
+            </Panel>
+          )}
+
+          {/* Panel 8: 其他设置 */}
           {filteredSections.find((s) => s.key === 'other') && (
             <Panel header="⚙️ 其他设置" key="other" className="settings-panel">
               <p className="panel-description">维护模式、统计代码、自定义样式等</p>
@@ -653,6 +908,88 @@ const Settings = () => {
           💡 提示：修改后会自动保存，也可以点击按钮手动保存所有设置
         </div>
       </div>
+
+      {/* 邮件测试模态框 */}
+      <Modal
+        title="发送测试邮件"
+        open={emailTestModalVisible}
+        onCancel={() => setEmailTestModalVisible(false)}
+        footer={null}
+      >
+        <Form onFinish={(values) => handleTestEmail(values.email)}>
+          <Form.Item
+            name="email"
+            label="邮箱地址"
+            rules={[
+              { required: true, message: '请输入邮箱地址' },
+              { type: 'email', message: '请输入有效的邮箱地址' }
+            ]}
+          >
+            <Input placeholder="输入测试邮箱地址" />
+          </Form.Item>
+          <Form.Item>
+            <Space>
+              <Button type="primary" htmlType="submit" loading={emailTestLoading}>
+                发送测试
+              </Button>
+              <Button onClick={() => setEmailTestModalVisible(false)}>
+                取消
+              </Button>
+            </Space>
+          </Form.Item>
+        </Form>
+      </Modal>
+
+      {/* 缓存统计模态框 */}
+      <Modal
+        title="缓存统计"
+        open={cacheStatsModalVisible}
+        onCancel={() => setCacheStatsModalVisible(false)}
+        footer={null}
+        width={800}
+      >
+        {cacheStats && (
+          <>
+            <Row gutter={16} style={{ marginBottom: 24 }}>
+              <Col span={8}>
+                <Statistic
+                  title="总命中数"
+                  value={cacheStats.summary.total_hits}
+                  valueStyle={{ color: '#3f8600' }}
+                />
+              </Col>
+              <Col span={8}>
+                <Statistic
+                  title="总未命中数"
+                  value={cacheStats.summary.total_misses}
+                  valueStyle={{ color: '#cf1322' }}
+                />
+              </Col>
+              <Col span={8}>
+                <Statistic
+                  title="平均命中率"
+                  value={cacheStats.summary.average_hit_rate}
+                  suffix="%"
+                  valueStyle={{ color: '#1890ff' }}
+                  precision={2}
+                />
+              </Col>
+            </Row>
+            <Divider />
+            <Text strong>最近 7 天统计：</Text>
+            <div style={{ marginTop: 16 }}>
+              {cacheStats.stats.map((stat: any) => (
+                <div key={stat.date} style={{ marginBottom: 8 }}>
+                  <Text>{stat.date}: </Text>
+                  <Tag color="green">{stat.hits} 命中</Tag>
+                  <Tag color="red">{stat.misses} 未命中</Tag>
+                  <Tag color="blue">{stat.hit_rate}% 命中率</Tag>
+                </div>
+              ))}
+            </div>
+          </>
+        )}
+      </Modal>
     </div>
   );
 };
