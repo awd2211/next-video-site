@@ -643,3 +643,53 @@ body.dark .ant-tooltip-arrow-content {
   background: #192534;
 }
 
+/* ============ AWS Cloudscape Header 样式 ============ */
+.admin-header {
+  z-index: 100;
+  position: sticky;
+  top: 0;
+  backdrop-filter: blur(8px);
+}
+
+.admin-header .ant-btn-text {
+  border-radius: 8px;
+  height: 36px;
+  padding: 0 12px;
+  transition: all 0.2s;
+}
+
+.admin-header .ant-btn-text:hover {
+  background: rgba(0, 115, 187, 0.08);
+  color: #0073bb;
+}
+
+body.dark .admin-header .ant-btn-text:hover {
+  background: rgba(83, 159, 229, 0.15);
+  color: #85b7ed;
+}
+
+/* ============ AWS 内容区域样式 ============ */
+.ant-layout-content {
+  background: transparent;
+}
+
+.ant-layout-content > div {
+  transition: all 0.3s;
+}
+
+/* AWS 风格的内容卡片 */
+.ant-layout-content > :first-child + div {
+  box-shadow: 0 0 0 1px rgba(0, 7, 22, 0.05), 0 1px 1px 0 rgba(0, 7, 22, 0.05);
+  border: 1px solid transparent;
+}
+
+body:not(.dark) .ant-layout-content > :first-child + div {
+  border-color: #e9e9e7;
+  background: #ffffff;
+}
+
+body.dark .ant-layout-content > :first-child + div {
+  border-color: rgba(255, 255, 255, 0.08);
+  background: #192534;
+}
+

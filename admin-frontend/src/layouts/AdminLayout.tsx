@@ -411,48 +411,72 @@ const AdminLayout = () => {
         }}
       >
         <Header
+          className="admin-header"
           style={{
             padding: '0 24px',
             background: colorBgContainer,
             display: 'flex',
             justifyContent: 'space-between',
             alignItems: 'center',
+            borderBottom: currentTheme === 'dark' ? '1px solid rgba(255, 255, 255, 0.08)' : '1px solid #e9e9e7',
+            boxShadow: '0 1px 2px 0 rgba(0, 7, 22, 0.05)',
+            height: '56px',
+            lineHeight: '56px',
           }}
         >
-          <div style={{ fontSize: '18px', fontWeight: 'bold' }}>
+          <div style={{
+            fontSize: '14px',
+            fontWeight: 700,
+            color: currentTheme === 'dark' ? '#d1d5db' : '#16191f',
+            textTransform: 'uppercase',
+            letterSpacing: '0.5px'
+          }}>
             {t('common.adminPanel')}
           </div>
-          <Space size="large">
-            <Tooltip title="快捷键帮助 (Shift+?)">
+          <Space size="middle">
+            <Tooltip title={t('common.help') || '快捷键帮助 (Shift+?)'}>
               <Button
                 type="text"
-                icon={<QuestionCircleOutlined />}
+                icon={<QuestionCircleOutlined style={{ fontSize: 18 }} />}
                 onClick={() => setHotkeysHelpVisible(true)}
+                style={{
+                  color: currentTheme === 'dark' ? 'rgba(255, 255, 255, 0.85)' : 'rgba(55, 53, 47, 0.85)',
+                }}
               />
             </Tooltip>
             <ThemeSwitcher />
             <LanguageSwitcher />
-            <a
+            <Button
+              type="text"
+              icon={<LogoutOutlined />}
               onClick={handleLogout}
-              style={{ color: 'inherit', cursor: 'pointer' }}
+              style={{
+                color: currentTheme === 'dark' ? 'rgba(255, 255, 255, 0.85)' : 'rgba(55, 53, 47, 0.85)',
+              }}
             >
-              <LogoutOutlined /> {t('common.logout')}
-            </a>
+              {t('common.logout')}
+            </Button>
           </Space>
         </Header>
         <Content
           style={{
-            margin: '24px 16px',
-            minHeight: 'calc(100vh - 112px)', // 确保最小高度
+            margin: '0',
+            padding: '20px 24px',
+            minHeight: 'calc(100vh - 56px)',
+            background: currentTheme === 'dark' ? '#0f1b2a' : '#f7f6f3',
           }}
         >
-          <Breadcrumb />
+          <div style={{ marginBottom: 16 }}>
+            <Breadcrumb />
+          </div>
           <div
             style={{
               padding: 24,
               minHeight: 360,
               background: colorBgContainer,
-              borderRadius: borderRadiusLG,
+              borderRadius: 8,
+              border: currentTheme === 'dark' ? '1px solid rgba(255, 255, 255, 0.08)' : '1px solid #e9e9e7',
+              boxShadow: '0 0 0 1px rgba(0, 7, 22, 0.05), 0 1px 1px 0 rgba(0, 7, 22, 0.05)',
             }}
           >
             <PageTransition>
