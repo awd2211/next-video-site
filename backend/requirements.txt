@@ -44,6 +44,10 @@ pytz==2025.2
 # Logging
 loguru==0.7.3
 
+# AI Providers
+openai==1.70.1
+google-generativeai==0.8.4
+
 # Testing
 pytest==8.4.2
 pytest-asyncio==1.2.0

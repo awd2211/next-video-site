@@ -1,4 +1,5 @@
 from app.models.admin import OperationLog, Permission, Role, RolePermission
+from app.models.ai_config import AIProvider, AIProviderType  # 🆕 AI提供商配置
 from app.models.comment import Comment, Rating
 from app.models.content import Announcement, Banner, Recommendation, Report
 from app.models.danmaku import (  # 🆕 弹幕系统
@@ -63,6 +64,8 @@ __all__ = [
     "Permission",
     "RolePermission",
     "OperationLog",
+    "AIProvider",  # 🆕 AI提供商配置
+    "AIProviderType",  # 🆕 AI提供商类型枚举
     "Banner",
     "Recommendation",
     "Announcement",
