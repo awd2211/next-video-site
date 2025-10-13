@@ -129,6 +129,36 @@ const seriesService = {
     const response = await api.put(`/admin/series/${id}/videos/order`, data)
     return response.data
   },
+
+  // 获取统计数据
+  getStats: async () => {
+    const response = await api.get('/admin/series/stats')
+    return response.data
+  },
+
+  // 批量发布
+  batchPublish: async (series_ids: number[]) => {
+    const response = await api.post('/admin/series/batch/publish', series_ids)
+    return response.data
+  },
+
+  // 批量归档
+  batchArchive: async (series_ids: number[]) => {
+    const response = await api.post('/admin/series/batch/archive', series_ids)
+    return response.data
+  },
+
+  // 批量删除
+  batchDelete: async (series_ids: number[]) => {
+    const response = await api.post('/admin/series/batch/delete', series_ids)
+    return response.data
+  },
+
+  // 批量设置推荐
+  batchFeature: async (series_ids: number[], is_featured: boolean) => {
+    const response = await api.post('/admin/series/batch/feature', { series_ids, is_featured })
+    return response.data
+  },
 }
 
 export default seriesService

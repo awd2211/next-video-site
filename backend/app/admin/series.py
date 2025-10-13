@@ -464,3 +464,189 @@ async def admin_update_video_order(
         "message": "视频顺序更新成功",
         "updated_count": len(data.video_order),
     }
+
+
+@router.get("/stats", summary="获取剧集统计数据")
+@limiter.limit(RateLimitPresets.ADMIN_READ)
+async def get_series_stats(
+    request: Request,
+    current_admin: AdminUser = Depends(get_current_admin_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    获取剧集统计数据
+
+    返回:
+    - 总剧集数
+    - 各状态分布
+    - 各类型分布
+    - 总集数、总播放量、总收藏数
+    """
+    # 总数统计
+    total_result = await db.execute(select(func.count(Series.id)))
+    total_series = total_result.scalar() or 0
+
+    # 状态分布
+    status_result = await db.execute(
+        select(Series.status, func.count(Series.id))
+        .group_by(Series.status)
+    )
+    status_stats = {row[0].value: row[1] for row in status_result.all()}
+
+    # 类型分布
+    type_result = await db.execute(
+        select(Series.type, func.count(Series.id))
+        .group_by(Series.type)
+    )
+    type_stats = {row[0].value: row[1] for row in type_result.all()}
+
+    # 总集数、播放量、收藏数
+    aggregates_result = await db.execute(
+        select(
+            func.sum(Series.total_episodes),
+            func.sum(Series.total_views),
+            func.sum(Series.total_favorites),
+        )
+    )
+    row = aggregates_result.one()
+    total_episodes = row[0] or 0
+    total_views = row[1] or 0
+    total_favorites = row[2] or 0
+
+    # 推荐剧集数
+    featured_result = await db.execute(
+        select(func.count(Series.id)).where(Series.is_featured == True)
+    )
+    featured_count = featured_result.scalar() or 0
+
+    return {
+        "total_series": total_series,
+        "status_distribution": status_stats,
+        "type_distribution": type_stats,
+        "total_episodes": total_episodes,
+        "total_views": total_views,
+        "total_favorites": total_favorites,
+        "featured_count": featured_count,
+    }
+
+
+@router.post("/batch/publish", summary="批量发布剧集")
+@limiter.limit(RateLimitPresets.ADMIN_WRITE)
+async def batch_publish_series(
+    request: Request,
+    series_ids: list[int],
+    current_admin: AdminUser = Depends(get_current_admin_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """批量发布剧集"""
+    result = await db.execute(
+        select(Series).where(Series.id.in_(series_ids))
+    )
+    series_list = result.scalars().all()
+
+    count = 0
+    for series in series_list:
+        if series.status != SeriesStatus.PUBLISHED:
+            series.status = SeriesStatus.PUBLISHED
+            count += 1
+
+    await db.commit()
+
+    # 清除缓存
+    await Cache.delete_pattern("series_*")
+
+    return {
+        "message": f"成功发布 {count} 个剧集",
+        "updated_count": count,
+    }
+
+
+@router.post("/batch/archive", summary="批量归档剧集")
+@limiter.limit(RateLimitPresets.ADMIN_WRITE)
+async def batch_archive_series(
+    request: Request,
+    series_ids: list[int],
+    current_admin: AdminUser = Depends(get_current_admin_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """批量归档剧集"""
+    result = await db.execute(
+        select(Series).where(Series.id.in_(series_ids))
+    )
+    series_list = result.scalars().all()
+
+    count = 0
+    for series in series_list:
+        if series.status != SeriesStatus.ARCHIVED:
+            series.status = SeriesStatus.ARCHIVED
+            count += 1
+
+    await db.commit()
+
+    # 清除缓存
+    await Cache.delete_pattern("series_*")
+
+    return {
+        "message": f"成功归档 {count} 个剧集",
+        "updated_count": count,
+    }
+
+
+@router.post("/batch/delete", summary="批量删除剧集")
+@limiter.limit(RateLimitPresets.ADMIN_WRITE)
+async def batch_delete_series(
+    request: Request,
+    series_ids: list[int],
+    current_admin: AdminUser = Depends(get_current_admin_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """批量删除剧集"""
+    result = await db.execute(
+        select(Series).where(Series.id.in_(series_ids))
+    )
+    series_list = result.scalars().all()
+
+    count = len(series_list)
+    for series in series_list:
+        await db.delete(series)
+
+    await db.commit()
+
+    # 清除缓存
+    await Cache.delete_pattern("series_*")
+
+    return {
+        "message": f"成功删除 {count} 个剧集",
+        "deleted_count": count,
+    }
+
+
+@router.post("/batch/feature", summary="批量设置推荐")
+@limiter.limit(RateLimitPresets.ADMIN_WRITE)
+async def batch_feature_series(
+    request: Request,
+    series_ids: list[int],
+    is_featured: bool,
+    current_admin: AdminUser = Depends(get_current_admin_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """批量设置/取消推荐"""
+    result = await db.execute(
+        select(Series).where(Series.id.in_(series_ids))
+    )
+    series_list = result.scalars().all()
+
+    for series in series_list:
+        series.is_featured = is_featured
+
+    await db.commit()
+
+    # 清除缓存
+    await Cache.delete_pattern("series_*")
+    await Cache.delete_pattern("featured_series:*")
+
+    action = "推荐" if is_featured else "取消推荐"
+    return {
+        "message": f"成功{action} {len(series_list)} 个剧集",
+        "updated_count": len(series_list),
+    }

@@ -13,6 +13,12 @@ import {
   Input,
   Select,
   Image,
+  Statistic,
+  Row,
+  Col,
+  Modal,
+  Dropdown,
+  Menu,
 } from 'antd'
 import {
   PlusOutlined,
@@ -21,10 +27,15 @@ import {
   EyeOutlined,
   ReloadOutlined,
   SearchOutlined,
+  DownOutlined,
+  CheckOutlined,
+  StopOutlined,
+  StarOutlined,
 } from '@ant-design/icons'
 import type { ColumnsType } from 'antd/es/table'
 import seriesService, { SeriesListItem, SeriesType, SeriesStatus } from '@/services/seriesService'
 import { formatAWSDate, formatAWSNumber, AWSTag } from '@/utils/awsStyleHelpers'
+import { SeriesPreviewButton } from './SeriesPreview'
 
 const SeriesList: React.FC = () => {
   const navigate = useNavigate()
@@ -36,6 +47,8 @@ const SeriesList: React.FC = () => {
   const [searchText, setSearchText] = useState('')
   const [statusFilter, setStatusFilter] = useState<SeriesStatus | undefined>()
   const [typeFilter, setTypeFilter] = useState<SeriesType | undefined>()
+  const [selectedRowKeys, setSelectedRowKeys] = useState<React.Key[]>([])
+  const [stats, setStats] = useState<any>(null)
 
   // 加载数据
   const loadData = async () => {
