@@ -40,7 +40,8 @@
     "series": "Series",
     "seriesNew": "New Series",
     "seriesDetail": "Series Detail",
-    "seriesEdit": "Edit Series"
+    "seriesEdit": "Edit Series",
+    "profile": "Profile"
   },
   "common": {
     "edit": "Edit",
@@ -63,7 +64,9 @@
     "total": "Total",
     "items": "items",
     "logout": "Logout",
-    "adminPanel": "Admin Panel"
+    "adminPanel": "Admin Panel",
+    "profile": "Profile",
+    "help": "Help"
   },
   "settings": {
     "title": "Settings",

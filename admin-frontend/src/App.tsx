@@ -24,6 +24,7 @@ const IPBlacklist = lazy(() => import('./pages/IPBlacklist'))
 const SeriesList = lazy(() => import('./pages/Series/List'))
 const SeriesEdit = lazy(() => import('./pages/Series/Edit'))
 const MediaManager = lazy(() => import('./pages/MediaManager'))
+const Profile = lazy(() => import('./pages/Profile'))
 
 // Loading component for Suspense
 const PageLoading = () => (
@@ -93,6 +94,7 @@ function App() {
                 <Route path="series/:id" element={<SeriesEdit />} />
                 <Route path="series/:id/edit" element={<SeriesEdit />} />
                 <Route path="media" element={<MediaManager />} />
+                <Route path="profile" element={<Profile />} />
               </Route>
             </Routes>
           </Suspense>

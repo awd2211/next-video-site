@@ -448,6 +448,16 @@ const AdminLayout = () => {
             <LanguageSwitcher />
             <Button
               type="text"
+              icon={<UserOutlined />}
+              onClick={() => navigate('/profile')}
+              style={{
+                color: currentTheme === 'dark' ? 'rgba(255, 255, 255, 0.85)' : 'rgba(55, 53, 47, 0.85)',
+              }}
+            >
+              {t('common.profile') || '个人资料'}
+            </Button>
+            <Button
+              type="text"
               icon={<LogoutOutlined />}
               onClick={handleLogout}
               style={{

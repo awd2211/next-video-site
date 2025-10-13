@@ -40,7 +40,8 @@
     "series": "剧集管理",
     "seriesNew": "新增剧集",
     "seriesDetail": "剧集详情",
-    "seriesEdit": "编辑剧集"
+    "seriesEdit": "编辑剧集",
+    "profile": "个人资料"
   },
   "common": {
     "edit": "编辑",
@@ -63,7 +64,9 @@
     "total": "共",
     "items": "项",
     "logout": "退出登录",
-    "adminPanel": "管理面板"
+    "adminPanel": "管理面板",
+    "profile": "个人资料",
+    "help": "帮助"
   },
   "settings": {
     "title": "系统设置",

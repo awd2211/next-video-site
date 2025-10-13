@@ -12,6 +12,7 @@ from slowapi.errors import RateLimitExceeded
 from sqlalchemy.exc import IntegrityError, OperationalError
 
 from app.admin import actors as admin_actors
+from app.admin import ai_management as admin_ai
 from app.admin import announcements as admin_announcements
 from app.admin import banners as admin_banners
 from app.admin import batch_operations as admin_batch
@@ -28,6 +29,7 @@ from app.admin import media as admin_media
 from app.admin import media_share as admin_media_share
 from app.admin import media_version as admin_media_version
 from app.admin import operations as admin_operations
+from app.admin import profile as admin_profile
 from app.admin import series as admin_series
 from app.admin import settings as admin_settings
 from app.admin import stats as admin_stats
@@ -506,6 +508,16 @@ app.include_router(
     admin_media_version.router,
     prefix=f"{settings.API_V1_PREFIX}/admin",
     tags=["Admin - Media Version"],
+)
+app.include_router(
+    admin_profile.router,
+    prefix=f"{settings.API_V1_PREFIX}/admin/profile",
+    tags=["Admin - Profile"],
+)
+app.include_router(
+    admin_ai.router,
+    prefix=f"{settings.API_V1_PREFIX}/admin/ai",
+    tags=["Admin - AI Management"],
 )
 
 
