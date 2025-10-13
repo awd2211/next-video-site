@@ -14,10 +14,9 @@ from app.models.media import Media, MediaStatus
 from app.models.media_version import MediaVersion
 from app.models.user import AdminUser
 from app.utils.dependencies import get_current_admin_user
-from app.utils.minio_client import get_minio_client
+from app.utils.minio_client import minio_client
 
 router = APIRouter()
-minio_client = get_minio_client()
 
 
 @router.get("/media/{media_id}/versions")
