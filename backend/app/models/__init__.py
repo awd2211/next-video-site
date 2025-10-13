@@ -13,6 +13,7 @@ from app.models.settings import SystemSettings
 from app.models.media import Media  # 🆕 媒体资源
 from app.models.media_share import MediaShare  # 🆕 媒体文件分享
 from app.models.media_version import MediaVersion  # 🆕 媒体文件版本历史
+from app.models.share import VideoShare, SharePlatform  # 视频分享
 from app.models.user import AdminUser, User
 from app.models.user_activity import Favorite, WatchHistory
 from app.models.video import (
@@ -53,6 +54,8 @@ __all__ = [
     "Media",  # 🆕 媒体资源
     "MediaShare",  # 🆕 媒体文件分享
     "MediaVersion",  # 🆕 媒体文件版本历史
+    "VideoShare",  # 视频分享
+    "SharePlatform",  # 分享平台枚举
     "Series",  # 🆕 视频系列/专辑
     "SeriesType",  # 🆕 系列类型枚举
     "SeriesStatus",  # 🆕 系列状态枚举
