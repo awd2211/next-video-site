@@ -164,7 +164,7 @@ const ChunkedUploader = ({
         showUploadList={false}
       >
         <p className="ant-upload-drag-icon">
-          <InboxOutlined style={{ fontSize: 48, color: '#1890ff' }} />
+          <InboxOutlined style={{ fontSize: 48, color: '#0073bb' }} />
         </p>
         <p className="ant-upload-text">点击或拖拽文件到此区域上传</p>
         <p className="ant-upload-hint">

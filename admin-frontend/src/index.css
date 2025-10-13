@@ -151,8 +151,25 @@ body.dark a:hover {
 /* ============ 卡片阴影优化（AWS 风格） ============ */
 .ant-card {
   border: 1px solid #e9ebed;
+  border-radius: 8px;
   box-shadow: 0 0 0 1px rgba(0, 7, 22, 0.05), 0 1px 1px 0 rgba(0, 7, 22, 0.05);
   transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.ant-card-head {
+  border-bottom: 1px solid #e9ebed;
+  background: transparent;
+  padding: 16px 24px;
+}
+
+.ant-card-head-title {
+  font-weight: 600;
+  font-size: 16px;
+  color: #16191f;
+}
+
+.ant-card-body {
+  padding: 24px;
 }
 
 .ant-card:hover {
@@ -162,6 +179,14 @@ body.dark a:hover {
 body.dark .ant-card {
   border-color: #2a2e33;
   box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.1), 0 1px 1px 0 rgba(0, 0, 0, 0.3);
+}
+
+body.dark .ant-card-head {
+  border-bottom-color: #2a2e33;
+}
+
+body.dark .ant-card-head-title {
+  color: #d1d5db;
 }
 
 body.dark .ant-card:hover {

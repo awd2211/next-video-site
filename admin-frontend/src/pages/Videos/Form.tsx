@@ -124,12 +124,30 @@ const VideoForm = () => {
 
   return (
     <div>
-      <Space style={{ marginBottom: 24 }}>
-        <Button icon={<ArrowLeftOutlined />} onClick={() => navigate('/videos')}>
+      <div style={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: '16px',
+        marginBottom: 24,
+        paddingBottom: 16,
+        borderBottom: '1px solid #e9e9e7'
+      }}>
+        <Button
+          icon={<ArrowLeftOutlined />}
+          onClick={() => navigate('/videos')}
+          style={{ borderRadius: 8 }}
+        >
           返回列表
         </Button>
-        <h2 style={{ margin: 0 }}>{isEdit ? '编辑视频' : '新增视频'}</h2>
-      </Space>
+        <h2 style={{
+          margin: 0,
+          fontSize: 20,
+          fontWeight: 600,
+          color: '#16191f'
+        }}>
+          {isEdit ? '编辑视频' : '新增视频'}
+        </h2>
+      </div>
 
       <Form 
         form={form} 
