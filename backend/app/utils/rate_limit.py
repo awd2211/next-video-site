@@ -225,6 +225,21 @@ class AutoBanDetector:
                 # 清除计数
                 await client.delete(key)
 
+                # 🆕 发送安全事件通知
+                try:
+                    from app.database import async_session_maker
+                    from app.utils.admin_notification_service import AdminNotificationService
+
+                    async with async_session_maker() as db:
+                        await AdminNotificationService.notify_suspicious_activity(
+                            db=db,
+                            activity_type=f"Auto-banned IP",
+                            description=f"{count} 次{attempt_type}失败尝试，已自动封禁1小时",
+                            ip_address=ip,
+                        )
+                except Exception as e:
+                    logger.error(f"Failed to send suspicious activity notification: {e}")
+
         except Exception as e:
             logger.error(f"Record failed attempt error: {e}", exc_info=True)
 

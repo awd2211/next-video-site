@@ -62,7 +62,7 @@ class AdminNotificationStatsResponse(BaseModel):
     by_severity: dict
 
 
-@router.get("/", response_model=AdminNotificationListResponse)
+@router.get("", response_model=AdminNotificationListResponse)
 async def get_admin_notifications(
     page: int = Query(1, ge=1, description="页码"),
     page_size: int = Query(20, ge=1, le=100, description="每页数量"),

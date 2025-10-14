@@ -306,6 +306,25 @@ def transcode_video_to_av1(self, video_id: int):
             )
         )
 
+        # 🆕 数据库通知: 转码完成（持久化记录）
+        try:
+            from app.database import async_session_maker
+            from app.utils.admin_notification_service import AdminNotificationService
+
+            async def send_db_notification():
+                async with async_session_maker() as db:
+                    await AdminNotificationService.notify_video_processing_complete(
+                        db=db,
+                        video_id=video_id,
+                        video_title=video.title,
+                        processing_type="AV1转码",
+                    )
+
+            asyncio.run(send_db_notification())
+            logger.info(f"✅ 转码完成通知已发送: video_id={video_id}")
+        except Exception as e:
+            logger.error(f"Failed to send video processing notification: {e}")
+
         # 11. 清理临时文件
         logger.info("清理临时文件...")
         shutil.rmtree(temp_dir, ignore_errors=True)

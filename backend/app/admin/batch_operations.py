@@ -89,6 +89,22 @@ async def batch_update_video_status(
         extra={"admin_id": current_admin.id, "video_ids": data.video_ids[:10]},
     )
 
+    # 🆕 发送批量操作通知
+    if updated_count > 0:
+        try:
+            from app.utils.admin_notification_service import AdminNotificationService
+
+            await AdminNotificationService.notify_batch_operation(
+                db=db,
+                operation_type="update",
+                entity_type="video",
+                count=updated_count,
+                admin_username=current_admin.username,
+                details=f"状态更新为 {data.status}",
+            )
+        except Exception as e:
+            logger.error(f"Failed to send batch operation notification: {e}")
+
     return {
         "success": True,
         "updated": updated_count,
@@ -135,6 +151,21 @@ async def batch_delete_videos(
         f"Batch deleted videos: {deleted_count} videos",
         extra={"admin_id": current_admin.id, "video_ids": data.ids[:10]},
     )
+
+    # 🆕 发送批量删除通知
+    if deleted_count > 0:
+        try:
+            from app.utils.admin_notification_service import AdminNotificationService
+
+            await AdminNotificationService.notify_batch_operation(
+                db=db,
+                operation_type="delete",
+                entity_type="video",
+                count=deleted_count,
+                admin_username=current_admin.username,
+            )
+        except Exception as e:
+            logger.error(f"Failed to send batch delete notification: {e}")
 
     return {
         "success": True,

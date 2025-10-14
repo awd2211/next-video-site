@@ -85,8 +85,24 @@ async def admin_ban_user(
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
 
+    username = user.username or user.email
     user.is_active = False
     await db.commit()
+
+    # 🆕 发送封禁通知
+    try:
+        from app.utils.admin_notification_service import AdminNotificationService
+
+        await AdminNotificationService.notify_user_banned(
+            db=db,
+            user_id=user_id,
+            username=username,
+            action="banned",
+            admin_username=current_admin.username,
+        )
+    except Exception as e:
+        print(f"Failed to send user ban notification: {e}")
+
     return {"message": "User banned successfully"}
 
 @router.put("/{user_id}/unban")
@@ -101,8 +117,24 @@ async def admin_unban_user(
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
 
+    username = user.username or user.email
     user.is_active = True
     await db.commit()
+
+    # 🆕 发送解封通知
+    try:
+        from app.utils.admin_notification_service import AdminNotificationService
+
+        await AdminNotificationService.notify_user_banned(
+            db=db,
+            user_id=user_id,
+            username=username,
+            action="unbanned",
+            admin_username=current_admin.username,
+        )
+    except Exception as e:
+        print(f"Failed to send user unban notification: {e}")
+
     return {"message": "User unbanned successfully"}
 
 
@@ -120,6 +152,23 @@ async def admin_batch_ban_users(
         user.is_active = False
 
     await db.commit()
+
+    # 🆕 发送批量封禁通知
+    if users:
+        try:
+            from app.utils.admin_notification_service import AdminNotificationService
+
+            await AdminNotificationService.notify_user_banned(
+                db=db,
+                user_id=users[0].id,
+                username="",
+                action="banned",
+                admin_username=current_admin.username,
+                user_count=len(users),
+            )
+        except Exception as e:
+            print(f"Failed to send batch ban notification: {e}")
+
     return {"message": f"Successfully banned {len(users)} users", "count": len(users)}
 
 
@@ -137,6 +186,23 @@ async def admin_batch_unban_users(
         user.is_active = True
 
     await db.commit()
+
+    # 🆕 发送批量解封通知
+    if users:
+        try:
+            from app.utils.admin_notification_service import AdminNotificationService
+
+            await AdminNotificationService.notify_user_banned(
+                db=db,
+                user_id=users[0].id,
+                username="",
+                action="unbanned",
+                admin_username=current_admin.username,
+                user_count=len(users),
+            )
+        except Exception as e:
+            print(f"Failed to send batch unban notification: {e}")
+
     return {"message": f"Successfully unbanned {len(users)} users", "count": len(users)}
 
 

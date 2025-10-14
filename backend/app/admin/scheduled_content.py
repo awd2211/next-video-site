@@ -149,6 +149,22 @@ async def schedule_video_publishing(
         f"管理员 {current_admin.username} 为视频 {video.id} 设置定时发布: {schedule_data.scheduled_publish_at}"
     )
 
+    # 🆕 发送定时发布设置通知
+    try:
+        from app.utils.admin_notification_service import AdminNotificationService
+
+        await AdminNotificationService.notify_scheduled_content(
+            db=db,
+            content_id=video.id,
+            content_title=video.title,
+            content_type="video",
+            action="scheduled",
+            scheduled_time=str(schedule_data.scheduled_publish_at),
+            admin_username=current_admin.username,
+        )
+    except Exception as e:
+        logger.error(f"Failed to send scheduled content notification: {e}")
+
     return {
         "id": video.id,
         "title": video.title,
@@ -220,6 +236,21 @@ async def cancel_video_schedule(
 
     logger.info(f"管理员 {current_admin.username} 取消了视频 {video_id} 的定时发布")
 
+    # 🆕 发送取消定时发布通知
+    try:
+        from app.utils.admin_notification_service import AdminNotificationService
+
+        await AdminNotificationService.notify_scheduled_content(
+            db=db,
+            content_id=video.id,
+            content_title=video.title,
+            content_type="video",
+            action="cancelled",
+            admin_username=current_admin.username,
+        )
+    except Exception as e:
+        logger.error(f"Failed to send cancel scheduled notification: {e}")
+
     return {"message": "Scheduled publishing cancelled"}
 
 
@@ -246,6 +277,7 @@ async def publish_scheduled_videos(
     videos = result.scalars().all()
 
     published_count = 0
+    video_titles = []
     for video in videos:
         # 发布视频
         video.status = VideoStatus.PUBLISHED
@@ -253,12 +285,28 @@ async def publish_scheduled_videos(
         # 清除定时发布时间
         video.scheduled_publish_at = None
         published_count += 1
+        video_titles.append(video.title)
 
     await db.commit()
 
     logger.info(
         f"管理员 {current_admin.username} 手动触发定时发布，共发布 {published_count} 个视频"
     )
+
+    # 🆕 发送自动发布通知（为每个视频单独发送）
+    for video in videos:
+        try:
+            from app.utils.admin_notification_service import AdminNotificationService
+
+            await AdminNotificationService.notify_scheduled_content(
+                db=db,
+                content_id=video.id,
+                content_title=video.title,
+                content_type="video",
+                action="published",
+            )
+        except Exception as e:
+            logger.error(f"Failed to send published notification for video {video.id}: {e}")
 
     return {"message": f"Published {published_count} scheduled videos", "count": published_count}
 

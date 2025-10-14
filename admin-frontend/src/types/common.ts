@@ -14,7 +14,8 @@ export interface ApiError {
   status?: number
 }
 
-export type VideoStatus = 'draft' | 'published' | 'archived'
+// 使用大写匹配后端 VideoStatus 枚举
+export type VideoStatus = 'DRAFT' | 'PUBLISHED' | 'ARCHIVED'
 export type VideoType = 'movie' | 'tv_series' | 'anime' | 'documentary'
 export type CommentStatus = 'PENDING' | 'APPROVED' | 'REJECTED'
 export type UserRole = 'user' | 'admin' | 'superadmin'

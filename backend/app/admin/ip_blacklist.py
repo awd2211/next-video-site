@@ -102,6 +102,22 @@ async def add_ip_to_blacklist(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="添加失败"
         )
 
+    # 🆕 发送IP封禁通知
+    try:
+        from app.database import async_session_maker
+        from app.utils.admin_notification_service import AdminNotificationService
+
+        async with async_session_maker() as db:
+            await AdminNotificationService.notify_ip_blacklist(
+                db=db,
+                ip_address=data.ip,
+                action="added",
+                admin_username=current_admin.username,
+                reason=data.reason,
+            )
+    except Exception as e:
+        print(f"Failed to send IP blacklist notification: {e}")
+
     return IPBlacklistResponse(**item)
 
 
@@ -127,6 +143,21 @@ async def remove_ip_from_blacklist(
 
     # 从黑名单移除
     await remove_from_blacklist(ip)
+
+    # 🆕 发送IP解封通知
+    try:
+        from app.database import async_session_maker
+        from app.utils.admin_notification_service import AdminNotificationService
+
+        async with async_session_maker() as db:
+            await AdminNotificationService.notify_ip_blacklist(
+                db=db,
+                ip_address=ip,
+                action="removed",
+                admin_username=current_admin.username,
+            )
+    except Exception as e:
+        print(f"Failed to send IP blacklist removal notification: {e}")
 
     return None
 
@@ -222,6 +253,23 @@ async def batch_remove_ips(
                 failed.append({"ip": ip, "reason": "不在黑名单中"})
         except Exception as e:
             failed.append({"ip": ip, "reason": str(e)})
+
+    # 🆕 发送批量IP解封通知
+    if removed:
+        try:
+            from app.database import async_session_maker
+            from app.utils.admin_notification_service import AdminNotificationService
+
+            async with async_session_maker() as db:
+                await AdminNotificationService.notify_ip_blacklist(
+                    db=db,
+                    ip_address=removed[0] if len(removed) == 1 else "多个IP",
+                    action="removed",
+                    admin_username=current_admin.username,
+                    ip_count=len(removed),
+                )
+        except Exception as e:
+            print(f"Failed to send batch IP removal notification: {e}")
 
     return {
         "success": len(removed),

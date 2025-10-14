@@ -95,6 +95,20 @@ async def create_announcement(
     await db.commit()
     await db.refresh(announcement)
 
+    # 🆕 发送公告创建通知
+    try:
+        from app.utils.admin_notification_service import AdminNotificationService
+
+        await AdminNotificationService.notify_announcement_management(
+            db=db,
+            announcement_id=announcement.id,
+            announcement_title=announcement.title,
+            action="created",
+            admin_username=current_admin.username,
+        )
+    except Exception as e:
+        print(f"Failed to send announcement creation notification: {e}")
+
     return AnnouncementResponse.model_validate(announcement)
 
 
@@ -139,8 +153,25 @@ async def delete_announcement(
     if not announcement:
         raise HTTPException(status_code=404, detail="公告不存在")
 
+    # 保存信息用于通知
+    announcement_title = announcement.title
+
     await db.delete(announcement)
     await db.commit()
+
+    # 🆕 发送公告删除通知
+    try:
+        from app.utils.admin_notification_service import AdminNotificationService
+
+        await AdminNotificationService.notify_announcement_management(
+            db=db,
+            announcement_id=announcement_id,
+            announcement_title=announcement_title,
+            action="deleted",
+            admin_username=current_admin.username,
+        )
+    except Exception as e:
+        print(f"Failed to send announcement deletion notification: {e}")
 
     return {"message": "公告已删除"}
 
@@ -161,9 +192,25 @@ async def toggle_announcement_active(
         raise HTTPException(status_code=404, detail="公告不存在")
 
     announcement.is_active = not announcement.is_active
+    is_active = announcement.is_active
     await db.commit()
 
-    return {"message": "状态已更新", "is_active": announcement.is_active}
+    # 🆕 发送公告状态变更通知
+    try:
+        from app.utils.admin_notification_service import AdminNotificationService
+
+        action = "activated" if is_active else "deactivated"
+        await AdminNotificationService.notify_announcement_management(
+            db=db,
+            announcement_id=announcement_id,
+            announcement_title=announcement.title,
+            action=action,
+            admin_username=current_admin.username,
+        )
+    except Exception as e:
+        print(f"Failed to send announcement status notification: {e}")
+
+    return {"message": "状态已更新", "is_active": is_active}
 
 
 @router.patch("/announcements/{announcement_id}/toggle-pinned")

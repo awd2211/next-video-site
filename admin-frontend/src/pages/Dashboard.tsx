@@ -239,14 +239,13 @@ const Dashboard = () => {
               innerRadius={0.6}
               label={{
                 type: 'outer',
-                content: '{name} {percentage}',
               }}
               statistic={{
                 title: {
                   content: '总数',
                 },
                 content: {
-                  content: videoTypes?.reduce((sum: number, item: any) => sum + item.count, 0) || 0,
+                  content: String(videoTypes?.reduce((sum: number, item: any) => sum + item.count, 0) || 0),
                 },
               }}
               height={300}

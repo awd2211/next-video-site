@@ -134,7 +134,7 @@ const VideoPreviewPopover = ({
 
           {/* Overlay Info */}
           <div className="video-overlay">
-            <Tag color={video.status === 'published' ? 'success' : 'default'}>
+            <Tag color={video.status === 'PUBLISHED' ? 'success' : 'default'}>
               {video.status}
             </Tag>
             {video.is_av1_available && (

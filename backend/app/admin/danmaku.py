@@ -232,6 +232,20 @@ async def review_danmaku(
 
     await db.commit()
 
+    # 🆕 发送弹幕审核通知
+    try:
+        from app.utils.admin_notification_service import AdminNotificationService
+
+        await AdminNotificationService.notify_danmaku_management(
+            db=db,
+            danmaku_id=review_action.danmaku_ids[0] if len(review_action.danmaku_ids) == 1 else 0,
+            action=review_action.action,
+            admin_username=admin_user.username,
+            danmaku_count=len(review_action.danmaku_ids),
+        )
+    except Exception as e:
+        print(f"Failed to send danmaku review notification: {e}")
+
     return {"message": f"已处理 {len(review_action.danmaku_ids)} 条弹幕"}
 
 
@@ -263,6 +277,20 @@ async def batch_delete_danmaku(
     """批量删除弹幕"""
     await db.execute(sql_delete(Danmaku).where(Danmaku.id.in_(danmaku_ids)))
     await db.commit()
+
+    # 🆕 发送批量删除弹幕通知
+    try:
+        from app.utils.admin_notification_service import AdminNotificationService
+
+        await AdminNotificationService.notify_danmaku_management(
+            db=db,
+            danmaku_id=danmaku_ids[0] if len(danmaku_ids) == 1 else 0,
+            action="deleted",
+            admin_username=admin_user.username,
+            danmaku_count=len(danmaku_ids),
+        )
+    except Exception as e:
+        print(f"Failed to send batch danmaku deletion notification: {e}")
 
     return {"message": f"已删除 {len(danmaku_ids)} 条弹幕"}
 

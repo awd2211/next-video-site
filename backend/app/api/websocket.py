@@ -30,8 +30,9 @@ async def get_current_user_from_token(token: str):
         if not user_id:
             return None
 
-        db = SessionLocal()
-        try:
+        # 使用异步数据库连接
+        from app.database import async_session_maker
+        async with async_session_maker() as db:
             if is_admin:
                 result = await db.execute(
                     select(AdminUser).where(AdminUser.id == int(user_id))
@@ -42,8 +43,6 @@ async def get_current_user_from_token(token: str):
                 user = result.scalar_one_or_none()
 
             return {"user": user, "is_admin": is_admin}
-        finally:
-            await db.close()
     except Exception as e:
         logger.error(f"Token验证失败: {str(e)}")
         return None

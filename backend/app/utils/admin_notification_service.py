@@ -316,6 +316,573 @@ class AdminNotificationService:
         )
 
     @staticmethod
+    async def notify_comment_moderation(
+        db: AsyncSession,
+        comment_id: int,
+        action: str,
+        video_title: str,
+        admin_username: str,
+        comment_count: int = 1,
+    ):
+        """
+        评论审核操作通知
+
+        Args:
+            db: 数据库会话
+            comment_id: 评论ID（单个操作）
+            action: 操作类型 (approved/rejected/deleted)
+            video_title: 视频标题
+            admin_username: 执行操作的管理员
+            comment_count: 评论数量（批量操作时 > 1）
+        """
+        action_map = {
+            "approved": "已批准",
+            "rejected": "已拒绝",
+            "deleted": "已删除",
+        }
+        action_text = action_map.get(action, action)
+
+        if comment_count > 1:
+            title = f"批量评论{action_text}"
+            content = f"管理员 {admin_username} {action_text} {comment_count} 条评论"
+            link = "/comments"
+        else:
+            title = f"评论{action_text}"
+            content = f'管理员 {admin_username} {action_text}《{video_title}》的评论'
+            link = f"/comments?comment_id={comment_id}"
+
+        severity = "info" if action == "approved" else "warning"
+
+        await AdminNotificationService.create_admin_notification(
+            db=db,
+            admin_user_id=None,
+            type="comment_moderation",
+            title=title,
+            content=content,
+            severity=severity,
+            related_type="comment",
+            related_id=comment_id if comment_count == 1 else None,
+            link=link,
+        )
+
+    @staticmethod
+    async def notify_user_banned(
+        db: AsyncSession,
+        user_id: int,
+        username: str,
+        action: str,
+        admin_username: str,
+        user_count: int = 1,
+    ):
+        """
+        用户封禁/解封通知
+
+        Args:
+            db: 数据库会话
+            user_id: 用户ID
+            username: 用户名
+            action: 操作类型 (banned/unbanned)
+            admin_username: 执行操作的管理员
+            user_count: 用户数量（批量操作时 > 1）
+        """
+        action_map = {"banned": "已封禁", "unbanned": "已解封"}
+        action_text = action_map.get(action, action)
+
+        if user_count > 1:
+            title = f"批量用户{action_text}"
+            content = f"管理员 {admin_username} {action_text} {user_count} 个用户"
+            link = "/users"
+        else:
+            title = f"用户{action_text}"
+            content = f"管理员 {admin_username} {action_text}用户 {username}"
+            link = f"/users/{user_id}"
+
+        severity = "warning" if action == "banned" else "info"
+
+        await AdminNotificationService.create_admin_notification(
+            db=db,
+            admin_user_id=None,
+            type="user_management",
+            title=title,
+            content=content,
+            severity=severity,
+            related_type="user",
+            related_id=user_id if user_count == 1 else None,
+            link=link,
+        )
+
+    @staticmethod
+    async def notify_batch_operation(
+        db: AsyncSession,
+        operation_type: str,
+        entity_type: str,
+        count: int,
+        admin_username: str,
+        details: Optional[str] = None,
+    ):
+        """
+        批量操作通知
+
+        Args:
+            db: 数据库会话
+            operation_type: 操作类型 (delete/update/approve/reject)
+            entity_type: 实体类型 (video/comment/user)
+            count: 操作数量
+            admin_username: 执行操作的管理员
+            details: 额外详情
+        """
+        operation_map = {
+            "delete": "删除",
+            "update": "更新",
+            "approve": "批准",
+            "reject": "拒绝",
+        }
+        entity_map = {"video": "视频", "comment": "评论", "user": "用户"}
+
+        operation_text = operation_map.get(operation_type, operation_type)
+        entity_text = entity_map.get(entity_type, entity_type)
+
+        title = f"批量{operation_text}{entity_text}"
+        content = f"管理员 {admin_username} {operation_text}了 {count} 个{entity_text}"
+        if details:
+            content += f" - {details}"
+
+        severity = "warning" if operation_type == "delete" else "info"
+        link = f"/{entity_type}s"
+
+        await AdminNotificationService.create_admin_notification(
+            db=db,
+            admin_user_id=None,
+            type="batch_operation",
+            title=title,
+            content=content,
+            severity=severity,
+            link=link,
+        )
+
+    @staticmethod
+    async def notify_video_published(
+        db: AsyncSession,
+        video_id: int,
+        video_title: str,
+        admin_username: str,
+    ):
+        """
+        视频发布通知
+
+        Args:
+            db: 数据库会话
+            video_id: 视频ID
+            video_title: 视频标题
+            admin_username: 执行操作的管理员
+        """
+        await AdminNotificationService.create_admin_notification(
+            db=db,
+            admin_user_id=None,
+            type="video_published",
+            title="视频已发布",
+            content=f'管理员 {admin_username} 发布了视频《{video_title}》',
+            severity="info",
+            related_type="video",
+            related_id=video_id,
+            link=f"/videos/{video_id}",
+        )
+
+    @staticmethod
+    async def notify_announcement_management(
+        db: AsyncSession,
+        announcement_id: int,
+        announcement_title: str,
+        action: str,  # created/deleted/activated/deactivated
+        admin_username: str,
+    ):
+        """
+        公告管理通知
+
+        Args:
+            db: 数据库会话
+            announcement_id: 公告ID
+            announcement_title: 公告标题
+            action: 操作类型
+            admin_username: 执行操作的管理员
+        """
+        action_map = {
+            "created": "创建",
+            "deleted": "删除",
+            "activated": "激活",
+            "deactivated": "停用",
+        }
+        action_text = action_map.get(action, action)
+
+        severity = "warning" if action == "deleted" else "info"
+
+        await AdminNotificationService.create_admin_notification(
+            db=db,
+            admin_user_id=None,
+            type="announcement_management",
+            title=f"公告{action_text}",
+            content=f'管理员 {admin_username} {action_text}了公告《{announcement_title}》',
+            severity=severity,
+            related_type="announcement",
+            related_id=announcement_id,
+            link=f"/announcements/{announcement_id}",
+        )
+
+    @staticmethod
+    async def notify_banner_management(
+        db: AsyncSession,
+        banner_id: int,
+        banner_title: str,
+        action: str,  # created/deleted/activated/deactivated
+        admin_username: str,
+    ):
+        """
+        横幅管理通知
+
+        Args:
+            db: 数据库会话
+            banner_id: 横幅ID
+            banner_title: 横幅标题
+            action: 操作类型
+            admin_username: 执行操作的管理员
+        """
+        action_map = {
+            "created": "创建",
+            "deleted": "删除",
+            "activated": "激活",
+            "deactivated": "停用",
+        }
+        action_text = action_map.get(action, action)
+
+        severity = "warning" if action == "deleted" else "info"
+
+        await AdminNotificationService.create_admin_notification(
+            db=db,
+            admin_user_id=None,
+            type="banner_management",
+            title=f"横幅{action_text}",
+            content=f'管理员 {admin_username} {action_text}了横幅《{banner_title}》',
+            severity=severity,
+            related_type="banner",
+            related_id=banner_id,
+            link=f"/banners/{banner_id}",
+        )
+
+    @staticmethod
+    async def notify_ip_blacklist(
+        db: AsyncSession,
+        ip_address: str,
+        action: str,  # added/removed
+        admin_username: str,
+        reason: Optional[str] = None,
+        ip_count: int = 1,
+    ):
+        """
+        IP黑名单管理通知
+
+        Args:
+            db: 数据库会话
+            ip_address: IP地址
+            action: 操作类型 (added/removed)
+            admin_username: 执行操作的管理员
+            reason: 封禁原因
+            ip_count: IP数量（批量操作时 > 1）
+        """
+        action_map = {"added": "已封禁", "removed": "已解封"}
+        action_text = action_map.get(action, action)
+
+        if ip_count > 1:
+            title = f"批量IP{action_text}"
+            content = f"管理员 {admin_username} {action_text} {ip_count} 个IP地址"
+        else:
+            title = f"IP{action_text}"
+            content = f"管理员 {admin_username} {action_text} IP: {ip_address}"
+            if reason and action == "added":
+                content += f" - 原因: {reason}"
+
+        severity = "warning" if action == "added" else "info"
+
+        await AdminNotificationService.create_admin_notification(
+            db=db,
+            admin_user_id=None,
+            type="ip_blacklist",
+            title=title,
+            content=content,
+            severity=severity,
+            link="/ip-blacklist",
+        )
+
+    @staticmethod
+    async def notify_series_management(
+        db: AsyncSession,
+        series_id: int,
+        series_title: str,
+        action: str,  # created/deleted/published/archived
+        admin_username: str,
+        series_count: int = 1,
+    ):
+        """
+        专辑/系列管理通知
+
+        Args:
+            db: 数据库会话
+            series_id: 专辑ID
+            series_title: 专辑标题
+            action: 操作类型
+            admin_username: 执行操作的管理员
+            series_count: 专辑数量（批量操作时 > 1）
+        """
+        action_map = {
+            "created": "创建",
+            "deleted": "删除",
+            "published": "发布",
+            "archived": "归档",
+        }
+        action_text = action_map.get(action, action)
+
+        if series_count > 1:
+            title = f"批量专辑{action_text}"
+            content = f"管理员 {admin_username} {action_text}了 {series_count} 个专辑"
+            link = "/series"
+        else:
+            title = f"专辑{action_text}"
+            content = f'管理员 {admin_username} {action_text}了专辑《{series_title}》'
+            link = f"/series/{series_id}"
+
+        severity = "warning" if action == "deleted" else "info"
+
+        await AdminNotificationService.create_admin_notification(
+            db=db,
+            admin_user_id=None,
+            type="series_management",
+            title=title,
+            content=content,
+            severity=severity,
+            related_type="series",
+            related_id=series_id if series_count == 1 else None,
+            link=link,
+        )
+
+    @staticmethod
+    async def notify_scheduled_content(
+        db: AsyncSession,
+        content_id: int,
+        content_title: str,
+        content_type: str,  # video/announcement/banner
+        action: str,  # scheduled/cancelled/published
+        scheduled_time: Optional[str] = None,
+        admin_username: Optional[str] = None,
+    ):
+        """
+        定时发布内容通知
+
+        Args:
+            db: 数据库会话
+            content_id: 内容ID
+            content_title: 内容标题
+            content_type: 内容类型
+            action: 操作类型
+            scheduled_time: 定时发布时间
+            admin_username: 执行操作的管理员
+        """
+        type_map = {"video": "视频", "announcement": "公告", "banner": "横幅"}
+        action_map = {
+            "scheduled": "已设置定时发布",
+            "cancelled": "已取消定时发布",
+            "published": "已自动发布",
+        }
+
+        type_text = type_map.get(content_type, content_type)
+        action_text = action_map.get(action, action)
+
+        if action == "scheduled":
+            title = f"{type_text}定时发布"
+            content = f'管理员 {admin_username} 为{type_text}《{content_title}》设置定时发布'
+            if scheduled_time:
+                content += f": {scheduled_time}"
+            severity = "info"
+        elif action == "cancelled":
+            title = f"取消定时发布"
+            content = f'管理员 {admin_username} 取消了{type_text}《{content_title}》的定时发布'
+            severity = "info"
+        else:  # published
+            title = f"{type_text}自动发布"
+            content = f'{type_text}《{content_title}》已按计划自动发布'
+            severity = "info"
+
+        await AdminNotificationService.create_admin_notification(
+            db=db,
+            admin_user_id=None,
+            type="scheduled_content",
+            title=title,
+            content=content,
+            severity=severity,
+            related_type=content_type,
+            related_id=content_id,
+            link=f"/{content_type}s/{content_id}",
+        )
+
+    @staticmethod
+    async def notify_danmaku_management(
+        db: AsyncSession,
+        danmaku_id: int,
+        action: str,  # approved/rejected/deleted/blocked
+        admin_username: str,
+        video_title: Optional[str] = None,
+        danmaku_count: int = 1,
+    ):
+        """
+        弹幕管理通知
+
+        Args:
+            db: 数据库会话
+            danmaku_id: 弹幕ID
+            action: 操作类型
+            admin_username: 执行操作的管理员
+            video_title: 视频标题（可选）
+            danmaku_count: 弹幕数量（批量操作时 > 1）
+        """
+        action_map = {
+            "approved": "已批准",
+            "rejected": "已拒绝",
+            "deleted": "已删除",
+            "blocked": "已屏蔽",
+        }
+        action_text = action_map.get(action, action)
+
+        if danmaku_count > 1:
+            title = f"批量弹幕{action_text}"
+            content = f"管理员 {admin_username} {action_text} {danmaku_count} 条弹幕"
+            link = "/danmaku"
+        else:
+            title = f"弹幕{action_text}"
+            if video_title:
+                content = f'管理员 {admin_username} {action_text}《{video_title}》的弹幕'
+            else:
+                content = f"管理员 {admin_username} {action_text}弹幕"
+            link = f"/danmaku?danmaku_id={danmaku_id}"
+
+        severity = "warning" if action in ["deleted", "blocked"] else "info"
+
+        await AdminNotificationService.create_admin_notification(
+            db=db,
+            admin_user_id=None,
+            type="danmaku_management",
+            title=title,
+            content=content,
+            severity=severity,
+            related_type="danmaku",
+            related_id=danmaku_id if danmaku_count == 1 else None,
+            link=link,
+        )
+
+    @staticmethod
+    async def notify_rbac_management(
+        db: AsyncSession,
+        target_type: str,  # role/permission/admin_role_assignment
+        target_id: int,
+        target_name: str,
+        action: str,  # created/updated/deleted/assigned/removed
+        admin_username: str,
+        details: Optional[str] = None,
+    ):
+        """
+        RBAC权限管理通知
+
+        Args:
+            db: 数据库会话
+            target_type: 目标类型 (role/permission/admin_role_assignment)
+            target_id: 目标ID
+            target_name: 目标名称
+            action: 操作类型
+            admin_username: 执行操作的管理员
+            details: 额外详情
+        """
+        type_map = {
+            "role": "角色",
+            "permission": "权限",
+            "admin_role_assignment": "管理员角色分配",
+        }
+        action_map = {
+            "created": "创建",
+            "updated": "更新",
+            "deleted": "删除",
+            "assigned": "分配",
+            "removed": "移除",
+        }
+
+        type_text = type_map.get(target_type, target_type)
+        action_text = action_map.get(action, action)
+
+        title = f"{type_text}{action_text}"
+        content = f'管理员 {admin_username} {action_text}了{type_text}《{target_name}》'
+        if details:
+            content += f" - {details}"
+
+        severity = "warning" if action == "deleted" else "info"
+
+        await AdminNotificationService.create_admin_notification(
+            db=db,
+            admin_user_id=None,
+            type="rbac_management",
+            title=title,
+            content=content,
+            severity=severity,
+            related_type=target_type,
+            related_id=target_id,
+            link="/rbac/roles" if target_type == "role" else "/rbac/permissions",
+        )
+
+    @staticmethod
+    async def notify_ai_provider_management(
+        db: AsyncSession,
+        provider_id: int,
+        provider_name: str,
+        action: str,  # created/updated/deleted/tested/enabled/disabled
+        admin_username: str,
+        details: Optional[str] = None,
+    ):
+        """
+        AI提供商管理通知
+
+        Args:
+            db: 数据库会话
+            provider_id: 提供商ID
+            provider_name: 提供商名称
+            action: 操作类型
+            admin_username: 执行操作的管理员
+            details: 额外详情（如测试结果）
+        """
+        action_map = {
+            "created": "创建",
+            "updated": "更新",
+            "deleted": "删除",
+            "tested": "测试",
+            "enabled": "启用",
+            "disabled": "禁用",
+        }
+        action_text = action_map.get(action, action)
+
+        title = f"AI提供商{action_text}"
+        content = f'管理员 {admin_username} {action_text}了AI提供商《{provider_name}》'
+        if details:
+            content += f" - {details}"
+
+        severity = "warning" if action == "deleted" else "info"
+
+        await AdminNotificationService.create_admin_notification(
+            db=db,
+            admin_user_id=None,
+            type="ai_provider_management",
+            title=title,
+            content=content,
+            severity=severity,
+            related_type="ai_provider",
+            related_id=provider_id,
+            link=f"/ai-management/providers/{provider_id}",
+        )
+
+    @staticmethod
     async def mark_as_read(
         db: AsyncSession,
         notification_id: int,

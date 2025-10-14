@@ -87,13 +87,33 @@ async def admin_approve_comment(
     current_admin: AdminUser = Depends(get_current_admin_user),
 ):
     """Admin: Approve comment"""
-    result = await db.execute(select(Comment).filter(Comment.id == comment_id))
+    result = await db.execute(
+        select(Comment)
+        .options(selectinload(Comment.video))
+        .filter(Comment.id == comment_id)
+    )
     comment = result.scalar_one_or_none()
     if not comment:
         raise HTTPException(status_code=404, detail="Comment not found")
 
     comment.status = CommentStatus.APPROVED
     await db.commit()
+
+    # 🆕 发送通知
+    try:
+        from app.utils.admin_notification_service import AdminNotificationService
+
+        await AdminNotificationService.notify_comment_moderation(
+            db=db,
+            comment_id=comment_id,
+            action="approved",
+            video_title=comment.video.title if comment.video else "未知视频",
+            admin_username=current_admin.username,
+        )
+    except Exception as e:
+        # 通知失败不影响业务流程
+        print(f"Failed to send comment moderation notification: {e}")
+
     return {"message": "Comment approved"}
 
 
@@ -104,13 +124,32 @@ async def admin_reject_comment(
     current_admin: AdminUser = Depends(get_current_admin_user),
 ):
     """Admin: Reject comment"""
-    result = await db.execute(select(Comment).filter(Comment.id == comment_id))
+    result = await db.execute(
+        select(Comment)
+        .options(selectinload(Comment.video))
+        .filter(Comment.id == comment_id)
+    )
     comment = result.scalar_one_or_none()
     if not comment:
         raise HTTPException(status_code=404, detail="Comment not found")
 
     comment.status = CommentStatus.REJECTED
     await db.commit()
+
+    # 🆕 发送通知
+    try:
+        from app.utils.admin_notification_service import AdminNotificationService
+
+        await AdminNotificationService.notify_comment_moderation(
+            db=db,
+            comment_id=comment_id,
+            action="rejected",
+            video_title=comment.video.title if comment.video else "未知视频",
+            admin_username=current_admin.username,
+        )
+    except Exception as e:
+        print(f"Failed to send comment moderation notification: {e}")
+
     return {"message": "Comment rejected"}
 
 
@@ -121,13 +160,35 @@ async def admin_delete_comment(
     current_admin: AdminUser = Depends(get_current_admin_user),
 ):
     """Admin: Delete comment"""
-    result = await db.execute(select(Comment).filter(Comment.id == comment_id))
+    result = await db.execute(
+        select(Comment)
+        .options(selectinload(Comment.video))
+        .filter(Comment.id == comment_id)
+    )
     comment = result.scalar_one_or_none()
     if not comment:
         raise HTTPException(status_code=404, detail="Comment not found")
 
+    # 保存信息用于通知（删除后无法访问）
+    video_title = comment.video.title if comment.video else "未知视频"
+
     await db.delete(comment)
     await db.commit()
+
+    # 🆕 发送通知
+    try:
+        from app.utils.admin_notification_service import AdminNotificationService
+
+        await AdminNotificationService.notify_comment_moderation(
+            db=db,
+            comment_id=comment_id,
+            action="deleted",
+            video_title=video_title,
+            admin_username=current_admin.username,
+        )
+    except Exception as e:
+        print(f"Failed to send comment moderation notification: {e}")
+
     return {"message": "Comment deleted"}
 
 
@@ -145,6 +206,23 @@ async def admin_batch_approve_comments(
         comment.status = CommentStatus.APPROVED
 
     await db.commit()
+
+    # 🆕 发送批量通知
+    if comments:
+        try:
+            from app.utils.admin_notification_service import AdminNotificationService
+
+            await AdminNotificationService.notify_comment_moderation(
+                db=db,
+                comment_id=comments[0].id,
+                action="approved",
+                video_title="",
+                admin_username=current_admin.username,
+                comment_count=len(comments),
+            )
+        except Exception as e:
+            print(f"Failed to send batch comment notification: {e}")
+
     return {"message": f"{len(comments)} comments approved"}
 
 
@@ -162,6 +240,23 @@ async def admin_batch_reject_comments(
         comment.status = CommentStatus.REJECTED
 
     await db.commit()
+
+    # 🆕 发送批量通知
+    if comments:
+        try:
+            from app.utils.admin_notification_service import AdminNotificationService
+
+            await AdminNotificationService.notify_comment_moderation(
+                db=db,
+                comment_id=comments[0].id,
+                action="rejected",
+                video_title="",
+                admin_username=current_admin.username,
+                comment_count=len(comments),
+            )
+        except Exception as e:
+            print(f"Failed to send batch comment notification: {e}")
+
     return {"message": f"{len(comments)} comments rejected"}
 
 
@@ -174,12 +269,30 @@ async def admin_batch_delete_comments(
     """Admin: Batch delete comments"""
     result = await db.execute(select(Comment).filter(Comment.id.in_(comment_ids)))
     comments = result.scalars().all()
+    comment_count = len(comments)
 
     for comment in comments:
         await db.delete(comment)
 
     await db.commit()
-    return {"message": f"{len(comments)} comments deleted"}
+
+    # 🆕 发送批量删除通知
+    if comment_count > 0:
+        try:
+            from app.utils.admin_notification_service import AdminNotificationService
+
+            await AdminNotificationService.notify_comment_moderation(
+                db=db,
+                comment_id=0,
+                action="deleted",
+                video_title="",
+                admin_username=current_admin.username,
+                comment_count=comment_count,
+            )
+        except Exception as e:
+            print(f"Failed to send batch delete notification: {e}")
+
+    return {"message": f"{comment_count} comments deleted"}
 
 
 @router.get("/stats")

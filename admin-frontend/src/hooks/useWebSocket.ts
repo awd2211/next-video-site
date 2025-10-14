@@ -144,7 +144,8 @@ export function useWebSocket(isAdmin: boolean = true, options: UseWebSocketOptio
     }
 
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
-    const host = import.meta.env.VITE_WS_URL || window.location.host.replace(':3001', ':8000')
+    // 优先使用环境变量，否则使用 localhost:8000
+    const host = import.meta.env.VITE_WS_URL || 'localhost:8000'
     const endpoint = isAdmin ? '/ws/admin' : '/ws'
 
     return `${protocol}//${host}/api/v1${endpoint}?token=${token}`
@@ -156,6 +157,11 @@ export function useWebSocket(isAdmin: boolean = true, options: UseWebSocketOptio
   const handleMessage = useCallback(
     (event: MessageEvent) => {
       try {
+        // 处理心跳pong响应（纯文本）
+        if (event.data === 'pong') {
+          return
+        }
+
         const data = JSON.parse(event.data) as WebSocketMessage
         console.log('📡 收到WebSocket消息:', data)
 
@@ -256,6 +262,12 @@ export function useWebSocket(isAdmin: boolean = true, options: UseWebSocketOptio
    * 连接WebSocket
    */
   const connect = useCallback(() => {
+    // 如果已有连接，先断开
+    if (wsRef.current) {
+      wsRef.current.close()
+      wsRef.current = null
+    }
+
     try {
       const url = getWebSocketUrl()
       console.log('🔌 正在连接WebSocket:', url)
@@ -372,7 +384,8 @@ export function useWebSocket(isAdmin: boolean = true, options: UseWebSocketOptio
     return () => {
       disconnect()
     }
-  }, [autoConnect, connect, disconnect])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []) // 只在组件挂载时连接一次
 
   return {
     isConnected,

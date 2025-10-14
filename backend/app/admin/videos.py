@@ -361,11 +361,26 @@ async def admin_update_video_status(
     if not video:
         raise HTTPException(status_code=404, detail="Video not found")
 
+    old_status = video.status
     video.status = status
     if status == VideoStatus.PUBLISHED and not video.published_at:
         video.published_at = datetime.now(timezone.utc)
 
     await db.commit()
+
+    # 🆕 发送视频发布通知
+    if status == VideoStatus.PUBLISHED and old_status != VideoStatus.PUBLISHED:
+        try:
+            from app.utils.admin_notification_service import AdminNotificationService
+
+            await AdminNotificationService.notify_video_published(
+                db=db,
+                video_id=video_id,
+                video_title=video.title,
+                admin_username=current_admin.username,
+            )
+        except Exception as e:
+            logger.error(f"Failed to send video publish notification: {e}")
 
     # 清除相关缓存
     await Cache.delete_pattern("trending_videos:*")
@@ -417,6 +432,19 @@ async def admin_upload_video_file(
         return {"video_url": video_url, "message": "视频上传成功"}
 
     except Exception as e:
+        # 🆕 发送上传失败通知
+        try:
+            from app.utils.admin_notification_service import AdminNotificationService
+
+            await AdminNotificationService.notify_upload_failed(
+                db=db,
+                filename=file.filename,
+                user_name=current_admin.username,
+                error_reason=str(e),
+            )
+        except Exception as notify_err:
+            logger.error(f"Failed to send upload failure notification: {notify_err}")
+
         raise HTTPException(status_code=500, detail=f"上传失败: {str(e)}")
 
 
@@ -461,6 +489,19 @@ async def admin_upload_poster(
         return {"poster_url": poster_url, "message": "海报上传成功"}
 
     except Exception as e:
+        # 🆕 发送上传失败通知
+        try:
+            from app.utils.admin_notification_service import AdminNotificationService
+
+            await AdminNotificationService.notify_upload_failed(
+                db=db,
+                filename=file.filename,
+                user_name=current_admin.username,
+                error_reason=str(e),
+            )
+        except Exception as notify_err:
+            logger.error(f"Failed to send upload failure notification: {notify_err}")
+
         raise HTTPException(status_code=500, detail=f"上传失败: {str(e)}")
 
 
@@ -503,4 +544,17 @@ async def admin_upload_backdrop(
         return {"backdrop_url": backdrop_url, "message": "背景图上传成功"}
 
     except Exception as e:
+        # 🆕 发送上传失败通知
+        try:
+            from app.utils.admin_notification_service import AdminNotificationService
+
+            await AdminNotificationService.notify_upload_failed(
+                db=db,
+                filename=file.filename,
+                user_name=current_admin.username,
+                error_reason=str(e),
+            )
+        except Exception as notify_err:
+            logger.error(f"Failed to send upload failure notification: {notify_err}")
+
         raise HTTPException(status_code=500, detail=f"上传失败: {str(e)}")

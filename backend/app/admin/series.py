@@ -122,6 +122,20 @@ async def admin_create_series(
     await Cache.delete_pattern("series_*")
     await Cache.delete_pattern("featured_series:*")
 
+    # 🆕 发送专辑创建通知
+    try:
+        from app.utils.admin_notification_service import AdminNotificationService
+
+        await AdminNotificationService.notify_series_management(
+            db=db,
+            series_id=series.id,
+            series_title=series.title,
+            action="created",
+            admin_username=current_admin.username,
+        )
+    except Exception as e:
+        print(f"Failed to send series creation notification: {e}")
+
     return SeriesDetailResponse(
         id=series.id,
         title=series.title,
@@ -284,6 +298,9 @@ async def admin_delete_series(
     if not series:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="专辑不存在")
 
+    # 保存信息用于通知
+    series_title = series.title
+
     await db.delete(series)
     await db.commit()
 
@@ -291,6 +308,20 @@ async def admin_delete_series(
     await Cache.delete_pattern(f"series_detail:{series_id}")
     await Cache.delete_pattern("series_list:*")
     await Cache.delete_pattern("featured_series:*")
+
+    # 🆕 发送专辑删除通知
+    try:
+        from app.utils.admin_notification_service import AdminNotificationService
+
+        await AdminNotificationService.notify_series_management(
+            db=db,
+            series_id=series_id,
+            series_title=series_title,
+            action="deleted",
+            admin_username=current_admin.username,
+        )
+    except Exception as e:
+        print(f"Failed to send series deletion notification: {e}")
 
     return None
 
@@ -555,6 +586,25 @@ async def batch_publish_series(
     # 清除缓存
     await Cache.delete_pattern("series_*")
 
+    # 🆕 发送批量发布通知
+    if count > 0:
+        try:
+            from app.utils.admin_notification_service import AdminNotificationService
+
+            series_title = series_list[0].title if len(series_list) == 1 else "多个专辑"
+            series_id = series_list[0].id if len(series_list) == 1 else 0
+
+            await AdminNotificationService.notify_series_management(
+                db=db,
+                series_id=series_id,
+                series_title=series_title,
+                action="published",
+                admin_username=current_admin.username,
+                series_count=count,
+            )
+        except Exception as e:
+            print(f"Failed to send batch publish notification: {e}")
+
     return {
         "message": f"成功发布 {count} 个剧集",
         "updated_count": count,
@@ -586,6 +636,25 @@ async def batch_archive_series(
     # 清除缓存
     await Cache.delete_pattern("series_*")
 
+    # 🆕 发送批量归档通知
+    if count > 0:
+        try:
+            from app.utils.admin_notification_service import AdminNotificationService
+
+            series_title = series_list[0].title if len(series_list) == 1 else "多个专辑"
+            series_id = series_list[0].id if len(series_list) == 1 else 0
+
+            await AdminNotificationService.notify_series_management(
+                db=db,
+                series_id=series_id,
+                series_title=series_title,
+                action="archived",
+                admin_username=current_admin.username,
+                series_count=count,
+            )
+        except Exception as e:
+            print(f"Failed to send batch archive notification: {e}")
+
     return {
         "message": f"成功归档 {count} 个剧集",
         "updated_count": count,
@@ -607,6 +676,12 @@ async def batch_delete_series(
     series_list = result.scalars().all()
 
     count = len(series_list)
+
+    # 保存信息用于通知
+    series_titles = [s.title for s in series_list]
+    series_title = series_list[0].title if len(series_list) == 1 else "多个专辑"
+    series_id = series_list[0].id if len(series_list) == 1 else 0
+
     for series in series_list:
         await db.delete(series)
 
@@ -614,6 +689,22 @@ async def batch_delete_series(
 
     # 清除缓存
     await Cache.delete_pattern("series_*")
+
+    # 🆕 发送批量删除通知
+    if count > 0:
+        try:
+            from app.utils.admin_notification_service import AdminNotificationService
+
+            await AdminNotificationService.notify_series_management(
+                db=db,
+                series_id=series_id,
+                series_title=series_title,
+                action="deleted",
+                admin_username=current_admin.username,
+                series_count=count,
+            )
+        except Exception as e:
+            print(f"Failed to send batch delete notification: {e}")
 
     return {
         "message": f"成功删除 {count} 个剧集",

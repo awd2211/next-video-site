@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Form, Input, Button, Card, message, Space, Switch, Checkbox, Divider, Modal, Steps, Progress } from 'antd'
+import { Form, Input, Button, Card, Space, Switch, Checkbox, Divider, Modal, Steps, Progress, App } from 'antd'
 import { UserOutlined, LockOutlined, SafetyOutlined, ReloadOutlined, SunOutlined, MoonOutlined, VideoCameraOutlined, MailOutlined, ClockCircleOutlined, CheckCircleOutlined } from '@ant-design/icons'
 import axios from 'axios'  // Use native axios for login, not the intercepted instance
 import { useTheme } from '../contexts/ThemeContext'
@@ -10,6 +10,7 @@ import './Login.css'
 const Login = () => {
   const navigate = useNavigate()
   const { theme, toggleTheme } = useTheme()
+  const { message } = App.useApp()
   const [loading, setLoading] = useState(false)
   const [captchaId, setCaptchaId] = useState('')
   const [captchaUrl, setCaptchaUrl] = useState('')

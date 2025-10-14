@@ -77,7 +77,7 @@ const SeriesEdit: React.FC = () => {
   // 加载可用视频列表
   const loadAvailableVideos = async () => {
     try {
-      const response = await videoService.getList({ page: 1, page_size: 100, status: 'published' })
+      const response = await videoService.getList({ page: 1, page_size: 100, status: 'PUBLISHED' })
       setAvailableVideos(response.items)
     } catch (error) {
       console.error('加载视频列表失败', error)
@@ -292,7 +292,7 @@ const SeriesEdit: React.FC = () => {
                   onFinish={handleSave}
                   initialValues={{
                     type: 'series',
-                    status: 'draft',
+                    status: 'DRAFT',
                     display_order: 0,
                     is_featured: false,
                   }}

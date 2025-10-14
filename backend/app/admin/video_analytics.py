@@ -3,11 +3,11 @@
 """
 
 from datetime import datetime, timedelta, timezone
-from typing import List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query
-from sqlalchemy import and_, desc, extract, func, select
+from sqlalchemy import Integer, case, desc, extract, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
 from app.database import get_db
 from app.models.comment import Comment
@@ -51,15 +51,15 @@ async def get_video_analytics(
     # 3. 观看趋势（每日观看次数）
     watch_trend_result = await db.execute(
         select(
-            func.date(WatchHistory.last_watched_at).label("date"),
+            func.date(WatchHistory.updated_at).label("date"),
             func.count(WatchHistory.id).label("views"),
             func.count(func.distinct(WatchHistory.user_id)).label("unique_viewers"),
         )
         .filter(
             WatchHistory.video_id == video_id,
-            WatchHistory.last_watched_at >= start_date,
+            WatchHistory.updated_at >= start_date,
         )
-        .group_by(func.date(WatchHistory.last_watched_at))
+        .group_by(func.date(WatchHistory.updated_at))
         .order_by("date")
     )
     watch_trend = [
@@ -68,16 +68,28 @@ async def get_video_analytics(
     ]
 
     # 4. 完播率分析
+    # Calculate progress as (last_position / video.duration * 100)
+    # Get video duration first
+    video_duration = video.duration * 60 if video.duration else 1  # convert minutes to seconds
+
     completion_result = await db.execute(
         select(
             func.count(WatchHistory.id).label("total"),
-            func.sum(func.cast(WatchHistory.progress >= 25, db.bind.dialect.INTEGER)).label("over_25"),
-            func.sum(func.cast(WatchHistory.progress >= 50, db.bind.dialect.INTEGER)).label("over_50"),
-            func.sum(func.cast(WatchHistory.progress >= 75, db.bind.dialect.INTEGER)).label("over_75"),
-            func.sum(func.cast(WatchHistory.progress >= 90, db.bind.dialect.INTEGER)).label("over_90"),
+            func.sum(
+                case((WatchHistory.last_position / video_duration * 100 >= 25, 1), else_=0)
+            ).label("over_25"),
+            func.sum(
+                case((WatchHistory.last_position / video_duration * 100 >= 50, 1), else_=0)
+            ).label("over_50"),
+            func.sum(
+                case((WatchHistory.last_position / video_duration * 100 >= 75, 1), else_=0)
+            ).label("over_75"),
+            func.sum(
+                case((WatchHistory.last_position / video_duration * 100 >= 90, 1), else_=0)
+            ).label("over_90"),
         ).filter(
             WatchHistory.video_id == video_id,
-            WatchHistory.last_watched_at >= start_date,
+            WatchHistory.updated_at >= start_date,
         )
     )
     completion_row = completion_result.fetchone()
@@ -93,10 +105,10 @@ async def get_video_analytics(
 
     # 5. 平均完播率
     avg_progress_result = await db.execute(
-        select(func.avg(WatchHistory.progress))
+        select(func.avg(WatchHistory.last_position / video_duration * 100))
         .filter(
             WatchHistory.video_id == video_id,
-            WatchHistory.last_watched_at >= start_date,
+            WatchHistory.updated_at >= start_date,
         )
     )
     avg_completion = avg_progress_result.scalar() or 0
@@ -140,12 +152,12 @@ async def get_video_analytics(
     # 8. 观看时段分析（小时分布）
     hourly_result = await db.execute(
         select(
-            extract("hour", WatchHistory.last_watched_at).label("hour"),
+            extract("hour", WatchHistory.updated_at).label("hour"),
             func.count(WatchHistory.id).label("views"),
         )
         .filter(
             WatchHistory.video_id == video_id,
-            WatchHistory.last_watched_at >= start_date,
+            WatchHistory.updated_at >= start_date,
         )
         .group_by("hour")
         .order_by("hour")
@@ -157,12 +169,12 @@ async def get_video_analytics(
     # 9. 星期分布
     weekday_result = await db.execute(
         select(
-            extract("dow", WatchHistory.last_watched_at).label("weekday"),
+            extract("dow", WatchHistory.updated_at).label("weekday"),
             func.count(WatchHistory.id).label("views"),
         )
         .filter(
             WatchHistory.video_id == video_id,
-            WatchHistory.last_watched_at >= start_date,
+            WatchHistory.updated_at >= start_date,
         )
         .group_by("weekday")
         .order_by("weekday")
@@ -178,7 +190,7 @@ async def get_video_analytics(
         select(func.count(func.distinct(WatchHistory.user_id)))
         .filter(
             WatchHistory.video_id == video_id,
-            WatchHistory.last_watched_at >= start_date,
+            WatchHistory.updated_at >= start_date,
         )
     )
     total_unique_viewers = total_unique_viewers_result.scalar() or 0
@@ -278,11 +290,11 @@ async def get_overview_analytics(
     # 2. 最近观看趋势
     recent_watch_trend_result = await db.execute(
         select(
-            func.date(WatchHistory.last_watched_at).label("date"),
+            func.date(WatchHistory.updated_at).label("date"),
             func.count(WatchHistory.id).label("views"),
         )
-        .filter(WatchHistory.last_watched_at >= start_date)
-        .group_by(func.date(WatchHistory.last_watched_at))
+        .filter(WatchHistory.updated_at >= start_date)
+        .group_by(func.date(WatchHistory.updated_at))
         .order_by("date")
     )
     watch_trend = [
@@ -360,6 +372,30 @@ async def get_video_quality_score(
     if not video:
         raise HTTPException(status_code=404, detail="Video not found")
 
+    # Count relationships using SQL queries to avoid lazy loading
+    # Import the association models
+    from app.models.video import VideoCategory, VideoTag, VideoActor, VideoDirector
+
+    category_count_result = await db.execute(
+        select(func.count(VideoCategory.id)).filter(VideoCategory.video_id == video_id)
+    )
+    category_count = category_count_result.scalar() or 0
+
+    tag_count_result = await db.execute(
+        select(func.count(VideoTag.id)).filter(VideoTag.video_id == video_id)
+    )
+    tag_count = tag_count_result.scalar() or 0
+
+    has_actors_result = await db.execute(
+        select(func.count(VideoActor.id)).filter(VideoActor.video_id == video_id)
+    )
+    has_actors = (has_actors_result.scalar() or 0) > 0
+
+    has_directors_result = await db.execute(
+        select(func.count(VideoDirector.id)).filter(VideoDirector.video_id == video_id)
+    )
+    has_directors = (has_directors_result.scalar() or 0) > 0
+
     # 1. 技术质量得分 (40分)
     technical_score = 0.0
 
@@ -416,21 +452,19 @@ async def get_video_quality_score(
             metadata_score += 4
 
     # 分类（5分）
-    category_count = len(video.video_categories) if video.video_categories else 0
     if category_count >= 2:
         metadata_score += 5
     elif category_count == 1:
         metadata_score += 3
 
     # 标签（5分）
-    tag_count = len(video.video_tags) if video.video_tags else 0
     if tag_count >= 3:
         metadata_score += 5
     elif tag_count > 0:
         metadata_score += 3
 
     # 演员/导演（5分）
-    if video.video_actors or video.video_directors:
+    if has_actors or has_directors:
         metadata_score += 5
 
     # 3. 用户互动得分 (30分)

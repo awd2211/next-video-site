@@ -18,8 +18,6 @@ const VideoCard: React.FC<VideoCardProps> = memo(({
   enablePreview = true
 }) => {
   const [isHovered, setIsHovered] = useState(false)
-  const [isFavorited, setIsFavorited] = useState(false)
-  const [isLiked, setIsLiked] = useState(false)
   const [showPreview, setShowPreview] = useState(false)
   const [previewPosition, setPreviewPosition] = useState({ x: 0, y: 0 })
   const hoverTimeoutRef = useRef<NodeJS.Timeout | null>(null)
@@ -34,20 +32,6 @@ const VideoCard: React.FC<VideoCardProps> = memo(({
       }
     }
   }, [])
-
-  const handleFavorite = (e: React.MouseEvent) => {
-    e.preventDefault()
-    e.stopPropagation()
-    setIsFavorited(!isFavorited)
-    // TODO: 调用收藏API
-  }
-
-  const handleLike = (e: React.MouseEvent) => {
-    e.preventDefault()
-    e.stopPropagation()
-    setIsLiked(!isLiked)
-    // TODO: 调用点赞API
-  }
 
   const handleMouseEnter = () => {
     setIsHovered(true)
@@ -115,28 +99,6 @@ const VideoCard: React.FC<VideoCardProps> = memo(({
               {/* Quick Actions */}
               <div className="absolute top-2 right-2 flex flex-col space-y-2">
                 <AddToListButton videoId={video.id} variant="icon" />
-                <button
-                  onClick={handleFavorite}
-                  className={`p-2 rounded-full backdrop-blur-sm transition-all ${
-                    isFavorited
-                      ? 'bg-red-600 text-white'
-                      : 'bg-black/50 text-white hover:bg-red-600'
-                  }`}
-                  title="收藏"
-                >
-                  <Plus className="w-5 h-5" />
-                </button>
-                <button
-                  onClick={handleLike}
-                  className={`p-2 rounded-full backdrop-blur-sm transition-all ${
-                    isLiked
-                      ? 'bg-red-600 text-white'
-                      : 'bg-black/50 text-white hover:bg-red-600'
-                  }`}
-                  title="点赞"
-                >
-                  <Heart className={`w-5 h-5 ${isLiked ? 'fill-current' : ''}`} />
-                </button>
               </div>
 
               {/* Bottom Info */}

@@ -6,6 +6,7 @@ from typing import Optional
 
 from fastapi import APIRouter, Depends, Query, Request
 from fastapi.responses import StreamingResponse
+from pydantic import BaseModel
 from sqlalchemy import desc, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
@@ -16,6 +17,10 @@ from app.models.user import AdminUser
 from app.utils.dependencies import get_current_admin_user
 
 router = APIRouter()
+
+
+class ResolveErrorRequest(BaseModel):
+    notes: Optional[str] = None
 
 
 async def create_operation_log(
@@ -532,6 +537,72 @@ async def get_system_log_categories(
 
 # ==================== Error Logs ====================
 
+# 注意：具体路径的路由（/types, /stats）必须在参数路由（/{error_id}）之前定义
+
+@router.get("/errors/types")
+async def get_error_types(
+    db: AsyncSession = Depends(get_db),
+    current_admin: AdminUser = Depends(get_current_admin_user),
+):
+    """获取所有错误类型"""
+    result = await db.execute(
+        select(ErrorLog.error_type).distinct().order_by(ErrorLog.error_type)
+    )
+    error_types = [row[0] for row in result.all()]
+    return {"error_types": error_types}
+
+
+@router.get("/errors/stats")
+async def get_error_stats(
+    days: int = Query(7, ge=1, le=90),
+    db: AsyncSession = Depends(get_db),
+    current_admin: AdminUser = Depends(get_current_admin_user),
+):
+    """获取错误统计"""
+    start_date = datetime.now(timezone.utc) - timedelta(days=days)
+
+    # 按错误类型统计
+    error_type_stats = await db.execute(
+        select(ErrorLog.error_type, func.count(ErrorLog.id).label("count"))
+        .filter(ErrorLog.created_at >= start_date)
+        .group_by(ErrorLog.error_type)
+        .order_by(desc("count"))
+        .limit(10)
+    )
+
+    # 按级别统计
+    level_stats = await db.execute(
+        select(ErrorLog.level, func.count(ErrorLog.id).label("count"))
+        .filter(ErrorLog.created_at >= start_date)
+        .group_by(ErrorLog.level)
+    )
+
+    # 解决状态统计
+    resolved_stats = await db.execute(
+        select(ErrorLog.resolved, func.count(ErrorLog.id).label("count"))
+        .filter(ErrorLog.created_at >= start_date)
+        .group_by(ErrorLog.resolved)
+    )
+
+    # 每日错误趋势
+    daily_stats = await db.execute(
+        select(
+            func.date(ErrorLog.created_at).label("date"),
+            func.count(ErrorLog.id).label("count"),
+        )
+        .filter(ErrorLog.created_at >= start_date)
+        .group_by(func.date(ErrorLog.created_at))
+        .order_by("date")
+    )
+
+    return {
+        "error_type_stats": [{"error_type": row.error_type, "count": row.count} for row in error_type_stats.all()],
+        "level_stats": [{"level": row.level, "count": row.count} for row in level_stats.all()],
+        "resolved_stats": [{"resolved": row.resolved, "count": row.count} for row in resolved_stats.all()],
+        "daily_stats": [{"date": str(row.date), "count": row.count} for row in daily_stats.all()],
+    }
+
+
 @router.get("/errors")
 async def get_error_logs(
     page: int = Query(1, ge=1),
@@ -611,7 +682,7 @@ async def get_error_log_detail(
 @router.put("/errors/{error_id}/resolve")
 async def resolve_error_log(
     error_id: int,
-    notes: str = Query(None),
+    request_data: ResolveErrorRequest,
     db: AsyncSession = Depends(get_db),
     current_admin: AdminUser = Depends(get_current_admin_user),
 ):
@@ -626,72 +697,8 @@ async def resolve_error_log(
     log.resolved = True
     log.resolved_at = datetime.now(timezone.utc)
     log.resolved_by = current_admin.id
-    if notes:
-        log.notes = notes
+    if request_data.notes:
+        log.notes = request_data.notes
 
     await db.commit()
     return {"message": "已标记为已解决", "log": log}
-
-
-@router.get("/errors/stats")
-async def get_error_stats(
-    days: int = Query(7, ge=1, le=90),
-    db: AsyncSession = Depends(get_db),
-    current_admin: AdminUser = Depends(get_current_admin_user),
-):
-    """获取错误统计"""
-    start_date = datetime.now(timezone.utc) - timedelta(days=days)
-
-    # 按错误类型统计
-    error_type_stats = await db.execute(
-        select(ErrorLog.error_type, func.count(ErrorLog.id).label("count"))
-        .filter(ErrorLog.created_at >= start_date)
-        .group_by(ErrorLog.error_type)
-        .order_by(desc("count"))
-        .limit(10)
-    )
-
-    # 按级别统计
-    level_stats = await db.execute(
-        select(ErrorLog.level, func.count(ErrorLog.id).label("count"))
-        .filter(ErrorLog.created_at >= start_date)
-        .group_by(ErrorLog.level)
-    )
-
-    # 解决状态统计
-    resolved_stats = await db.execute(
-        select(ErrorLog.resolved, func.count(ErrorLog.id).label("count"))
-        .filter(ErrorLog.created_at >= start_date)
-        .group_by(ErrorLog.resolved)
-    )
-
-    # 每日错误趋势
-    daily_stats = await db.execute(
-        select(
-            func.date(ErrorLog.created_at).label("date"),
-            func.count(ErrorLog.id).label("count"),
-        )
-        .filter(ErrorLog.created_at >= start_date)
-        .group_by(func.date(ErrorLog.created_at))
-        .order_by("date")
-    )
-
-    return {
-        "error_type_stats": [{"error_type": row.error_type, "count": row.count} for row in error_type_stats.all()],
-        "level_stats": [{"level": row.level, "count": row.count} for row in level_stats.all()],
-        "resolved_stats": [{"resolved": row.resolved, "count": row.count} for row in resolved_stats.all()],
-        "daily_stats": [{"date": str(row.date), "count": row.count} for row in daily_stats.all()],
-    }
-
-
-@router.get("/errors/types")
-async def get_error_types(
-    db: AsyncSession = Depends(get_db),
-    current_admin: AdminUser = Depends(get_current_admin_user),
-):
-    """获取所有错误类型"""
-    result = await db.execute(
-        select(ErrorLog.error_type).distinct().order_by(ErrorLog.error_type)
-    )
-    error_types = [row[0] for row in result.all()]
-    return {"error_types": error_types}

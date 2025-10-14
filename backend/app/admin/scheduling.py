@@ -1,6 +1,13 @@
 """
 内容调度系统 - 管理API
 统一的调度管理接口，支持视频、横幅、公告、推荐位等多种内容类型
+
+⚠️ 路由顺序注意事项：
+FastAPI路由匹配是按定义顺序进行的，具体路径路由必须在参数路由之前！
+例如：/stats 必须在 /{schedule_id} 之前定义，否则 "stats" 会被当作 schedule_id 参数解析。
+
+当前路由顺序存在问题，导致 /stats, /analytics 等被 /{schedule_id} 拦截。
+建议将所有具体路径路由移到参数路由（/{schedule_id}）之前。
 """
 
 from datetime import datetime
@@ -12,9 +19,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
 from app.models.scheduling import (
-    PublishStrategy,
     ScheduleContentType,
-    ScheduleRecurrence,
     ScheduleStatus,
 )
 from app.models.user import AdminUser
@@ -23,11 +28,8 @@ from app.schemas.scheduling import (
     BatchScheduleCreate,
     BatchScheduleUpdate,
     CalendarData,
-    CalendarEvent,
     ExecuteScheduleRequest,
     ExecuteScheduleResponse,
-    RollbackRequest,
-    RollbackResponse,
     ScheduleCreate,
     ScheduleListResponse,
     ScheduleResponse,
@@ -38,7 +40,6 @@ from app.schemas.scheduling import (
     TemplateApply,
     TemplateCreate,
     TemplateResponse,
-    TemplateUpdate,
     TimeSlot,
 )
 from app.services.scheduling_service import SchedulingService
@@ -116,6 +117,155 @@ async def list_schedules(
     except Exception as e:
         logger.exception(f"Error listing schedules: {e}")
         raise HTTPException(status_code=500, detail="Failed to list schedules")
+
+
+# ========== 统计与分析 (MUST be before /{schedule_id}) ==========
+
+
+@router.get("/stats", response_model=SchedulingStats)
+async def get_statistics(
+    db: AsyncSession = Depends(get_db),
+    current_admin: AdminUser = Depends(get_current_admin_user),
+):
+    """
+    获取调度统计信息
+    包括待发布、已发布、失败等各种状态的数量
+    """
+    try:
+        service = SchedulingService(db)
+        stats = await service.get_statistics()
+
+        return SchedulingStats(**stats)
+
+    except Exception as e:
+        logger.exception(f"Error getting statistics: {e}")
+        raise HTTPException(status_code=500, detail="Failed to get statistics")
+
+
+@router.get("/analytics", response_model=SchedulingAnalytics)
+async def get_analytics(
+    db: AsyncSession = Depends(get_db),
+    current_admin: AdminUser = Depends(get_current_admin_user),
+):
+    """
+    获取调度分析数据
+    包括成功率、执行时间、峰值时段等
+    """
+    # TODO: 实现详细的分析功能
+    return SchedulingAnalytics(
+        success_rate=95.5,
+        avg_execution_time_ms=150.0,
+        peak_hours=[20, 21, 22],
+        best_performing_strategy="immediate",
+        weekly_trends={"monday": [10, 15, 20], "tuesday": [12, 18, 25]},
+    )
+
+
+@router.get("/calendar", response_model=CalendarData)
+async def get_calendar_data(
+    month: int = Query(..., ge=1, le=12),
+    year: int = Query(..., ge=2024),
+    db: AsyncSession = Depends(get_db),
+    current_admin: AdminUser = Depends(get_current_admin_user),
+):
+    """
+    获取日历视图数据
+    返回指定月份的所有调度事件
+    """
+    # TODO: 实现日历数据查询
+    return CalendarData(events=[], month=month, year=year)
+
+
+@router.get("/suggest-time", response_model=SuggestedTime)
+async def suggest_publish_time(
+    content_type: ScheduleContentType = Query(...),
+    db: AsyncSession = Depends(get_db),
+    current_admin: AdminUser = Depends(get_current_admin_user),
+):
+    """
+    智能推荐最佳发布时间
+    基于历史数据和用户活跃度分析
+    """
+    # TODO: 实现智能推荐算法
+    return SuggestedTime(
+        recommended_times=[
+            TimeSlot(hour=20, score=95.5, reason="用户活跃高峰期"),
+            TimeSlot(hour=21, score=92.3, reason="观看率最高时段"),
+            TimeSlot(hour=12, score=85.0, reason="午间流量高峰"),
+        ],
+        content_type=content_type.value,
+        based_on="historical_data",
+    )
+
+
+@router.post("/execute-due")
+async def execute_due_schedules(
+    db: AsyncSession = Depends(get_db),
+    current_admin: AdminUser = Depends(get_current_admin_user),
+):
+    """
+    手动触发发布所有到期的任务
+    通常由定时任务自动调用，管理员也可以手动触发
+    """
+    try:
+        service = SchedulingService(db)
+        due_schedules = await service.get_due_schedules()
+
+        if not due_schedules:
+            return {"message": "No due schedules found", "count": 0}
+
+        executed_count = 0
+        failed_count = 0
+        errors = []
+
+        for schedule in due_schedules:
+            try:
+                success, message = await service.execute_schedule(
+                    schedule.id, executed_by=current_admin.id
+                )
+
+                if success:
+                    executed_count += 1
+                else:
+                    failed_count += 1
+                    errors.append(
+                        {
+                            "schedule_id": schedule.id,
+                            "content_type": schedule.content_type.value,
+                            "error": message,
+                        }
+                    )
+
+            except Exception as e:
+                failed_count += 1
+                errors.append(
+                    {
+                        "schedule_id": schedule.id,
+                        "content_type": schedule.content_type.value,
+                        "error": str(e),
+                    }
+                )
+
+        logger.info(
+            f"管理员 {current_admin.username} 手动触发批量发布: "
+            f"executed={executed_count}, failed={failed_count}"
+        )
+
+        return {
+            "message": f"Executed {executed_count} schedules, {failed_count} failed",
+            "executed_count": executed_count,
+            "failed_count": failed_count,
+            "errors": errors,
+        }
+
+    except Exception as e:
+        logger.exception(f"Error executing due schedules: {e}")
+        raise HTTPException(
+            status_code=500, detail="Failed to execute due schedules"
+        )
+
+
+# ========== 调度详情 (Parameterized route MUST be after specific routes) ==========
 
 
 @router.get("/{schedule_id}", response_model=ScheduleResponse)
@@ -243,73 +393,6 @@ async def execute_schedule(
     except Exception as e:
         logger.exception(f"Error executing schedule: {e}")
         raise HTTPException(status_code=500, detail=f"Failed to execute: {str(e)}")
-
-
-@router.post("/execute-due")
-async def execute_due_schedules(
-    db: AsyncSession = Depends(get_db),
-    current_admin: AdminUser = Depends(get_current_admin_user),
-):
-    """
-    手动触发发布所有到期的任务
-    通常由定时任务自动调用，管理员也可以手动触发
-    """
-    try:
-        service = SchedulingService(db)
-        due_schedules = await service.get_due_schedules()
-
-        if not due_schedules:
-            return {"message": "No due schedules found", "count": 0}
-
-        executed_count = 0
-        failed_count = 0
-        errors = []
-
-        for schedule in due_schedules:
-            try:
-                success, message = await service.execute_schedule(
-                    schedule.id, executed_by=current_admin.id
-                )
-
-                if success:
-                    executed_count += 1
-                else:
-                    failed_count += 1
-                    errors.append(
-                        {
-                            "schedule_id": schedule.id,
-                            "content_type": schedule.content_type.value,
-                            "error": message,
-                        }
-                    )
-
-            except Exception as e:
-                failed_count += 1
-                errors.append(
-                    {
-                        "schedule_id": schedule.id,
-                        "content_type": schedule.content_type.value,
-                        "error": str(e),
-                    }
-                )
-
-        logger.info(
-            f"管理员 {current_admin.username} 手动触发批量发布: "
-            f"executed={executed_count}, failed={failed_count}"
-        )
-
-        return {
-            "message": f"Executed {executed_count} schedules, {failed_count} failed",
-            "executed_count": executed_count,
-            "failed_count": failed_count,
-            "errors": errors,
-        }
-
-    except Exception as e:
-        logger.exception(f"Error executing due schedules: {e}")
-        raise HTTPException(
-            status_code=500, detail="Failed to execute due schedules"
-        )
 
 
 # ========== 批量操作 ==========
@@ -534,82 +617,3 @@ async def apply_template(
     except Exception as e:
         logger.exception(f"Error applying template: {e}")
         raise HTTPException(status_code=500, detail="Failed to apply template")
-
-
-# ========== 统计与分析 ==========
-
-
-@router.get("/stats", response_model=SchedulingStats)
-async def get_statistics(
-    db: AsyncSession = Depends(get_db),
-    current_admin: AdminUser = Depends(get_current_admin_user),
-):
-    """
-    获取调度统计信息
-    包括待发布、已发布、失败等各种状态的数量
-    """
-    try:
-        service = SchedulingService(db)
-        stats = await service.get_statistics()
-
-        return SchedulingStats(**stats)
-
-    except Exception as e:
-        logger.exception(f"Error getting statistics: {e}")
-        raise HTTPException(status_code=500, detail="Failed to get statistics")
-
-
-@router.get("/analytics", response_model=SchedulingAnalytics)
-async def get_analytics(
-    db: AsyncSession = Depends(get_db),
-    current_admin: AdminUser = Depends(get_current_admin_user),
-):
-    """
-    获取调度分析数据
-    包括成功率、执行时间、峰值时段等
-    """
-    # TODO: 实现详细的分析功能
-    return SchedulingAnalytics(
-        success_rate=95.5,
-        avg_execution_time_ms=150.0,
-        peak_hours=[20, 21, 22],
-        best_performing_strategy="immediate",
-        weekly_trends={"monday": [10, 15, 20], "tuesday": [12, 18, 25]},
-    )
-
-
-@router.get("/calendar", response_model=CalendarData)
-async def get_calendar_data(
-    month: int = Query(..., ge=1, le=12),
-    year: int = Query(..., ge=2024),
-    db: AsyncSession = Depends(get_db),
-    current_admin: AdminUser = Depends(get_current_admin_user),
-):
-    """
-    获取日历视图数据
-    返回指定月份的所有调度事件
-    """
-    # TODO: 实现日历数据查询
-    return CalendarData(events=[], month=month, year=year)
-
-
-@router.get("/suggest-time", response_model=SuggestedTime)
-async def suggest_publish_time(
-    content_type: ScheduleContentType = Query(...),
-    db: AsyncSession = Depends(get_db),
-    current_admin: AdminUser = Depends(get_current_admin_user),
-):
-    """
-    智能推荐最佳发布时间
-    基于历史数据和用户活跃度分析
-    """
-    # TODO: 实现智能推荐算法
-    return SuggestedTime(
-        recommended_times=[
-            TimeSlot(hour=20, score=95.5, reason="用户活跃高峰期"),
-            TimeSlot(hour=21, score=92.3, reason="观看率最高时段"),
-            TimeSlot(hour=12, score=85.0, reason="午间流量高峰"),
-        ],
-        content_type=content_type.value,
-        based_on="historical_data",
-    )

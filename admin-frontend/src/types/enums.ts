@@ -2,14 +2,14 @@
  * Enum definitions for standardized status values
  */
 
-// Video status enum
+// Video status enum - 匹配后端大写值
 export enum VideoStatus {
-  DRAFT = 'draft',
-  PUBLISHED = 'published',
-  ARCHIVED = 'archived',
+  DRAFT = 'DRAFT',
+  PUBLISHED = 'PUBLISHED',
+  ARCHIVED = 'ARCHIVED',
 }
 
-// Video type enum
+// Video type enum - 匹配后端小写值
 export enum VideoType {
   MOVIE = 'movie',
   TV_SERIES = 'tv_series',

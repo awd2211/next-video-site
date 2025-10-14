@@ -225,7 +225,6 @@ const ReportsDashboard: React.FC = () => {
       radius: 0.8,
       label: {
         type: 'outer',
-        content: '{name} ({percentage})',
       },
       interactions: [{ type: 'element-active' }],
     }

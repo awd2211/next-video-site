@@ -48,7 +48,10 @@ const AppWithProviders = () => {
 };
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
-  <React.StrictMode>
+  // 注意：暂时移除 StrictMode 以避免 WebSocket 重复连接
+  // StrictMode 在开发模式下会导致组件渲染两次
+  // 生产构建时会自动优化，无需 StrictMode
+  // <React.StrictMode>
     <QueryClientProvider client={queryClient}>
       <ThemeProvider>
         <LanguageProvider>
@@ -56,5 +59,6 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
         </LanguageProvider>
       </ThemeProvider>
     </QueryClientProvider>
-  </React.StrictMode>,
+  // </React.StrictMode>
+  ,
 )

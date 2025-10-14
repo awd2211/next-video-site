@@ -59,7 +59,7 @@ export const schedulingService = {
       '/api/v1/admin/scheduling/',
       {
         params: {
-          status: status === 'pending' ? 'PENDING' : status === 'published' ? 'PUBLISHED' : status === 'cancelled' ? 'CANCELLED' : undefined,
+          status,  // 直接使用小写，匹配后端 ScheduleStatus 枚举
           content_type: 'video',
           skip,
           limit

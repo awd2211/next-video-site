@@ -127,6 +127,20 @@ async def create_banner(
     await db.commit()
     await db.refresh(banner)
 
+    # 🆕 发送横幅创建通知
+    try:
+        from app.utils.admin_notification_service import AdminNotificationService
+
+        await AdminNotificationService.notify_banner_management(
+            db=db,
+            banner_id=banner.id,
+            banner_title=banner.title,
+            action="created",
+            admin_username=current_admin.username,
+        )
+    except Exception as e:
+        print(f"Failed to send banner creation notification: {e}")
+
     return banner
 
 
@@ -167,8 +181,25 @@ async def delete_banner(
     if not banner:
         raise HTTPException(status_code=404, detail="Banner not found")
 
+    # 保存信息用于通知
+    banner_title = banner.title
+
     await db.delete(banner)
     await db.commit()
+
+    # 🆕 发送横幅删除通知
+    try:
+        from app.utils.admin_notification_service import AdminNotificationService
+
+        await AdminNotificationService.notify_banner_management(
+            db=db,
+            banner_id=banner_id,
+            banner_title=banner_title,
+            action="deleted",
+            admin_username=current_admin.username,
+        )
+    except Exception as e:
+        print(f"Failed to send banner deletion notification: {e}")
 
     return {"message": "Banner deleted successfully"}
 
@@ -189,6 +220,21 @@ async def update_banner_status(
 
     banner.status = status
     await db.commit()
+
+    # 🆕 发送横幅状态变更通知
+    try:
+        from app.utils.admin_notification_service import AdminNotificationService
+
+        action = "activated" if status == BannerStatus.ACTIVE else "deactivated"
+        await AdminNotificationService.notify_banner_management(
+            db=db,
+            banner_id=banner_id,
+            banner_title=banner.title,
+            action=action,
+            admin_username=current_admin.username,
+        )
+    except Exception as e:
+        print(f"Failed to send banner status notification: {e}")
 
     return {"message": f"Banner status updated to {status}"}
 

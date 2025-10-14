@@ -109,7 +109,7 @@ interface ErrorLog {
   resolved: boolean
   resolved_by?: number
   resolved_at?: string
-  admin_notes?: string
+  notes?: string
   created_at: string
 }
 
@@ -944,7 +944,7 @@ const ErrorLogsTab = () => {
     if (!selectedLog) return
     try {
       await axios.put(`/api/v1/admin/logs/errors/${selectedLog.id}/resolve`, {
-        admin_notes: adminNotes,
+        notes: adminNotes,
       })
       message.success('错误已标记为已解决')
       setResolveVisible(false)
@@ -1202,7 +1202,7 @@ const ErrorLogsTab = () => {
                 `用户ID: ${selectedLog.user_id || '-'}`,
                 `创建时间: ${formatDate(selectedLog.created_at)}`,
                 selectedLog.resolved ? `解决时间: ${formatDate(selectedLog.resolved_at)}` : '',
-                selectedLog.resolved ? `管理员备注: ${selectedLog.admin_notes || '无'}` : '',
+                selectedLog.resolved ? `管理员备注: ${selectedLog.notes || '无'}` : '',
                 '',
                 '======================================',
               ]
@@ -1589,7 +1589,7 @@ const ErrorLogsTab = () => {
                         border: '1px solid #d9d9d9',
                       }}
                     >
-                      {selectedLog.admin_notes || '无备注'}
+                      {selectedLog.notes || '无备注'}
                     </div>
                   </Descriptions.Item>
                 </Descriptions>
