@@ -1,0 +1,138 @@
+name: Backend Tests
+
+on:
+  push:
+    branches: [main, develop]
+    paths:
+      - 'backend/**'
+      - '.github/workflows/backend-tests.yml'
+  pull_request:
+    branches: [main, develop]
+    paths:
+      - 'backend/**'
+
+jobs:
+  backend-test:
+    name: Backend Tests
+    runs-on: ubuntu-latest
+    
+    strategy:
+      matrix:
+        python-version: ['3.11', '3.12']
+    
+    services:
+      postgres:
+        image: postgres:15-alpine
+        env:
+          POSTGRES_USER: videosite
+          POSTGRES_PASSWORD: videosite_pass
+          POSTGRES_DB: videosite_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+
+      - name: 🐍 Setup Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: 'pip'
+
+      - name: 📦 Install dependencies
+        run: |
+          cd backend
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pytest pytest-asyncio pytest-cov httpx
+
+      - name: 🔧 Setup test environment
+        run: |
+          cd backend
+          cp .env.example .env.test
+          # 配置测试环境变量
+          echo "DATABASE_URL=postgresql+asyncpg://videosite:videosite_pass@localhost:5432/videosite_test" >> .env.test
+          echo "DATABASE_URL_SYNC=postgresql://videosite:videosite_pass@localhost:5432/videosite_test" >> .env.test
+          echo "REDIS_URL=redis://localhost:6379/1" >> .env.test
+          echo "SECRET_KEY=test-secret-key-for-ci" >> .env.test
+          echo "JWT_SECRET_KEY=test-jwt-secret-key-for-ci" >> .env.test
+
+      - name: 🗄️ Initialize database
+        run: |
+          cd backend
+          export $(cat .env.test | xargs)
+          alembic upgrade head
+
+      - name: 🧪 Run pytest - Schemas
+        run: |
+          cd backend
+          export $(cat .env.test | xargs)
+          pytest tests/test_schemas.py -v --tb=short
+
+      - name: 🧪 Run pytest - Validators
+        run: |
+          cd backend
+          export $(cat .env.test | xargs)
+          pytest tests/test_validators.py -v --tb=short
+
+      - name: 🧪 Run pytest - API Endpoints
+        run: |
+          cd backend
+          export $(cat .env.test | xargs)
+          pytest tests/test_api_endpoints.py tests/test_all_endpoints.py -v --tb=short
+        continue-on-error: true
+
+      - name: 🧪 Run pytest - All Tests
+        run: |
+          cd backend
+          export $(cat .env.test | xargs)
+          pytest tests/ -v --tb=short --maxfail=5
+
+      - name: 📊 Generate coverage report
+        run: |
+          cd backend
+          export $(cat .env.test | xargs)
+          pytest tests/ --cov=app --cov-report=xml --cov-report=html --cov-report=term
+        continue-on-error: true
+
+      - name: 📤 Upload coverage to Codecov
+        uses: codecov/codecov-action@v4
+        with:
+          files: ./backend/coverage.xml
+          flags: backend
+          name: backend-coverage
+        continue-on-error: true
+
+      - name: 🔍 Run code quality checks
+        run: |
+          cd backend
+          pip install black isort flake8
+          black --check app/
+          isort --check-only app/
+          flake8 app/ --max-line-length=120 --extend-ignore=E203,W503
+        continue-on-error: true
+
+      - name: 📤 Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pytest-results-${{ matrix.python-version }}
+          path: backend/htmlcov/
+          retention-days: 7
+
