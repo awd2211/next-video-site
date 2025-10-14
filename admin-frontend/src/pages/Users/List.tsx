@@ -20,6 +20,7 @@ import { useTableSort } from '@/hooks/useTableSort'
 import { exportToCSV } from '@/utils/exportUtils'
 import { useTheme } from '@/contexts/ThemeContext'
 import { getTagStyle, getTextColor } from '@/utils/awsColorHelpers'
+import '@/styles/page-layout.css'
 
 const { Title } = Typography
 
@@ -464,100 +465,56 @@ const UserList = () => {
   }
 
   return (
-    <div>
-      {/* Statistics Cards */}
-      {stats && (
-        <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
-          <Col xs={24} sm={12} md={6}>
-            <Card>
-              <Statistic
-                title={t('user.totalUsers')}
-                value={stats.total_users}
-                prefix={<UserOutlined />}
-                valueStyle={{ color: '#1890ff' }}
-              />
-            </Card>
-          </Col>
-          <Col xs={24} sm={12} md={6}>
-            <Card>
-              <Statistic
-                title={t('user.activeUsers')}
-                value={stats.active_users}
-                prefix={<CheckCircleOutlined />}
-                valueStyle={{ color: '#52c41a' }}
-              />
-            </Card>
-          </Col>
-          <Col xs={24} sm={12} md={6}>
-            <Card>
-              <Statistic
-                title={t('user.vipUsers')}
-                value={stats.vip_users}
-                prefix={<CrownOutlined />}
-                valueStyle={{ color: '#faad14' }}
-              />
-            </Card>
-          </Col>
-          <Col xs={24} sm={12} md={6}>
-            <Card>
-              <Statistic
-                title={t('user.bannedUsers')}
-                value={stats.banned_users}
-                prefix={<StopOutlined />}
-                valueStyle={{ color: '#f5222d' }}
-              />
-            </Card>
-          </Col>
-        </Row>
-      )}
-
-      <div style={{ marginBottom: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 16 }}>
-        <Title level={2} style={{ margin: 0 }}>
-          {t('menu.users')}
-        </Title>
-        <Space wrap>
-          <Input.Search
-            placeholder={t('common.search') + '...'}
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            onSearch={setSearch}
-            loading={isLoading && !!debouncedSearch}
-            allowClear
-            style={{ width: 250 }}
-            prefix={<SearchOutlined />}
-          />
-          <Select
-            value={statusFilter}
-            onChange={setStatusFilter}
-            style={{ width: 120 }}
-            options={[
-              { label: t('user.allStatus'), value: 'all' },
-              { label: t('user.active'), value: 'active' },
-              { label: t('user.banned'), value: 'banned' },
-            ]}
-          />
-          <Select
-            value={vipFilter}
-            onChange={setVipFilter}
-            style={{ width: 120 }}
-            options={[
-              { label: t('user.allUsers'), value: 'all' },
-              { label: 'VIP', value: 'vip' },
-              { label: t('user.normal'), value: 'normal' },
-            ]}
-          />
-          <Button
-            icon={<DownloadOutlined />}
-            onClick={handleExport}
-          >
-            {t('video.exportExcel')}
-          </Button>
-        </Space>
+    <div className="page-container">
+      {/* Page Header */}
+      <div className="page-header">
+        <div className="page-header-content">
+          <div className="page-header-left">
+            <Input.Search
+              placeholder={t('common.search') + '...'}
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              onSearch={setSearch}
+              loading={isLoading && !!debouncedSearch}
+              allowClear
+              style={{ width: 250 }}
+              prefix={<SearchOutlined />}
+            />
+            <Select
+              value={statusFilter}
+              onChange={setStatusFilter}
+              style={{ width: 120 }}
+              options={[
+                { label: t('user.allStatus'), value: 'all' },
+                { label: t('user.active'), value: 'active' },
+                { label: t('user.banned'), value: 'banned' },
+              ]}
+            />
+            <Select
+              value={vipFilter}
+              onChange={setVipFilter}
+              style={{ width: 120 }}
+              options={[
+                { label: t('user.allUsers'), value: 'all' },
+                { label: 'VIP', value: 'vip' },
+                { label: t('user.normal'), value: 'normal' },
+              ]}
+            />
+          </div>
+          <div className="page-header-right">
+            <Button
+              icon={<DownloadOutlined />}
+              onClick={handleExport}
+            >
+              {t('video.exportExcel')}
+            </Button>
+          </div>
+        </div>
       </div>
 
       {/* Batch operations */}
       {selectedRowKeys.length > 0 && (
-        <div style={{ marginBottom: 16, padding: 12, background: '#f0f2f5', borderRadius: 8 }}>
+        <div className="batch-operations">
           <Space wrap>
             <span style={{ fontWeight: 500 }}>
               {t('common.selected')}: {selectedRowKeys.length} {t('menu.users')}
@@ -593,30 +550,81 @@ const UserList = () => {
         </div>
       )}
 
-      <Table
-        rowSelection={rowSelection}
-        columns={columns}
-        dataSource={data?.items}
-        loading={isLoading}
-        rowKey="id"
-        onChange={(pagination, filters, sorter) => handleTableChange(sorter)}
-        pagination={{
-          current: page,
-          pageSize: pageSize,
-          total: data?.total,
-          onChange: setPage,
-          onShowSizeChange: (current, size) => {
-            setPageSize(size)
-            setPage(1)
-          },
-          showSizeChanger: true,
-          pageSizeOptions: ['10', '20', '50', '100'],
-          showTotal: (total) => t('common.total', { count: total }),
-          simple: screens.xs,
-        }}
-        scroll={{ x: screens.xs ? 800 : 1200 }}
-        sticky
-      />
+      {/* Page Content */}
+      <div className="page-content">
+        {/* Statistics Cards */}
+        {stats && (
+          <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
+            <Col xs={24} sm={12} md={6}>
+              <Card>
+                <Statistic
+                  title={t('user.totalUsers')}
+                  value={stats.total_users}
+                  prefix={<UserOutlined />}
+                  valueStyle={{ color: '#1890ff' }}
+                />
+              </Card>
+            </Col>
+            <Col xs={24} sm={12} md={6}>
+              <Card>
+                <Statistic
+                  title={t('user.activeUsers')}
+                  value={stats.active_users}
+                  prefix={<CheckCircleOutlined />}
+                  valueStyle={{ color: '#52c41a' }}
+                />
+              </Card>
+            </Col>
+            <Col xs={24} sm={12} md={6}>
+              <Card>
+                <Statistic
+                  title={t('user.vipUsers')}
+                  value={stats.vip_users}
+                  prefix={<CrownOutlined />}
+                  valueStyle={{ color: '#faad14' }}
+                />
+              </Card>
+            </Col>
+            <Col xs={24} sm={12} md={6}>
+              <Card>
+                <Statistic
+                  title={t('user.bannedUsers')}
+                  value={stats.banned_users}
+                  prefix={<StopOutlined />}
+                  valueStyle={{ color: '#f5222d' }}
+                />
+              </Card>
+            </Col>
+          </Row>
+        )}
+
+        <div className="table-container">
+          <Table
+            rowSelection={rowSelection}
+            columns={columns}
+            dataSource={data?.items}
+            loading={isLoading}
+            rowKey="id"
+            onChange={(pagination, filters, sorter) => handleTableChange(sorter)}
+            pagination={{
+              current: page,
+              pageSize: pageSize,
+              total: data?.total,
+              onChange: setPage,
+              onShowSizeChange: (current, size) => {
+                setPageSize(size)
+                setPage(1)
+              },
+              showSizeChanger: true,
+              pageSizeOptions: ['10', '20', '50', '100'],
+              showTotal: (total) => t('common.total', { count: total }),
+              simple: screens.xs,
+            }}
+            scroll={{ x: screens.xs ? 800 : 1200 }}
+            sticky
+          />
+        </div>
+      </div>
     </div>
   )
 }

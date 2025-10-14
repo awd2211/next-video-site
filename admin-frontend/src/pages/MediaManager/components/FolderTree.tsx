@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { Tree, Button, Input, Modal, message, Dropdown, Space, Tooltip } from 'antd'
+import { Tree, Button, Input, Modal, message, Dropdown } from 'antd'
 import type { MenuProps } from 'antd'
 import {
   FolderOutlined,
@@ -9,8 +9,6 @@ import {
   EditOutlined,
   DeleteOutlined,
   FolderAddOutlined,
-  ExpandAltOutlined,
-  ShrinkOutlined,
 } from '@ant-design/icons'
 import type { DataNode } from 'antd/es/tree'
 import type { FolderNode } from '../types'
@@ -69,34 +67,6 @@ const FolderTree: React.FC<FolderTreeProps> = ({
       console.error('Failed to save expanded keys:', error)
     }
   }, [expandedKeys])
-
-  // 获取所有节点keys（用于全部展开）
-  const getAllKeys = (nodes: FolderNode[]): string[] => {
-    const keys: string[] = []
-    const traverse = (items: FolderNode[]) => {
-      items.forEach((item) => {
-        keys.push(item.id.toString())
-        if (item.children && item.children.length > 0) {
-          traverse(item.children)
-        }
-      })
-    }
-    traverse(nodes)
-    return ['root', ...keys]
-  }
-
-  // 展开全部
-  const handleExpandAll = () => {
-    const allKeys = getAllKeys(treeData)
-    setExpandedKeys(allKeys)
-    message.success('已展开全部文件夹')
-  }
-
-  // 收起全部
-  const handleCollapseAll = () => {
-    setExpandedKeys(['root'])
-    message.success('已收起全部文件夹')
-  }
 
   // 处理拖拽放置
   const handleDrop = (e: React.DragEvent, folderId?: number) => {
@@ -269,7 +239,6 @@ const FolderTree: React.FC<FolderTreeProps> = ({
             transition: 'background 0.2s',
           }}
         >
-          <HomeOutlined />
           <span>全部文件</span>
         </div>
       ),
@@ -280,30 +249,16 @@ const FolderTree: React.FC<FolderTreeProps> = ({
 
   return (
     <div className="folder-tree">
-      <div style={{ marginBottom: 12, display: 'flex', justifyContent: 'space-between', gap: 8 }}>
+      <div style={{ marginBottom: 12 }}>
         <Button
           type="primary"
           size="small"
           icon={<PlusOutlined />}
           onClick={() => showCreateModal(selectedFolderId)}
+          block
         >
           新建文件夹
         </Button>
-
-        <Space.Compact size="small">
-          <Tooltip title="展开全部">
-            <Button
-              icon={<ExpandAltOutlined />}
-              onClick={handleExpandAll}
-            />
-          </Tooltip>
-          <Tooltip title="收起全部">
-            <Button
-              icon={<ShrinkOutlined />}
-              onClick={handleCollapseAll}
-            />
-          </Tooltip>
-        </Space.Compact>
       </div>
 
       <Tree

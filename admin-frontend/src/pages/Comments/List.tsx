@@ -25,6 +25,7 @@ import axios from '@/utils/axios'
 import dayjs from 'dayjs'
 import { useTheme } from '@/contexts/ThemeContext'
 import { getTagStyle, getTextColor } from '@/utils/awsColorHelpers'
+import '@/styles/page-layout.css'
 
 const { Search } = Input
 const { Option } = Select
@@ -406,76 +407,90 @@ const CommentsList = () => {
   }
 
   return (
-    <div>
-      <Card>
-        <Space style={{ marginBottom: 16 }} wrap>
-          <Search
-            placeholder="搜索评论内容"
-            allowClear
-            onSearch={setSearch}
-            style={{ width: 300 }}
-            prefix={<SearchOutlined />}
-          />
-          <Select value={status} onChange={setStatus} style={{ width: 120 }}>
-            <Option value="all">全部状态</Option>
-            <Option value="pending">待审核</Option>
-            <Option value="approved">已通过</Option>
-            <Option value="rejected">已拒绝</Option>
-          </Select>
-          {selectedRowKeys.length > 0 && (
-            <>
-              <Button
-                type="primary"
-                icon={<CheckOutlined />}
-                onClick={handleBatchApprove}
-                loading={batchApproveMutation.isPending}
-              >
-                批量通过 ({selectedRowKeys.length})
-              </Button>
-              <Button
-                icon={<CloseOutlined />}
-                onClick={handleBatchReject}
-                loading={batchRejectMutation.isPending}
-              >
-                批量拒绝 ({selectedRowKeys.length})
-              </Button>
-              <Button
-                danger
-                icon={<DeleteOutlined />}
-                onClick={handleBatchDelete}
-                loading={batchDeleteMutation.isPending}
-              >
-                批量删除 ({selectedRowKeys.length})
-              </Button>
-            </>
-          )}
-        </Space>
+    <div className="page-container">
+      {/* Page Header */}
+      <div className="page-header">
+        <div className="page-header-content">
+          <div className="page-header-left">
+            <Search
+              placeholder="搜索评论内容"
+              allowClear
+              onSearch={setSearch}
+              style={{ width: 300 }}
+              prefix={<SearchOutlined />}
+            />
+            <Select value={status} onChange={setStatus} style={{ width: 120 }}>
+              <Option value="all">全部状态</Option>
+              <Option value="pending">待审核</Option>
+              <Option value="approved">已通过</Option>
+              <Option value="rejected">已拒绝</Option>
+            </Select>
+          </div>
+          <div className="page-header-right">
+          </div>
+        </div>
+      </div>
 
-        <Table
-          rowSelection={rowSelection}
-          columns={columns}
-          dataSource={data?.items || []}
-          rowKey="id"
-          loading={isLoading}
-          scroll={{ x: screens.xs ? 800 : 1400 }}
-          sticky
-          pagination={{
-            current: page,
-            pageSize: pageSize,
-            total: data?.total || 0,
-            onChange: (newPage) => setPage(newPage),
-            onShowSizeChange: (current, size) => {
-              setPageSize(size)
-              setPage(1)
-            },
-            showSizeChanger: true,
-            pageSizeOptions: ['10', '20', '50', '100'],
-            showQuickJumper: true,
-            showTotal: (total) => t('common.total', { count: total }),
-            simple: screens.xs,
-          }}
-        />
-      </Card>
+      {/* Batch operations */}
+      {selectedRowKeys.length > 0 && (
+        <div className="batch-operations">
+          <Space>
+            <Button
+              type="primary"
+              icon={<CheckOutlined />}
+              onClick={handleBatchApprove}
+              loading={batchApproveMutation.isPending}
+            >
+              批量通过 ({selectedRowKeys.length})
+            </Button>
+            <Button
+              icon={<CloseOutlined />}
+              onClick={handleBatchReject}
+              loading={batchRejectMutation.isPending}
+            >
+              批量拒绝 ({selectedRowKeys.length})
+            </Button>
+            <Button
+              danger
+              icon={<DeleteOutlined />}
+              onClick={handleBatchDelete}
+              loading={batchDeleteMutation.isPending}
+            >
+              批量删除 ({selectedRowKeys.length})
+            </Button>
+          </Space>
+        </div>
+      )}
+
+      {/* Page Content */}
+      <div className="page-content">
+        <div className="table-container">
+          <Table
+            rowSelection={rowSelection}
+            columns={columns}
+            dataSource={data?.items || []}
+            rowKey="id"
+            loading={isLoading}
+            scroll={{ x: screens.xs ? 800 : 1400 }}
+            sticky
+            pagination={{
+              current: page,
+              pageSize: pageSize,
+              total: data?.total || 0,
+              onChange: (newPage) => setPage(newPage),
+              onShowSizeChange: (current, size) => {
+                setPageSize(size)
+                setPage(1)
+              },
+              showSizeChanger: true,
+              pageSizeOptions: ['10', '20', '50', '100'],
+              showQuickJumper: true,
+              showTotal: (total) => t('common.total', { count: total }),
+              simple: screens.xs,
+            }}
+          />
+        </div>
+      </div>
     </div>
   )
 }

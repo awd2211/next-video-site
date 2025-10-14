@@ -40,6 +40,7 @@ import dayjs from 'dayjs'
 import { formatAWSDate, formatAWSNumber, AWSTag } from '@/utils/awsStyleHelpers'
 import { useTheme } from '@/contexts/ThemeContext'
 import { getColor, getTextColor } from '@/utils/awsColorHelpers'
+import '@/styles/page-layout.css'
 
 const { RangePicker } = DatePicker
 const { Option } = Select
@@ -117,10 +118,18 @@ const Logs = () => {
   const [activeTab, setActiveTab] = useState('operation')
 
   return (
-    <div>
-      <h2 style={{ marginBottom: 24 }}>系统日志</h2>
+    <div className="page-container">
+      {/* Page Header */}
+      <div className="page-header">
+        <div className="page-header-content">
+          <div className="page-header-left">
+            <h2 style={{ margin: 0, fontSize: '20px', fontWeight: 600 }}>系统日志</h2>
+          </div>
+        </div>
+      </div>
 
-      <Card>
+      {/* Page Content */}
+      <div className="page-content">
         <Tabs
           activeKey={activeTab}
           onChange={setActiveTab}
@@ -167,7 +176,7 @@ const Logs = () => {
             },
           ]}
         />
-      </Card>
+      </div>
     </div>
   )
 }

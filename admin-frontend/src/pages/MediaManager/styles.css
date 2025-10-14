@@ -120,9 +120,20 @@
 }
 
 .folder-tree-node-title {
-  display: flex;
+  display: inline-flex;
   align-items: center;
   gap: 8px;
+}
+
+/* 确保 Ant Design Tree 的图标和文字在同一行 */
+.ant-tree-node-content-wrapper {
+  display: inline-flex !important;
+  align-items: center !important;
+}
+
+.ant-tree-title {
+  display: inline-flex !important;
+  align-items: center !important;
 }
 
 .folder-tree-node-count {

@@ -560,12 +560,11 @@ const AdminLayout = () => {
         <Content
           style={{
             margin: '0',
-            padding: location.pathname === '/media' ? 0 : '16px 24px 24px',
+            padding: 0,
             minHeight: 'calc(100vh - 56px)',
             background: currentTheme === 'dark' ? '#0f1b2a' : '#f7f6f3',
           }}
         >
-          {location.pathname !== '/media' && <Breadcrumb />}
           <PageTransition>
             <Outlet />
           </PageTransition>

@@ -152,8 +152,8 @@ body.resizing * {
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 1.2px;
-  padding: 16px 0 8px 0;
-  margin-top: 16px;
+  padding: 8px 0 6px 0;
+  margin-top: 8px;
   user-select: none;
 }
 
@@ -163,9 +163,9 @@ body.resizing * {
 }
 
 .ant-menu-dark .ant-menu-item-group-title {
-  padding: 12px 16px 8px 16px;
+  padding: 8px 16px 6px 16px;
   background: rgba(255, 255, 255, 0.03);
-  margin: 12px 8px 4px 8px;
+  margin: 8px 8px 2px 8px;
   border-radius: 4px;
 }
 
@@ -546,15 +546,15 @@ body:not(.dark) .menu-group-label {
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 1.2px;
-  padding: 16px 0 8px 0;
-  margin-top: 16px;
+  padding: 8px 0 6px 0;
+  margin-top: 8px;
 }
 
 /* 明亮主题分组标题 */
 body:not(.dark) .ant-menu-item-group-title {
-  padding: 12px 16px 8px 16px;
+  padding: 8px 16px 6px 16px;
   background: transparent;
-  margin: 12px 8px 4px 8px;
+  margin: 8px 8px 2px 8px;
   border-radius: 4px;
 }
 

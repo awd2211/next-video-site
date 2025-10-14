@@ -508,13 +508,6 @@ const FileList: React.FC<FileListProps> = ({
               onDoubleClick={() => handleDoubleClick(item)}
               style={{ cursor: item.is_folder ? 'pointer' : 'move' }}
             >
-              <Checkbox
-                checked={selectedFiles.includes(item.id)}
-                onChange={() => toggleSelect(item.id)}
-                onClick={(e) => e.stopPropagation()}
-                style={{ position: 'absolute', top: 8, left: 8, zIndex: 1 }}
-              />
-
               <div className="file-card-preview">
                 {renderFileIcon(item)}
               </div>

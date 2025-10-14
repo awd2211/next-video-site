@@ -29,6 +29,7 @@ import {
 import { useState, useMemo } from 'react'
 import axios from '@/utils/axios'
 import { useTranslation } from 'react-i18next'
+import '@/styles/page-layout.css'
 
 const RolesList = () => {
   const { t } = useTranslation()
@@ -331,11 +332,22 @@ const RolesList = () => {
   ]
 
   return (
-    <div>
-      <Tabs
-        activeKey={activeTab}
-        onChange={setActiveTab}
-        items={[
+    <div className="page-container">
+      {/* Page Header */}
+      <div className="page-header">
+        <div className="page-header-content">
+          <div className="page-header-left">
+            <h2 style={{ margin: 0, fontSize: '20px', fontWeight: 600 }}>角色与权限管理</h2>
+          </div>
+        </div>
+      </div>
+
+      {/* Page Content */}
+      <div className="page-content">
+        <Tabs
+          activeKey={activeTab}
+          onChange={setActiveTab}
+          items={[
           {
             key: 'roles',
             label: (
@@ -345,9 +357,10 @@ const RolesList = () => {
               </span>
             ),
             children: (
-              <Card
-                title={t('roles.roleList')}
-                extra={
+              <div className="table-container">
+                <div style={{ marginBottom: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <h3 style={{ margin: 0 }}>{t('roles.roleList')}</h3>
+                  <Space>
                   <Space>
                     <Input
                       placeholder={t('roles.searchRole')}
@@ -369,8 +382,8 @@ const RolesList = () => {
                       {t('roles.createRole')}
                     </Button>
                   </Space>
-                }
-              >
+                  </Space>
+                </div>
                 <Table
                   columns={roleColumns}
                   dataSource={filteredRoles}
@@ -393,7 +406,7 @@ const RolesList = () => {
                     ),
                   }}
                 />
-              </Card>
+              </div>
             ),
           },
           {
@@ -405,9 +418,9 @@ const RolesList = () => {
               </span>
             ),
             children: (
-              <Card
-                title={t('roles.systemPermissions')}
-                extra={
+              <div style={{ background: '#fff', padding: 16, borderRadius: 8 }}>
+                <div style={{ marginBottom: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <h3 style={{ margin: 0 }}>{t('roles.systemPermissions')}</h3>
                   <Space>
                     <Select
                       value={permissionModuleFilter}
@@ -424,8 +437,7 @@ const RolesList = () => {
                         ))}
                     </Select>
                   </Space>
-                }
-              >
+                </div>
                 {permissionsLoading ? (
                   <div style={{ textAlign: 'center', padding: '40px 0' }}>
                     <Spin tip={t('roles.loading')} />
@@ -457,7 +469,7 @@ const RolesList = () => {
                     ))}
                   </Space>
                 )}
-              </Card>
+              </div>
             ),
           },
           {
@@ -469,9 +481,9 @@ const RolesList = () => {
               </span>
             ),
             children: (
-              <Card
-                title={t('roles.adminList')}
-                extra={
+              <div className="table-container">
+                <div style={{ marginBottom: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <h3 style={{ margin: 0 }}>{t('roles.adminList')}</h3>
                   <Input
                     placeholder={t('roles.searchAdmin')}
                     prefix={<SearchOutlined />}
@@ -480,8 +492,7 @@ const RolesList = () => {
                     style={{ width: 250 }}
                     allowClear
                   />
-                }
-              >
+                </div>
                 <Table
                   columns={adminColumns}
                   dataSource={filteredAdmins}
@@ -504,11 +515,12 @@ const RolesList = () => {
                     ),
                   }}
                 />
-              </Card>
+              </div>
             ),
           },
         ]}
-      />
+        />
+      </div>
 
       {/* 角色编辑 Modal */}
       <Modal

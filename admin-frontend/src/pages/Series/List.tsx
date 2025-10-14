@@ -38,6 +38,7 @@ import { formatAWSDate, formatAWSNumber, AWSTag } from '@/utils/awsStyleHelpers'
 import { useTranslation } from 'react-i18next'
 import { SeriesPreviewButton } from './SeriesPreview'
 import { useTableSort } from '@/hooks/useTableSort'
+import '@/styles/page-layout.css'
 
 const SeriesList: React.FC = () => {
   const { t } = useTranslation()
@@ -248,94 +249,93 @@ const SeriesList: React.FC = () => {
   ]
 
   return (
-    <div style={{ padding: '24px' }}>
-      <h2>视频专辑/系列管理</h2>
+    <div className="page-container">
+      {/* Page Header */}
+      <div className="page-header">
+        <div className="page-header-content">
+          <div className="page-header-left">
+            <Input.Search
+              placeholder="搜索专辑标题"
+              allowClear
+              enterButton={<SearchOutlined />}
+              onSearch={(value) => {
+                setSearchText(value)
+                setPage(1)
+                loadData()
+              }}
+              style={{ width: 250 }}
+            />
+            <Select
+              placeholder="状态筛选"
+              allowClear
+              style={{ width: 120 }}
+              value={statusFilter}
+              onChange={(value) => {
+                setStatusFilter(value)
+                setPage(1)
+              }}
+            >
+              <Select.Option value="draft">草稿</Select.Option>
+              <Select.Option value="published">已发布</Select.Option>
+              <Select.Option value="archived">已归档</Select.Option>
+            </Select>
+            <Select
+              placeholder="类型筛选"
+              allowClear
+              style={{ width: 120 }}
+              value={typeFilter}
+              onChange={(value) => {
+                setTypeFilter(value)
+                setPage(1)
+              }}
+            >
+              <Select.Option value="series">系列剧</Select.Option>
+              <Select.Option value="collection">合集</Select.Option>
+              <Select.Option value="franchise">系列作品</Select.Option>
+            </Select>
+          </div>
+          <div className="page-header-right">
+            <Button icon={<ReloadOutlined />} onClick={loadData}>
+              刷新
+            </Button>
+            <Button
+              type="primary"
+              icon={<PlusOutlined />}
+              onClick={() => navigate('/series/new')}
+            >
+              创建专辑
+            </Button>
+          </div>
+        </div>
+      </div>
 
-      {/* 筛选栏 */}
-      <Card style={{ marginBottom: 16 }}>
-        <Space style={{ marginBottom: 16 }}>
-          <Button
-            type="primary"
-            icon={<PlusOutlined />}
-            onClick={() => navigate('/series/new')}
-          >
-            创建专辑
-          </Button>
-          <Button icon={<ReloadOutlined />} onClick={loadData}>
-            刷新
-          </Button>
-        </Space>
-
-        <Space wrap>
-          <Input.Search
-            placeholder="搜索专辑标题"
-            allowClear
-            enterButton={<SearchOutlined />}
-            onSearch={(value) => {
-              setSearchText(value)
-              setPage(1)
-              loadData()
+      {/* Page Content */}
+      <div className="page-content">
+        <div className="table-container">
+          <Table
+            columns={columns}
+            dataSource={dataSource}
+            rowKey="id"
+            loading={loading}
+            onChange={(pagination, filters, sorter) => handleTableChange(sorter)}
+            scroll={{ x: 1400 }}
+            pagination={{
+              current: page,
+              pageSize: pageSize,
+              total: total,
+              onShowSizeChange: (current, size) => {
+                setPageSize(size)
+                setPage(1)
+              },
+              showSizeChanger: true,
+              pageSizeOptions: ['10', '20', '50', '100'],
+              showQuickJumper: true,
+              showTotal: (total) => t('common.total', { count: total }),
+              onChange: (newPage) => setPage(newPage),
             }}
-            style={{ width: 250 }}
           />
-
-          <Select
-            placeholder="状态筛选"
-            allowClear
-            style={{ width: 120 }}
-            value={statusFilter}
-            onChange={(value) => {
-              setStatusFilter(value)
-              setPage(1)
-            }}
-          >
-            <Select.Option value="draft">草稿</Select.Option>
-            <Select.Option value="published">已发布</Select.Option>
-            <Select.Option value="archived">已归档</Select.Option>
-          </Select>
-
-          <Select
-            placeholder="类型筛选"
-            allowClear
-            style={{ width: 120 }}
-            value={typeFilter}
-            onChange={(value) => {
-              setTypeFilter(value)
-              setPage(1)
-            }}
-          >
-            <Select.Option value="series">系列剧</Select.Option>
-            <Select.Option value="collection">合集</Select.Option>
-            <Select.Option value="franchise">系列作品</Select.Option>
-          </Select>
-        </Space>
-      </Card>
-
-      {/* 数据表格 */}
-      <Card>
-        <Table
-          columns={columns}
-          dataSource={dataSource}
-          rowKey="id"
-          loading={loading}
-          onChange={(pagination, filters, sorter) => handleTableChange(sorter)}
-          scroll={{ x: 1400 }}
-          pagination={{
-            current: page,
-            pageSize: pageSize,
-            total: total,
-            onShowSizeChange: (current, size) => {
-              setPageSize(size)
-              setPage(1)
-            },
-            showSizeChanger: true,
-            pageSizeOptions: ['10', '20', '50', '100'],
-            showQuickJumper: true,
-            showTotal: (total) => t('common.total', { count: total }),
-            onChange: (newPage) => setPage(newPage),
-          }}
-        />
-      </Card>
+        </div>
+      </div>
     </div>
   )
 }

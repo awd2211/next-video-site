@@ -16,6 +16,7 @@ from app.admin import actors as admin_actors
 from app.admin import admin_notifications
 from app.admin import dashboard_config as admin_dashboard
 from app.admin import ai_management as admin_ai
+from app.admin import ai_logs as admin_ai_logs
 from app.admin import oauth_management as admin_oauth
 from app.admin import announcements as admin_announcements
 from app.admin import banners as admin_banners
@@ -613,6 +614,11 @@ app.include_router(
     admin_ai.router,
     prefix=f"{settings.API_V1_PREFIX}/admin/ai",
     tags=["Admin - AI Management"],
+)
+app.include_router(
+    admin_ai_logs.router,
+    prefix=f"{settings.API_V1_PREFIX}/admin/ai-logs",
+    tags=["Admin - AI Logs & Monitoring"],
 )
 app.include_router(
     admin_system_health.router,

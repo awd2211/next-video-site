@@ -34,6 +34,7 @@ import { useTranslation } from 'react-i18next'
 import ReactCodeMirror from '@uiw/react-codemirror'
 import { html } from '@codemirror/lang-html'
 import dayjs from 'dayjs'
+import '@/styles/page-layout.css'
 
 const { Title, Text, Paragraph } = Typography
 const { Option } = Select
@@ -364,15 +365,21 @@ const EmailManagement: React.FC = () => {
   }
 
   return (
-    <div style={{ padding: '24px' }}>
-      <Card>
-        <Title level={2}>{t('menu.emailManagement') || '邮件管理'}</Title>
-        <Paragraph type="secondary">
-          {t('email.description') || '配置邮件服务器和管理邮件模板'}
-        </Paragraph>
-      </Card>
+    <div className="page-container">
+      {/* Page Header */}
+      <div className="page-header">
+        <div className="page-header-content">
+          <div className="page-header-left">
+            <h2 style={{ margin: 0, fontSize: '20px', fontWeight: 600 }}>{t('menu.emailManagement') || '邮件管理'}</h2>
+            <Text type="secondary" style={{ marginLeft: 16 }}>
+              {t('email.description') || '配置邮件服务器和管理邮件模板'}
+            </Text>
+          </div>
+        </div>
+      </div>
 
-      <Card style={{ marginTop: 16 }}>
+      {/* Page Content */}
+      <div className="page-content">
         <Tabs
           defaultActiveKey="configuration"
           items={[
@@ -462,7 +469,7 @@ const EmailManagement: React.FC = () => {
             },
           ]}
         />
-      </Card>
+      </div>
 
       {/* Configuration Modal */}
       <Modal

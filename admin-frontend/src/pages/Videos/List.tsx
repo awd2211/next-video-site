@@ -14,6 +14,7 @@ import VideoPreviewPopover from '@/components/VideoPreviewPopover'
 import BatchUploader from '@/components/BatchUploader'
 import { useTheme } from '@/contexts/ThemeContext'
 import { getTagStyle, getTextColor } from '@/utils/awsColorHelpers'
+import '@/styles/page-layout.css'
 
 const VideoList = () => {
   const { t } = useTranslation()
@@ -307,50 +308,53 @@ const VideoList = () => {
   }
 
   return (
-    <div>
-      <div style={{ marginBottom: 16, display: 'flex', justifyContent: 'space-between' }}>
-        <Space>
-          <Input.Search
-            placeholder={t('common.search') + ' videos...'}
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            onSearch={setSearch}
-            loading={isLoading && !!debouncedSearch}
-            allowClear
-            style={{ width: 300 }}
-          />
-          <Select
-            placeholder={t('video.status')}
-            style={{ width: 150 }}
-            allowClear
-            onChange={setStatus}
-            options={[
-              { label: t('video.draft'), value: 'DRAFT' },
-              { label: t('video.published'), value: 'PUBLISHED' },
-              { label: t('video.archived'), value: 'ARCHIVED' },
-            ]}
-          />
-        </Space>
-        <Space>
-          <Button
-            icon={<UploadOutlined />}
-            onClick={() => setBatchUploadVisible(true)}
-          >
-            {t('video.batchUpload') || '批量上传'}
-          </Button>
-          <Button
-            type="primary"
-            icon={<PlusOutlined />}
-            onClick={() => navigate('/videos/new')}
-          >
-            {t('common.add')} Video
-          </Button>
-        </Space>
+    <div className="page-container">
+      {/* Page Header */}
+      <div className="page-header">
+        <div className="page-header-content">
+          <div className="page-header-left">
+            <Input.Search
+              placeholder={t('common.search') + ' videos...'}
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              onSearch={setSearch}
+              loading={isLoading && !!debouncedSearch}
+              allowClear
+              style={{ width: 300 }}
+            />
+            <Select
+              placeholder={t('video.status')}
+              style={{ width: 150 }}
+              allowClear
+              onChange={setStatus}
+              options={[
+                { label: t('video.draft'), value: 'DRAFT' },
+                { label: t('video.published'), value: 'PUBLISHED' },
+                { label: t('video.archived'), value: 'ARCHIVED' },
+              ]}
+            />
+          </div>
+          <div className="page-header-right">
+            <Button
+              icon={<UploadOutlined />}
+              onClick={() => setBatchUploadVisible(true)}
+            >
+              {t('video.batchUpload') || '批量上传'}
+            </Button>
+            <Button
+              type="primary"
+              icon={<PlusOutlined />}
+              onClick={() => navigate('/videos/new')}
+            >
+              {t('common.add')} Video
+            </Button>
+          </div>
+        </div>
       </div>
 
       {/* Batch operations */}
       {selectedRowKeys.length > 0 && (
-        <div style={{ marginBottom: 16 }}>
+        <div className="batch-operations">
           <Space>
             <Button
               type="primary"
@@ -379,7 +383,10 @@ const VideoList = () => {
         </div>
       )}
 
-      <Table
+      {/* Page Content */}
+      <div className="page-content">
+        <div className="table-container">
+          <Table
         rowSelection={rowSelection}
         columns={columns}
         dataSource={data?.items}
@@ -423,6 +430,8 @@ const VideoList = () => {
           ),
         }}
       />
+        </div>
+      </div>
 
       {/* Batch Upload Modal */}
       <Modal

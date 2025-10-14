@@ -29,6 +29,7 @@ import dayjs from 'dayjs'
 import { formatAWSDate, AWSTag } from '@/utils/awsStyleHelpers'
 import { useTranslation } from 'react-i18next'
 import { useTableSort } from '@/hooks/useTableSort'
+import '@/styles/page-layout.css'
 
 const { RangePicker } = DatePicker
 const { TextArea } = Input
@@ -297,16 +298,13 @@ const AnnouncementsList = () => {
   ]
 
   return (
-    <div>
-      <Card>
-        <Row gutter={16} style={{ marginBottom: 16 }}>
-          <Col>
-            <Button type="primary" icon={<PlusOutlined />} onClick={handleAdd}>
-              新建公告
-            </Button>
-          </Col>
-          <Col flex="auto">
-            <Space style={{ float: 'right' }}>
+    <div className="page-container">
+      {/* Page Header */}
+      <div className="page-header">
+        <div className="page-header-content">
+          <div className="page-header-left">
+            <h2 style={{ margin: 0, fontSize: '20px', fontWeight: 600 }}>公告管理</h2>
+            <Space style={{ marginLeft: 16 }}>
               <Select
                 placeholder="类型"
                 style={{ width: 120 }}
@@ -329,12 +327,21 @@ const AnnouncementsList = () => {
                 <Select.Option value={true}>启用</Select.Option>
                 <Select.Option value={false}>禁用</Select.Option>
               </Select>
-              <Button onClick={() => refetch()}>刷新</Button>
             </Space>
-          </Col>
-        </Row>
+          </div>
+          <div className="page-header-right">
+            <Button onClick={() => refetch()}>刷新</Button>
+            <Button type="primary" icon={<PlusOutlined />} onClick={handleAdd}>
+              新建公告
+            </Button>
+          </div>
+        </div>
+      </div>
 
-        <Table
+      {/* Page Content */}
+      <div className="page-content">
+        <div className="table-container">
+          <Table
           columns={columns}
           dataSource={data?.items || []}
           rowKey="id"
@@ -354,8 +361,9 @@ const AnnouncementsList = () => {
             showTotal: (total) => t('common.total', { count: total }),
             onChange: (newPage) => setPage(newPage),
           }}
-        />
-      </Card>
+          />
+        </div>
+      </div>
 
       <Modal
         title={

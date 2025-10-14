@@ -36,6 +36,7 @@ import ipBlacklistService, {
 import { formatAWSDate, AWSTag } from '@/utils/awsStyleHelpers'
 import { useTheme } from '@/contexts/ThemeContext'
 import { getTextColor, getColor } from '@/utils/awsColorHelpers'
+import '@/styles/page-layout.css'
 
 const IPBlacklist: React.FC = () => {
   const { theme } = useTheme()
@@ -254,11 +255,40 @@ const IPBlacklist: React.FC = () => {
   ]
 
   return (
-    <div style={{ padding: '24px' }}>
-      <h2>IP黑名单管理</h2>
+    <div className="page-container">
+      {/* Page Header */}
+      <div className="page-header">
+        <div className="page-header-content">
+          <div className="page-header-left">
+            <h2 style={{ margin: 0, fontSize: '20px', fontWeight: 600 }}>IP黑名单管理</h2>
+          </div>
+          <div className="page-header-right">
+            <Button
+              type="primary"
+              icon={<PlusOutlined />}
+              onClick={() => setAddModalVisible(true)}
+            >
+              添加IP
+            </Button>
+            <Button
+              danger
+              icon={<DeleteOutlined />}
+              onClick={handleBatchDelete}
+              disabled={selectedRows.length === 0}
+            >
+              批量移除 ({selectedRows.length})
+            </Button>
+            <Button icon={<ReloadOutlined />} onClick={loadData}>
+              刷新
+            </Button>
+          </div>
+        </div>
+      </div>
 
-      {/* 统计卡片 */}
-      <Row gutter={16} style={{ marginBottom: 24 }}>
+      {/* Page Content */}
+      <div className="page-content">
+        {/* 统计卡片 */}
+        <Row gutter={16} style={{ marginBottom: 16 }}>
         <Col span={6}>
           <Card>
             <Statistic
@@ -300,29 +330,8 @@ const IPBlacklist: React.FC = () => {
         </Col>
       </Row>
 
-      {/* 操作栏 */}
-      <Card style={{ marginBottom: 16 }}>
-        <Space style={{ marginBottom: 16 }}>
-          <Button
-            type="primary"
-            icon={<PlusOutlined />}
-            onClick={() => setAddModalVisible(true)}
-          >
-            添加IP
-          </Button>
-          <Button
-            danger
-            icon={<DeleteOutlined />}
-            onClick={handleBatchDelete}
-            disabled={selectedRows.length === 0}
-          >
-            批量移除 ({selectedRows.length})
-          </Button>
-          <Button icon={<ReloadOutlined />} onClick={loadData}>
-            刷新
-          </Button>
-        </Space>
-
+      {/* 搜索栏 */}
+      <div style={{ marginBottom: 16 }}>
         <Input.Search
           placeholder="搜索IP地址"
           allowClear
@@ -333,10 +342,10 @@ const IPBlacklist: React.FC = () => {
           }}
           style={{ width: 300 }}
         />
-      </Card>
+      </div>
 
       {/* 数据表格 */}
-      <Card>
+      <div className="table-container">
         <Table
           columns={columns}
           dataSource={dataSource}
@@ -362,7 +371,8 @@ const IPBlacklist: React.FC = () => {
             showTotal: (total) => `共 ${total} 条`,
           }}
         />
-      </Card>
+      </div>
+      </div>
 
       {/* 添加IP Modal */}
       <Modal

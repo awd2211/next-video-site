@@ -31,6 +31,7 @@ import { Line, Column, Pie } from '@ant-design/charts'
 import { reportsService } from '@/services/reports'
 import { useTranslation } from 'react-i18next'
 import dayjs from 'dayjs'
+import '@/styles/page-layout.css'
 
 const { Title, Text } = Typography
 const { Option } = Select
@@ -480,24 +481,36 @@ const ReportsDashboard: React.FC = () => {
   }
 
   return (
-    <div style={{ padding: '24px' }}>
-      {/* Header */}
-      <Card>
-        <Row justify="space-between" align="middle">
-          <Col>
-            <Title level={2} style={{ margin: 0 }}>
+    <div className="page-container">
+      {/* Page Header */}
+      <div className="page-header">
+        <div className="page-header-content">
+          <div className="page-header-left">
+            <h2 style={{ margin: 0, fontSize: '20px', fontWeight: 600 }}>
               {t('menu.reports') || '数据报表'}
-            </Title>
-            <Text type="secondary">
+            </h2>
+            <Text type="secondary" style={{ marginLeft: 16 }}>
               {t('reports.description') || '查看系统运营数据和分析报表'}
             </Text>
-          </Col>
-        </Row>
-      </Card>
+          </div>
+          <div className="page-header-right">
+            <Button
+              type="primary"
+              icon={<DownloadOutlined />}
+              onClick={handleExport}
+              loading={exporting}
+            >
+              {t('common.export') || '导出Excel'}
+            </Button>
+          </div>
+        </div>
+      </div>
 
-      {/* Filters */}
-      <Card style={{ marginTop: 16 }}>
-        <Row gutter={16} align="middle">
+      {/* Page Content */}
+      <div className="page-content">
+        {/* Filters */}
+        <Card style={{ marginBottom: 16 }}>
+          <Row gutter={16} align="middle">
           <Col>
             <Space>
               <Text strong>{t('reports.reportType') || '报表类型'}:</Text>
@@ -526,21 +539,10 @@ const ReportsDashboard: React.FC = () => {
               </Select>
             </Space>
           </Col>
-          <Col flex="auto" style={{ textAlign: 'right' }}>
-            <Button
-              type="primary"
-              icon={<DownloadOutlined />}
-              onClick={handleExport}
-              loading={exporting}
-            >
-              {t('common.export') || '导出Excel'}
-            </Button>
-          </Col>
         </Row>
-      </Card>
+        </Card>
 
-      {/* Report Content */}
-      <div style={{ marginTop: 16 }}>
+        {/* Report Content */}
         <Spin spinning={isLoading}>
           {reportType === 'user-activity' && renderUserActivityReport()}
           {reportType === 'content-performance' && renderContentPerformanceReport()}

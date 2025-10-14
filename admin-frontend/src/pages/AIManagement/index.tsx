@@ -14,7 +14,10 @@ import {
   Row,
   Col,
   Tooltip,
+  Typography,
 } from 'antd';
+
+const { Text } = Typography;
 import {
   PlusOutlined,
   EditOutlined,
@@ -36,6 +39,7 @@ import {
 import AIProviderForm from './AIProviderForm';
 import AITestPanel from './AITestPanel';
 import './styles.css';
+import '@/styles/page-layout.css';
 
 const AIManagement = () => {
   const { t } = useTranslation();
@@ -273,29 +277,33 @@ const AIManagement = () => {
   ];
 
   return (
-    <div className="ai-management-page">
-      <div className="page-header" style={{ marginBottom: 24 }}>
-        <div className="header-content">
-          <div className="header-title">
-            <RobotOutlined style={{ fontSize: 28, marginRight: 12 }} />
+    <div className="page-container">
+      {/* Page Header */}
+      <div className="page-header">
+        <div className="page-header-content">
+          <div className="page-header-left">
+            <RobotOutlined style={{ fontSize: 24, marginRight: 12 }} />
             <div>
-              <h2 style={{ margin: 0 }}>{t('ai.title')}</h2>
-              <p style={{ margin: 0, color: '#999', fontSize: 14 }}>{t('ai.subtitle')}</p>
+              <h2 style={{ margin: 0, fontSize: '20px', fontWeight: 600 }}>{t('ai.title')}</h2>
+              <Text type="secondary" style={{ fontSize: 14 }}>{t('ai.subtitle')}</Text>
             </div>
           </div>
-          <Button
-            type="primary"
-            size="large"
-            icon={<PlusOutlined />}
-            onClick={() => setFormVisible(true)}
-          >
-            {t('ai.addProvider')}
-          </Button>
+          <div className="page-header-right">
+            <Button
+              type="primary"
+              icon={<PlusOutlined />}
+              onClick={() => setFormVisible(true)}
+            >
+              {t('ai.addProvider')}
+            </Button>
+          </div>
         </div>
       </div>
 
-      {/* Usage Statistics */}
-      {usageStats && (
+      {/* Page Content */}
+      <div className="page-content">
+        {/* Usage Statistics */}
+        {usageStats && (
         <Row gutter={16} style={{ marginBottom: 24 }}>
           <Col span={8}>
             <Card bordered={false}>
@@ -328,11 +336,11 @@ const AIManagement = () => {
             </Card>
           </Col>
         </Row>
-      )}
+        )}
 
-      {/* Providers Table */}
-      <Card bordered={false}>
-        <Tabs
+        {/* Providers Table */}
+        <div className="table-container">
+          <Tabs
           activeKey={selectedTab}
           onChange={setSelectedTab}
           items={tabItems}
@@ -352,8 +360,9 @@ const AIManagement = () => {
             showTotal: (total) => t('common.total', { count: total }),
           }}
           scroll={{ x: 1200 }}
-        />
-      </Card>
+          />
+        </div>
+      </div>
 
       {/* Provider Form Modal */}
       <Modal

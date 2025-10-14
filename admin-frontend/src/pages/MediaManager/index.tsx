@@ -17,7 +17,6 @@ import KeyboardHelp from './components/KeyboardHelp'
 import StatsPanel from './components/StatsPanel'
 import FilterDrawer, { type FilterOptions } from './components/FilterDrawer'
 import ConflictModal, { type ConflictFile, type ConflictAction } from './components/ConflictModal'
-import QuickActions from './components/QuickActions'
 import TagEditor from './components/TagEditor'
 import FileDetailsDrawer from './components/FileDetailsDrawer'
 import RecycleBin from './components/RecycleBin'
@@ -80,24 +79,6 @@ const MediaManager: React.FC = () => {
   const [currentConflict, setCurrentConflict] = useState<ConflictFile | null>(null)
   const [pendingFiles, setPendingFiles] = useState<File[]>([])
 
-  // 历史记录
-  const [recentUploads, setRecentUploads] = useState<MediaItem[]>(() => {
-    try {
-      const saved = localStorage.getItem('media-manager-recent-uploads')
-      return saved ? JSON.parse(saved) : []
-    } catch {
-      return []
-    }
-  })
-  const [recentFolders, setRecentFolders] = useState<Array<{ id?: number; title: string; timestamp: number }>>(() => {
-    try {
-      const saved = localStorage.getItem('media-manager-recent-folders')
-      return saved ? JSON.parse(saved) : []
-    } catch {
-      return []
-    }
-  })
-
   // 标签管理
   const [tagEditorVisible, setTagEditorVisible] = useState(false)
   const [allTags, setAllTags] = useState<string[]>([])
@@ -120,39 +101,6 @@ const MediaManager: React.FC = () => {
     accept: ['image/*', 'video/*'],
     maxSize: 5 * 1024 * 1024 * 1024, // 5GB
   })
-
-  // 保存历史记录到 localStorage
-  useEffect(() => {
-    try {
-      localStorage.setItem('media-manager-recent-uploads', JSON.stringify(recentUploads))
-    } catch (error) {
-      console.error('Failed to save recent uploads:', error)
-    }
-  }, [recentUploads])
-
-  useEffect(() => {
-    try {
-      localStorage.setItem('media-manager-recent-folders', JSON.stringify(recentFolders))
-    } catch (error) {
-      console.error('Failed to save recent folders:', error)
-    }
-  }, [recentFolders])
-
-  // 添加到最近访问的文件夹
-  const addToRecentFolders = (folderId?: number, title?: string) => {
-    const folderTitle = title || (folderId ? breadcrumbPath.find(p => p.id === folderId)?.title : '根目录') || '根目录'
-    setRecentFolders((prev) => {
-      const filtered = prev.filter((f) => f.id !== folderId)
-      return [{ id: folderId, title: folderTitle, timestamp: Date.now() }, ...filtered].slice(0, 10)
-    })
-  }
-
-  // 清空历史记录
-  const handleClearHistory = () => {
-    setRecentUploads([])
-    setRecentFolders([])
-    message.success('已清空历史记录')
-  }
 
   // 获取当前选中文件的标签
   const getCurrentTags = (): string[] => {
@@ -310,9 +258,6 @@ const MediaManager: React.FC = () => {
 
       setFileList(items)
       setTotal(data.total || 0)
-
-      // 更新最近上传（仅保留存在的文件）
-      setRecentUploads((prev) => prev.filter((item) => items.some((i: MediaItem) => i.id === item.id)))
     } catch (error) {
       message.error('加载文件列表失败')
     } finally {
@@ -767,27 +712,12 @@ const MediaManager: React.FC = () => {
           <FolderTree
             treeData={folderTree}
             selectedFolderId={selectedFolderId}
-            onSelect={(folderId?: number) => {
-              setSelectedFolderId(folderId)
-              addToRecentFolders(folderId)
-            }}
+            onSelect={setSelectedFolderId}
             onCreateFolder={handleCreateFolder}
             onRename={handleRename}
             onDelete={handleDeleteFolder}
             onRefresh={loadFolderTree}
             onFileDrop={handleMove}
-          />
-
-          {/* 快捷操作面板 */}
-          <QuickActions
-            recentUploads={recentUploads}
-            recentFolders={recentFolders}
-            onFileClick={handleOpenDetails}
-            onFolderClick={(folderId) => {
-              setSelectedFolderId(folderId)
-              addToRecentFolders(folderId)
-            }}
-            onClearHistory={handleClearHistory}
           />
         </Sider>
 

@@ -59,6 +59,7 @@ import dayjs from 'dayjs'
 import type { Dayjs } from 'dayjs'
 import { debounce } from 'lodash'
 import { useNavigate } from 'react-router-dom'
+import '@/styles/page-layout.css'
 
 const { Title, Text, Paragraph } = Typography
 const { Option } = Select
@@ -544,39 +545,38 @@ const SchedulingList: React.FC = () => {
   ]
 
   return (
-    <div style={{ padding: '24px' }}>
-      {/* Header */}
-      <Card>
-        <Row justify="space-between" align="middle">
-          <Col>
-            <Title level={2} style={{ margin: 0 }}>
+    <div className="page-container">
+      {/* Page Header */}
+      <div className="page-header">
+        <div className="page-header-content">
+          <div className="page-header-left">
+            <h2 style={{ margin: 0, fontSize: '20px', fontWeight: 600 }}>
               {t('menu.scheduling')}
-            </Title>
-            <Paragraph type="secondary">{t('scheduling.description')}</Paragraph>
-          </Col>
-          <Col>
-            <Space>
-              <Button
-                icon={<CalendarOutlined />}
-                onClick={() => navigate('/scheduling/calendar')}
-                size="large"
-              >
-                {t('scheduling.calendarView') || '日历视图'}
-              </Button>
-              <Button
-                icon={<UnorderedListOutlined />}
-                type="primary"
-                size="large"
-              >
-                {t('scheduling.listView') || '列表视图'}
-              </Button>
-            </Space>
-          </Col>
-        </Row>
-      </Card>
+            </h2>
+            <Text type="secondary" style={{ marginLeft: 16 }}>{t('scheduling.description')}</Text>
+          </div>
+          <div className="page-header-right">
+            <Button
+              icon={<CalendarOutlined />}
+              onClick={() => navigate('/scheduling/calendar')}
+            >
+              {t('scheduling.calendarView') || '日历视图'}
+            </Button>
+            <Button
+              icon={<UnorderedListOutlined />}
+              type="primary"
+            >
+              {t('scheduling.listView') || '列表视图'}
+            </Button>
+          </div>
+        </div>
+      </div>
 
-      {/* Statistics */}
-      <Row gutter={16} style={{ marginTop: 16 }}>
+      {/* Page Content */}
+      <div className="page-content">
+
+        {/* Statistics */}
+        <Row gutter={16} style={{ marginBottom: 16 }}>
         <Col xs={24} sm={12} lg={6}>
           <Card>
             <Skeleton loading={statsLoading} active paragraph={{ rows: 1 }}>
@@ -872,9 +872,9 @@ const SchedulingList: React.FC = () => {
         </Card>
       )}
 
-      {/* Table */}
-      <Card style={{ marginTop: 16 }}>
-        <Table
+        {/* Table */}
+        <div className="table-container">
+          <Table
           dataSource={scheduledData?.items || []}
           columns={columns}
           rowKey="id"
@@ -901,8 +901,9 @@ const SchedulingList: React.FC = () => {
             showQuickJumper: true,
             showTotal: (total) => t('common.total', { count: total }),
           }}
-        />
-      </Card>
+          />
+        </div>
+      </div>
 
       {/* Schedule Modal */}
       <Modal

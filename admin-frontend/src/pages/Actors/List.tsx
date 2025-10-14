@@ -23,6 +23,7 @@ import dayjs from 'dayjs'
 import { formatAWSDate } from '@/utils/awsStyleHelpers'
 import { useTranslation } from 'react-i18next'
 import { useTableSort } from '@/hooks/useTableSort'
+import '@/styles/page-layout.css'
 
 const { TextArea } = Input
 
@@ -222,15 +223,25 @@ const ActorsList = () => {
   ]
 
   return (
-    <Card
-      title="演员管理"
-      extra={
-        <Button type="primary" icon={<PlusOutlined />} onClick={() => showModal()}>
-          添加演员
-        </Button>
-      }
-    >
-      <Table
+    <div className="page-container">
+      {/* Page Header */}
+      <div className="page-header">
+        <div className="page-header-content">
+          <div className="page-header-left">
+            <h2 style={{ margin: 0, fontSize: '20px', fontWeight: 600 }}>演员管理</h2>
+          </div>
+          <div className="page-header-right">
+            <Button type="primary" icon={<PlusOutlined />} onClick={() => showModal()}>
+              添加演员
+            </Button>
+          </div>
+        </div>
+      </div>
+
+      {/* Page Content */}
+      <div className="page-content">
+        <div className="table-container">
+          <Table
         columns={columns}
         dataSource={data?.items || []}
         rowKey="id"
@@ -251,6 +262,8 @@ const ActorsList = () => {
           showTotal: (total) => t('common.total', { count: total }),
         }}
       />
+        </div>
+      </div>
 
       <Modal
         title={editingActor ? '编辑演员' : '添加演员'}
@@ -292,7 +305,7 @@ const ActorsList = () => {
           </Form.Item>
         </Form>
       </Modal>
-    </Card>
+    </div>
   )
 }
 

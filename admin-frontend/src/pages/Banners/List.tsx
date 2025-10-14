@@ -38,6 +38,7 @@ import { exportToCSV } from '@/utils/exportUtils'
 import { formatAWSDate, formatAWSNumber } from '@/utils/awsStyleHelpers'
 import { BannerPreviewButton } from './BannerPreview'
 import { useTableSort } from '@/hooks/useTableSort'
+import '@/styles/page-layout.css'
 
 const { TextArea } = Input
 const { Option } = Select
@@ -407,86 +408,56 @@ const BannersList = () => {
   const inactiveCount = data?.items?.filter((item: any) => item.status === 'inactive').length || 0
 
   return (
-    <div>
-      <h2 style={{ marginBottom: 24 }}>{t('menu.banners')}</h2>
-
-      {/* 统计卡片 */}
-      <Row gutter={16} style={{ marginBottom: 24 }}>
-        <Col span={6}>
-          <Card size="small" style={{ borderRadius: 8 }}>
-            <Statistic
-              title="总横幅数"
-              value={data?.total || 0}
-              valueStyle={{ color: '#0073bb', fontSize: 28 }}
-            />
-          </Card>
-        </Col>
-        <Col span={6}>
-          <Card size="small" style={{ borderRadius: 8 }}>
-            <Statistic
-              title="激活状态"
-              value={activeCount}
-              valueStyle={{ color: '#1d8102', fontSize: 28 }}
-              suffix={<Tag color="success" style={{ marginLeft: 8 }}>Active</Tag>}
-            />
-          </Card>
-        </Col>
-        <Col span={6}>
-          <Card size="small" style={{ borderRadius: 8 }}>
-            <Statistic
-              title="停用状态"
-              value={inactiveCount}
-              valueStyle={{ color: '#d13212', fontSize: 28 }}
-              suffix={<Tag color="error" style={{ marginLeft: 8 }}>Inactive</Tag>}
-            />
-          </Card>
-        </Col>
-        <Col span={6}>
-          <Card size="small" style={{ borderRadius: 8 }}>
-            <Statistic
-              title="当前页"
-              value={page}
-              valueStyle={{ color: '#37352f', fontSize: 28 }}
-              suffix={`/ ${data?.total_pages || 0}`}
-            />
-          </Card>
-        </Col>
-      </Row>
-
-      {/* 筛选和操作栏 */}
-      <div style={{ marginBottom: 16 }}>
-        <Space>
-          <Select
-            placeholder="按状态筛选"
-            allowClear
-            style={{ width: 150 }}
-            value={statusFilter}
-            onChange={(value) => {
-              setStatusFilter(value)
-              setPage(1)
-            }}
-          >
-            <Option value="active">
-              <Tag color="success">激活</Tag>
-            </Option>
-            <Option value="inactive">
-              <Tag color="error">停用</Tag>
-            </Option>
-          </Select>
-          <Tooltip title="刷新数据">
-            <Button
-              icon={<ReloadOutlined />}
-              onClick={() => refetch()}
+    <div className="page-container">
+      {/* Page Header */}
+      <div className="page-header">
+        <div className="page-header-content">
+          <div className="page-header-left">
+            <Select
+              placeholder="按状态筛选"
+              allowClear
+              style={{ width: 150 }}
+              value={statusFilter}
+              onChange={(value) => {
+                setStatusFilter(value)
+                setPage(1)
+              }}
             >
-              刷新
+              <Option value="active">
+                <Tag color="success">激活</Tag>
+              </Option>
+              <Option value="inactive">
+                <Tag color="error">停用</Tag>
+              </Option>
+            </Select>
+          </div>
+          <div className="page-header-right">
+            <Tooltip title="刷新数据">
+              <Button
+                icon={<ReloadOutlined />}
+                onClick={() => refetch()}
+              >
+                刷新
+              </Button>
+            </Tooltip>
+            {selectedRowKeys.length === 0 && (
+              <Button
+                icon={<DownloadOutlined />}
+                onClick={handleExport}
+              >
+                {t('video.exportExcel')}
+              </Button>
+            )}
+            <Button type="primary" icon={<PlusOutlined />} onClick={handleCreate}>
+              {t('common.create')} Banner
             </Button>
-          </Tooltip>
-        </Space>
+          </div>
+        </div>
       </div>
 
       {/* Batch operations */}
       {selectedRowKeys.length > 0 && (
-        <div style={{ marginBottom: 16 }}>
+        <div className="batch-operations">
           <Space>
             <Button
               type="primary"
@@ -509,48 +480,78 @@ const BannersList = () => {
         </div>
       )}
 
-      <Card
-        extra={
-          <Space>
-            {selectedRowKeys.length === 0 && (
-              <Button
-                icon={<DownloadOutlined />}
-                onClick={handleExport}
-              >
-                {t('video.exportExcel')}
-              </Button>
-            )}
-            <Button type="primary" icon={<PlusOutlined />} onClick={handleCreate}>
-              {t('common.create')} Banner
-            </Button>
-          </Space>
-        }
-      >
-        <Table
-          rowSelection={rowSelection}
-          columns={columns}
-          dataSource={data?.items || []}
-          rowKey="id"
-          loading={isLoading}
-          onChange={(pagination, filters, sorter) => handleTableChange(sorter)}
-          scroll={{ x: 1200 }}
-          sticky
-          pagination={{
-            current: page,
-            pageSize: pageSize,
-            total: data?.total || 0,
-            onShowSizeChange: (current, size) => {
-              setPageSize(size)
-              setPage(1)
-            },
-            showSizeChanger: true,
-            pageSizeOptions: ['10', '20', '50', '100'],
-            showQuickJumper: true,
-            showTotal: (total) => t('common.total', { count: total }),
-            onChange: (newPage) => setPage(newPage),
-          }}
-        />
-      </Card>
+      {/* Page Content */}
+      <div className="page-content">
+        {/* 统计卡片 */}
+        <Row gutter={16} style={{ marginBottom: 16 }}>
+          <Col span={6}>
+            <Card size="small" style={{ borderRadius: 8 }}>
+              <Statistic
+                title="总横幅数"
+                value={data?.total || 0}
+                valueStyle={{ color: '#0073bb', fontSize: 28 }}
+              />
+            </Card>
+          </Col>
+          <Col span={6}>
+            <Card size="small" style={{ borderRadius: 8 }}>
+              <Statistic
+                title="激活状态"
+                value={activeCount}
+                valueStyle={{ color: '#1d8102', fontSize: 28 }}
+                suffix={<Tag color="success" style={{ marginLeft: 8 }}>Active</Tag>}
+              />
+            </Card>
+          </Col>
+          <Col span={6}>
+            <Card size="small" style={{ borderRadius: 8 }}>
+              <Statistic
+                title="停用状态"
+                value={inactiveCount}
+                valueStyle={{ color: '#d13212', fontSize: 28 }}
+                suffix={<Tag color="error" style={{ marginLeft: 8 }}>Inactive</Tag>}
+              />
+            </Card>
+          </Col>
+          <Col span={6}>
+            <Card size="small" style={{ borderRadius: 8 }}>
+              <Statistic
+                title="当前页"
+                value={page}
+                valueStyle={{ color: '#37352f', fontSize: 28 }}
+                suffix={`/ ${data?.total_pages || 0}`}
+              />
+            </Card>
+          </Col>
+        </Row>
+
+        <div className="table-container">
+          <Table
+            rowSelection={rowSelection}
+            columns={columns}
+            dataSource={data?.items || []}
+            rowKey="id"
+            loading={isLoading}
+            onChange={(pagination, filters, sorter) => handleTableChange(sorter)}
+            scroll={{ x: 1200 }}
+            sticky
+            pagination={{
+              current: page,
+              pageSize: pageSize,
+              total: data?.total || 0,
+              onShowSizeChange: (current, size) => {
+                setPageSize(size)
+                setPage(1)
+              },
+              showSizeChanger: true,
+              pageSizeOptions: ['10', '20', '50', '100'],
+              showQuickJumper: true,
+              showTotal: (total) => t('common.total', { count: total }),
+              onChange: (newPage) => setPage(newPage),
+            }}
+          />
+        </div>
+      </div>
 
       <Modal
         title={editingBanner ? '编辑Banner' : '创建Banner'}

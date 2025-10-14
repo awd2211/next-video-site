@@ -231,9 +231,7 @@ const DirectorsList = () => {
             <h2 style={{ margin: 0, fontSize: '20px', fontWeight: 600 }}>导演管理</h2>
           </div>
           <div className="page-header-right">
-            <Button type="primary" icon={<PlusOutlined />} onClick={() => showModal()}>
-              添加导演
-            </Button>
+            <Button type="primary" icon={<PlusOutlined />} onClick={() => showModal()
           </div>
         </div>
       </div>
@@ -242,28 +240,26 @@ const DirectorsList = () => {
       <div className="page-content">
         <div className="table-container">
           <Table
-            columns={columns}
-            dataSource={data?.items || []}
-            rowKey="id"
-            loading={isLoading}
-            onChange={(pagination, filters, sorter) => handleTableChange(sorter)}
-            pagination={{
-              current: page,
-              pageSize: pageSize,
-              total: data?.total || 0,
-              onChange: (newPage) => setPage(newPage),
-              onShowSizeChange: (current, size) => {
-                setPageSize(size)
-                setPage(1)
-              },
-              showSizeChanger: true,
-              pageSizeOptions: ['10', '20', '50', '100'],
-              showQuickJumper: true,
-              showTotal: (total) => t('common.total', { count: total }),
-            }}
-          />
-        </div>
-      </div>
+        columns={columns}
+        dataSource={data?.items || []}
+        rowKey="id"
+        loading={isLoading}
+        onChange={(pagination, filters, sorter) => handleTableChange(sorter)}
+        pagination={{
+          current: page,
+          pageSize: pageSize,
+          total: data?.total || 0,
+          onChange: (newPage) => setPage(newPage),
+          onShowSizeChange: (current, size) => {
+            setPageSize(size)
+            setPage(1)
+          },
+          showSizeChanger: true,
+          pageSizeOptions: ['10', '20', '50', '100'],
+          showQuickJumper: true,
+          showTotal: (total) => t('common.total', { count: total }),
+        }}
+      />
 
       <Modal
         title={editingDirector ? '编辑导演' : '添加导演'}
