@@ -49,12 +49,12 @@ export const MenuBadgeProvider = ({ children }: MenuBadgeProviderProps) => {
       // 并行获取各类待处理数量
       const [commentsRes, videosRes] = await Promise.allSettled([
         // 待审核评论
-        axios.get('/admin/comments', { 
-          params: { page: 1, page_size: 1, status: 'pending' } 
+        axios.get('/api/v1/admin/comments', {
+          params: { page: 1, page_size: 1, status: 'pending' }
         }),
-        // 待审核视频（假设有这个状态）
-        axios.get('/admin/videos', { 
-          params: { page: 1, page_size: 1, status: 'pending' } 
+        // 草稿状态视频（待发布）
+        axios.get('/api/v1/admin/videos', {
+          params: { page: 1, page_size: 1, status: 'DRAFT' }
         }),
       ]);
 

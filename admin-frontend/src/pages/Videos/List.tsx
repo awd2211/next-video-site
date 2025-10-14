@@ -217,12 +217,12 @@ const VideoList = () => {
       key: 'status',
       render: (status: string) => {
         const getStatusVariant = (status: string) => {
-          switch (status) {
-            case 'published':
+          switch (status.toUpperCase()) {
+            case 'PUBLISHED':
               return 'success'
-            case 'draft':
+            case 'DRAFT':
               return 'info'
-            case 'archived':
+            case 'ARCHIVED':
               return 'warning'
             default:
               return 'neutral'
@@ -307,9 +307,9 @@ const VideoList = () => {
             allowClear
             onChange={setStatus}
             options={[
-              { label: t('video.draft'), value: 'draft' },
-              { label: t('video.published'), value: 'published' },
-              { label: t('video.archived'), value: 'archived' },
+              { label: t('video.draft'), value: 'DRAFT' },
+              { label: t('video.published'), value: 'PUBLISHED' },
+              { label: t('video.archived'), value: 'ARCHIVED' },
             ]}
           />
         </Space>
@@ -372,7 +372,7 @@ const VideoList = () => {
           pageSize: screens.xs ? 10 : 20,
           total: data?.total,
           onChange: setPage,
-          showTotal: (total) => `${t('common.total')} ${total} ${t('common.items')}`,
+          showTotal: (total) => t('common.total', { count: total }),
           simple: screens.xs,
         }}
         scroll={{ x: screens.xs ? 800 : 1200 }}
@@ -391,7 +391,7 @@ const VideoList = () => {
           ) : (
             <EmptyState
               title={t('message.noVideosYet')}
-              description={t('message.createFirst').replace('{type}', t('menu.videos').toLowerCase())}
+              description={t('message.createFirst', { type: t('menu.videos').toLowerCase() })}
               actionText={t('common.create') + ' ' + t('menu.videos')}
               onAction={() => navigate('/videos/new')}
             />

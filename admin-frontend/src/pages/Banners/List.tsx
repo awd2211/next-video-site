@@ -526,7 +526,7 @@ const BannersList = () => {
             total: data?.total || 0,
             showSizeChanger: false,
             showQuickJumper: true,
-            showTotal: (total) => `${t('common.total')} ${total} ${t('common.items')}`,
+            showTotal: (total) => t('common.total', { count: total }),
             onChange: (newPage) => setPage(newPage),
           }}
         />

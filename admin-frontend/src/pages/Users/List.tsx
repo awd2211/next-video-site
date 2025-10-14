@@ -340,7 +340,7 @@ const UserList = () => {
           pageSize: screens.xs ? 10 : 20,
           total: data?.total,
           onChange: setPage,
-          showTotal: (total) => `${t('common.total')} ${total} ${t('common.items')}`,
+          showTotal: (total) => t('common.total', { count: total }),
           showSizeChanger: false,
           simple: screens.xs,
         }}

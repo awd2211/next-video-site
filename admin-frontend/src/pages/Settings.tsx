@@ -40,6 +40,7 @@ import {
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { debounce } from 'lodash';
 import axios from '@/utils/axios';
+import NotificationSettings from '@/components/NotificationSettings';
 import './SettingsNotion.css';
 
 const { Panel } = Collapse;
@@ -258,6 +259,12 @@ const Settings = () => {
       key: 'security',
       title: '🔒 安全配置',
       keywords: '安全 security 验证码 captcha',
+      defaultOpen: false,
+    },
+    {
+      key: 'notifications',
+      title: '🔔 通知设置',
+      keywords: '通知 notifications 声音 桌面 免打扰 sound desktop',
       defaultOpen: false,
     },
     {
@@ -729,7 +736,16 @@ const Settings = () => {
             </Panel>
           )}
 
-          {/* Panel 6: 缓存管理 */}
+          {/* Panel 6: 通知设置 */}
+          {filteredSections.find((s) => s.key === 'notifications') && (
+            <Panel header="🔔 通知设置" key="notifications" className="settings-panel">
+              <p className="panel-description">配置通知方式、声音、桌面通知和免打扰时段</p>
+
+              <NotificationSettings />
+            </Panel>
+          )}
+
+          {/* Panel 7: 缓存管理 */}
           {filteredSections.find((s) => s.key === 'cache') && (
             <Panel header="🗄️ 缓存管理" key="cache" className="settings-panel">
               <p className="panel-description">管理Redis缓存并查看统计信息</p>
@@ -786,7 +802,7 @@ const Settings = () => {
             </Panel>
           )}
 
-          {/* Panel 7: 备份与恢复 */}
+          {/* Panel 8: 备份与恢复 */}
           {filteredSections.find((s) => s.key === 'backup') && (
             <Panel header="💾 备份与恢复" key="backup" className="settings-panel">
               <p className="panel-description">导出和导入系统设置</p>
@@ -833,7 +849,7 @@ const Settings = () => {
             </Panel>
           )}
 
-          {/* Panel 8: 其他设置 */}
+          {/* Panel 9: 其他设置 */}
           {filteredSections.find((s) => s.key === 'other') && (
             <Panel header="⚙️ 其他设置" key="other" className="settings-panel">
               <p className="panel-description">维护模式、统计代码、自定义样式等</p>

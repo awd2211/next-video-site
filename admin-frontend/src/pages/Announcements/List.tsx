@@ -27,6 +27,7 @@ import {
 import axios from '@/utils/axios'
 import dayjs from 'dayjs'
 import { formatAWSDate, AWSTag } from '@/utils/awsStyleHelpers'
+import { useTranslation } from 'react-i18next'
 
 const { RangePicker } = DatePicker
 const { TextArea } = Input
@@ -45,6 +46,7 @@ interface Announcement {
 }
 
 const AnnouncementsList = () => {
+  const { t } = useTranslation()
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(20)
   const [modalVisible, setModalVisible] = useState(false)
@@ -332,7 +334,7 @@ const AnnouncementsList = () => {
             total: data?.total || 0,
             showSizeChanger: true,
             showQuickJumper: true,
-            showTotal: (total) => `共 ${total} 条`,
+            showTotal: (total) => t('common.total', { count: total }),
             onChange: (newPage, newPageSize) => {
               setPage(newPage)
               setPageSize(newPageSize)

@@ -194,7 +194,7 @@ const AdminLayout = () => {
         },
         {
           key: '/roles',
-          icon: <TeamOutlined />,
+          icon: <SafetyOutlined />,
           label: t('menu.roles') || '角色权限',
         },
         {

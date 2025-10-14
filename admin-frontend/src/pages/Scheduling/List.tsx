@@ -73,6 +73,8 @@ const SchedulingList: React.FC = () => {
       if (editingVideo) {
         return schedulingService.updateVideoSchedule(editingVideo.id, {
           scheduled_publish_at: values.scheduled_publish_at,
+          auto_publish: true,
+          notify_subscribers: false,
         })
       }
       return schedulingService.scheduleVideo(values)
@@ -126,10 +128,17 @@ const SchedulingList: React.FC = () => {
       width: 80,
     },
     {
+      title: t('video.id') || '视频ID',
+      dataIndex: 'content_id',
+      key: 'content_id',
+      width: 100,
+    },
+    {
       title: t('video.title') || '标题',
       dataIndex: 'title',
       key: 'title',
       ellipsis: true,
+      render: (title: string, record: ScheduledVideo) => title || `视频 #${record.content_id}`,
     },
     {
       title: t('common.status') || '状态',
@@ -141,16 +150,17 @@ const SchedulingList: React.FC = () => {
           string,
           { color: string; icon: React.ReactNode; text: string }
         > = {
-          draft: { color: 'default', icon: <ClockCircleOutlined />, text: '草稿' },
-          published: {
+          PENDING: { color: 'warning', icon: <ClockCircleOutlined />, text: '待发布' },
+          PUBLISHED: {
             color: 'success',
             icon: <CheckCircleOutlined />,
             text: '已发布',
           },
-          rejected: { color: 'error', icon: <CloseCircleOutlined />, text: '已拒绝' },
-          deleted: { color: 'error', icon: <CloseCircleOutlined />, text: '已删除' },
+          CANCELLED: { color: 'default', icon: <CloseCircleOutlined />, text: '已取消' },
+          FAILED: { color: 'error', icon: <CloseCircleOutlined />, text: '失败' },
+          EXPIRED: { color: 'default', icon: <CloseCircleOutlined />, text: '已过期' },
         }
-        const config = statusConfig[status] || statusConfig.draft
+        const config = statusConfig[status] || statusConfig.PENDING
         return (
           <Tag icon={config.icon} color={config.color}>
             {config.text}
@@ -160,8 +170,8 @@ const SchedulingList: React.FC = () => {
     },
     {
       title: t('scheduling.scheduledTime') || '定时发布时间',
-      dataIndex: 'scheduled_publish_at',
-      key: 'scheduled_publish_at',
+      dataIndex: 'scheduled_time',
+      key: 'scheduled_time',
       width: 200,
       render: (date: string) => {
         const scheduleTime = dayjs(date)
@@ -201,25 +211,25 @@ const SchedulingList: React.FC = () => {
             onClick={() => {
               setEditingVideo(record)
               form.setFieldsValue({
-                video_id: record.id,
-                scheduled_publish_at: dayjs(record.scheduled_publish_at),
+                video_id: record.content_id,
+                scheduled_publish_at: dayjs(record.scheduled_time),
               })
               setScheduleModalVisible(true)
             }}
-            disabled={record.status !== 'draft'}
+            disabled={record.status !== 'PENDING'}
           >
             {t('common.edit')}
           </Button>
           <Popconfirm
             title={t('scheduling.confirmCancel') || '确定取消定时发布？'}
             onConfirm={() => cancelScheduleMutation.mutate(record.id)}
-            disabled={record.status !== 'draft'}
+            disabled={record.status !== 'PENDING'}
           >
             <Button
               size="small"
               danger
               icon={<DeleteOutlined />}
-              disabled={record.status !== 'draft'}
+              disabled={record.status !== 'PENDING'}
             >
               {t('common.cancel')}
             </Button>
@@ -265,7 +275,7 @@ const SchedulingList: React.FC = () => {
           <Card>
             <Statistic
               title={t('scheduling.pendingScheduled') || '待发布'}
-              value={stats?.pending_scheduled || 0}
+              value={stats?.pending_count || 0}
               prefix={<ClockCircleOutlined />}
               valueStyle={{ color: '#faad14' }}
             />
@@ -275,7 +285,7 @@ const SchedulingList: React.FC = () => {
           <Card>
             <Statistic
               title={t('scheduling.scheduledToday') || '今天发布'}
-              value={stats?.scheduled_today || 0}
+              value={stats?.published_today || 0}
               prefix={<CalendarOutlined />}
               valueStyle={{ color: '#1890ff' }}
             />
@@ -285,7 +295,7 @@ const SchedulingList: React.FC = () => {
           <Card>
             <Statistic
               title={t('scheduling.overdue') || '已过期'}
-              value={stats?.overdue || 0}
+              value={stats?.overdue_count || 0}
               prefix={<CloseCircleOutlined />}
               valueStyle={{ color: '#ff4d4f' }}
             />
@@ -294,8 +304,8 @@ const SchedulingList: React.FC = () => {
         <Col xs={24} sm={12} lg={6}>
           <Card>
             <Statistic
-              title={t('scheduling.totalScheduled') || '总计'}
-              value={stats?.total_scheduled || 0}
+              title={t('scheduling.upcoming24h') || '未来24小时'}
+              value={stats?.upcoming_24h || 0}
               prefix={<CheckCircleOutlined />}
               valueStyle={{ color: '#52c41a' }}
             />
@@ -304,14 +314,14 @@ const SchedulingList: React.FC = () => {
       </Row>
 
       {/* Alerts */}
-      {stats && stats.overdue > 0 && (
+      {stats && stats.overdue_count > 0 && (
         <Alert
           message={t('scheduling.overdueAlert') || '过期提醒'}
           description={
             <Space direction="vertical">
               <Text>
                 {t('scheduling.overdueDescription') ||
-                  `有 ${stats.overdue} 个视频的定时发布时间已过期，但仍未发布。`}
+                  `有 ${stats.overdue_count} 个视频的定时发布时间已过期，但仍未发布。`}
               </Text>
               <Button
                 type="primary"
@@ -385,7 +395,7 @@ const SchedulingList: React.FC = () => {
             total: scheduledData?.total || 0,
             pageSize: 20,
             showSizeChanger: true,
-            showTotal: (total) => `${t('common.total')} ${total} ${t('common.items')}`,
+            showTotal: (total) => t('common.total', { count: total }),
           }}
         />
       </Card>

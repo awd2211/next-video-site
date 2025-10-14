@@ -4,20 +4,22 @@
  */
 import React, { useState, useEffect } from 'react'
 import { Badge, Tooltip, Button } from 'antd'
-import { BellOutlined } from '@ant-design/icons'
+import { BellOutlined, WifiOutlined } from '@ant-design/icons'
 import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import axios from '@/utils/axios'
+import { useWebSocketContext } from '@/contexts/WebSocketContext'
 import NotificationDrawer from '../NotificationDrawer'
 import './index.css'
 
 const NotificationBadge: React.FC = () => {
   const { t } = useTranslation()
   const [drawerOpen, setDrawerOpen] = useState(false)
+  const { isConnected } = useWebSocketContext()
 
   // Fetch notification stats
   const { data: stats, refetch } = useQuery({
-    queryKey: ['admin-notification-stats'],
+    queryKey: ['adminNotificationStats'],
     queryFn: async () => {
       const response = await axios.get('/api/v1/admin/notifications/stats')
       return response.data

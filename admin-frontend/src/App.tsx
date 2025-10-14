@@ -5,6 +5,8 @@ import { Spin } from 'antd'
 import ErrorBoundary from './components/ErrorBoundary'
 import AdminLayout from './layouts/AdminLayout'
 import { MenuBadgeProvider } from './contexts/MenuBadgeContext'
+import { WebSocketProvider } from './contexts/WebSocketContext'
+import { PermissionProvider } from './contexts/PermissionContext'
 
 // Lazy load pages for better performance
 const Login = lazy(() => import('./pages/Login'))
@@ -78,9 +80,13 @@ function App() {
                 path="/"
                 element={
                   <ProtectedRoute>
-                    <MenuBadgeProvider>
-                      <AdminLayout />
-                    </MenuBadgeProvider>
+                    <PermissionProvider>
+                      <WebSocketProvider>
+                        <MenuBadgeProvider>
+                          <AdminLayout />
+                        </MenuBadgeProvider>
+                      </WebSocketProvider>
+                    </PermissionProvider>
                   </ProtectedRoute>
                 }
               >

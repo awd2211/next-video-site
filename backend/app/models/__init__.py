@@ -17,6 +17,17 @@ from app.models.media import Media  # 🆕 媒体资源
 from app.models.media_share import MediaShare  # 🆕 媒体文件分享
 from app.models.media_version import MediaVersion  # 🆕 媒体文件版本历史
 from app.models.share import VideoShare, SharePlatform  # 视频分享
+from app.models.scheduling import (  # 🆕 统一内容调度系统
+    ContentSchedule,
+    ScheduleContentType,
+    ScheduleHistory,
+    ScheduleRecurrence,
+    ScheduleStatus,
+    ScheduleTemplate,
+    PublishStrategy,
+)
+from app.models.permission_log import PermissionLog  # 🆕 权限审计日志
+from app.models.data_scope import Department, DataScope, AdminUserDepartment  # 🆕 数据范围权限
 from app.models.user import AdminUser, User
 from app.models.user_activity import Favorite, SearchHistory, WatchHistory
 from app.models.watchlist import Watchlist  # 🆕 待看列表 (My List)
@@ -75,9 +86,20 @@ __all__ = [
     "AIProvider",  # 🆕 AI提供商配置
     "AIProviderType",  # 🆕 AI提供商类型枚举
     "OAuthConfig",  # 🆕 OAuth配置
+    "ContentSchedule",  # 🆕 统一内容调度
+    "ScheduleTemplate",  # 🆕 调度模板
+    "ScheduleHistory",  # 🆕 调度历史
+    "ScheduleContentType",  # 🆕 调度内容类型枚举
+    "ScheduleStatus",  # 🆕 调度状态枚举
+    "ScheduleRecurrence",  # 🆕 重复类型枚举
+    "PublishStrategy",  # 🆕 发布策略枚举
     "Banner",
     "Recommendation",
     "Announcement",
     "Report",
     "SystemSettings",
+    "PermissionLog",  # 🆕 权限审计日志
+    "Department",  # 🆕 部门
+    "DataScope",  # 🆕 数据范围权限
+    "AdminUserDepartment",  # 🆕 管理员部门关联
 ]

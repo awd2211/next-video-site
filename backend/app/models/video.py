@@ -43,9 +43,9 @@ class VideoType(str, enum.Enum):
 class VideoStatus(str, enum.Enum):
     """Video status enum"""
 
-    DRAFT = "draft"
-    PUBLISHED = "published"
-    ARCHIVED = "archived"
+    DRAFT = "DRAFT"
+    PUBLISHED = "PUBLISHED"
+    ARCHIVED = "ARCHIVED"
 
 
 class Country(Base):

@@ -35,9 +35,11 @@ import {
 import type { ColumnsType } from 'antd/es/table'
 import seriesService, { SeriesListItem, SeriesType, SeriesStatus } from '@/services/seriesService'
 import { formatAWSDate, formatAWSNumber, AWSTag } from '@/utils/awsStyleHelpers'
+import { useTranslation } from 'react-i18next'
 import { SeriesPreviewButton } from './SeriesPreview'
 
 const SeriesList: React.FC = () => {
+  const { t } = useTranslation()
   const navigate = useNavigate()
   const [loading, setLoading] = useState(false)
   const [dataSource, setDataSource] = useState<SeriesListItem[]>([])
@@ -308,7 +310,7 @@ const SeriesList: React.FC = () => {
             pageSize: pageSize,
             total: total,
             showSizeChanger: true,
-            showTotal: (total) => `共 ${total} 条`,
+            showTotal: (total) => t('common.total', { count: total }),
             onChange: (page, pageSize) => {
               setPage(page)
               setPageSize(pageSize)

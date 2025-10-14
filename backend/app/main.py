@@ -38,7 +38,7 @@ from app.admin import operations as admin_operations
 from app.admin import profile as admin_profile
 from app.admin import rbac as admin_rbac
 from app.admin import reports as admin_reports
-from app.admin import scheduled_content as admin_scheduled
+from app.admin import scheduling as admin_scheduling
 from app.admin import series as admin_series
 from app.admin import settings as admin_settings
 from app.admin import settings_enhanced as admin_settings_enhanced
@@ -645,8 +645,8 @@ app.include_router(
     tags=["Admin - Reports"],
 )
 app.include_router(
-    admin_scheduled.router,
-    prefix=f"{settings.API_V1_PREFIX}/admin/scheduling",
+    admin_scheduling.router,
+    prefix=f"{settings.API_V1_PREFIX}/admin",
     tags=["Admin - Content Scheduling"],
 )
 app.include_router(

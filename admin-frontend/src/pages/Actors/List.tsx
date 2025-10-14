@@ -21,10 +21,12 @@ import {
 import axios from '@/utils/axios'
 import dayjs from 'dayjs'
 import { formatAWSDate } from '@/utils/awsStyleHelpers'
+import { useTranslation } from 'react-i18next'
 
 const { TextArea } = Input
 
 const ActorsList = () => {
+  const { t } = useTranslation()
   const [page, setPage] = useState(1)
   const [pageSize] = useState(20)
   const [isModalOpen, setIsModalOpen] = useState(false)
@@ -224,7 +226,7 @@ const ActorsList = () => {
           total: data?.total || 0,
           onChange: (newPage) => setPage(newPage),
           showSizeChanger: false,
-          showTotal: (total) => `共 ${total} 条`,
+          showTotal: (total) => t('common.total', { count: total }),
         }}
       />
 

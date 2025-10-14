@@ -231,9 +231,9 @@ const VideoForm = () => {
                     hasFeedback
                   >
                     <Select placeholder="请选择状态">
-                      <Option value="draft">草稿</Option>
-                      <Option value="published">已发布</Option>
-                      <Option value="archived">已归档</Option>
+                      <Option value="DRAFT">草稿</Option>
+                      <Option value="PUBLISHED">已发布</Option>
+                      <Option value="ARCHIVED">已归档</Option>
                     </Select>
                   </Form.Item>
                 </Col>

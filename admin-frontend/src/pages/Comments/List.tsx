@@ -466,7 +466,7 @@ const CommentsList = () => {
             simple: screens.xs,
             showSizeChanger: false,
             showQuickJumper: true,
-            showTotal: (total) => `共 ${total} 条`,
+            showTotal: (total) => t('common.total', { count: total }),
             onChange: (newPage) => setPage(newPage),
           }}
         />
