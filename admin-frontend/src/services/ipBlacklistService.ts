@@ -32,36 +32,36 @@ export interface AddIPBlacklistRequest {
 const ipBlacklistService = {
   // 获取黑名单列表
   getList: async (params: { page?: number; page_size?: number; search?: string }) => {
-    const response = await api.get<IPBlacklistListResponse>('/admin/ip-blacklist/', { params })
+    const response = await api.get<IPBlacklistListResponse>('/api/v1/admin/ip-blacklist/', { params })
     return response.data
   },
 
   // 获取统计信息
   getStats: async () => {
-    const response = await api.get<IPBlacklistStats>('/admin/ip-blacklist/stats/summary')
+    const response = await api.get<IPBlacklistStats>('/api/v1/admin/ip-blacklist/stats/summary')
     return response.data
   },
 
   // 添加IP到黑名单
   add: async (data: AddIPBlacklistRequest) => {
-    const response = await api.post<IPBlacklistItem>('/admin/ip-blacklist/', data)
+    const response = await api.post<IPBlacklistItem>('/api/v1/admin/ip-blacklist/', data)
     return response.data
   },
 
   // 从黑名单移除IP
   remove: async (ip: string) => {
-    await api.delete(`/admin/ip-blacklist/${ip}`)
+    await api.delete(`/api/v1/admin/ip-blacklist/${ip}`)
   },
 
   // 批量移除IP
   batchRemove: async (ips: string[]) => {
-    const response = await api.post('/admin/ip-blacklist/batch-remove', ips)
+    const response = await api.post('/api/v1/admin/ip-blacklist/batch-remove', ips)
     return response.data
   },
 
   // 查询IP状态
   checkIP: async (ip: string) => {
-    const response = await api.get<IPBlacklistItem>(`/admin/ip-blacklist/${ip}`)
+    const response = await api.get<IPBlacklistItem>(`/api/v1/admin/ip-blacklist/${ip}`)
     return response.data
   },
 }

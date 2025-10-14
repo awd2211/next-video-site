@@ -48,6 +48,13 @@ async def admin_list_videos(
 
     # Filters
     if status:
+        # Validate status value against enum
+        valid_statuses = [s.value for s in VideoStatus]
+        if status not in valid_statuses:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Invalid status value. Must be one of: {', '.join(valid_statuses)}"
+            )
         query = query.filter(Video.status == status)
     if video_type:
         query = query.filter(Video.video_type == video_type)

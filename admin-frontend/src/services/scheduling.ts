@@ -2,11 +2,18 @@ import axios from '@/utils/axios'
 
 export interface ScheduledVideo {
   id: number
-  title: string
+  content_id: number
+  content_type: string
+  title?: string
+  description?: string
   status: string
-  scheduled_publish_at: string
+  scheduled_time: string
+  actual_publish_time?: string
   created_at: string
   updated_at: string
+  auto_publish: boolean
+  notify_subscribers: boolean
+  priority: number
 }
 
 export interface ScheduledVideosResponse {
@@ -30,23 +37,33 @@ export interface VideoScheduleUpdate {
 }
 
 export interface SchedulingStats {
-  pending_scheduled: number
-  scheduled_today: number
-  overdue: number
-  total_scheduled: number
+  pending_count: number
+  published_today: number
+  published_this_week: number
+  failed_count: number
+  overdue_count: number
+  upcoming_24h: number
+  by_content_type?: Record<string, number>
+  by_status?: Record<string, number>
+  by_strategy?: Record<string, number>
 }
 
 export const schedulingService = {
-  // Get scheduled videos
+  // Get scheduled items
   getScheduledVideos: async (
     status?: 'pending' | 'published' | 'cancelled',
     skip: number = 0,
     limit: number = 20
   ) => {
     const response = await axios.get<ScheduledVideosResponse>(
-      '/api/v1/admin/scheduling/videos/scheduled',
+      '/api/v1/admin/scheduling/',
       {
-        params: { status, skip, limit },
+        params: {
+          status: status === 'pending' ? 'PENDING' : status === 'published' ? 'PUBLISHED' : status === 'cancelled' ? 'CANCELLED' : undefined,
+          content_type: 'video',
+          skip,
+          limit
+        },
       }
     )
     return response.data
@@ -54,27 +71,39 @@ export const schedulingService = {
 
   // Schedule a video for publishing
   scheduleVideo: async (data: VideoScheduleCreate) => {
-    const response = await axios.post('/api/v1/admin/scheduling/videos/schedule', data)
+    const scheduleData = {
+      content_type: 'video',
+      content_id: data.video_id,
+      scheduled_time: data.scheduled_publish_at,
+      auto_publish: data.auto_publish ?? true,
+      notify_subscribers: data.notify_subscribers ?? false,
+    }
+    const response = await axios.post('/api/v1/admin/scheduling/', scheduleData)
     return response.data
   },
 
   // Update video schedule
-  updateVideoSchedule: async (videoId: number, data: VideoScheduleUpdate) => {
+  updateVideoSchedule: async (scheduleId: number, data: VideoScheduleUpdate) => {
+    const updateData = {
+      scheduled_time: data.scheduled_publish_at,
+      auto_publish: data.auto_publish,
+      notify_subscribers: data.notify_subscribers,
+    }
     const response = await axios.put(
-      `/api/v1/admin/scheduling/videos/${videoId}/schedule`,
-      data
+      `/api/v1/admin/scheduling/${scheduleId}`,
+      updateData
     )
     return response.data
   },
 
-  // Cancel video schedule
-  cancelVideoSchedule: async (videoId: number) => {
-    await axios.delete(`/api/v1/admin/scheduling/videos/${videoId}/schedule`)
+  // Cancel schedule
+  cancelVideoSchedule: async (scheduleId: number) => {
+    await axios.delete(`/api/v1/admin/scheduling/${scheduleId}`)
   },
 
-  // Publish scheduled videos (manual trigger)
+  // Publish due schedules (manual trigger)
   publishScheduledVideos: async () => {
-    const response = await axios.post('/api/v1/admin/scheduling/videos/publish-scheduled')
+    const response = await axios.post('/api/v1/admin/scheduling/execute-due')
     return response.data
   },
 

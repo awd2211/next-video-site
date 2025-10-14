@@ -85,78 +85,78 @@ const seriesService = {
     type?: SeriesType
     search?: string
   }) => {
-    const response = await api.get<PaginatedSeriesResponse>('/admin/series', { params })
+    const response = await api.get<PaginatedSeriesResponse>('/api/v1/admin/series', { params })
     return response.data
   },
 
   // 获取专辑详情
   getDetail: async (id: number) => {
-    const response = await api.get<SeriesDetail>(`/admin/series/${id}`)
+    const response = await api.get<SeriesDetail>(`/api/v1/admin/series/${id}`)
     return response.data
   },
 
   // 创建专辑
   create: async (data: SeriesCreateRequest) => {
-    const response = await api.post<SeriesDetail>('/admin/series', data)
+    const response = await api.post<SeriesDetail>('/api/v1/admin/series', data)
     return response.data
   },
 
   // 更新专辑
   update: async (id: number, data: SeriesUpdateRequest) => {
-    const response = await api.put<SeriesDetail>(`/admin/series/${id}`, data)
+    const response = await api.put<SeriesDetail>(`/api/v1/admin/series/${id}`, data)
     return response.data
   },
 
   // 删除专辑
   delete: async (id: number) => {
-    await api.delete(`/admin/series/${id}`)
+    await api.delete(`/api/v1/admin/series/${id}`)
   },
 
   // 添加视频到专辑
   addVideos: async (id: number, data: AddVideosRequest) => {
-    const response = await api.post(`/admin/series/${id}/videos`, data)
+    const response = await api.post(`/api/v1/admin/series/${id}/videos`, data)
     return response.data
   },
 
   // 从专辑移除视频
   removeVideos: async (id: number, data: RemoveVideosRequest) => {
-    const response = await api.delete(`/admin/series/${id}/videos`, { data })
+    const response = await api.delete(`/api/v1/admin/series/${id}/videos`, { data })
     return response.data
   },
 
   // 更新视频顺序
   updateVideoOrder: async (id: number, data: UpdateVideoOrderRequest) => {
-    const response = await api.put(`/admin/series/${id}/videos/order`, data)
+    const response = await api.put(`/api/v1/admin/series/${id}/videos/order`, data)
     return response.data
   },
 
   // 获取统计数据
   getStats: async () => {
-    const response = await api.get('/admin/series/stats')
+    const response = await api.get('/api/v1/admin/series/stats')
     return response.data
   },
 
   // 批量发布
   batchPublish: async (series_ids: number[]) => {
-    const response = await api.post('/admin/series/batch/publish', series_ids)
+    const response = await api.post('/api/v1/admin/series/batch/publish', series_ids)
     return response.data
   },
 
   // 批量归档
   batchArchive: async (series_ids: number[]) => {
-    const response = await api.post('/admin/series/batch/archive', series_ids)
+    const response = await api.post('/api/v1/admin/series/batch/archive', series_ids)
     return response.data
   },
 
   // 批量删除
   batchDelete: async (series_ids: number[]) => {
-    const response = await api.post('/admin/series/batch/delete', series_ids)
+    const response = await api.post('/api/v1/admin/series/batch/delete', series_ids)
     return response.data
   },
 
   // 批量设置推荐
   batchFeature: async (series_ids: number[], is_featured: boolean) => {
-    const response = await api.post('/admin/series/batch/feature', { series_ids, is_featured })
+    const response = await api.post('/api/v1/admin/series/batch/feature', { series_ids, is_featured })
     return response.data
   },
 }

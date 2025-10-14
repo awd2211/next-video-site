@@ -33,25 +33,25 @@ export interface ChangeEmailRequest {
 const profileService = {
   // 获取当前管理员信息
   getProfile: async (): Promise<AdminProfile> => {
-    const response = await api.get<AdminProfile>('/admin/profile/me')
+    const response = await api.get<AdminProfile>('/api/v1/admin/profile/me')
     return response.data
   },
 
   // 更新个人资料
   updateProfile: async (data: UpdateProfileRequest): Promise<AdminProfile> => {
-    const response = await api.put<AdminProfile>('/admin/profile/me', data)
+    const response = await api.put<AdminProfile>('/api/v1/admin/profile/me', data)
     return response.data
   },
 
   // 修改密码
   changePassword: async (data: ChangePasswordRequest): Promise<{ message: string }> => {
-    const response = await api.put<{ message: string }>('/admin/profile/me/password', data)
+    const response = await api.put<{ message: string }>('/api/v1/admin/profile/me/password', data)
     return response.data
   },
 
   // 修改邮箱
   changeEmail: async (data: ChangeEmailRequest): Promise<AdminProfile> => {
-    const response = await api.put<AdminProfile>('/admin/profile/me/email', data)
+    const response = await api.put<AdminProfile>('/api/v1/admin/profile/me/email', data)
     return response.data
   },
 }

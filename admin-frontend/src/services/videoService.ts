@@ -32,13 +32,13 @@ const videoService = {
     status?: string
     search?: string
   }): Promise<PaginatedVideoResponse> => {
-    const response = await api.get<PaginatedVideoResponse>('/admin/videos', { params })
+    const response = await api.get<PaginatedVideoResponse>('/api/v1/admin/videos', { params })
     return response.data
   },
 
   // 获取视频详情
   getDetail: async (id: number): Promise<Video> => {
-    const response = await api.get<Video>(`/admin/videos/${id}`)
+    const response = await api.get<Video>(`/api/v1/admin/videos/${id}`)
     return response.data
   },
 
@@ -47,7 +47,7 @@ const videoService = {
     page?: number
     page_size?: number
   }): Promise<PaginatedVideoResponse> => {
-    const response = await api.get<PaginatedVideoResponse>('/admin/videos', {
+    const response = await api.get<PaginatedVideoResponse>('/api/v1/admin/videos', {
       params: { search: query, ...params }
     })
     return response.data

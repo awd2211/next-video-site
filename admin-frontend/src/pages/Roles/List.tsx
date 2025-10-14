@@ -12,6 +12,9 @@ import {
   Tag,
   Descriptions,
   Tabs,
+  Tooltip,
+  Empty,
+  Spin,
 } from 'antd'
 import {
   PlusOutlined,
@@ -20,8 +23,10 @@ import {
   SafetyOutlined,
   UserOutlined,
   KeyOutlined,
+  SearchOutlined,
+  FilterOutlined,
 } from '@ant-design/icons'
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import axios from '@/utils/axios'
 import { useTranslation } from 'react-i18next'
 
@@ -35,6 +40,11 @@ const RolesList = () => {
   const [roleForm] = Form.useForm()
   const [adminRoleForm] = Form.useForm()
   const [activeTab, setActiveTab] = useState('roles')
+
+  // 搜索和过滤状态
+  const [roleSearchText, setRoleSearchText] = useState('')
+  const [permissionModuleFilter, setPermissionModuleFilter] = useState<string>('all')
+  const [adminSearchText, setAdminSearchText] = useState('')
 
   // 获取角色列表
   const { data: rolesData, isLoading: rolesLoading } = useQuery({
@@ -63,6 +73,39 @@ const RolesList = () => {
     },
   })
 
+  // 过滤后的角色列表
+  const filteredRoles = useMemo(() => {
+    if (!rolesData?.roles) return []
+    if (!roleSearchText) return rolesData.roles
+
+    return rolesData.roles.filter((role: any) =>
+      role.name.toLowerCase().includes(roleSearchText.toLowerCase()) ||
+      role.description?.toLowerCase().includes(roleSearchText.toLowerCase())
+    )
+  }, [rolesData, roleSearchText])
+
+  // 过滤后的权限列表
+  const filteredPermissions = useMemo(() => {
+    if (!permissionsData?.grouped) return {}
+    if (permissionModuleFilter === 'all') return permissionsData.grouped
+
+    return {
+      [permissionModuleFilter]: permissionsData.grouped[permissionModuleFilter]
+    }
+  }, [permissionsData, permissionModuleFilter])
+
+  // 过滤后的管理员列表
+  const filteredAdmins = useMemo(() => {
+    if (!adminUsersData?.admin_users) return []
+    if (!adminSearchText) return adminUsersData.admin_users
+
+    return adminUsersData.admin_users.filter((admin: any) =>
+      admin.username.toLowerCase().includes(adminSearchText.toLowerCase()) ||
+      admin.email.toLowerCase().includes(adminSearchText.toLowerCase()) ||
+      admin.full_name?.toLowerCase().includes(adminSearchText.toLowerCase())
+    )
+  }, [adminUsersData, adminSearchText])
+
   // 创建/更新角色
   const saveRoleMutation = useMutation({
     mutationFn: async (values: any) => {
@@ -72,14 +115,14 @@ const RolesList = () => {
       return axios.post('/api/v1/admin/rbac/roles', values)
     },
     onSuccess: () => {
-      message.success(editingRole ? '更新成功' : '创建成功')
+      message.success(t(editingRole ? 'roles.roleUpdated' : 'roles.roleCreated'))
       setIsRoleModalVisible(false)
       setEditingRole(null)
       roleForm.resetFields()
       queryClient.invalidateQueries({ queryKey: ['roles'] })
     },
     onError: (error: any) => {
-      message.error(error.response?.data?.detail || '操作失败')
+      message.error(error.response?.data?.detail || t('roles.operationFailed'))
     },
   })
 
@@ -87,11 +130,11 @@ const RolesList = () => {
   const deleteRoleMutation = useMutation({
     mutationFn: (id: number) => axios.delete(`/api/v1/admin/rbac/roles/${id}`),
     onSuccess: () => {
-      message.success('删除成功')
+      message.success(t('roles.roleDeleted'))
       queryClient.invalidateQueries({ queryKey: ['roles'] })
     },
     onError: (error: any) => {
-      message.error(error.response?.data?.detail || '删除失败')
+      message.error(error.response?.data?.detail || t('roles.deleteFailed'))
     },
   })
 
@@ -101,14 +144,14 @@ const RolesList = () => {
       return axios.post(`/api/v1/admin/rbac/admin-users/${adminId}/role`, { role_id: roleId })
     },
     onSuccess: () => {
-      message.success('角色分配成功')
+      message.success(t('roles.roleAssignSuccess'))
       setIsAdminModalVisible(false)
       setSelectedAdmin(null)
       adminRoleForm.resetFields()
       queryClient.invalidateQueries({ queryKey: ['admin-users'] })
     },
     onError: (error: any) => {
-      message.error(error.response?.data?.detail || '分配失败')
+      message.error(error.response?.data?.detail || t('roles.roleAssignFailed'))
     },
   })
 
@@ -124,10 +167,10 @@ const RolesList = () => {
 
   const handleDeleteRole = (role: any) => {
     Modal.confirm({
-      title: '确认删除',
-      content: `确定要删除角色"${role.name}"吗？此操作不可恢复。`,
-      okText: '确定',
-      cancelText: '取消',
+      title: t('roles.confirmDeleteRole'),
+      content: t('roles.deleteRoleWarning', { name: role.name }),
+      okText: t('common.confirm'),
+      cancelText: t('common.cancel'),
       okType: 'danger',
       onOk: () => deleteRoleMutation.mutate(role.id),
     })
@@ -135,7 +178,7 @@ const RolesList = () => {
 
   const handleAssignRoles = (admin: any) => {
     if (admin.is_superadmin) {
-      message.info('超级管理员拥有所有权限，无需分配角色')
+      message.info(t('roles.superadminNoAssign'))
       return
     }
 
@@ -155,40 +198,40 @@ const RolesList = () => {
       width: 80,
     },
     {
-      title: '角色名称',
+      title: t('roles.roleName'),
       dataIndex: 'name',
       key: 'name',
       render: (name: string, record: any) => (
         <Space>
           <SafetyOutlined style={{ color: record.is_active ? '#1890ff' : '#999' }} />
           <span>{name}</span>
-          {!record.is_active && <Tag color="default">已禁用</Tag>}
+          {!record.is_active && <Tag color="default">{t('roles.inactive')}</Tag>}
         </Space>
       ),
     },
     {
-      title: '描述',
+      title: t('roles.roleDescription'),
       dataIndex: 'description',
       key: 'description',
       ellipsis: true,
     },
     {
-      title: '权限数量',
+      title: t('common.permissions'),
       key: 'permissions',
       width: 120,
       render: (_: any, record: any) => (
-        <Tag color="blue">{record.permission_count || 0} 个权限</Tag>
+        <Tag color="blue">{t('roles.permissionCount', { count: record.permission_count || 0 })}</Tag>
       ),
     },
     {
-      title: '创建时间',
+      title: t('common.createdAt'),
       dataIndex: 'created_at',
       key: 'created_at',
       width: 180,
-      render: (date: string) => new Date(date).toLocaleString('zh-CN'),
+      render: (date: string) => new Date(date).toLocaleString(),
     },
     {
-      title: '操作',
+      title: t('common.actions'),
       key: 'actions',
       width: 200,
       render: (_: any, record: any) => (
@@ -198,7 +241,7 @@ const RolesList = () => {
             icon={<EditOutlined />}
             onClick={() => handleEditRole(record)}
           >
-            编辑
+            {t('common.edit')}
           </Button>
           <Button
             type="link"
@@ -206,7 +249,7 @@ const RolesList = () => {
             icon={<DeleteOutlined />}
             onClick={() => handleDeleteRole(record)}
           >
-            删除
+            {t('common.delete')}
           </Button>
         </Space>
       ),
@@ -222,52 +265,52 @@ const RolesList = () => {
       width: 80,
     },
     {
-      title: '用户名',
+      title: t('user.username'),
       dataIndex: 'username',
       key: 'username',
       render: (username: string, record: any) => (
         <Space>
           <UserOutlined />
           <span>{username}</span>
-          {record.is_superadmin && <Tag color="gold">超级管理员</Tag>}
-          {!record.is_active && <Tag color="red">已禁用</Tag>}
+          {record.is_superadmin && <Tag color="gold">{t('roles.superadmin')}</Tag>}
+          {!record.is_active && <Tag color="red">{t('common.inactive')}</Tag>}
         </Space>
       ),
     },
     {
-      title: '邮箱',
+      title: t('user.email'),
       dataIndex: 'email',
       key: 'email',
     },
     {
-      title: '姓名',
+      title: t('user.fullName'),
       dataIndex: 'full_name',
       key: 'full_name',
     },
     {
-      title: '角色',
+      title: t('roles.currentRole'),
       key: 'role',
       render: (_: any, record: any) => (
         <Space wrap>
           {record.is_superadmin ? (
-            <Tag color="gold">所有权限</Tag>
+            <Tag color="gold">{t('roles.allPermissions')}</Tag>
           ) : record.role ? (
             <Tag color="blue">{record.role.name}</Tag>
           ) : (
-            <Tag color="default">无角色</Tag>
+            <Tag color="default">{t('roles.noRole')}</Tag>
           )}
         </Space>
       ),
     },
     {
-      title: '最后登录',
+      title: t('roles.lastLogin'),
       dataIndex: 'last_login',
       key: 'last_login',
       width: 180,
-      render: (date: string) => (date ? new Date(date).toLocaleString('zh-CN') : '-'),
+      render: (date: string) => (date ? new Date(date).toLocaleString() : '-'),
     },
     {
-      title: '操作',
+      title: t('common.actions'),
       key: 'actions',
       width: 150,
       render: (_: any, record: any) => (
@@ -277,7 +320,7 @@ const RolesList = () => {
           onClick={() => handleAssignRoles(record)}
           disabled={record.is_superadmin}
         >
-          分配角色
+          {t('roles.assignRole')}
         </Button>
       ),
     },
@@ -294,32 +337,50 @@ const RolesList = () => {
             label: (
               <span>
                 <SafetyOutlined />
-                角色管理
+                {t('roles.rolesManagement')}
               </span>
             ),
             children: (
               <Card
-                title="角色列表"
+                title={t('roles.roleList')}
                 extra={
-                  <Button
-                    type="primary"
-                    icon={<PlusOutlined />}
-                    onClick={() => {
-                      setEditingRole(null)
-                      roleForm.resetFields()
-                      setIsRoleModalVisible(true)
-                    }}
-                  >
-                    创建角色
-                  </Button>
+                  <Space>
+                    <Input
+                      placeholder={t('roles.searchRole')}
+                      prefix={<SearchOutlined />}
+                      value={roleSearchText}
+                      onChange={(e) => setRoleSearchText(e.target.value)}
+                      style={{ width: 200 }}
+                      allowClear
+                    />
+                    <Button
+                      type="primary"
+                      icon={<PlusOutlined />}
+                      onClick={() => {
+                        setEditingRole(null)
+                        roleForm.resetFields()
+                        setIsRoleModalVisible(true)
+                      }}
+                    >
+                      {t('roles.createRole')}
+                    </Button>
+                  </Space>
                 }
               >
                 <Table
                   columns={roleColumns}
-                  dataSource={rolesData?.roles}
+                  dataSource={filteredRoles}
                   loading={rolesLoading}
                   rowKey="id"
                   pagination={{ pageSize: 20 }}
+                  locale={{
+                    emptyText: (
+                      <Empty
+                        description={t('common.noData')}
+                        image={Empty.PRESENTED_IMAGE_SIMPLE}
+                      />
+                    ),
+                  }}
                 />
               </Card>
             ),
@@ -329,27 +390,60 @@ const RolesList = () => {
             label: (
               <span>
                 <KeyOutlined />
-                权限列表
+                {t('roles.permissionsList')}
               </span>
             ),
             children: (
-              <Card title="系统权限">
+              <Card
+                title={t('roles.systemPermissions')}
+                extra={
+                  <Space>
+                    <Select
+                      value={permissionModuleFilter}
+                      onChange={setPermissionModuleFilter}
+                      style={{ width: 200 }}
+                      placeholder={t('roles.filterByModule')}
+                    >
+                      <Select.Option value="all">{t('roles.allModules')}</Select.Option>
+                      {permissionsData?.grouped &&
+                        Object.keys(permissionsData.grouped).map((module) => (
+                          <Select.Option key={module} value={module}>
+                            {module}
+                          </Select.Option>
+                        ))}
+                    </Select>
+                  </Space>
+                }
+              >
                 {permissionsLoading ? (
-                  <div>加载中...</div>
+                  <div style={{ textAlign: 'center', padding: '40px 0' }}>
+                    <Spin tip={t('roles.loading')} />
+                  </div>
                 ) : (
                   <Space direction="vertical" style={{ width: '100%' }} size="large">
-                    {permissionsData?.grouped &&
-                      Object.entries(permissionsData.grouped).map(([module, perms]: [string, any]) => (
-                        <Card key={module} type="inner" title={`模块: ${module}`} size="small">
-                          <Space wrap>
-                            {perms.map((perm: any) => (
-                              <Tag key={perm.id} color="blue">
+                    {Object.entries(filteredPermissions).map(([module, perms]: [string, any]) => (
+                      <Card
+                        key={module}
+                        type="inner"
+                        title={`${t('roles.modulePrefix')} ${module}`}
+                        size="small"
+                        extra={<Tag color="cyan">{perms.length} {t('common.items')}</Tag>}
+                      >
+                        <Space wrap>
+                          {perms.map((perm: any) => (
+                            <Tooltip
+                              key={perm.id}
+                              title={perm.description || perm.code}
+                              placement="top"
+                            >
+                              <Tag color="blue">
                                 {perm.name} ({perm.code})
                               </Tag>
-                            ))}
-                          </Space>
-                        </Card>
-                      ))}
+                            </Tooltip>
+                          ))}
+                        </Space>
+                      </Card>
+                    ))}
                   </Space>
                 )}
               </Card>
@@ -360,17 +454,37 @@ const RolesList = () => {
             label: (
               <span>
                 <UserOutlined />
-                管理员用户
+                {t('roles.adminUsers')}
               </span>
             ),
             children: (
-              <Card title="管理员列表">
+              <Card
+                title={t('roles.adminList')}
+                extra={
+                  <Input
+                    placeholder={t('roles.searchAdmin')}
+                    prefix={<SearchOutlined />}
+                    value={adminSearchText}
+                    onChange={(e) => setAdminSearchText(e.target.value)}
+                    style={{ width: 250 }}
+                    allowClear
+                  />
+                }
+              >
                 <Table
                   columns={adminColumns}
-                  dataSource={adminUsersData?.admin_users}
+                  dataSource={filteredAdmins}
                   loading={adminUsersLoading}
                   rowKey="id"
                   pagination={{ pageSize: 20 }}
+                  locale={{
+                    emptyText: (
+                      <Empty
+                        description={t('common.noData')}
+                        image={Empty.PRESENTED_IMAGE_SIMPLE}
+                      />
+                    ),
+                  }}
                 />
               </Card>
             ),
@@ -380,7 +494,7 @@ const RolesList = () => {
 
       {/* 角色编辑 Modal */}
       <Modal
-        title={editingRole ? '编辑角色' : '创建角色'}
+        title={editingRole ? t('roles.editRole') : t('roles.createRole')}
         open={isRoleModalVisible}
         onCancel={() => {
           setIsRoleModalVisible(false)
@@ -390,6 +504,8 @@ const RolesList = () => {
         onOk={() => roleForm.submit()}
         confirmLoading={saveRoleMutation.isPending}
         width={700}
+        okText={t('common.save')}
+        cancelText={t('common.cancel')}
       >
         <Form
           form={roleForm}
@@ -398,31 +514,32 @@ const RolesList = () => {
         >
           <Form.Item
             name="name"
-            label="角色名称"
-            rules={[{ required: true, message: '请输入角色名称' }]}
+            label={t('roles.roleName')}
+            rules={[{ required: true, message: t('form.required') }]}
           >
-            <Input placeholder="例如：内容编辑、审核员" />
+            <Input placeholder={t('roles.roleNamePlaceholder')} />
           </Form.Item>
 
-          <Form.Item name="description" label="角色描述">
-            <Input.TextArea placeholder="简要描述该角色的职责" rows={3} />
+          <Form.Item name="description" label={t('roles.roleDescription')}>
+            <Input.TextArea placeholder={t('roles.descriptionPlaceholder')} rows={3} />
           </Form.Item>
 
           <Form.Item
             name="permission_ids"
-            label="权限分配"
-            rules={[{ required: true, message: '请至少选择一个权限' }]}
+            label={t('roles.permissionAssignment')}
+            rules={[{ required: true, message: t('roles.atLeastOne') }]}
           >
             <Select
               mode="multiple"
-              placeholder="选择权限"
+              placeholder={t('roles.selectPermissions')}
               loading={permissionsLoading}
               optionFilterProp="label"
               showSearch
+              maxTagCount="responsive"
             >
               {permissionsData?.grouped &&
                 Object.entries(permissionsData.grouped).map(([module, perms]: [string, any]) => (
-                  <Select.OptGroup key={module} label={`${module} (模块)`}>
+                  <Select.OptGroup key={module} label={`${module} (${t('roles.modulePrefix').toLowerCase()})`}>
                     {perms.map((perm: any) => (
                       <Select.Option key={perm.id} value={perm.id} label={`${perm.name} ${perm.code}`}>
                         {perm.name} ({perm.code})
@@ -438,7 +555,7 @@ const RolesList = () => {
 
       {/* 管理员角色分配 Modal */}
       <Modal
-        title={`为 ${selectedAdmin?.username} 分配角色`}
+        title={t('roles.assignRoleTo', { username: selectedAdmin?.username })}
         open={isAdminModalVisible}
         onCancel={() => {
           setIsAdminModalVisible(false)
@@ -447,17 +564,19 @@ const RolesList = () => {
         }}
         onOk={() => adminRoleForm.submit()}
         confirmLoading={assignRolesMutation.isPending}
+        okText={t('common.confirm')}
+        cancelText={t('common.cancel')}
       >
         {selectedAdmin && (
           <div style={{ marginBottom: 16 }}>
             <Descriptions column={1} size="small">
-              <Descriptions.Item label="用户名">{selectedAdmin.username}</Descriptions.Item>
-              <Descriptions.Item label="邮箱">{selectedAdmin.email}</Descriptions.Item>
-              <Descriptions.Item label="当前角色">
+              <Descriptions.Item label={t('user.username')}>{selectedAdmin.username}</Descriptions.Item>
+              <Descriptions.Item label={t('user.email')}>{selectedAdmin.email}</Descriptions.Item>
+              <Descriptions.Item label={t('roles.currentRole')}>
                 {selectedAdmin.role ? (
                   <Tag color="blue">{selectedAdmin.role.name}</Tag>
                 ) : (
-                  <Tag color="default">无角色</Tag>
+                  <Tag color="default">{t('roles.noRole')}</Tag>
                 )}
               </Descriptions.Item>
             </Descriptions>
@@ -477,11 +596,11 @@ const RolesList = () => {
         >
           <Form.Item
             name="role_id"
-            label="选择角色"
-            rules={[{ required: false, message: '请选择一个角色' }]}
+            label={t('roles.assignRole')}
+            rules={[{ required: false }]}
           >
             <Select
-              placeholder="选择角色（留空表示取消分配）"
+              placeholder={t('roles.selectRolePlaceholder')}
               loading={rolesLoading}
               optionFilterProp="label"
               allowClear
