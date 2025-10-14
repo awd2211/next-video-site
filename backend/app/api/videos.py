@@ -104,11 +104,19 @@ async def list_videos(
 async def get_trending_videos(
     page: int = Query(1, ge=1),
     page_size: int = Query(20, ge=1, le=100),
+    time_range: str = Query("all", regex="^(today|week|all|rising)$"),
     db: AsyncSession = Depends(get_db),
 ):
-    """Get trending videos (cached for 10 minutes)"""
-    # 生成缓存键
-    cache_key = f"trending_videos:page_{page}:size_{page_size}"
+    """
+    Get trending videos with time-based filtering (cached for 10 minutes)
+
+    Args:
+        page: Page number
+        page_size: Items per page
+        time_range: Time range filter - "today", "week", "all", or "rising"
+    """
+    # 生成缓存键（包含time_range）
+    cache_key = f"trending_videos:page_{page}:size_{page_size}:range_{time_range}"
 
     # 尝试从缓存获取
     cached = await Cache.get(cache_key)
@@ -123,13 +131,37 @@ async def get_trending_videos(
             selectinload(Video.video_categories).selectinload(VideoCategory.category)
         )
         .filter(Video.status == VideoStatus.PUBLISHED)
-        .order_by(desc(Video.view_count))
     )
 
-    # Count total
-    count_query = select(func.count()).select_from(
-        select(Video).filter(Video.status == VideoStatus.PUBLISHED).subquery()
-    )
+    # Time-based filtering
+    from datetime import datetime, timezone
+    now = datetime.now(timezone.utc)
+
+    if time_range == "today":
+        # Videos from last 24 hours
+        yesterday = now - timedelta(days=1)
+        query = query.filter(Video.created_at >= yesterday)
+        # Sort by view count for today's trending
+        query = query.order_by(desc(Video.view_count), desc(Video.created_at))
+    elif time_range == "week":
+        # Videos from last 7 days
+        week_ago = now - timedelta(days=7)
+        query = query.filter(Video.created_at >= week_ago)
+        # Sort by view count for this week's trending
+        query = query.order_by(desc(Video.view_count), desc(Video.created_at))
+    elif time_range == "rising":
+        # Rising videos: recent uploads with good view velocity
+        # Videos from last 3 days, sorted by view count (these are "rising")
+        three_days_ago = now - timedelta(days=3)
+        query = query.filter(Video.created_at >= three_days_ago)
+        # Sort by view count to get rising stars
+        query = query.order_by(desc(Video.view_count), desc(Video.created_at))
+    else:  # "all"
+        # All time trending - just by view count
+        query = query.order_by(desc(Video.view_count))
+
+    # Count total with same filters
+    count_query = select(func.count()).select_from(query.subquery())
     result = await db.execute(count_query)
     total = result.scalar() or 0
 

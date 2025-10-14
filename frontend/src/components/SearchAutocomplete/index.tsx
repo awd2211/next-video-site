@@ -2,6 +2,8 @@ import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Search, Clock, TrendingUp, X } from 'lucide-react'
 import { videoService } from '@/services/videoService'
+import { searchHistoryService } from '@/services/searchHistoryService'
+import { useAuthStore } from '@/store/authStore'
 import type { Video } from '@/types'
 
 interface SearchAutocompleteProps {
@@ -10,6 +12,7 @@ interface SearchAutocompleteProps {
 
 const SearchAutocomplete = ({ onSearch }: SearchAutocompleteProps) => {
   const navigate = useNavigate()
+  const { isAuthenticated } = useAuthStore()
   const [query, setQuery] = useState('')
   const [isOpen, setIsOpen] = useState(false)
   const [suggestions, setSuggestions] = useState<Video[]>([])
@@ -64,10 +67,10 @@ const SearchAutocomplete = ({ onSearch }: SearchAutocompleteProps) => {
     return () => clearTimeout(timer)
   }, [query])
 
-  const handleSearch = (searchQuery: string) => {
+  const handleSearch = async (searchQuery: string) => {
     if (!searchQuery.trim()) return
 
-    // 保存到搜索历史
+    // 保存到本地搜索历史 (localStorage)
     const newHistory = [
       searchQuery,
       ...searchHistory.filter(item => item !== searchQuery),
@@ -76,7 +79,18 @@ const SearchAutocomplete = ({ onSearch }: SearchAutocompleteProps) => {
     setSearchHistory(newHistory)
     localStorage.setItem('search_history', JSON.stringify(newHistory))
 
-    // 执行搜索
+    // 🆕 同步到服务器 (如果已登录) - 静默记录,不阻塞用户
+    if (isAuthenticated) {
+      // 先执行搜索获取结果数,然后异步记录
+      videoService.searchVideos(searchQuery, { page: 1, page_size: 1 }).then((data) => {
+        searchHistoryService.recordSearch(searchQuery, data.total)
+      }).catch(() => {
+        // 静默失败 - 使用默认值
+        searchHistoryService.recordSearch(searchQuery, 0)
+      })
+    }
+
+    // 执行搜索导航
     setIsOpen(false)
     setQuery(searchQuery)
     navigate(`/search?q=${encodeURIComponent(searchQuery)}`)

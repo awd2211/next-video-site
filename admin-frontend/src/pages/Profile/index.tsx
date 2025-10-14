@@ -2,9 +2,11 @@
  * 管理员个人资料页面
  */
 import { useState, useEffect } from 'react'
-import { Card, Form, Input, Button, Avatar, message, Tabs, Space, Typography, Descriptions } from 'antd'
-import { UserOutlined, LockOutlined, MailOutlined, SaveOutlined } from '@ant-design/icons'
+import { Card, Form, Input, Button, Avatar, message, Tabs, Space, Typography, Descriptions, Alert, Switch, Modal } from 'antd'
+import { UserOutlined, LockOutlined, MailOutlined, SaveOutlined, SafetyOutlined, CopyOutlined } from '@ant-design/icons'
 import profileService, { type AdminProfile, type UpdateProfileRequest } from '../../services/profileService'
+import { get2FAStatus, disable2FA, regenerateBackupCodes, type TwoFactorStatus } from '../../services/twoFactorService'
+import TwoFactorSetup from '../../components/TwoFactorSetup'
 
 const { Title, Text } = Typography
 const { TabPane } = Tabs
@@ -17,6 +19,12 @@ export default function Profile() {
   const [profile, setProfile] = useState<AdminProfile | null>(null)
   const [loading, setLoading] = useState(false)
   const [activeTab, setActiveTab] = useState('info')
+
+  // 2FA state
+  const [twoFactorStatus, setTwoFactorStatus] = useState<TwoFactorStatus | null>(null)
+  const [showSetupModal, setShowSetupModal] = useState(false)
+  const [disablePasswordModal, setDisablePasswordModal] = useState(false)
+  const [disablePassword, setDisablePassword] = useState('')
 
   // 加载管理员资料
   const loadProfile = async () => {
@@ -36,9 +44,118 @@ export default function Profile() {
     }
   }
 
+  // Load 2FA status
+  const load2FAStatus = async () => {
+    try {
+      const status = await get2FAStatus()
+      setTwoFactorStatus(status)
+    } catch (error: any) {
+      console.error('Failed to load 2FA status:', error)
+    }
+  }
+
   useEffect(() => {
     loadProfile()
+    load2FAStatus()
   }, [])
+
+  // Handle enable 2FA
+  const handleEnable2FA = () => {
+    setShowSetupModal(true)
+  }
+
+  // Handle disable 2FA
+  const handleDisable2FA = async () => {
+    if (!disablePassword) {
+      message.error('请输入密码')
+      return
+    }
+
+    try {
+      setLoading(true)
+      await disable2FA(disablePassword)
+      message.success('2FA 已禁用')
+      setDisablePasswordModal(false)
+      setDisablePassword('')
+      await load2FAStatus()
+    } catch (error: any) {
+      message.error(error.response?.data?.detail || '禁用2FA失败')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  // Handle regenerate backup codes
+  const handleRegenerateBackupCodes = () => {
+    Modal.confirm({
+      title: '重新生成备份码',
+      content: (
+        <div>
+          <p>重新生成备份码将使旧的备份码失效。</p>
+          <p>请输入您的密码以继续：</p>
+          <Input.Password
+            placeholder="输入密码"
+            onChange={(e) => setDisablePassword(e.target.value)}
+          />
+        </div>
+      ),
+      onOk: async () => {
+        if (!disablePassword) {
+          message.error('请输入密码')
+          return Promise.reject()
+        }
+
+        try {
+          const response = await regenerateBackupCodes(disablePassword)
+          Modal.info({
+            title: '新的备份码',
+            width: 600,
+            content: (
+              <div>
+                <Alert
+                  message="请保存这些新的备份码"
+                  description="旧的备份码已失效，每个备份码只能使用一次"
+                  type="warning"
+                  showIcon
+                  style={{ marginBottom: 16 }}
+                />
+                <div
+                  style={{
+                    background: '#f5f5f5',
+                    padding: '16px',
+                    borderRadius: '4px',
+                    fontFamily: 'monospace',
+                    fontSize: '14px',
+                  }}
+                >
+                  {response.backup_codes.map((code, index) => (
+                    <div key={index} style={{ padding: '4px 0' }}>
+                      {code}
+                    </div>
+                  ))}
+                </div>
+                <Button
+                  icon={<CopyOutlined />}
+                  onClick={() => {
+                    navigator.clipboard.writeText(response.backup_codes.join('\n'))
+                    message.success('已复制到剪贴板')
+                  }}
+                  style={{ marginTop: 16 }}
+                >
+                  复制全部
+                </Button>
+              </div>
+            ),
+          })
+          setDisablePassword('')
+          await load2FAStatus()
+        } catch (error: any) {
+          message.error(error.response?.data?.detail || '重新生成备份码失败')
+          return Promise.reject()
+        }
+      },
+    })
+  }
 
   // 更新个人资料
   const handleUpdateProfile = async (values: UpdateProfileRequest) => {
@@ -334,8 +451,117 @@ export default function Profile() {
               </Form.Item>
             </Form>
           </TabPane>
+
+          {/* 安全设置标签 */}
+          <TabPane tab={<span><SafetyOutlined /> 安全设置</span>} key="security">
+            <Title level={4}>双因素认证 (2FA)</Title>
+            <Alert
+              message="增强账户安全"
+              description="双因素认证为您的账户提供额外的安全保护。即使密码被泄露，攻击者也无法访问您的账户。"
+              type="info"
+              showIcon
+              style={{ marginBottom: 24 }}
+            />
+
+            {twoFactorStatus && (
+              <Card style={{ maxWidth: '600px' }}>
+                <Space direction="vertical" size="large" style={{ width: '100%' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div>
+                      <Text strong>2FA 状态：</Text>
+                      <Text style={{ marginLeft: 8 }}>
+                        {twoFactorStatus.enabled ? (
+                          <span style={{ color: '#52c41a' }}>✓ 已启用</span>
+                        ) : (
+                          <span style={{ color: '#d9d9d9' }}>未启用</span>
+                        )}
+                      </Text>
+                    </div>
+                    <Switch
+                      checked={twoFactorStatus.enabled}
+                      onChange={(checked) => {
+                        if (checked) {
+                          handleEnable2FA()
+                        } else {
+                          setDisablePasswordModal(true)
+                        }
+                      }}
+                      checkedChildren="已启用"
+                      unCheckedChildren="已禁用"
+                    />
+                  </div>
+
+                  {twoFactorStatus.enabled && (
+                    <>
+                      <div>
+                        <Text type="secondary">启用时间：</Text>
+                        <Text style={{ marginLeft: 8 }}>
+                          {twoFactorStatus.verified_at
+                            ? new Date(twoFactorStatus.verified_at).toLocaleString('zh-CN')
+                            : '未知'}
+                        </Text>
+                      </div>
+
+                      <div>
+                        <Text type="secondary">剩余备份码：</Text>
+                        <Text style={{ marginLeft: 8 }}>
+                          {twoFactorStatus.backup_codes_remaining} 个
+                        </Text>
+                      </div>
+
+                      <Button
+                        onClick={handleRegenerateBackupCodes}
+                        icon={<SafetyOutlined />}
+                      >
+                        重新生成备份码
+                      </Button>
+                    </>
+                  )}
+                </Space>
+              </Card>
+            )}
+          </TabPane>
         </Tabs>
       </Card>
+
+      {/* 2FA Setup Modal */}
+      <TwoFactorSetup
+        visible={showSetupModal}
+        onClose={() => setShowSetupModal(false)}
+        onSuccess={() => {
+          load2FAStatus()
+          setShowSetupModal(false)
+        }}
+      />
+
+      {/* Disable 2FA Modal */}
+      <Modal
+        title="禁用双因素认证"
+        open={disablePasswordModal}
+        onOk={handleDisable2FA}
+        onCancel={() => {
+          setDisablePasswordModal(false)
+          setDisablePassword('')
+        }}
+        okText="禁用"
+        cancelText="取消"
+        okButtonProps={{ danger: true, loading }}
+      >
+        <Alert
+          message="警告"
+          description="禁用双因素认证将降低您账户的安全性"
+          type="warning"
+          showIcon
+          style={{ marginBottom: 16 }}
+        />
+        <Form.Item label="输入密码以确认">
+          <Input.Password
+            placeholder="输入您的密码"
+            value={disablePassword}
+            onChange={(e) => setDisablePassword(e.target.value)}
+          />
+        </Form.Item>
+      </Modal>
     </div>
   )
 }

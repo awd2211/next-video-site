@@ -11,12 +11,15 @@ import { exportToCSV } from '@/utils/exportUtils'
 import EmptyState from '@/components/EmptyState'
 import VideoPreviewPopover from '@/components/VideoPreviewPopover'
 import BatchUploader from '@/components/BatchUploader'
+import { useTheme } from '@/contexts/ThemeContext'
+import { getTagStyle, getTextColor } from '@/utils/awsColorHelpers'
 
 const VideoList = () => {
   const { t } = useTranslation()
   const navigate = useNavigate()
   const queryClient = useQueryClient()
   const screens = Grid.useBreakpoint()
+  const { theme } = useTheme()
   const [page, setPage] = useState(1)
   const [search, setSearch] = useState('')
   const [status, setStatus] = useState<string>()
@@ -203,12 +206,7 @@ const VideoList = () => {
       dataIndex: 'video_type',
       key: 'video_type',
       render: (type: string) => (
-        <Tag style={{
-          backgroundColor: 'rgba(0, 115, 187, 0.1)',
-          color: '#0073bb',
-          border: '1px solid rgba(0, 115, 187, 0.2)',
-          borderRadius: '4px'
-        }}>
+        <Tag style={getTagStyle('primary', theme)}>
           {type}
         </Tag>
       ),
@@ -218,26 +216,20 @@ const VideoList = () => {
       dataIndex: 'status',
       key: 'status',
       render: (status: string) => {
-        const statusStyles: Record<string, any> = {
-          published: {
-            backgroundColor: 'rgba(29, 129, 2, 0.1)',
-            color: '#1d8102',
-            border: '1px solid rgba(29, 129, 2, 0.2)'
-          },
-          draft: {
-            backgroundColor: 'rgba(0, 0, 0, 0.04)',
-            color: '#787774',
-            border: '1px solid rgba(0, 0, 0, 0.1)'
-          },
-          archived: {
-            backgroundColor: 'rgba(255, 153, 0, 0.1)',
-            color: '#ff9900',
-            border: '1px solid rgba(255, 153, 0, 0.2)'
-          },
+        const getStatusVariant = (status: string) => {
+          switch (status) {
+            case 'published':
+              return 'success'
+            case 'draft':
+              return 'info'
+            case 'archived':
+              return 'warning'
+            default:
+              return 'neutral'
+          }
         }
-        const style = statusStyles[status] || statusStyles.draft
         return (
-          <Tag style={{ ...style, borderRadius: '4px' }}>{status}</Tag>
+          <Tag style={getTagStyle(getStatusVariant(status), theme)}>{status}</Tag>
         )
       },
     },
@@ -251,7 +243,10 @@ const VideoList = () => {
       dataIndex: 'average_rating',
       key: 'average_rating',
       render: (rating: number) => (
-        <span style={{ fontFamily: 'Monaco, Menlo, Consolas, monospace', color: '#37352f' }}>
+        <span style={{
+          fontFamily: 'Monaco, Menlo, Consolas, monospace',
+          color: getTextColor('primary', theme)
+        }}>
           {rating?.toFixed(1) || '0.0'}
         </span>
       ),

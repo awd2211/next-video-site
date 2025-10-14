@@ -11,11 +11,14 @@ import { Line, Column, Pie } from '@ant-design/charts'
 import axios from '@/utils/axios'
 import { useState } from 'react'
 import dayjs, { Dayjs } from 'dayjs'
+import { useTheme } from '@/contexts/ThemeContext'
+import { getColor, getTextColor } from '@/utils/awsColorHelpers'
 
 const { Title } = Typography
 const { RangePicker } = DatePicker
 
 const Statistics = () => {
+  const { theme } = useTheme()
   const [dateRange, setDateRange] = useState<[Dayjs, Dayjs]>([
     dayjs().subtract(30, 'days'),
     dayjs(),
@@ -101,11 +104,11 @@ const Statistics = () => {
             <Statistic
               title="总用户数"
               value={overviewStats?.total_users || 0}
-              prefix={<UserOutlined style={{ color: '#0073bb', fontSize: 24 }} />}
-              valueStyle={{ color: '#0073bb' }}
+              prefix={<UserOutlined style={{ color: getColor('primary', theme), fontSize: 24 }} />}
+              valueStyle={{ color: getColor('primary', theme) }}
               suffix={
                 overviewStats?.user_growth_rate ? (
-                  <span style={{ fontSize: 14, color: '#1d8102' }}>
+                  <span style={{ fontSize: 14, color: getColor('success', theme) }}>
                     <RiseOutlined /> {overviewStats.user_growth_rate}%
                   </span>
                 ) : null
@@ -118,11 +121,11 @@ const Statistics = () => {
             <Statistic
               title="总视频数"
               value={overviewStats?.total_videos || 0}
-              prefix={<VideoCameraOutlined style={{ color: '#1d8102', fontSize: 24 }} />}
-              valueStyle={{ color: '#1d8102' }}
+              prefix={<VideoCameraOutlined style={{ color: getColor('success', theme), fontSize: 24 }} />}
+              valueStyle={{ color: getColor('success', theme) }}
               suffix={
                 overviewStats?.video_growth_rate ? (
-                  <span style={{ fontSize: 14, color: '#1d8102' }}>
+                  <span style={{ fontSize: 14, color: getColor('success', theme) }}>
                     <RiseOutlined /> {overviewStats.video_growth_rate}%
                   </span>
                 ) : null
@@ -135,8 +138,8 @@ const Statistics = () => {
             <Statistic
               title="总评论数"
               value={overviewStats?.total_comments || 0}
-              prefix={<CommentOutlined style={{ color: '#ff9900', fontSize: 24 }} />}
-              valueStyle={{ color: '#ff9900' }}
+              prefix={<CommentOutlined style={{ color: getColor('warning', theme), fontSize: 24 }} />}
+              valueStyle={{ color: getColor('warning', theme) }}
             />
           </Card>
         </Col>
@@ -145,8 +148,8 @@ const Statistics = () => {
             <Statistic
               title="总播放量"
               value={overviewStats?.total_views || 0}
-              prefix={<EyeOutlined style={{ color: '#d13212', fontSize: 24 }} />}
-              valueStyle={{ color: '#d13212' }}
+              prefix={<EyeOutlined style={{ color: getColor('error', theme), fontSize: 24 }} />}
+              valueStyle={{ color: getColor('error', theme) }}
               formatter={(value) => `${Number(value).toLocaleString()}`}
             />
           </Card>
@@ -156,7 +159,7 @@ const Statistics = () => {
       {/* Trend Charts */}
       <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
         <Col xs={24} lg={16}>
-          <Card title="数据增长趋势" extra={<span style={{ fontSize: 12, color: '#999' }}>近30天</span>}>
+          <Card title="数据增长趋势" extra={<span style={{ fontSize: 12, color: getTextColor('secondary', theme) }}>近30天</span>}>
             {trendData?.combined && trendData.combined.length > 0 ? (
               <Line
                 data={trendData.combined}
@@ -229,11 +232,11 @@ const Statistics = () => {
                 yField="views"
                 seriesField="title"
                 legend={false}
-                color="#0073bb"
+                color={getColor('primary', theme)}
                 label={{
                   position: 'top',
                   style: {
-                    fill: '#37352f',
+                    fill: getTextColor('primary', theme),
                     opacity: 0.8,
                   },
                   formatter: (datum: any) => datum.views.toLocaleString(),

@@ -72,7 +72,7 @@ async def get_user_activity_report(
     # 4. VIP 用户统计
     vip_users_result = await db.execute(
         select(func.count(User.id)).where(
-            User.is_vip == True, or_(User.vip_expire_at == None, User.vip_expire_at > end_date)
+            User.is_vip == True, or_(User.vip_expires_at == None, User.vip_expires_at > end_date)
         )
     )
     vip_users = vip_users_result.scalar()
@@ -233,7 +233,7 @@ async def get_vip_subscription_report(
     # 1. 当前 VIP 用户总数
     total_vip_result = await db.execute(
         select(func.count(User.id)).where(
-            User.is_vip == True, or_(User.vip_expire_at == None, User.vip_expire_at > now)
+            User.is_vip == True, or_(User.vip_expires_at == None, User.vip_expires_at > now)
         )
     )
     total_vip = total_vip_result.scalar()
@@ -252,9 +252,9 @@ async def get_vip_subscription_report(
     expiring_vip_result = await db.execute(
         select(func.count(User.id)).where(
             User.is_vip == True,
-            User.vip_expire_at != None,
-            User.vip_expire_at > now,
-            User.vip_expire_at <= expire_soon_date,
+            User.vip_expires_at != None,
+            User.vip_expires_at > now,
+            User.vip_expires_at <= expire_soon_date,
         )
     )
     expiring_vip = expiring_vip_result.scalar()
@@ -262,9 +262,9 @@ async def get_vip_subscription_report(
     # 4. 已过期 VIP（最近30天）
     expired_vip_result = await db.execute(
         select(func.count(User.id)).where(
-            User.vip_expire_at != None,
-            User.vip_expire_at <= now,
-            User.vip_expire_at >= start_date,
+            User.vip_expires_at != None,
+            User.vip_expires_at <= now,
+            User.vip_expires_at >= start_date,
         )
     )
     expired_vip = expired_vip_result.scalar()

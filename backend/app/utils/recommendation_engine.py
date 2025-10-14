@@ -78,8 +78,8 @@ class RecommendationEngine:
                 )
                 recommended_videos.extend(popular_videos)
 
-            # 缓存10分钟
-            await Cache.set(cache_key, recommended_videos[:limit], ttl=600)
+            # 注意：不缓存ORM对象
+            # await Cache.set(cache_key, recommended_videos[:limit], ttl=600)
             return recommended_videos[:limit]
 
         else:
@@ -147,14 +147,16 @@ class RecommendationEngine:
         )
 
         # 至少匹配一个分类或演员或导演
+        from app.models.video import VideoCategory, VideoActor, VideoDirector
+
         if category_ids or actor_ids or director_ids:
             filters = []
             if category_ids:
-                filters.append(Video.video_categories.any(category_id__in=category_ids))
+                filters.append(Video.video_categories.any(VideoCategory.category_id.in_(category_ids)))
             if actor_ids:
-                filters.append(Video.video_actors.any(actor_id__in=actor_ids))
+                filters.append(Video.video_actors.any(VideoActor.actor_id.in_(actor_ids)))
             if director_ids:
-                filters.append(Video.video_directors.any(director_id__in=director_ids))
+                filters.append(Video.video_directors.any(VideoDirector.director_id.in_(director_ids)))
 
             candidates_query = candidates_query.filter(or_(*filters))
 
@@ -182,8 +184,8 @@ class RecommendationEngine:
         scored_videos.sort(key=lambda x: x[1], reverse=True)
         similar_videos = [v for v, _ in scored_videos[:limit]]
 
-        # 缓存30分钟
-        await Cache.set(cache_key, similar_videos, ttl=1800)
+        # 注意：不缓存ORM对象
+        # await Cache.set(cache_key, similar_videos, ttl=1800)
         return similar_videos
 
     async def _get_collaborative_filtering_recommendations(
@@ -325,16 +327,18 @@ class RecommendationEngine:
         )[:2]
 
         # 构建推荐查询
+        from app.models.video import VideoCategory, VideoActor, VideoDirector
+
         filters = []
         if top_categories:
             category_ids = [c[0] for c in top_categories]
-            filters.append(Video.video_categories.any(category_id__in=category_ids))
+            filters.append(Video.video_categories.any(VideoCategory.category_id.in_(category_ids)))
         if top_actors:
             actor_ids = [a[0] for a in top_actors]
-            filters.append(Video.video_actors.any(actor_id__in=actor_ids))
+            filters.append(Video.video_actors.any(VideoActor.actor_id.in_(actor_ids)))
         if top_directors:
             director_ids = [d[0] for d in top_directors]
-            filters.append(Video.video_directors.any(director_id__in=director_ids))
+            filters.append(Video.video_directors.any(VideoDirector.director_id.in_(director_ids)))
 
         if not filters:
             return []
@@ -384,10 +388,7 @@ class RecommendationEngine:
                 selectinload(Video.country),
                 selectinload(Video.video_categories).selectinload(VideoCategory.category)
             )
-            .filter(
-                Video.status == VideoStatus.PUBLISHED,
-                Video.id.not_in(exclude_ids) if exclude_ids else True,
-            )
+            .filter(Video.status == VideoStatus.PUBLISHED)
             .order_by(
                 desc(
                     Video.view_count * 0.7
@@ -397,11 +398,17 @@ class RecommendationEngine:
             .limit(limit * 2)  # 多取一些以便过滤后仍有足够数量
         )
 
+        # 如果有排除的ID，添加额外的过滤条件
+        if exclude_ids:
+            query = query.filter(Video.id.not_in(exclude_ids))
+
         result = await self.db.execute(query)
         popular_videos = list(result.scalars().all())
 
-        # 缓存15分钟
-        await Cache.set(cache_key, popular_videos, ttl=900)
+        # 注意：不缓存ORM对象，因为SQLAlchemy对象无法正确序列化
+        # 如果需要缓存，应该转换为字典或Pydantic模型
+        # await Cache.set(cache_key, popular_videos, ttl=900)
+
         return popular_videos[:limit]
 
     def _calculate_similarity_score(self, video1: Video, video2: Video) -> float:

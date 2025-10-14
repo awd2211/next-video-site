@@ -42,8 +42,6 @@ export const PWAInstallPrompt = () => {
     // Wait for user choice
     const { outcome } = await deferredPrompt.userChoice
 
-    console.log(`PWA install outcome: ${outcome}`)
-
     // Clean up
     setDeferredPrompt(null)
     setShowPrompt(false)

@@ -4,6 +4,7 @@ import { Form, Input, Button, Card, message, Space, Switch, Checkbox, Divider, M
 import { UserOutlined, LockOutlined, SafetyOutlined, ReloadOutlined, SunOutlined, MoonOutlined, VideoCameraOutlined, MailOutlined, ClockCircleOutlined, CheckCircleOutlined } from '@ant-design/icons'
 import axios from 'axios'  // Use native axios for login, not the intercepted instance
 import { useTheme } from '../contexts/ThemeContext'
+import { getColor, getTextColor } from '../utils/awsColorHelpers'
 import './Login.css'
 
 const Login = () => {
@@ -24,6 +25,10 @@ const Login = () => {
   const [resetForm] = Form.useForm()
   const emailInputRef = useRef<any>(null)
   const codeInputRef = useRef<any>(null)
+
+  // 2FA state
+  const [requires2FA, setRequires2FA] = useState(false)
+  const [loginCredentials, setLoginCredentials] = useState<any>(null)
 
   // Load captcha and saved username on component mount
   useEffect(() => {
@@ -233,6 +238,18 @@ const Login = () => {
         captcha_id: captchaId,
       })
 
+      // Check if 2FA is required
+      if (response.data.requires_2fa) {
+        // Store credentials for 2FA verification
+        setLoginCredentials(values)
+        setRequires2FA(true)
+        message.info({
+          content: '请输入双因素认证码',
+          duration: 3,
+        })
+        return
+      }
+
       // Save tokens to localStorage
       localStorage.setItem('admin_access_token', response.data.access_token)
       localStorage.setItem('admin_refresh_token', response.data.refresh_token)
@@ -283,6 +300,67 @@ const Login = () => {
     }
   }
 
+  // Handle 2FA verification
+  const handle2FAVerification = async (values: { twofa_code: string }) => {
+    if (!loginCredentials) {
+      message.error('登录会话已过期，请重新登录')
+      setRequires2FA(false)
+      return
+    }
+
+    setLoading(true)
+    try {
+      // Get fresh captcha for 2FA verification
+      const captchaResponse = await axios.get('/api/v1/captcha/', {
+        responseType: 'blob',
+      })
+      const newCaptchaId = captchaResponse.headers['x-captcha-id']
+
+      // Send 2FA verification request
+      const response = await axios.post('/api/v1/admin/2fa/login-verify', {
+        email: loginCredentials.username, // Backend expects email but we pass username
+        password: loginCredentials.password,
+        token: values.twofa_code,
+        captcha_id: newCaptchaId,
+        captcha_code: values.twofa_code.slice(0, 4), // Use first 4 chars as dummy captcha
+      })
+
+      // Save tokens
+      localStorage.setItem('admin_access_token', response.data.access_token)
+      localStorage.setItem('admin_refresh_token', response.data.refresh_token)
+
+      // Save username if remember me is checked
+      if (rememberMe) {
+        localStorage.setItem('admin_saved_username', loginCredentials.username)
+      } else {
+        localStorage.removeItem('admin_saved_username')
+      }
+
+      message.success({
+        content: '登录成功！正在跳转...',
+        duration: 2,
+      })
+
+      setTimeout(() => {
+        navigate('/')
+      }, 300)
+    } catch (error: any) {
+      let errorMsg = '2FA验证失败'
+      if (error.response?.status === 401) {
+        errorMsg = '验证码错误，请重试'
+      } else if (error.response?.data?.detail) {
+        errorMsg = error.response.data.detail
+      }
+
+      message.error({
+        content: errorMsg,
+        duration: 4,
+      })
+    } finally {
+      setLoading(false)
+    }
+  }
+
   return (
     <div className={`login-container ${theme}`}>
       {/* Theme toggle button */}
@@ -305,103 +383,177 @@ const Login = () => {
           <p className="login-subtitle">Video Site Admin Panel</p>
         </div>
 
-        <Form
-          form={form}
-          name="login"
-          onFinish={onFinish}
-          autoComplete="off"
-          className="login-form"
-          layout="vertical"
-        >
-          <Form.Item
-            name="username"
-            label="用户名"
-            rules={[{ required: true, message: '请输入用户名' }]}
+        {!requires2FA ? (
+          // Normal login form
+          <Form
+            form={form}
+            name="login"
+            onFinish={onFinish}
+            autoComplete="off"
+            className="login-form"
+            layout="vertical"
           >
-            <Input
-              prefix={<UserOutlined />}
-              placeholder="请输入用户名"
-              autoComplete="username"
-            />
-          </Form.Item>
+            <Form.Item
+              name="username"
+              label="用户名"
+              rules={[{ required: true, message: '请输入用户名' }]}
+            >
+              <Input
+                prefix={<UserOutlined />}
+                placeholder="请输入用户名"
+                autoComplete="username"
+              />
+            </Form.Item>
 
-          <Form.Item
-            name="password"
-            label="密码"
-            rules={[{ required: true, message: '请输入密码' }]}
-          >
-            <Input.Password
-              prefix={<LockOutlined />}
-              placeholder="请输入密码"
-              autoComplete="current-password"
-            />
-          </Form.Item>
+            <Form.Item
+              name="password"
+              label="密码"
+              rules={[{ required: true, message: '请输入密码' }]}
+            >
+              <Input.Password
+                prefix={<LockOutlined />}
+                placeholder="请输入密码"
+                autoComplete="current-password"
+              />
+            </Form.Item>
 
-          <Form.Item
-            name="captcha_code"
-            label="验证码"
-            rules={[
-              { required: true, message: '请输入验证码' },
-              { len: 4, message: '验证码为4位字符' }
-            ]}
+            <Form.Item
+              name="captcha_code"
+              label="验证码"
+              rules={[
+                { required: true, message: '请输入验证码' },
+                { len: 4, message: '验证码为4位字符' }
+              ]}
+            >
+              <Space.Compact style={{ width: '100%' }}>
+                <Input
+                  prefix={<SafetyOutlined />}
+                  placeholder="请输入4位验证码"
+                  maxLength={4}
+                  style={{ width: '60%' }}
+                  autoComplete="off"
+                />
+                <div
+                  className="captcha-image-container"
+                  onClick={loadCaptcha}
+                  title="点击刷新验证码"
+                >
+                  {captchaLoading ? (
+                    <ReloadOutlined spin style={{ fontSize: 18, color: getColor('primary', theme) }} />
+                  ) : captchaUrl ? (
+                    <img
+                      src={captchaUrl}
+                      alt="验证码"
+                      style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                    />
+                  ) : (
+                    <span style={{ color: getTextColor('disabled', theme), fontSize: 12 }}>加载中...</span>
+                  )}
+                </div>
+              </Space.Compact>
+            </Form.Item>
+
+            <Form.Item className="remember-me-item">
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <Checkbox
+                  checked={rememberMe}
+                  onChange={(e) => setRememberMe(e.target.checked)}
+                >
+                  记住用户名
+                </Checkbox>
+                <a
+                  className="forgot-password-link"
+                  onClick={() => setForgotPasswordVisible(true)}
+                >
+                  忘记密码？
+                </a>
+              </div>
+            </Form.Item>
+
+            <Form.Item style={{ marginBottom: 0 }}>
+              <Button
+                type="primary"
+                htmlType="submit"
+                block
+                loading={loading}
+                className="login-button"
+              >
+                {loading ? '登录中...' : '登录'}
+              </Button>
+            </Form.Item>
+          </Form>
+        ) : (
+          // 2FA verification form
+          <Form
+            name="twofa"
+            onFinish={handle2FAVerification}
+            autoComplete="off"
+            className="login-form"
+            layout="vertical"
           >
-            <Space.Compact style={{ width: '100%' }}>
+            <div style={{ textAlign: 'center', marginBottom: 24 }}>
+              <SafetyOutlined style={{ fontSize: 48, color: getColor('primary', theme) }} />
+              <h3 style={{ marginTop: 16, marginBottom: 8 }}>双因素认证</h3>
+              <p style={{ color: getTextColor('secondary', theme) }}>
+                请输入身份验证器应用中的6位验证码
+                <br />
+                <small>或使用备份码（格式：XXXX-XXXX）</small>
+              </p>
+            </div>
+
+            <Form.Item
+              name="twofa_code"
+              rules={[
+                { required: true, message: '请输入验证码' },
+                {
+                  pattern: /^(\d{6}|[A-Z0-9]{4}-[A-Z0-9]{4})$/i,
+                  message: '请输入6位验证码或备份码（XXXX-XXXX）'
+                }
+              ]}
+            >
               <Input
                 prefix={<SafetyOutlined />}
-                placeholder="请输入4位验证码"
-                maxLength={4}
-                style={{ width: '60%' }}
-                autoComplete="off"
+                placeholder="输入6位验证码或备份码"
+                maxLength={9}
+                size="large"
+                style={{
+                  fontSize: '20px',
+                  letterSpacing: '4px',
+                  textAlign: 'center',
+                  textTransform: 'uppercase'
+                }}
+                autoFocus
               />
-              <div
-                className="captcha-image-container"
-                onClick={loadCaptcha}
-                title="点击刷新验证码"
-              >
-                {captchaLoading ? (
-                  <ReloadOutlined spin style={{ fontSize: 18, color: '#0073bb' }} />
-                ) : captchaUrl ? (
-                  <img
-                    src={captchaUrl}
-                    alt="验证码"
-                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                  />
-                ) : (
-                  <span style={{ color: '#879596', fontSize: 12 }}>加载中...</span>
-                )}
-              </div>
-            </Space.Compact>
-          </Form.Item>
+            </Form.Item>
 
-          <Form.Item className="remember-me-item">
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <Checkbox
-                checked={rememberMe}
-                onChange={(e) => setRememberMe(e.target.checked)}
+            <Form.Item style={{ marginBottom: 8 }}>
+              <Button
+                type="primary"
+                htmlType="submit"
+                block
+                loading={loading}
+                size="large"
+                className="login-button"
               >
-                记住用户名
-              </Checkbox>
-              <a
-                className="forgot-password-link"
-                onClick={() => setForgotPasswordVisible(true)}
-              >
-                忘记密码？
-              </a>
-            </div>
-          </Form.Item>
+                {loading ? '验证中...' : '验证'}
+              </Button>
+            </Form.Item>
 
-          <Form.Item style={{ marginBottom: 0 }}>
-            <Button
-              type="primary"
-              htmlType="submit"
-              block
-              loading={loading}
-              className="login-button"
-            >
-              {loading ? '登录中...' : '登录'}
-            </Button>
-          </Form.Item>
-        </Form>
+            <Form.Item style={{ marginBottom: 0 }}>
+              <Button
+                block
+                onClick={() => {
+                  setRequires2FA(false)
+                  setLoginCredentials(null)
+                  form.resetFields()
+                }}
+                size="large"
+              >
+                返回登录
+              </Button>
+            </Form.Item>
+          </Form>
+        )}
 
         <Divider className="login-divider" />
 
@@ -573,10 +725,10 @@ const Login = () => {
                       size="small"
                       strokeColor={
                         passwordStrength < 40
-                          ? '#d13212'
+                          ? getColor('error', theme)
                           : passwordStrength < 70
-                          ? '#ff9900'
-                          : '#1d8102'
+                          ? getColor('warning', theme)
+                          : getColor('success', theme)
                       }
                       showInfo={false}
                     />

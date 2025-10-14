@@ -31,6 +31,11 @@ class Role(Base):
         "RolePermission", back_populates="role", cascade="all, delete-orphan"
     )
 
+    @property
+    def permissions(self) -> list["Permission"]:
+        """Get list of permissions for this role"""
+        return [rp.permission for rp in self.role_permissions]
+
 
 class Permission(Base):
     """Permission model"""

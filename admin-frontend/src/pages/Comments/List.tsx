@@ -23,6 +23,8 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import axios from '@/utils/axios'
 import dayjs from 'dayjs'
+import { useTheme } from '@/contexts/ThemeContext'
+import { getTagStyle, getTextColor } from '@/utils/awsColorHelpers'
 
 const { Search } = Input
 const { Option } = Select
@@ -30,6 +32,7 @@ const { Option } = Select
 const CommentsList = () => {
   const { t } = useTranslation()
   const screens = Grid.useBreakpoint()
+  const { theme } = useTheme()
   const [page, setPage] = useState(1)
   const [pageSize] = useState(20)
   const [search, setSearch] = useState('')
@@ -268,7 +271,10 @@ const CommentsList = () => {
       key: 'rating',
       width: 80,
       render: (rating: number) => (
-        <span style={{ fontFamily: 'Monaco, Menlo, Consolas, monospace', color: '#37352f' }}>
+        <span style={{
+          fontFamily: 'Monaco, Menlo, Consolas, monospace',
+          color: getTextColor('primary', theme)
+        }}>
           {rating ? `${rating.toFixed(1)} ★` : '-'}
         </span>
       ),
@@ -279,39 +285,26 @@ const CommentsList = () => {
       key: 'status',
       width: 100,
       render: (status: string) => {
-        const statusMap: { [key: string]: { bg: string; color: string; border: string; text: string } } = {
+        const statusVariantMap: { [key: string]: { variant: 'warning' | 'success' | 'error' | 'neutral'; text: string } } = {
           PENDING: {
-            bg: 'rgba(255, 153, 0, 0.1)',
-            color: '#ff9900',
-            border: '1px solid rgba(255, 153, 0, 0.2)',
+            variant: 'warning',
             text: '待审核'
           },
           APPROVED: {
-            bg: 'rgba(29, 129, 2, 0.1)',
-            color: '#1d8102',
-            border: '1px solid rgba(29, 129, 2, 0.2)',
+            variant: 'success',
             text: '已通过'
           },
           REJECTED: {
-            bg: 'rgba(209, 50, 18, 0.1)',
-            color: '#d13212',
-            border: '1px solid rgba(209, 50, 18, 0.2)',
+            variant: 'error',
             text: '已拒绝'
           },
         }
-        const config = statusMap[status] || {
-          bg: 'rgba(0, 0, 0, 0.04)',
-          color: '#787774',
-          border: '1px solid rgba(0, 0, 0, 0.1)',
+        const config = statusVariantMap[status] || {
+          variant: 'neutral' as const,
           text: status
         }
         return (
-          <Tag style={{
-            backgroundColor: config.bg,
-            color: config.color,
-            border: config.border,
-            borderRadius: '4px'
-          }}>
+          <Tag style={getTagStyle(config.variant, theme)}>
             {config.text}
           </Tag>
         )
@@ -324,7 +317,10 @@ const CommentsList = () => {
       width: 80,
       sorter: (a: any, b: any) => a.like_count - b.like_count,
       render: (count: number) => (
-        <span style={{ fontFamily: 'Monaco, Menlo, Consolas, monospace', color: '#37352f' }}>
+        <span style={{
+          fontFamily: 'Monaco, Menlo, Consolas, monospace',
+          color: getTextColor('primary', theme)
+        }}>
           {count || 0}
         </span>
       ),
@@ -335,7 +331,11 @@ const CommentsList = () => {
       key: 'created_at',
       width: 180,
       render: (date: string) => (
-        <span style={{ fontFamily: 'Monaco, Menlo, Consolas, monospace', color: '#37352f', fontSize: '13px' }}>
+        <span style={{
+          fontFamily: 'Monaco, Menlo, Consolas, monospace',
+          color: getTextColor('primary', theme),
+          fontSize: '13px'
+        }}>
           {dayjs(date).format('YYYY-MM-DD HH:mm:ss')}
         </span>
       ),

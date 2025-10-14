@@ -3,7 +3,7 @@ from __future__ import annotations
 from datetime import datetime
 from typing import TYPE_CHECKING, Optional
 
-from sqlalchemy import DateTime, ForeignKey, Integer
+from sqlalchemy import DateTime, ForeignKey, Integer, String, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.sql import func
 
@@ -70,3 +70,33 @@ class WatchHistory(Base):
     # Relationships
     user: Mapped[User] = relationship("User", back_populates="watch_history")
     video: Mapped[Video] = relationship("Video", back_populates="watch_history")
+
+
+class SearchHistory(Base):
+    """User search history for analytics and personalization"""
+
+    __tablename__ = "search_history"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    user_id: Mapped[Optional[int]] = mapped_column(
+        Integer,
+        ForeignKey("users.id", ondelete="CASCADE"),
+        nullable=True,  # Allow anonymous searches
+        index=True,
+    )
+    query: Mapped[str] = mapped_column(String(255), nullable=False, index=True)
+    results_count: Mapped[int] = mapped_column(Integer, default=0)
+    clicked_video_id: Mapped[Optional[int]] = mapped_column(
+        Integer, ForeignKey("videos.id", ondelete="SET NULL"), nullable=True
+    )
+    ip_address: Mapped[Optional[str]] = mapped_column(
+        String(45), nullable=True
+    )  # IPv6 support
+    user_agent: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), index=True
+    )
+
+    # Relationships
+    user: Mapped[Optional[User]] = relationship("User", back_populates="search_history")
+    clicked_video: Mapped[Optional[Video]] = relationship("Video")

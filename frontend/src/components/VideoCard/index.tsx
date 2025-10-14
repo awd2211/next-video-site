@@ -4,6 +4,7 @@ import { Play, Heart, Plus, Eye, Star } from 'lucide-react'
 import { Video } from '@/types'
 import LazyImage from '@/components/LazyImage'
 import VideoPreview from '@/components/VideoPreview'
+import AddToListButton from '@/components/AddToListButton'
 
 interface VideoCardProps {
   video: Video
@@ -113,6 +114,7 @@ const VideoCard: React.FC<VideoCardProps> = memo(({
 
               {/* Quick Actions */}
               <div className="absolute top-2 right-2 flex flex-col space-y-2">
+                <AddToListButton videoId={video.id} variant="icon" />
                 <button
                   onClick={handleFavorite}
                   className={`p-2 rounded-full backdrop-blur-sm transition-all ${

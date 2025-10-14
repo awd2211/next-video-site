@@ -2,6 +2,7 @@ from datetime import datetime, timezone
 from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
+from fastapi.responses import JSONResponse
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -46,12 +47,25 @@ async def register(
     db: AsyncSession = Depends(get_db),
 ):
     """Register a new user"""
+    # Validate captcha first
+    from app.utils.captcha import captcha_manager
+
+    is_valid = await captcha_manager.validate_captcha(
+        user_data.captcha_id, user_data.captcha_code
+    )
+
+    if not is_valid:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="验证码无效或已过期",
+        )
+
     # Check if email already exists
     result = await db.execute(select(User).filter(User.email == user_data.email))
     if result.scalar_one_or_none():
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Email already registered",
+            detail="该邮箱已被注册",
         )
 
     # Check if username already exists
@@ -59,7 +73,7 @@ async def register(
     if result.scalar_one_or_none():
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Username already taken",
+            detail="用户名已被使用",
         )
 
     # Create new user
@@ -96,6 +110,29 @@ async def login(
     db: AsyncSession = Depends(get_db),
 ):
     """User login"""
+    # Validate captcha first
+    from app.utils.captcha import captcha_manager
+
+    is_valid = await captcha_manager.validate_captcha(
+        credentials.captcha_id, credentials.captcha_code
+    )
+
+    if not is_valid:
+        # Log failed login due to captcha
+        await log_login_attempt(
+            db=db,
+            user_type="user",
+            status="failed",
+            request=request,
+            email=credentials.email,
+            failure_reason="验证码无效或已过期",
+        )
+
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="验证码无效或已过期",
+        )
+
     result = await db.execute(select(User).filter(User.email == credentials.email))
     user = result.scalar_one_or_none()
 
@@ -111,12 +148,12 @@ async def login(
             status="failed",
             request=request,
             email=credentials.email,
-            failure_reason="Incorrect email or password",
+            failure_reason="邮箱或密码错误",
         )
 
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Incorrect email or password",
+            detail="邮箱或密码错误",
         )
 
     if not user.is_active:
@@ -244,7 +281,20 @@ async def admin_login(
             detail="Admin account is inactive",
         )
 
-    # 登录成功，清除失败记录
+    # Check if 2FA is enabled for this admin user
+    if admin_user.totp_enabled:
+        # Return 2FA required response (not logged in yet)
+        # Frontend will prompt for 2FA token
+        return JSONResponse(
+            status_code=status.HTTP_200_OK,
+            content={
+                "requires_2fa": True,
+                "message": "Please enter your 2FA code",
+                "user_id": admin_user.id,  # Temporary ID for 2FA verification
+            },
+        )
+
+    # 登录成功（no 2FA），清除失败记录
     ip = request.client.host if request.client else "unknown"
     await AutoBanDetector.clear_failed_attempts(ip, "admin_login")
 
@@ -370,6 +420,111 @@ async def admin_logout(
     await add_to_blacklist(token, reason="admin_logout", expires_in=expires_in)
 
     return {"message": "Successfully logged out"}
+
+
+@router.post("/password-reset/request", status_code=status.HTTP_200_OK)
+@limiter.limit(RateLimitPresets.STRICT)  # 严格限流: 防止邮件轰炸
+async def request_password_reset(
+    request: Request,
+    reset_request: PasswordResetRequest,
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Request password reset for regular users - send verification code to email
+    """
+    from app.models.email import EmailConfiguration
+    from app.utils.email_service import send_password_reset_email
+    from app.utils.reset_code_manager import reset_code_manager
+
+    # Check if user exists
+    result = await db.execute(
+        select(User).filter(User.email == reset_request.email)
+    )
+    user = result.scalar_one_or_none()
+
+    # For security, don't reveal whether email exists or not
+    # Always return success but only send email if user exists
+    if user and user.is_active:
+        # Generate and store verification code
+        code = await reset_code_manager.create_and_store_code(reset_request.email)
+
+        # Get email configuration
+        email_config_result = await db.execute(
+            select(EmailConfiguration).filter(EmailConfiguration.is_active == True)
+        )
+        email_config = email_config_result.scalar_one_or_none()
+
+        if email_config:
+            try:
+                # Send password reset email
+                await send_password_reset_email(
+                    email_config,
+                    reset_request.email,
+                    code,
+                    is_admin=False,
+                )
+            except Exception as e:
+                # Log error but don't expose it to client
+                print(f"Failed to send password reset email: {e}")
+                raise HTTPException(
+                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                    detail="发送验证邮件失败，请稍后重试或联系客服",
+                )
+        else:
+            raise HTTPException(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail="邮件服务未配置，请联系管理员",
+            )
+
+    return {"message": "如果该邮箱存在，验证码已发送"}
+
+
+@router.post("/password-reset/confirm", status_code=status.HTTP_200_OK)
+@limiter.limit(RateLimitPresets.MODERATE)  # 适度限流: 5次验证尝试
+async def confirm_password_reset(
+    request: Request,
+    reset_confirm: PasswordResetConfirm,
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Confirm password reset with verification code for regular users
+    """
+    from app.utils.reset_code_manager import reset_code_manager
+
+    # Validate verification code
+    is_valid = await reset_code_manager.validate_code(
+        reset_confirm.email, reset_confirm.code
+    )
+
+    if not is_valid:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="验证码无效或已过期",
+        )
+
+    # Find user
+    result = await db.execute(
+        select(User).filter(User.email == reset_confirm.email)
+    )
+    user = result.scalar_one_or_none()
+
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="用户不存在",
+        )
+
+    if not user.is_active:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="账户已被禁用",
+        )
+
+    # Update password
+    user.hashed_password = get_password_hash(reset_confirm.new_password)
+    await db.commit()
+
+    return {"message": "密码重置成功"}
 
 
 @router.post("/admin/password-reset/request", status_code=status.HTTP_200_OK)

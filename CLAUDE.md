@@ -28,8 +28,8 @@ make db-init
 
 # Run services in separate terminals
 make backend-run    # Terminal 1 - Backend API on :8000
-make frontend-run   # Terminal 2 - User frontend on :3000
-make admin-run      # Terminal 3 - Admin frontend on :3001
+make frontend-run   # Terminal 2 - User frontend on :5173 (proxies to 3000)
+make admin-run      # Terminal 3 - Admin frontend on :5173 (proxies to 3001)
 ```
 
 ### Backend Development
@@ -65,7 +65,7 @@ pytest --cov=app --cov-report=html    # Generate coverage report
 # User frontend
 cd frontend
 pnpm install
-pnpm run dev          # Development server
+pnpm run dev          # Development server on :5173
 pnpm run build        # Production build
 pnpm run preview      # Preview production build
 pnpm run lint         # Run ESLint
@@ -73,14 +73,16 @@ pnpm run lint         # Run ESLint
 # Admin frontend
 cd admin-frontend
 pnpm install
-pnpm run dev          # Development server
+pnpm run dev          # Development server on :5173
 pnpm run build        # Production build
+pnpm run lint         # Run ESLint
+pnpm run type-check   # TypeScript type checking
 ```
 
 ### Infrastructure
 ```bash
 make infra-up         # Start PostgreSQL, Redis, MinIO
-make infra-down       # Stop infrastructure
+make infra-down       # Stop infrastructure services
 make clean            # Remove all containers and volumes
 docker-compose -f docker-compose.dev.yml ps    # Check status
 ```
@@ -98,17 +100,17 @@ docker-compose restart backend                 # Restart service
 ### Backend Structure (`/backend/app`)
 
 **Core Files:**
-- `main.py` - FastAPI app initialization, middleware, and route registration
+- `main.py` - FastAPI app initialization, middleware stack, route registration, and global error handlers
 - `config.py` - Pydantic settings (loads from `.env`)
 - `database.py` - SQLAlchemy async engine, session management, connection pooling
 
 **Key Directories:**
-- `models/` - SQLAlchemy ORM models (User, Video, Comment, etc.)
+- `models/` - SQLAlchemy ORM models (User, Video, Comment, Notification, Dashboard, etc.)
 - `schemas/` - Pydantic schemas for request/response validation
-- `api/` - Public API endpoints (auth, videos, search, categories)
-- `admin/` - Admin API endpoints (video management, stats, logs, etc.)
-- `utils/` - Utilities (security, dependencies, cache, email, MinIO client)
-- `middleware/` - Custom middleware (operation logging)
+- `api/` - Public API endpoints (auth, videos, search, categories, websocket)
+- `admin/` - Admin API endpoints (video management, stats, logs, AI management, system health, etc.)
+- `utils/` - Utilities (security, dependencies, cache, email, MinIO client, logging, notifications, storage monitoring)
+- `middleware/` - Custom middleware (see Middleware Stack section)
 
 **Important Patterns:**
 
@@ -117,7 +119,7 @@ docker-compose restart backend                 # Restart service
    - User auth: `get_current_user()` dependency in `utils/dependencies.py`
    - Admin auth: `get_current_admin_user()` dependency
    - Superadmin: `get_current_superadmin()` dependency
-   - Separate User and AdminUser models
+   - Separate User and AdminUser models with RBAC support
 
 2. **Database Sessions:**
    - Async SQLAlchemy with asyncpg driver
@@ -138,11 +140,29 @@ docker-compose restart backend                 # Restart service
    - Bucket: `videos` (configurable)
    - Pre-signed URLs for secure access
 
-5. **Middleware:**
-   - CORS configured for frontend origins
-   - GZip compression (minimum 1000 bytes)
-   - Rate limiting via SlowAPI
-   - Operation logging middleware for audit trails
+5. **Middleware Stack** (order matters - applied bottom to top):
+   - `OperationLogMiddleware` - Logs admin operations for audit trails
+   - `GZipMiddleware` - Compresses responses (minimum 1000 bytes)
+   - `CORSMiddleware` - Handles CORS for frontend origins
+   - `RequestSizeLimitMiddleware` - Limits request size (10MB default)
+   - `HTTPCacheMiddleware` - HTTP caching optimization
+   - `SecurityHeadersMiddleware` - Adds security headers (CSP, HSTS, etc.)
+   - `PerformanceMonitorMiddleware` - Tracks slow APIs (>1s threshold)
+   - `RequestIDMiddleware` - Generates unique request IDs for tracing
+
+6. **Error Handling & Logging:**
+   - Global exception handler catches all unhandled errors
+   - Specialized handlers for `IntegrityError`, `OperationalError`, `RequestValidationError`
+   - All errors logged to database via `utils/logging_utils.py`
+   - Critical errors trigger admin notifications via `utils/admin_notification_service.py`
+   - Request ID tracking throughout the stack
+   - Slow query monitoring enabled on startup (500ms threshold)
+
+7. **Admin Notifications:**
+   - System health alerts (storage, errors, performance)
+   - Content moderation notifications (new comments, videos pending review)
+   - User activity alerts (spam detection, violations)
+   - Delivered via `AdminNotificationService` in `utils/admin_notification_service.py`
 
 ### Frontend Structure (`/frontend/src`)
 
@@ -152,12 +172,14 @@ docker-compose restart backend                 # Restart service
 - **React Router** for navigation
 - **Video.js** for video playback with YouTube-like controls
 - **i18n** for internationalization (locale files in `src/i18n/locales/`)
+- **Zustand** for lightweight state management
 
 **Key Components:**
 - `VideoPlayer/` - Full-featured video player with keyboard shortcuts
 - `VideoCard/` - Reusable video display card
 - `Header/` & `Footer/` - Layout components
 - `Layout/` - Page wrapper component
+- `LanguageSwitcher/` - Language selection component
 
 **Services:**
 - API client configuration (axios with baseURL)
@@ -175,15 +197,30 @@ docker-compose restart backend                 # Restart service
 - **React Router** for navigation
 - **i18n** for internationalization (locale files in `src/i18n/locales/`)
 - **Dark/Light theme** support with theme context
+- **React Grid Layout** for customizable dashboard layouts
 
 **Key Pages:**
-- `Dashboard/` - Statistics and analytics
-- `Videos/` - Video management (CRUD, bulk operations)
-- `Users/` - User management and banning
+- `Dashboard/` - Statistics and analytics with customizable widgets
+- `Videos/` - Video management (CRUD, bulk operations, analytics)
+- `Users/` - User management, banning, and statistics
 - `Comments/` - Comment moderation
-- `Settings/` - System configuration
-- `Logs/` - Operation logs
+- `Settings/` - System configuration with multiple panels
+- `Logs/` - Operation logs with filtering and export
+- `AIManagement/` - AI provider configuration and monitoring
+- `SystemHealth/` - Real-time system health monitoring
 - `Banners/`, `Announcements/` - Content management
+- `Email/` - Email template configuration
+- `Reports/` - Analytics and reporting
+- `Scheduling/` - Content scheduling
+- `Roles/` - RBAC management (temporarily disabled pending migration)
+
+**Key Components:**
+- `NotificationBadge/` - Real-time notification display
+- `NotificationDrawer/` - Notification management drawer
+- `DashboardWidget/` - Customizable dashboard widgets
+- `VideoPreviewPopover` - Video preview on hover
+- `BatchUploader` - Batch video upload with progress tracking
+- `Breadcrumb` - Dynamic breadcrumb navigation
 
 **Internationalization:**
 - Same i18n setup as user frontend
@@ -201,14 +238,18 @@ docker-compose restart backend                 # Restart service
 - `Comment`, `Rating` - User interactions
 - `Favorite`, `WatchHistory` - User activity
 - `Banner`, `Recommendation`, `Announcement` - Operational content
-- `OperationLog` - Audit trail
+- `OperationLog`, `LoginLog`, `SystemErrorLog` - Audit and monitoring
 - `Role`, `Permission` - RBAC system
 - `EmailConfig`, `SystemSettings` - Configuration
+- `AIConfig` - AI provider settings
+- `AdminNotification` - Admin notification system
+- `DashboardLayout` - Customizable dashboard layouts
 
 **Important Relationships:**
 - Videos have many-to-many with Categories, Tags, Actors, Directors
 - Comments belong to Users and Videos (with moderation status)
 - Watch history tracks progress and completion
+- AdminNotifications link to various entity types (videos, comments, users)
 
 ## Development Workflow
 
@@ -231,6 +272,7 @@ docker-compose restart backend                 # Restart service
 3. **Admin Frontend:**
    - Similar to frontend but use Ant Design components
    - Add to admin navigation/menu
+   - Update i18n locale files for both languages
 
 ### Working with Database
 
@@ -238,6 +280,7 @@ docker-compose restart backend                 # Restart service
 - Alembic auto-generates migrations but ALWAYS review them
 - Test migrations on dev database before production
 - Never skip migrations or modify database directly
+- Sequence: modify model → `make db-migrate MSG="..."` → review migration file → `make db-upgrade`
 
 ### Authentication Flow
 
@@ -251,6 +294,7 @@ docker-compose restart backend                 # Restart service
 1. Use separate AdminUser credentials
 2. Token payload includes `is_admin: true`
 3. Admin endpoints check admin status via dependencies
+4. Superadmin has additional privileges for system configuration
 
 ### Caching Strategy
 
@@ -270,39 +314,49 @@ Required:
 - `SECRET_KEY` - Application secret
 - `JWT_SECRET_KEY` - JWT signing key
 - `REDIS_URL` - Redis connection
-- `MINIO_ENDPOINT`, `MINIO_ACCESS_KEY`, `MINIO_SECRET_KEY` - Object storage
+- `MINIO_ENDPOINT` - MinIO endpoint (e.g., localhost:9002)
+- `MINIO_ACCESS_KEY` - MinIO access key
+- `MINIO_SECRET_KEY` - MinIO secret key
+- `MINIO_PUBLIC_URL` - Public URL for MinIO (for generating file URLs)
 
 Optional:
-- `DEBUG=True` - Enable SQL logging
+- `DEBUG=True` - Enable SQL logging and detailed errors
 - `SMTP_*` - Email configuration
 - `ELASTICSEARCH_URL` - For full-text search (future)
+- `CELERY_BROKER_URL` - For async tasks (future)
 
 ### Default Ports
 
+**Development (docker-compose.dev.yml):**
 - Backend API: 8000
-- Frontend: 3000 (Vite dev server on 5173)
-- Admin Frontend: 3001
-- PostgreSQL: 5432
-- Redis: 6379
-- MinIO API: 9000
-- MinIO Console: 9001
+- Frontend Dev: 5173 (proxies to 3000)
+- Admin Frontend Dev: 5173 (proxies to 3001)
+- PostgreSQL: 5434 (mapped from container 5432)
+- Redis: 6381 (mapped from container 6379)
+- MinIO API: 9002 (mapped from container 9000)
+- MinIO Console: 9003 (mapped from container 9001)
+
+**Production (docker-compose.yml):**
+- Uses standard ports (5432, 6379, 9000, 9001)
 
 ## Testing
 
 - Backend tests in `backend/tests/` (pytest + pytest-asyncio)
 - Use httpx AsyncClient for API testing
 - Test database should be separate (configure via env)
+- Run tests with `pytest` from backend directory
 
 ## API Documentation
 
 - Interactive Swagger UI: http://localhost:8000/api/docs
 - ReDoc: http://localhost:8000/api/redoc
 - All endpoints automatically documented via FastAPI
+- Includes both public API and admin endpoints
 
 ## Common Tasks
 
 ### Create Admin User
-```python
+```bash
 cd backend && source venv/bin/activate
 python << EOF
 from app.database import SessionLocal
@@ -337,6 +391,13 @@ client = await get_redis()
 await client.flushdb()
 ```
 
+### Monitor Storage Usage
+```python
+from app.utils.storage_monitor import get_storage_stats
+stats = await get_storage_stats()
+# Returns: total_size, used_size, available_size, usage_percentage
+```
+
 ## Important Notes
 
 - **Never commit `.env` files** - use `.env.example` as template
@@ -348,10 +409,13 @@ await client.flushdb()
 - **Admin routes** are prefixed with `/api/v1/admin/`
 - **Rate limiting** is enabled on all endpoints via SlowAPI
 - **Operation logs** are automatically recorded for admin actions via middleware
+- **Error tracking** logs all errors to database and triggers admin notifications
 - **Database pool** is optimized (20+40 connections) - don't create manual connections
 - **Use `pnpm`** not npm for frontend dependencies
 - **Code formatting**: Use `make format-backend` before committing Python code (Black + isort)
 - **i18n changes**: Update both `en-US.json` and `zh-CN.json` when adding new UI text
+- **Middleware order matters**: Request flows through middleware in reverse order of registration
+- **Storage monitoring** runs automatically on startup, checking MinIO usage every 5 minutes
 
 ## Recent Improvements
 
@@ -362,5 +426,12 @@ This project has recently received major enhancements including:
 - Fixed pagination issues in admin/videos endpoint
 - Improved caching system with proper type validation
 - Comprehensive API testing infrastructure (see `backend/tests/`)
+- Admin notification system with real-time updates
+- AI provider management system
+- System health monitoring with storage alerts
+- Customizable dashboard layouts with drag-and-drop widgets
+- Video analytics and reporting
+- Enhanced error logging with admin notifications
+- Batch upload functionality with progress tracking
 
 For detailed feature documentation, see [FEATURE_SHOWCASE.md](FEATURE_SHOWCASE.md) and [README.md](README.md).

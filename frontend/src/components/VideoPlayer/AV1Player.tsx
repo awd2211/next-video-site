@@ -43,8 +43,6 @@ export const AV1Player: React.FC<AV1PlayerProps> = ({
 
     // 检测浏览器AV1支持
     const browserInfo = getBrowserInfo();
-    console.log('浏览器信息:', browserInfo);
-    console.log('AV1支持:', supportsAV1());
 
     // 初始化Video.js播放器
     const player = videojs(videoRef.current, {
@@ -86,23 +84,18 @@ export const AV1Player: React.FC<AV1PlayerProps> = ({
 
     // 监听播放事件
     player.on('loadedmetadata', () => {
-      console.log('✅ 视频元数据加载完成');
-      console.log('使用编解码器:', codec === 'av1' ? 'AV1 (dav1d)' : 'H.264');
-      console.log('视频URL:', videoUrl);
+      // Video metadata loaded
     });
 
     player.on('play', () => {
-      console.log('▶️ 播放开始');
       onPlay?.();
     });
 
     player.on('pause', () => {
-      console.log('⏸️ 播放暂停');
       onPause?.();
     });
 
     player.on('ended', () => {
-      console.log('✅ 播放结束');
       onEnded?.();
     });
 
@@ -129,7 +122,7 @@ export const AV1Player: React.FC<AV1PlayerProps> = ({
 
     // 监听质量变化
     player.on('resolutionchange', () => {
-      console.log('画质切换');
+      // Quality changed
     });
 
     return () => {

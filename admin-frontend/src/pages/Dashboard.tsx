@@ -12,12 +12,15 @@ import {
 import { Line, Column, Pie } from '@ant-design/charts'
 import { useTranslation } from 'react-i18next'
 import axios from '@/utils/axios'
+import { useTheme } from '@/contexts/ThemeContext'
+import { getTagStyle, getTextColor, getColor } from '@/utils/awsColorHelpers'
 
 const { Title } = Typography
 
 const Dashboard = () => {
   const { t } = useTranslation()
   const screens = Grid.useBreakpoint()
+  const { theme } = useTheme()
   const { data: stats, isLoading: statsLoading } = useQuery({
     queryKey: ['overview-stats'],
     queryFn: async () => {
@@ -83,7 +86,7 @@ const Dashboard = () => {
           anime: '动漫',
           documentary: '纪录片',
         }
-        return <Tag style={{ backgroundColor: 'rgba(0, 115, 187, 0.1)', color: '#0073bb', border: '1px solid rgba(0, 115, 187, 0.2)' }}>{typeMap[type] || type}</Tag>
+        return <Tag style={getTagStyle('primary', theme)}>{typeMap[type] || type}</Tag>
       },
     },
     {
@@ -92,13 +95,13 @@ const Dashboard = () => {
       key: 'status',
       width: 100,
       render: (status: string) => {
-        const statusConfig: Record<string, { bg: string; color: string; border: string; text: string }> = {
-          draft: { bg: 'rgba(0, 0, 0, 0.04)', color: '#787774', border: '1px solid rgba(0, 0, 0, 0.1)', text: '草稿' },
-          published: { bg: 'rgba(29, 129, 2, 0.1)', color: '#1d8102', border: '1px solid rgba(29, 129, 2, 0.2)', text: '已发布' },
-          archived: { bg: 'rgba(255, 153, 0, 0.1)', color: '#ff9900', border: '1px solid rgba(255, 153, 0, 0.2)', text: '已归档' },
+        const statusConfig: Record<string, { variant: 'info' | 'success' | 'warning' | 'neutral'; text: string }> = {
+          draft: { variant: 'info', text: '草稿' },
+          published: { variant: 'success', text: '已发布' },
+          archived: { variant: 'warning', text: '已归档' },
         }
-        const config = statusConfig[status] || { bg: 'rgba(0, 0, 0, 0.04)', color: '#787774', border: '1px solid rgba(0, 0, 0, 0.1)', text: status }
-        return <Tag style={{ backgroundColor: config.bg, color: config.color, border: config.border }}>{config.text}</Tag>
+        const config = statusConfig[status] || { variant: 'neutral' as const, text: status }
+        return <Tag style={getTagStyle(config.variant, theme)}>{config.text}</Tag>
       },
     },
     {
@@ -128,8 +131,8 @@ const Dashboard = () => {
               <Statistic
                 title={t('dashboard.totalUsers')}
                 value={stats?.total_users || 0}
-                prefix={<UserOutlined style={{ color: '#0073bb', fontSize: 24 }} />}
-                valueStyle={{ color: '#0073bb' }}
+                prefix={<UserOutlined style={{ color: getColor('primary', theme), fontSize: 24 }} />}
+                valueStyle={{ color: getColor('primary', theme) }}
               />
             </Card>
           )}
@@ -144,8 +147,8 @@ const Dashboard = () => {
               <Statistic
                 title={t('dashboard.totalVideos')}
                 value={stats?.total_videos || 0}
-                prefix={<VideoCameraOutlined style={{ color: '#1d8102', fontSize: 24 }} />}
-                valueStyle={{ color: '#1d8102' }}
+                prefix={<VideoCameraOutlined style={{ color: getColor('success', theme), fontSize: 24 }} />}
+                valueStyle={{ color: getColor('success', theme) }}
               />
             </Card>
           )}
@@ -160,8 +163,8 @@ const Dashboard = () => {
               <Statistic
                 title={t('dashboard.totalComments')}
                 value={stats?.total_comments || 0}
-                prefix={<CommentOutlined style={{ color: '#ff9900', fontSize: 24 }} />}
-                valueStyle={{ color: '#ff9900' }}
+                prefix={<CommentOutlined style={{ color: getColor('warning', theme), fontSize: 24 }} />}
+                valueStyle={{ color: getColor('warning', theme) }}
               />
             </Card>
           )}
@@ -176,8 +179,8 @@ const Dashboard = () => {
               <Statistic
                 title={t('dashboard.totalViews')}
                 value={stats?.total_views || 0}
-                prefix={<EyeOutlined style={{ color: '#d13212', fontSize: 24 }} />}
-                valueStyle={{ color: '#d13212' }}
+                prefix={<EyeOutlined style={{ color: getColor('error', theme), fontSize: 24 }} />}
+                valueStyle={{ color: getColor('error', theme) }}
               />
             </Card>
           )}
@@ -285,26 +288,26 @@ const Dashboard = () => {
         <Col xs={24} md={12}>
           <Card
             title="快捷操作"
-            extra={<CheckCircleOutlined style={{ color: '#52c41a' }} />}
+            extra={<CheckCircleOutlined style={{ color: getColor('success', theme) }} />}
           >
             <Space direction="vertical" style={{ width: '100%' }} size="large">
               <div>
                 <a href="/videos/new" style={{ fontSize: 16, fontWeight: 500 }}>
                   ➕ 添加新视频
                 </a>
-                <div style={{ color: '#787774', marginTop: 4, fontSize: 13 }}>快速创建新的视频内容</div>
+                <div style={{ color: getTextColor('secondary', theme), marginTop: 4, fontSize: 13 }}>快速创建新的视频内容</div>
               </div>
               <div>
                 <a href="/users" style={{ fontSize: 16, fontWeight: 500 }}>
                   👥 管理用户
                 </a>
-                <div style={{ color: '#787774', marginTop: 4, fontSize: 13 }}>查看和管理系统用户</div>
+                <div style={{ color: getTextColor('secondary', theme), marginTop: 4, fontSize: 13 }}>查看和管理系统用户</div>
               </div>
               <div>
                 <a href="/comments" style={{ fontSize: 16, fontWeight: 500 }}>
                   💬 审核评论
                 </a>
-                <div style={{ color: '#787774', marginTop: 4, fontSize: 13 }}>审核用户提交的评论</div>
+                <div style={{ color: getTextColor('secondary', theme), marginTop: 4, fontSize: 13 }}>审核用户提交的评论</div>
               </div>
             </Space>
           </Card>
@@ -312,24 +315,24 @@ const Dashboard = () => {
         <Col xs={24} md={12}>
           <Card
             title="系统信息"
-            extra={<RiseOutlined style={{ color: '#1890ff' }} />}
+            extra={<RiseOutlined style={{ color: getColor('primary', theme) }} />}
           >
             <Space direction="vertical" style={{ width: '100%' }} size="middle">
               <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                <span style={{ color: '#787774' }}>数据库状态:</span>
-                <Tag style={{ backgroundColor: 'rgba(29, 129, 2, 0.1)', color: '#1d8102', border: '1px solid rgba(29, 129, 2, 0.2)' }}>正常</Tag>
+                <span style={{ color: getTextColor('secondary', theme) }}>数据库状态:</span>
+                <Tag style={getTagStyle('success', theme)}>正常</Tag>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                <span style={{ color: '#787774' }}>缓存服务:</span>
-                <Tag style={{ backgroundColor: 'rgba(29, 129, 2, 0.1)', color: '#1d8102', border: '1px solid rgba(29, 129, 2, 0.2)' }}>运行中</Tag>
+                <span style={{ color: getTextColor('secondary', theme) }}>缓存服务:</span>
+                <Tag style={getTagStyle('success', theme)}>运行中</Tag>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                <span style={{ color: '#787774' }}>存储服务:</span>
-                <Tag style={{ backgroundColor: 'rgba(29, 129, 2, 0.1)', color: '#1d8102', border: '1px solid rgba(29, 129, 2, 0.2)' }}>可用</Tag>
+                <span style={{ color: getTextColor('secondary', theme) }}>存储服务:</span>
+                <Tag style={getTagStyle('success', theme)}>可用</Tag>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                <span style={{ color: '#787774' }}>API 版本:</span>
-                <span style={{ fontFamily: 'Monaco, Menlo, Consolas, monospace', color: '#37352f' }}>v1.0.0</span>
+                <span style={{ color: getTextColor('secondary', theme) }}>API 版本:</span>
+                <span style={{ fontFamily: 'Monaco, Menlo, Consolas, monospace', color: getTextColor('primary', theme) }}>v1.0.0</span>
               </div>
             </Space>
           </Card>

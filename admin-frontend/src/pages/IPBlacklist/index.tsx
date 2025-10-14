@@ -34,8 +34,11 @@ import ipBlacklistService, {
   AddIPBlacklistRequest,
 } from '@/services/ipBlacklistService'
 import { formatAWSDate, AWSTag } from '@/utils/awsStyleHelpers'
+import { useTheme } from '@/contexts/ThemeContext'
+import { getTextColor, getColor } from '@/utils/awsColorHelpers'
 
 const IPBlacklist: React.FC = () => {
+  const { theme } = useTheme()
   const [loading, setLoading] = useState(false)
   const [dataSource, setDataSource] = useState<IPBlacklistItem[]>([])
   const [total, setTotal] = useState(0)
@@ -164,7 +167,11 @@ const IPBlacklist: React.FC = () => {
       width: 150,
       fixed: 'left',
       render: (ip: string) => (
-        <span style={{ fontFamily: 'Monaco, Menlo, Consolas, monospace', fontSize: '13px', color: '#37352f' }}>
+        <span style={{
+          fontFamily: 'Monaco, Menlo, Consolas, monospace',
+          fontSize: '13px',
+          color: getTextColor('primary', theme)
+        }}>
           {ip}
         </span>
       ),
@@ -202,14 +209,22 @@ const IPBlacklist: React.FC = () => {
       width: 150,
       render: (_, record) => {
         if (record.is_permanent) {
-          return <span style={{ color: '#d13212', fontFamily: 'Monaco, Menlo, Consolas, monospace', fontSize: '13px' }}>永久</span>
+          return <span style={{
+            color: getColor('error', theme),
+            fontFamily: 'Monaco, Menlo, Consolas, monospace',
+            fontSize: '13px'
+          }}>永久</span>
         }
         if (record.expires_at) {
           const remaining = getRemainingTime(record.expires_at)
           const date = new Date(parseInt(record.expires_at) * 1000)
           return (
             <Tooltip title={`到期时间: ${formatAWSDate(date.toISOString(), 'YYYY-MM-DD HH:mm:ss')}`}>
-              <span style={{ color: '#ff9900', fontFamily: 'Monaco, Menlo, Consolas, monospace', fontSize: '13px' }}>{remaining}</span>
+              <span style={{
+                color: getColor('warning', theme),
+                fontFamily: 'Monaco, Menlo, Consolas, monospace',
+                fontSize: '13px'
+              }}>{remaining}</span>
             </Tooltip>
           )
         }
@@ -249,8 +264,8 @@ const IPBlacklist: React.FC = () => {
             <Statistic
               title="总封禁数"
               value={stats.total_blacklisted}
-              prefix={<ExclamationCircleOutlined style={{ color: '#d13212', fontSize: 24 }} />}
-              valueStyle={{ color: '#d13212', fontFamily: 'Monaco, Menlo, Consolas, monospace' }}
+              prefix={<ExclamationCircleOutlined style={{ color: getColor('error', theme), fontSize: 24 }} />}
+              valueStyle={{ color: getColor('error', theme), fontFamily: 'Monaco, Menlo, Consolas, monospace' }}
             />
           </Card>
         </Col>
@@ -259,8 +274,8 @@ const IPBlacklist: React.FC = () => {
             <Statistic
               title="永久封禁"
               value={stats.permanent_count}
-              prefix={<CheckCircleOutlined style={{ color: '#d13212', fontSize: 24 }} />}
-              valueStyle={{ color: '#d13212', fontFamily: 'Monaco, Menlo, Consolas, monospace' }}
+              prefix={<CheckCircleOutlined style={{ color: getColor('error', theme), fontSize: 24 }} />}
+              valueStyle={{ color: getColor('error', theme), fontFamily: 'Monaco, Menlo, Consolas, monospace' }}
             />
           </Card>
         </Col>
@@ -269,8 +284,8 @@ const IPBlacklist: React.FC = () => {
             <Statistic
               title="临时封禁"
               value={stats.temporary_count}
-              prefix={<ClockCircleOutlined style={{ color: '#ff9900', fontSize: 24 }} />}
-              valueStyle={{ color: '#ff9900', fontFamily: 'Monaco, Menlo, Consolas, monospace' }}
+              prefix={<ClockCircleOutlined style={{ color: getColor('warning', theme), fontSize: 24 }} />}
+              valueStyle={{ color: getColor('warning', theme), fontFamily: 'Monaco, Menlo, Consolas, monospace' }}
             />
           </Card>
         </Col>
@@ -279,7 +294,7 @@ const IPBlacklist: React.FC = () => {
             <Statistic
               title="自动封禁(7天)"
               value={stats.auto_banned_count}
-              valueStyle={{ color: '#0073bb', fontFamily: 'Monaco, Menlo, Consolas, monospace' }}
+              valueStyle={{ color: getColor('primary', theme), fontFamily: 'Monaco, Menlo, Consolas, monospace' }}
             />
           </Card>
         </Col>

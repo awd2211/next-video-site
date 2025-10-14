@@ -37,6 +37,7 @@ import {
   ApiOutlined,
   MailOutlined,
   ClockCircleOutlined,
+  SafetyOutlined,
 } from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';
 import Breadcrumb from '../components/Breadcrumb';
@@ -220,6 +221,11 @@ const AdminLayout = () => {
           key: '/ip-blacklist',
           icon: <StopOutlined />,
           label: t('menu.ipBlacklist'),
+        },
+        {
+          key: '/oauth-settings',
+          icon: <SafetyOutlined />,
+          label: t('menu.oauthSettings') || 'OAuth 设置',
         },
         {
           key: '/settings',

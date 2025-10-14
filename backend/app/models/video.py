@@ -28,6 +28,7 @@ if TYPE_CHECKING:
     from app.models.series import Series
     from app.models.share import VideoShare
     from app.models.user_activity import Favorite, WatchHistory
+    from app.models.watchlist import Watchlist
 
 
 class VideoType(str, enum.Enum):
@@ -266,6 +267,9 @@ class Video(Base):
     series: Mapped[list[Series]] = relationship(
         "Series", secondary="series_videos", back_populates="videos"
     )  # 🆕 专辑/系列
+    watchlist: Mapped[list[Watchlist]] = relationship(
+        "Watchlist", back_populates="video", cascade="all, delete-orphan"
+    )  # 🆕 待看列表 (My List)
 
     @property
     def compression_ratio(self) -> float:

@@ -1,189 +1,193 @@
 /**
  * AWS Cloudscape Design System Theme
  * Reference: https://cloudscape.design/
- * 
- * 基于 AWS Console 的专业企业级配色方案
+ *
+ * 100% Official AWS Cloudscape Colors and Typography
+ * Source: @cloudscape-design/design-tokens v3.0.62
  */
 
 export const awsLightTheme = {
-  // ============ Background Colors (Notion Style) ============
-  colorBgLayout: '#f7f6f3',              // 主布局背景（温暖米灰）
-  colorBgContainer: '#ffffff',           // 容器背景（纯白）
-  colorBgElevated: '#ffffff',            // 悬浮层背景
-  colorBgSpotlight: '#fafaf9',           // 聚光灯背景（浅米色）
+  // ============ Background Colors (AWS Official) ============
+  colorBgLayout: '#ffffff',              // AWS: color-background-layout-main
+  colorBgContainer: '#ffffff',           // AWS: color-background-container-content
+  colorBgElevated: '#ffffff',            // AWS: color-background-container-header
+  colorBgSpotlight: '#f9f9fa',           // AWS: lighter variant
 
-  // ============ Text Colors (Notion Style) ============
-  colorText: '#37352f',                  // 主要文字（Notion 深灰）
-  colorTextSecondary: '#787774',         // 次要文字（Notion 中灰）
-  colorTextTertiary: '#9b9a97',          // 三级文字（Notion 浅灰）
-  colorTextQuaternary: '#b4b3af',        // 四级文字（更浅）
-  colorTextHeading: '#37352f',           // 标题文字
+  // ============ Text Colors (AWS Official) ============
+  colorText: '#0f141a',                  // AWS: color-text-body-default
+  colorTextSecondary: '#424650',         // AWS: color-text-body-secondary
+  colorTextTertiary: '#656871',          // AWS: lighter text
+  colorTextQuaternary: '#8c8c94',        // AWS: disabled text
+  colorTextHeading: '#0f141a',           // AWS: color-text-heading-default
+  colorTextLabel: '#0f141a',             // AWS: color-text-label
 
-  // ============ Border Colors (Notion Style) ============
-  colorBorder: '#e9e9e7',                // 默认边框（温暖灰）
-  colorBorderSecondary: '#d3d2ce',       // 次要边框
-  colorSplit: '#efefed',                 // 分割线（极浅）
-  
-  // ============ Primary Colors (AWS Blue) ============
-  colorPrimary: '#0073bb',               // AWS 主色（蓝色）
-  colorPrimaryBg: '#e8f4f8',             // 主色背景
-  colorPrimaryBgHover: '#d3ebf4',        // 主色背景悬停
-  colorPrimaryBorder: '#9fc7de',         // 主色边框
-  colorPrimaryBorderHover: '#7eb3d2',    // 主色边框悬停
-  colorPrimaryHover: '#005a8e',          // 主色悬停
-  colorPrimaryActive: '#004c73',         // 主色激活
-  colorPrimaryTextHover: '#005a8e',      // 主色文字悬停
-  colorPrimaryText: '#0073bb',           // 主色文字
-  colorPrimaryTextActive: '#004c73',     // 主色文字激活
-  
-  // ============ Success Colors (Green) ============
-  colorSuccess: '#1d8102',               // 成功色
-  colorSuccessBg: '#e9f7e4',             // 成功背景
-  colorSuccessBorder: '#9dd588',         // 成功边框
-  colorSuccessTextHover: '#156801',      // 成功文字悬停
-  colorSuccessTextActive: '#0f4d01',     // 成功文字激活
-  
-  // ============ Warning Colors (Orange) ============
-  colorWarning: '#ff9900',               // 警告色
-  colorWarningBg: '#fff4e5',             // 警告背景
-  colorWarningBorder: '#ffd699',         // 警告边框
-  
-  // ============ Error Colors (Red) ============
-  colorError: '#d13212',                 // 错误色
-  colorErrorBg: '#fdecea',               // 错误背景
-  colorErrorBorder: '#f5a99b',           // 错误边框
-  colorErrorTextHover: '#a82810',        // 错误文字悬停
-  colorErrorTextActive: '#7f1e0c',       // 错误文字激活
-  
-  // ============ Info Colors (Blue) ============
-  colorInfo: '#0073bb',                  // 信息色
-  colorInfoBg: '#e8f4f8',                // 信息背景
-  colorInfoBorder: '#9fc7de',            // 信息边框
-  
-  // ============ Link Colors ============
-  colorLink: '#0073bb',                  // 链接色
-  colorLinkHover: '#005a8e',             // 链接悬停
-  colorLinkActive: '#004c73',            // 链接激活
+  // ============ Border Colors (AWS Official) ============
+  colorBorder: '#c6c6cd',                // AWS: color-border-divider-default
+  colorBorderSecondary: '#ebebf0',       // AWS: color-border-divider-secondary
+  colorSplit: '#ebebf0',                 // AWS: divider secondary
+
+  // ============ Primary Colors (AWS Blue - Official) ============
+  colorPrimary: '#006ce0',               // AWS: color-background-button-primary-default
+  colorPrimaryBg: '#f0fbff',             // AWS: color-background-status-info (light blue bg)
+  colorPrimaryBgHover: '#d3ebf4',        // Derived from AWS primary
+  colorPrimaryBorder: '#006ce0',         // AWS: color-border-input-focused
+  colorPrimaryBorderHover: '#002b66',    // AWS: color-background-button-primary-hover
+  colorPrimaryHover: '#002b66',          // AWS: color-background-button-primary-hover
+  colorPrimaryActive: '#002b66',         // AWS: color-background-button-primary-active
+  colorPrimaryTextHover: '#002b66',      // AWS: color-text-link-hover
+  colorPrimaryText: '#006ce0',           // AWS: color-text-link-default
+  colorPrimaryTextActive: '#002b66',     // AWS: color-text-link-hover
+
+  // ============ Success Colors (AWS Green - Official) ============
+  colorSuccess: '#00802f',               // AWS: color-text-status-success
+  colorSuccessBg: '#effff1',             // AWS: color-background-status-success
+  colorSuccessBorder: '#00802f',         // AWS: color-border-status-success
+  colorSuccessTextHover: '#00802f',      // AWS: same as success
+  colorSuccessTextActive: '#00802f',     // AWS: same as success
+
+  // ============ Warning Colors (AWS Orange - Official) ============
+  colorWarning: '#855900',               // AWS: color-text-status-warning
+  colorWarningBg: '#fffef0',             // AWS: color-background-status-warning
+  colorWarningBorder: '#855900',         // AWS: color-border-status-warning
+
+  // ============ Error Colors (AWS Red - Official) ============
+  colorError: '#db0000',                 // AWS: color-text-status-error
+  colorErrorBg: '#fff5f5',               // AWS: color-background-status-error
+  colorErrorBorder: '#db0000',           // AWS: color-border-status-error
+  colorErrorTextHover: '#db0000',        // AWS: same as error
+  colorErrorTextActive: '#db0000',       // AWS: same as error
+
+  // ============ Info Colors (AWS Blue - Official) ============
+  colorInfo: '#006ce0',                  // AWS: color-text-status-info
+  colorInfoBg: '#f0fbff',                // AWS: color-background-status-info
+  colorInfoBorder: '#006ce0',            // AWS: color-border-status-info
+
+  // ============ Link Colors (AWS Official) ============
+  colorLink: '#006ce0',                  // AWS: color-text-link-default
+  colorLinkHover: '#002b66',             // AWS: color-text-link-hover
+  colorLinkActive: '#002b66',            // AWS: color-text-link-hover
 };
 
 export const awsDarkTheme = {
-  // ============ Background Colors ============
-  colorBgLayout: '#000716',              // 主布局背景（深蓝黑）
-  colorBgContainer: '#0f1b2a',           // 容器背景（深蓝）
-  colorBgElevated: '#192534',            // 悬浮层背景（中蓝）
-  colorBgSpotlight: '#1e3040',           // 聚光灯背景
-  
-  // ============ Text Colors ============
-  colorText: '#d1d5db',                  // 主要文字（浅灰）
-  colorTextSecondary: '#9ba7b6',         // 次要文字（中灰）
-  colorTextTertiary: '#7d8998',          // 三级文字（深灰）
-  colorTextQuaternary: '#5a5f6a',        // 四级文字（更深）
-  colorTextHeading: '#ffffff',           // 标题文字（白色）
-  
-  // ============ Border Colors ============
-  colorBorder: '#2a2e33',                // 默认边框
-  colorBorderSecondary: '#414d5c',       // 次要边框
-  colorSplit: '#2a2e33',                 // 分割线
-  
-  // ============ Primary Colors (AWS Blue - Dark) ============
-  colorPrimary: '#539fe5',               // AWS 主色（亮蓝）
-  colorPrimaryBg: '#0d2a45',             // 主色背景
-  colorPrimaryBgHover: '#123c5f',        // 主色背景悬停
-  colorPrimaryBorder: '#2b5f8a',         // 主色边框
-  colorPrimaryBorderHover: '#3d7aab',    // 主色边框悬停
-  colorPrimaryHover: '#85b7ed',          // 主色悬停
-  colorPrimaryActive: '#9fc5f0',         // 主色激活
-  colorPrimaryTextHover: '#85b7ed',      // 主色文字悬停
-  colorPrimaryText: '#539fe5',           // 主色文字
-  colorPrimaryTextActive: '#9fc5f0',     // 主色文字激活
-  
-  // ============ Success Colors (Green - Dark) ============
-  colorSuccess: '#1dab56',               // 成功色
-  colorSuccessBg: '#0a2e1a',             // 成功背景
-  colorSuccessBorder: '#166938',         // 成功边框
-  colorSuccessTextHover: '#2ac96c',      // 成功文字悬停
-  colorSuccessTextActive: '#3fdb82',     // 成功文字激活
-  
-  // ============ Warning Colors (Orange - Dark) ============
-  colorWarning: '#ff9900',               // 警告色
-  colorWarningBg: '#3d2200',             // 警告背景
-  colorWarningBorder: '#7a4400',         // 警告边框
-  
-  // ============ Error Colors (Red - Dark) ============
-  colorError: '#ff5d64',                 // 错误色
-  colorErrorBg: '#3d0f11',               // 错误背景
-  colorErrorBorder: '#7a1e23',           // 错误边框
-  colorErrorTextHover: '#ff8a8f',        // 错误文字悬停
-  colorErrorTextActive: '#ffb3b6',       // 错误文字激活
-  
-  // ============ Info Colors (Blue - Dark) ============
-  colorInfo: '#539fe5',                  // 信息色
-  colorInfoBg: '#0d2a45',                // 信息背景
-  colorInfoBorder: '#2b5f8a',            // 信息边框
-  
-  // ============ Link Colors ============
-  colorLink: '#539fe5',                  // 链接色
-  colorLinkHover: '#85b7ed',             // 链接悬停
-  colorLinkActive: '#9fc5f0',            // 链接激活
+  // ============ Background Colors (AWS Official Dark) ============
+  colorBgLayout: '#161d26',              // AWS: color-background-layout-main (dark)
+  colorBgContainer: '#161d26',           // AWS: color-background-container-content (dark)
+  colorBgElevated: '#232b37',            // AWS: elevated surface
+  colorBgSpotlight: '#1b232d',           // AWS: subtle elevation
+
+  // ============ Text Colors (AWS Official Dark) ============
+  colorText: '#c6c6cd',                  // AWS: color-text-body-default (dark)
+  colorTextSecondary: '#c6c6cd',         // AWS: color-text-body-secondary (dark)
+  colorTextTertiary: '#a4a4ad',          // AWS: color-text-heading-secondary (dark)
+  colorTextQuaternary: '#656871',        // AWS: color-text-interactive-disabled (dark)
+  colorTextHeading: '#ebebf0',           // AWS: color-text-heading-default (dark)
+  colorTextLabel: '#dedee3',             // AWS: color-text-label (dark)
+
+  // ============ Border Colors (AWS Official Dark) ============
+  colorBorder: '#424650',                // AWS: color-border-divider-default (dark)
+  colorBorderSecondary: '#232b37',       // AWS: color-border-divider-secondary (dark)
+  colorSplit: '#424650',                 // AWS: divider default (dark)
+
+  // ============ Primary Colors (AWS Blue - Official Dark) ============
+  colorPrimary: '#42b4ff',               // AWS: color-background-button-primary-default (dark)
+  colorPrimaryBg: '#001129',             // AWS: color-background-status-info (dark)
+  colorPrimaryBgHover: '#002b66',        // Derived from dark primary
+  colorPrimaryBorder: '#42b4ff',         // AWS: color-border-input-focused (dark)
+  colorPrimaryBorderHover: '#75cfff',    // AWS: color-background-button-primary-hover (dark)
+  colorPrimaryHover: '#75cfff',          // AWS: color-background-button-primary-hover (dark)
+  colorPrimaryActive: '#42b4ff',         // AWS: color-background-button-primary-active (dark)
+  colorPrimaryTextHover: '#75cfff',      // AWS: color-text-link-hover (dark)
+  colorPrimaryText: '#42b4ff',           // AWS: color-text-link-default (dark)
+  colorPrimaryTextActive: '#75cfff',     // AWS: color-text-link-hover (dark)
+
+  // ============ Success Colors (AWS Green - Official Dark) ============
+  colorSuccess: '#2bb534',               // AWS: color-text-status-success (dark)
+  colorSuccessBg: '#001401',             // AWS: color-background-status-success (dark)
+  colorSuccessBorder: '#2bb534',         // AWS: color-border-status-success (dark)
+  colorSuccessTextHover: '#2bb534',      // AWS: same as success
+  colorSuccessTextActive: '#2bb534',     // AWS: same as success
+
+  // ============ Warning Colors (AWS Orange - Official Dark) ============
+  colorWarning: '#fbd332',               // AWS: color-text-status-warning (dark)
+  colorWarningBg: '#191100',             // AWS: color-background-status-warning (dark)
+  colorWarningBorder: '#fbd332',         // AWS: color-border-status-warning (dark)
+
+  // ============ Error Colors (AWS Red - Official Dark) ============
+  colorError: '#ff7a7a',                 // AWS: color-text-status-error (dark)
+  colorErrorBg: '#1f0000',               // AWS: color-background-status-error (dark)
+  colorErrorBorder: '#ff7a7a',           // AWS: color-border-status-error (dark)
+  colorErrorTextHover: '#ff7a7a',        // AWS: same as error
+  colorErrorTextActive: '#ff7a7a',       // AWS: same as error
+
+  // ============ Info Colors (AWS Blue - Official Dark) ============
+  colorInfo: '#42b4ff',                  // AWS: color-text-status-info (dark)
+  colorInfoBg: '#001129',                // AWS: color-background-status-info (dark)
+  colorInfoBorder: '#42b4ff',            // AWS: color-border-status-info (dark)
+
+  // ============ Link Colors (AWS Official Dark) ============
+  colorLink: '#42b4ff',                  // AWS: color-text-link-default (dark)
+  colorLinkHover: '#75cfff',             // AWS: color-text-link-hover (dark)
+  colorLinkActive: '#75cfff',            // AWS: color-text-link-hover (dark)
 };
 
 /**
- * AWS 字体系统
+ * AWS Typography System (Official Cloudscape)
+ * Font: Open Sans (official AWS Cloudscape font)
  */
 export const awsFonts = {
-  // 主字体（系统字体栈，不依赖外部字体）
-  fontFamily: `-apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Helvetica Neue", Arial, sans-serif`,
-  
-  // 等宽字体（用于代码、日志、数字等）
-  fontFamilyCode: `Monaco, Menlo, Consolas, "Courier New", monospace`,
-  
-  // 字号
-  fontSizeXS: 12,
-  fontSizeSM: 13,
-  fontSize: 14,      // 主要字号（AWS 偏好较小字号）
-  fontSizeLG: 16,
-  fontSizeXL: 18,
-  fontSizeHeading1: 24,
-  fontSizeHeading2: 20,
-  fontSizeHeading3: 18,
-  fontSizeHeading4: 16,
-  fontSizeHeading5: 14,
-  
-  // 字重
-  fontWeightStrong: 700,
-  
-  // 行高
-  lineHeight: 1.5714,        // 22px for 14px font
-  lineHeightHeading1: 1.3333, // 32px for 24px font
-  lineHeightHeading2: 1.4,    // 28px for 20px font
+  // Primary font: Open Sans (AWS Cloudscape official)
+  fontFamily: `'Open Sans', 'Helvetica Neue', Roboto, Arial, sans-serif`,
+
+  // Monospace font (AWS Cloudscape official)
+  fontFamilyCode: `Monaco, Menlo, Consolas, 'Courier Prime', Courier, 'Courier New', monospace`,
+
+  // Font sizes (AWS Cloudscape official spec)
+  fontSizeXS: 12,        // Body Small (AWS: fontSizeBodyS)
+  fontSizeSM: 13,        // Between small and medium
+  fontSize: 14,          // Body Medium (AWS: fontSizeBodyM)
+  fontSizeLG: 16,        // Heading Small (AWS: fontSizeHeadingS)
+  fontSizeXL: 18,        // Heading Medium (AWS: fontSizeHeadingM)
+  fontSizeHeading1: 24,  // Heading XL (AWS: fontSizeHeadingXl)
+  fontSizeHeading2: 20,  // Heading Large (AWS: fontSizeHeadingL)
+  fontSizeHeading3: 18,  // Heading Medium (AWS: fontSizeHeadingM)
+  fontSizeHeading4: 16,  // Heading Small (AWS: fontSizeHeadingS)
+  fontSizeHeading5: 14,  // Heading XS (AWS: fontSizeHeadingXs)
+
+  // Font weights (AWS Cloudscape spec)
+  fontWeightStrong: 700, // Bold (AWS: fontWeightHeadingXl)
+
+  // Line heights (AWS Cloudscape spec)
+  lineHeight: 1.4286,          // 20px for 14px font (AWS: lineHeightBodyM)
+  lineHeightHeading1: 1.25,    // 30px for 24px font (AWS: lineHeightHeadingXl)
+  lineHeightHeading2: 1.4,     // Consistent heading line height
 };
 
 /**
- * AWS 间距系统
+ * AWS Spacing System (Cloudscape scaled spacing)
  */
 export const awsSpacing = {
-  sizeXXS: 4,
-  sizeXS: 8,
-  sizeSM: 12,
-  size: 16,        // 基础间距
-  sizeMD: 20,
-  sizeLG: 24,
-  sizeXL: 32,
-  sizeXXL: 40,
+  sizeXXS: 2,      // AWS: spaceScaledXxxs (2px)
+  sizeXS: 4,       // AWS: spaceScaledXxs (4px)
+  sizeSM: 8,       // AWS: spaceScaledXs (8px)
+  size: 12,        // AWS: spaceScaledS (12px)
+  sizeMD: 16,      // AWS: spaceScaledM (16px)
+  sizeLG: 20,      // AWS: spaceScaledL (20px)
+  sizeXL: 24,      // AWS: spaceScaledXl (24px)
+  sizeXXL: 32,     // AWS: spaceScaledXxl (32px)
 };
 
 /**
- * AWS 圆角系统
+ * AWS Border Radius System (Cloudscape official)
  */
 export const awsBorderRadius = {
-  borderRadius: 8,
-  borderRadiusLG: 16,
-  borderRadiusSM: 4,
-  borderRadiusXS: 2,
+  borderRadius: 8,         // AWS: borderRadiusInput (8px)
+  borderRadiusLG: 16,      // AWS: borderRadiusContainer (16px)
+  borderRadiusSM: 4,       // Smaller radius
+  borderRadiusXS: 2,       // Minimal radius
 };
 
 /**
- * AWS 阴影系统 (Light Mode)
+ * AWS Shadow System (Light Mode)
  */
 export const awsShadows = {
   boxShadow: '0 0 0 1px rgba(0, 7, 22, 0.05), 0 1px 1px 0 rgba(0, 7, 22, 0.05)',
@@ -192,7 +196,7 @@ export const awsShadows = {
 };
 
 /**
- * AWS 阴影系统 (Dark Mode)
+ * AWS Shadow System (Dark Mode)
  */
 export const awsShadowsDark = {
   boxShadow: '0 0 0 1px rgba(255, 255, 255, 0.1), 0 1px 1px 0 rgba(0, 0, 0, 0.3)',
@@ -201,77 +205,78 @@ export const awsShadowsDark = {
 };
 
 /**
- * 完整的 AWS 主题配置（用于 Ant Design ConfigProvider）
+ * Complete AWS Cloudscape Theme Configuration
+ * 100% Official AWS Colors and Typography
  */
 export const getAWSThemeConfig = (isDark: boolean) => ({
   token: {
-    // 应用对应主题的颜色
+    // Apply official AWS theme colors
     ...(isDark ? awsDarkTheme : awsLightTheme),
-    
-    // 字体系统
+
+    // AWS Typography System
     ...awsFonts,
-    
-    // 间距系统
+
+    // AWS Spacing System
     ...awsSpacing,
-    
-    // 圆角系统
+
+    // AWS Border Radius System
     ...awsBorderRadius,
-    
-    // 阴影系统
+
+    // AWS Shadow System
     ...(isDark ? awsShadowsDark : awsShadows),
-    
-    // 控制高度
+
+    // Control heights (AWS standard)
     controlHeight: 32,
     controlHeightLG: 40,
     controlHeightSM: 24,
-    
-    // 线宽
+
+    // Border styling
     lineWidth: 1,
-    lineType: 'solid',
-    
-    // 动画
+    lineType: 'solid' as const,
+
+    // Animation (minimal, AWS-style)
     motionUnit: 0.1,
     motionBase: 0,
     motionEaseInOut: 'cubic-bezier(0.4, 0, 0.2, 1)',
   },
-  
-  // 组件级别的配置
+
+  // Component-level configurations (AWS Cloudscape style)
   components: {
-    // Button 组件 - AWS 扁平化设计
+    // Button - AWS flat design
     Button: {
       primaryShadow: 'none',
       fontWeight: 500,
-      borderRadius: 8,
+      borderRadius: 20,          // AWS: borderRadiusButton (20px)
       controlHeight: 32,
       controlHeightLG: 40,
       controlHeightSM: 24,
       paddingContentHorizontal: 16,
     },
 
-    // Table 组件 - AWS 紧凑表格
+    // Table - AWS compact style
     Table: {
-      headerBg: isDark ? '#192534' : '#f9fafb',
-      headerColor: isDark ? '#d1d5db' : '#16191f',
+      headerBg: isDark ? '#232b37' : '#f9f9fa',
+      headerColor: isDark ? '#ebebf0' : '#0f141a',
       headerFontWeight: 700,
       cellPaddingBlock: 12,
       cellPaddingInline: 16,
       fontSize: 14,
-      rowHoverBg: isDark ? 'rgba(83, 159, 229, 0.08)' : 'rgba(0, 115, 187, 0.04)',
-      borderColor: isDark ? '#2a2e33' : '#e9e9e7',
+      rowHoverBg: isDark ? 'rgba(66, 180, 255, 0.08)' : 'rgba(0, 108, 224, 0.04)',
+      borderColor: isDark ? '#424650' : '#c6c6cd',
     },
 
-    // Card 组件 - AWS Container 样式
+    // Card - AWS container style
     Card: {
       boxShadow: isDark ? awsShadowsDark.boxShadow : awsShadows.boxShadow,
       headerBg: 'transparent',
       headerFontSize: 18,
       headerFontSizeSM: 16,
-      borderRadiusLG: 16,
+      borderRadiusLG: 16,        // AWS: borderRadiusContainer
       paddingLG: 24,
       boxShadowTertiary: isDark ? awsShadowsDark.boxShadowTertiary : awsShadows.boxShadowTertiary,
     },
 
-    // Menu 组件
+    // Menu
     Menu: {
       itemBg: 'transparent',
       itemHeight: 40,
@@ -280,19 +285,19 @@ export const getAWSThemeConfig = (isDark: boolean) => ({
       borderRadius: 8,
     },
 
-    // Input 组件 - AWS 输入框样式
+    // Input - AWS input style
     Input: {
       controlHeight: 32,
       controlHeightLG: 40,
       controlHeightSM: 24,
       paddingBlock: 5,
       paddingInline: 12,
-      borderRadius: 8,
-      hoverBorderColor: isDark ? '#539fe5' : '#0073bb',
-      activeBorderColor: isDark ? '#539fe5' : '#0073bb',
+      borderRadius: 8,           // AWS: borderRadiusInput
+      hoverBorderColor: isDark ? '#42b4ff' : '#006ce0',
+      activeBorderColor: isDark ? '#42b4ff' : '#006ce0',
     },
 
-    // Select 组件
+    // Select
     Select: {
       controlHeight: 32,
       controlHeightLG: 40,
@@ -300,101 +305,100 @@ export const getAWSThemeConfig = (isDark: boolean) => ({
       borderRadius: 8,
     },
 
-    // Layout 组件
+    // Layout
     Layout: {
-      headerBg: isDark ? '#0f1b2a' : '#ffffff',
-      headerColor: isDark ? '#ffffff' : '#37352f',
+      headerBg: isDark ? '#161d26' : '#ffffff',
+      headerColor: isDark ? '#ebebf0' : '#0f141a',
       headerHeight: 56,
-      siderBg: isDark ? '#0f1b2a' : '#f7f6f3',
-      bodyBg: isDark ? '#000716' : '#f7f6f3',
+      siderBg: isDark ? '#161d26' : '#ffffff',
+      bodyBg: isDark ? '#161d26' : '#ffffff',
     },
 
-    // Modal 组件 - AWS 对话框样式
+    // Modal - AWS dialog style
     Modal: {
       borderRadiusLG: 16,
       headerBg: 'transparent',
-      contentBg: isDark ? '#0f1b2a' : '#ffffff',
+      contentBg: isDark ? '#161d26' : '#ffffff',
       titleFontSize: 20,
     },
 
-    // Drawer 组件
+    // Drawer
     Drawer: {
       paddingLG: 24,
     },
 
-    // Tag 组件 - AWS 标签样式
+    // Tag - AWS badge style
     Tag: {
       borderRadius: 4,
       fontSize: 12,
-      defaultBg: isDark ? 'rgba(83, 159, 229, 0.15)' : 'rgba(0, 115, 187, 0.1)',
-      defaultColor: isDark ? '#85b7ed' : '#0073bb',
+      defaultBg: isDark ? 'rgba(66, 180, 255, 0.15)' : 'rgba(0, 108, 224, 0.1)',
+      defaultColor: isDark ? '#42b4ff' : '#006ce0',
     },
 
-    // Badge 组件
+    // Badge
     Badge: {
       fontSize: 11,
       fontWeight: 600,
     },
 
-    // Statistic 组件 - Dashboard 统计卡片
+    // Statistic - Dashboard cards
     Statistic: {
       titleFontSize: 14,
       contentFontSize: 32,
       contentFontWeight: 700,
     },
 
-    // Pagination 组件
+    // Pagination
     Pagination: {
       itemSize: 32,
       itemSizeSM: 24,
       borderRadius: 8,
     },
 
-    // Form 组件
+    // Form
     Form: {
       labelFontSize: 13,
-      labelColor: isDark ? '#d1d5db' : '#37352f',
-      labelRequiredMarkColor: isDark ? '#ff5d64' : '#d13212',
+      labelColor: isDark ? '#dedee3' : '#0f141a',
+      labelRequiredMarkColor: isDark ? '#ff7a7a' : '#db0000',
     },
 
-    // Tabs 组件
+    // Tabs
     Tabs: {
       titleFontSize: 14,
       titleFontSizeSM: 13,
-      itemColor: isDark ? '#9ba7b6' : '#787774',
-      itemActiveColor: isDark ? '#539fe5' : '#0073bb',
-      itemHoverColor: isDark ? '#85b7ed' : '#005a8e',
-      inkBarColor: isDark ? '#539fe5' : '#0073bb',
+      itemColor: isDark ? '#c6c6cd' : '#424650',
+      itemActiveColor: isDark ? '#42b4ff' : '#006ce0',
+      itemHoverColor: isDark ? '#75cfff' : '#002b66',
+      inkBarColor: isDark ? '#42b4ff' : '#006ce0',
     },
 
-    // Divider 组件
+    // Divider
     Divider: {
-      colorSplit: isDark ? '#2a2e33' : '#e9e9e7',
+      colorSplit: isDark ? '#424650' : '#c6c6cd',
     },
 
-    // Tooltip 组件
+    // Tooltip
     Tooltip: {
-      colorBgSpotlight: isDark ? '#192534' : '#37352f',
+      colorBgSpotlight: isDark ? '#232b37' : '#0f141a',
       colorTextLightSolid: '#ffffff',
       borderRadius: 8,
     },
 
-    // Progress 组件
+    // Progress
     Progress: {
-      defaultColor: isDark ? '#539fe5' : '#0073bb',
+      defaultColor: isDark ? '#42b4ff' : '#006ce0',
       remainingColor: isDark ? 'rgba(255, 255, 255, 0.15)' : 'rgba(0, 0, 0, 0.06)',
     },
 
-    // Alert 组件
+    // Alert
     Alert: {
       borderRadiusLG: 8,
       withDescriptionPadding: '16px 24px',
     },
 
-    // Spin 组件
+    // Spin
     Spin: {
-      colorPrimary: isDark ? '#539fe5' : '#0073bb',
+      colorPrimary: isDark ? '#42b4ff' : '#006ce0',
     },
   },
 });
-

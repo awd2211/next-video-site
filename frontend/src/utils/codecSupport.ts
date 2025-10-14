@@ -135,12 +135,10 @@ export interface VideoUrls {
 export function getBestVideoUrl(video: VideoUrls): string {
   // 优先AV1 (如果浏览器支持且视频有AV1版本)
   if (video.is_av1_available && video.av1_master_url && supportsAV1()) {
-    console.log('✅ 使用AV1格式 (dav1d解码器,节省56%带宽)');
     return video.av1_master_url;
   }
 
   // 降级到H.264
-  console.log('⚠️ 降级到H.264格式 (兼容模式)');
   return video.hls_master_url;
 }
 

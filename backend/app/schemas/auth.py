@@ -10,6 +10,10 @@ class UserRegister(BaseModel):
     username: str = Field(..., min_length=3, max_length=100)
     password: str = Field(..., min_length=8, max_length=128)
     full_name: Optional[str] = None
+    captcha_id: str = Field(..., description="Captcha ID")
+    captcha_code: str = Field(
+        ..., min_length=4, max_length=4, description="Captcha code"
+    )
 
     @field_validator("password")
     @classmethod
@@ -25,6 +29,10 @@ class UserLogin(BaseModel):
 
     email: EmailStr
     password: str
+    captcha_id: str = Field(..., description="Captcha ID")
+    captcha_code: str = Field(
+        ..., min_length=4, max_length=4, description="Captcha code"
+    )
 
 
 class AdminLogin(BaseModel):

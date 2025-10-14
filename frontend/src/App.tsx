@@ -9,6 +9,7 @@ import PWAInstallPrompt from './components/PWAInstallPrompt'
 // Lazy load components for code splitting with prefetch hints
 const VideoDetail = lazy(() => import(/* webpackPrefetch: true */ './pages/VideoDetail'))
 const Search = lazy(() => import(/* webpackPrefetch: true */ './pages/Search'))
+const Trending = lazy(() => import(/* webpackPrefetch: true */ './pages/Trending'))
 const Category = lazy(() => import('./pages/Category'))
 const Login = lazy(() => import('./pages/Login'))
 const Register = lazy(() => import('./pages/Register'))
@@ -26,6 +27,9 @@ const FAQ = lazy(() => import('./pages/FAQ'))
 const PrivacyPolicy = lazy(() => import('./pages/PrivacyPolicy'))
 const TermsOfService = lazy(() => import('./pages/TermsOfService'))
 const Announcements = lazy(() => import('./pages/Announcements'))
+const MyList = lazy(() => import('./pages/MyList'))
+const SharedList = lazy(() => import('./pages/SharedList'))
+const OAuthCallback = lazy(() => import('./pages/OAuthCallback'))
 
 // Preload critical routes
 const preloadCriticalRoutes = () => {
@@ -65,6 +69,7 @@ function App() {
               <Route index element={<Home />} />
               <Route path="video/:id" element={<VideoDetail />} />
               <Route path="search" element={<Search />} />
+              <Route path="trending" element={<Trending />} />
               <Route path="category/:slug" element={<Category />} />
               <Route path="profile" element={<Profile />} />
               <Route path="favorites" element={<Favorites />} />
@@ -80,9 +85,12 @@ function App() {
               <Route path="privacy" element={<PrivacyPolicy />} />
               <Route path="terms" element={<TermsOfService />} />
               <Route path="announcements" element={<Announcements />} />
+              <Route path="my-list" element={<MyList />} />
+              <Route path="shared/:token" element={<SharedList />} />
             </Route>
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
+            <Route path="/oauth/:provider/callback" element={<OAuthCallback />} />
             </Routes>
           </Suspense>
           

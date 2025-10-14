@@ -97,8 +97,8 @@ const RolesList = () => {
 
   // 分配角色给管理员
   const assignRolesMutation = useMutation({
-    mutationFn: async ({ adminId, roleIds }: { adminId: number; roleIds: number[] }) => {
-      return axios.post(`/api/v1/admin/rbac/admin-users/${adminId}/roles`, { role_ids: roleIds })
+    mutationFn: async ({ adminId, roleId }: { adminId: number; roleId: number | null }) => {
+      return axios.post(`/api/v1/admin/rbac/admin-users/${adminId}/role`, { role_id: roleId })
     },
     onSuccess: () => {
       message.success('角色分配成功')
@@ -123,11 +123,6 @@ const RolesList = () => {
   }
 
   const handleDeleteRole = (role: any) => {
-    if (role.is_system) {
-      message.warning('系统角色不允许删除')
-      return
-    }
-
     Modal.confirm({
       title: '确认删除',
       content: `确定要删除角色"${role.name}"吗？此操作不可恢复。`,
@@ -146,7 +141,7 @@ const RolesList = () => {
 
     setSelectedAdmin(admin)
     adminRoleForm.setFieldsValue({
-      role_ids: admin.roles?.map((r: any) => r.id) || [],
+      role_id: admin.role?.id || null,
     })
     setIsAdminModalVisible(true)
   }
@@ -165,9 +160,9 @@ const RolesList = () => {
       key: 'name',
       render: (name: string, record: any) => (
         <Space>
-          <SafetyOutlined style={{ color: record.is_system ? '#faad14' : '#1890ff' }} />
+          <SafetyOutlined style={{ color: record.is_active ? '#1890ff' : '#999' }} />
           <span>{name}</span>
-          {record.is_system && <Tag color="orange">系统角色</Tag>}
+          {!record.is_active && <Tag color="default">已禁用</Tag>}
         </Space>
       ),
     },
@@ -202,7 +197,6 @@ const RolesList = () => {
             type="link"
             icon={<EditOutlined />}
             onClick={() => handleEditRole(record)}
-            disabled={record.is_system}
           >
             编辑
           </Button>
@@ -211,7 +205,6 @@ const RolesList = () => {
             danger
             icon={<DeleteOutlined />}
             onClick={() => handleDeleteRole(record)}
-            disabled={record.is_system}
           >
             删除
           </Button>
@@ -253,17 +246,13 @@ const RolesList = () => {
     },
     {
       title: '角色',
-      key: 'roles',
+      key: 'role',
       render: (_: any, record: any) => (
         <Space wrap>
           {record.is_superadmin ? (
             <Tag color="gold">所有权限</Tag>
-          ) : record.roles && record.roles.length > 0 ? (
-            record.roles.map((role: any) => (
-              <Tag key={role.id} color="blue">
-                {role.name}
-              </Tag>
-            ))
+          ) : record.role ? (
+            <Tag color="blue">{record.role.name}</Tag>
           ) : (
             <Tag color="default">无角色</Tag>
           )}
@@ -350,12 +339,12 @@ const RolesList = () => {
                 ) : (
                   <Space direction="vertical" style={{ width: '100%' }} size="large">
                     {permissionsData?.grouped &&
-                      Object.entries(permissionsData.grouped).map(([resource, perms]: [string, any]) => (
-                        <Card key={resource} type="inner" title={`资源: ${resource}`} size="small">
+                      Object.entries(permissionsData.grouped).map(([module, perms]: [string, any]) => (
+                        <Card key={module} type="inner" title={`模块: ${module}`} size="small">
                           <Space wrap>
                             {perms.map((perm: any) => (
                               <Tag key={perm.id} color="blue">
-                                {perm.name} ({perm.action})
+                                {perm.name} ({perm.code})
                               </Tag>
                             ))}
                           </Space>
@@ -432,12 +421,12 @@ const RolesList = () => {
               showSearch
             >
               {permissionsData?.grouped &&
-                Object.entries(permissionsData.grouped).map(([resource, perms]: [string, any]) => (
-                  <Select.OptGroup key={resource} label={`${resource} (资源)`}>
+                Object.entries(permissionsData.grouped).map(([module, perms]: [string, any]) => (
+                  <Select.OptGroup key={module} label={`${module} (模块)`}>
                     {perms.map((perm: any) => (
-                      <Select.Option key={perm.id} value={perm.id} label={`${perm.name} ${perm.action}`}>
-                        {perm.name} - {perm.action}
-                        {perm.description && <span style={{ color: '#999' }}> ({perm.description})</span>}
+                      <Select.Option key={perm.id} value={perm.id} label={`${perm.name} ${perm.code}`}>
+                        {perm.name} ({perm.code})
+                        {perm.description && <span style={{ color: '#999' }}> - {perm.description}</span>}
                       </Select.Option>
                     ))}
                   </Select.OptGroup>
@@ -465,12 +454,8 @@ const RolesList = () => {
               <Descriptions.Item label="用户名">{selectedAdmin.username}</Descriptions.Item>
               <Descriptions.Item label="邮箱">{selectedAdmin.email}</Descriptions.Item>
               <Descriptions.Item label="当前角色">
-                {selectedAdmin.roles && selectedAdmin.roles.length > 0 ? (
-                  <Space wrap>
-                    {selectedAdmin.roles.map((role: any) => (
-                      <Tag key={role.id}>{role.name}</Tag>
-                    ))}
-                  </Space>
+                {selectedAdmin.role ? (
+                  <Tag color="blue">{selectedAdmin.role.name}</Tag>
                 ) : (
                   <Tag color="default">无角色</Tag>
                 )}
@@ -486,20 +471,20 @@ const RolesList = () => {
             selectedAdmin &&
             assignRolesMutation.mutate({
               adminId: selectedAdmin.id,
-              roleIds: values.role_ids || [],
+              roleId: values.role_id || null,
             })
           }
         >
           <Form.Item
-            name="role_ids"
+            name="role_id"
             label="选择角色"
-            rules={[{ required: true, message: '请至少选择一个角色' }]}
+            rules={[{ required: false, message: '请选择一个角色' }]}
           >
             <Select
-              mode="multiple"
-              placeholder="选择角色"
+              placeholder="选择角色（留空表示取消分配）"
               loading={rolesLoading}
               optionFilterProp="label"
+              allowClear
             >
               {rolesData?.roles?.map((role: any) => (
                 <Select.Option key={role.id} value={role.id} label={role.name}>

@@ -29,6 +29,7 @@ export const videoService = {
   getTrendingVideos: async (params?: {
     page?: number
     page_size?: number
+    time_range?: 'today' | 'week' | 'all' | 'rising'
   }): Promise<PaginatedResponse<Video>> => {
     const response = await api.get('/videos/trending', { params })
     return PaginatedVideoSchema.parse(response.data)

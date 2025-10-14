@@ -311,7 +311,6 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
       // Fullscreen change tracking
       player.on('fullscreenchange', () => {
         const isFullscreen = player.isFullscreen() || false
-        console.log('Fullscreen:', isFullscreen)
         
         // Optimize subtitle position in fullscreen
         const textTrackDisplay = player.el().querySelector('.vjs-text-track-display')
@@ -346,12 +345,11 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
 
       // Buffering state tracking
       player.on('waiting', () => {
-        console.log('Buffering...')
         // The loading spinner is handled automatically by Video.js
       })
 
       player.on('canplay', () => {
-        console.log('Can play - buffering complete')
+        // Buffering complete
       })
 
       player.on('progress', () => {
@@ -361,7 +359,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
           const bufferedEnd = buffered.end(buffered.length - 1)
           const duration = player.duration()
           const bufferedPercent = (bufferedEnd / duration) * 100
-          console.log(`Buffered: ${bufferedPercent.toFixed(1)}%`)
+          // Buffering progress tracked
         }
       })
 
@@ -406,7 +404,6 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
 
             item.handleClick = () => {
               // 处理画质切换
-              console.log('Selected quality:', quality)
               // TODO: 集成 HLS quality selector
             }
 
@@ -611,7 +608,6 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
 
   const handleChangeQuality = useCallback((quality: string) => {
     // Quality change handled by HLS quality selector plugin
-    console.log('Change quality to:', quality)
   }, [])
 
   const handleCopyVideoUrl = useCallback(() => {
@@ -736,9 +732,6 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
         await historyService.updateProgress(videoId, currentTime, duration)
         setLastSavedTime(currentTime)
         // 静默保存，不显示 toast（避免干扰观看）
-        if (process.env.NODE_ENV === 'development') {
-          console.log(`✅ 进度已保存: ${currentTime}s / ${duration}s`)
-        }
       } catch (error) {
         console.error('保存进度失败:', error)
         // 只在失败时显示提示
@@ -780,7 +773,6 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
         const subtitleList = response.subtitles
 
         if (subtitleList.length === 0) {
-          console.log('该视频没有字幕')
           return
         }
 
@@ -805,10 +797,6 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
               default: subtitle.is_default,
             },
             false // 不自动添加到DOM
-          )
-
-          console.log(
-            `✅ 字幕已加载: ${subtitle.language_name} (${subtitle.language})`
           )
         })
 

@@ -1,16 +1,26 @@
 import hashlib
 import math
+from datetime import datetime, timedelta, timezone
 from typing import Optional
 
-from fastapi import APIRouter, Depends, Query, Request
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
+from loguru import logger
 from sqlalchemy import and_, desc, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from app.database import get_db
+from app.models.user import User
+from app.models.user_activity import SearchHistory
 from app.models.video import Video, VideoStatus
+from app.schemas.search import (
+    PopularSearchResponse,
+    SearchHistoryCreate,
+    SearchHistoryResponse,
+)
 from app.schemas.video import PaginatedResponse, VideoListResponse
 from app.utils.cache import Cache
+from app.utils.dependencies import get_current_user, get_current_user_optional
 from app.utils.rate_limit import RateLimitPresets, limiter
 
 router = APIRouter()
@@ -104,3 +114,189 @@ async def search_videos(
     await Cache.set(cache_key, response, ttl=300)
 
     return response
+
+
+# ==================== Search History Endpoints ====================
+
+
+@router.post("/history", status_code=status.HTTP_201_CREATED)
+@limiter.limit(RateLimitPresets.MODERATE)
+async def record_search_history(
+    request: Request,
+    search_data: SearchHistoryCreate,
+    current_user: Optional[User] = Depends(get_current_user_optional),
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Record a search query (for logged-in users and analytics)
+
+    This endpoint is fire-and-forget - frontend shouldn't block on it.
+    """
+    try:
+        # Get IP address and User-Agent for analytics
+        ip_address = request.client.host if request.client else None
+        user_agent = request.headers.get("user-agent")
+
+        # Create search history entry
+        search_history = SearchHistory(
+            user_id=current_user.id if current_user else None,
+            query=search_data.query.strip(),
+            results_count=search_data.results_count,
+            clicked_video_id=search_data.clicked_video_id,
+            ip_address=ip_address,
+            user_agent=user_agent,
+        )
+
+        db.add(search_history)
+        await db.commit()
+
+        logger.info(
+            f"Search recorded: query='{search_data.query}', "
+            f"results={search_data.results_count}, "
+            f"user_id={current_user.id if current_user else 'anonymous'}"
+        )
+
+        return {"message": "Search history recorded successfully"}
+
+    except Exception as e:
+        logger.error(f"Failed to record search history: {e}")
+        await db.rollback()
+        # Don't fail the request - search history is not critical
+        return {"message": "Search history recording failed (non-critical)"}
+
+
+@router.get("/history", response_model=list[SearchHistoryResponse])
+@limiter.limit(RateLimitPresets.MODERATE)
+async def get_user_search_history(
+    request: Request,
+    limit: int = Query(20, ge=1, le=100, description="Number of recent searches to return"),
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Get user's search history (requires authentication)
+
+    Returns deduplicated list of recent searches ordered by most recent first.
+    """
+    # Query user's recent searches (distinct queries only)
+    query = (
+        select(SearchHistory)
+        .filter(SearchHistory.user_id == current_user.id)
+        .order_by(desc(SearchHistory.created_at))
+        .limit(limit * 2)  # Get more to deduplicate
+    )
+
+    result = await db.execute(query)
+    all_searches = result.scalars().all()
+
+    # Deduplicate by query (keep most recent)
+    seen_queries = set()
+    unique_searches = []
+
+    for search in all_searches:
+        if search.query not in seen_queries:
+            seen_queries.add(search.query)
+            unique_searches.append(search)
+
+        if len(unique_searches) >= limit:
+            break
+
+    return unique_searches
+
+
+@router.delete("/history/{history_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_search_history_item(
+    history_id: int,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Delete a specific search history item (user must own it)"""
+    # Find the history item
+    result = await db.execute(
+        select(SearchHistory).filter(
+            SearchHistory.id == history_id, SearchHistory.user_id == current_user.id
+        )
+    )
+    history_item = result.scalar_one_or_none()
+
+    if not history_item:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Search history item not found or access denied",
+        )
+
+    await db.delete(history_item)
+    await db.commit()
+
+    logger.info(
+        f"Search history deleted: id={history_id}, user_id={current_user.id}"
+    )
+
+
+@router.delete("/history", status_code=status.HTTP_204_NO_CONTENT)
+async def clear_search_history(
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Clear all search history for current user"""
+    # Delete all user's search history
+    result = await db.execute(
+        select(SearchHistory).filter(SearchHistory.user_id == current_user.id)
+    )
+    history_items = result.scalars().all()
+
+    for item in history_items:
+        await db.delete(item)
+
+    await db.commit()
+
+    logger.info(
+        f"All search history cleared: user_id={current_user.id}, "
+        f"count={len(history_items)}"
+    )
+
+
+@router.get("/popular", response_model=list[PopularSearchResponse])
+@limiter.limit(RateLimitPresets.STRICT)
+async def get_popular_searches(
+    request: Request,
+    limit: int = Query(10, ge=1, le=50, description="Number of popular searches to return"),
+    hours: int = Query(
+        24, ge=1, le=168, description="Time window in hours (default: 24h)"
+    ),
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Get popular search queries (cached for 1 hour)
+
+    Returns top N most searched queries in the specified time window.
+    """
+    cache_key = f"popular_searches:{limit}:{hours}"
+
+    # Try to get from cache
+    cached = await Cache.get(cache_key)
+    if cached is not None:
+        return cached
+
+    # Calculate time threshold
+    now = datetime.now(timezone.utc)
+    time_threshold = now - timedelta(hours=hours)
+
+    # Aggregate searches by query
+    query = (
+        select(SearchHistory.query, func.count(SearchHistory.id).label("search_count"))
+        .filter(SearchHistory.created_at >= time_threshold)
+        .group_by(SearchHistory.query)
+        .order_by(desc("search_count"))
+        .limit(limit)
+    )
+
+    result = await db.execute(query)
+    popular_searches = [
+        PopularSearchResponse(query=row[0], search_count=row[1]) for row in result.all()
+    ]
+
+    # Cache for 1 hour
+    await Cache.set(cache_key, popular_searches, ttl=3600)
+
+    return popular_searches

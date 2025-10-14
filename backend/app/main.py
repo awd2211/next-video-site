@@ -16,6 +16,7 @@ from app.admin import actors as admin_actors
 from app.admin import admin_notifications
 from app.admin import dashboard_config as admin_dashboard
 from app.admin import ai_management as admin_ai
+from app.admin import oauth_management as admin_oauth
 from app.admin import announcements as admin_announcements
 from app.admin import banners as admin_banners
 from app.admin import batch_operations as admin_batch
@@ -35,7 +36,7 @@ from app.admin import media_share as admin_media_share
 from app.admin import media_version as admin_media_version
 from app.admin import operations as admin_operations
 from app.admin import profile as admin_profile
-# from app.admin import rbac as admin_rbac  # Temporarily disabled due to missing models
+from app.admin import rbac as admin_rbac
 from app.admin import reports as admin_reports
 from app.admin import scheduled_content as admin_scheduled
 from app.admin import series as admin_series
@@ -46,6 +47,7 @@ from app.admin import subtitles as admin_subtitles
 from app.admin import system_health as admin_system_health
 from app.admin import tags as admin_tags
 from app.admin import transcode as admin_transcode
+from app.admin import two_factor as admin_two_factor
 from app.admin import upload as admin_upload
 from app.admin import users as admin_users
 from app.admin import videos as admin_videos
@@ -62,15 +64,18 @@ from app.api import (
     favorites,
     history,
     notifications,
+    oauth,
     ratings,
     recommendations,
     search,
     series,
     share,
+    shared_watchlist,
     shares,
     subtitles,
     users,
     videos,
+    watchlist,
     websocket,
 )
 from app.config import settings
@@ -364,6 +369,9 @@ app.include_router(
     auth.router, prefix=f"{settings.API_V1_PREFIX}/auth", tags=["Authentication"]
 )
 app.include_router(
+    oauth.router, prefix=f"{settings.API_V1_PREFIX}", tags=["OAuth Authentication"]
+)
+app.include_router(
     captcha.router, prefix=f"{settings.API_V1_PREFIX}/captcha", tags=["Captcha"]
 )
 app.include_router(
@@ -443,6 +451,16 @@ app.include_router(
     announcements.router,
     prefix=f"{settings.API_V1_PREFIX}/announcements",
     tags=["Announcements"],
+)
+app.include_router(
+    watchlist.router,
+    prefix=f"{settings.API_V1_PREFIX}/watchlist",
+    tags=["Watchlist (My List)"],
+)
+app.include_router(
+    shared_watchlist.router,
+    prefix=f"{settings.API_V1_PREFIX}",
+    tags=["Shared Watchlist"],
 )
 
 # Admin API routes
@@ -587,6 +605,11 @@ app.include_router(
     tags=["Admin - Profile"],
 )
 app.include_router(
+    admin_two_factor.router,
+    prefix=f"{settings.API_V1_PREFIX}/admin/2fa",
+    tags=["Admin - Two-Factor Authentication"],
+)
+app.include_router(
     admin_ai.router,
     prefix=f"{settings.API_V1_PREFIX}/admin/ai",
     tags=["Admin - AI Management"],
@@ -626,12 +649,16 @@ app.include_router(
     prefix=f"{settings.API_V1_PREFIX}/admin/scheduling",
     tags=["Admin - Content Scheduling"],
 )
-# Temporarily disabled due to missing RBAC models (admin_roles, role_permissions tables)
-# app.include_router(
-#     admin_rbac.router,
-#     prefix=f"{settings.API_V1_PREFIX}/admin/rbac",
-#     tags=["Admin - RBAC (Role-Based Access Control)"],
-# )
+app.include_router(
+    admin_oauth.router,
+    prefix=f"{settings.API_V1_PREFIX}/admin",
+    tags=["Admin - OAuth Management"],
+)
+app.include_router(
+    admin_rbac.router,
+    prefix=f"{settings.API_V1_PREFIX}/admin/rbac",
+    tags=["Admin - RBAC (Role-Based Access Control)"],
+)
 
 
 @app.on_event("startup")

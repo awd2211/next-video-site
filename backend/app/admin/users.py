@@ -243,7 +243,7 @@ async def admin_get_user_detail(
             "is_active": user.is_active,
             "is_verified": user.is_verified,
             "is_vip": user.is_vip,
-            "vip_expire_at": user.vip_expire_at.isoformat() if user.vip_expire_at else None,
+            "vip_expires_at": user.vip_expires_at.isoformat() if user.vip_expires_at else None,
             "created_at": user.created_at.isoformat(),
             "last_login": user.last_login.isoformat() if user.last_login else None,
         },

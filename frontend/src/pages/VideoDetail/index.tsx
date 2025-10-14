@@ -7,6 +7,7 @@ import VideoCard from '@/components/VideoCard'
 import RatingStars from '@/components/RatingStars'
 import FavoriteButton from '@/components/FavoriteButton'
 import ShareButton from '@/components/ShareButton'
+import AddToListButton from '@/components/AddToListButton'
 import { useMobilePlayer } from '@/hooks/useDeviceDetect'
 import { useEffect, useState, lazy, Suspense } from 'react'
 import { historyService } from '@/services/historyService'
@@ -181,6 +182,7 @@ const VideoDetail = () => {
         <div className="flex items-start justify-between mb-4">
           <h1 className="text-3xl font-bold flex-1">{video.title}</h1>
           <div className="flex items-center gap-3 ml-4">
+            <AddToListButton videoId={Number(id)} variant="compact" />
             <FavoriteButton videoId={Number(id)} />
             <ShareButton videoId={Number(id)} videoTitle={video.title} />
           </div>

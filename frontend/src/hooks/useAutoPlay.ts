@@ -80,8 +80,6 @@ export const useAutoPlay = ({
       } else {
         navigate(`/videos/${nextVideo.id}`)
       }
-    } else {
-      console.log('No next video in playlist')
     }
   }, [getNextVideo, navigate, onNext])
 
@@ -97,8 +95,6 @@ export const useAutoPlay = ({
       } else {
         navigate(`/videos/${previousVideo.id}`)
       }
-    } else {
-      console.log('No previous video in playlist')
     }
   }, [getPreviousVideo, navigate, onNext])
 

@@ -33,6 +33,7 @@ const RolesList = lazy(() => import('./pages/Roles/List'))
 const ReportsDashboard = lazy(() => import('./pages/Reports/Dashboard'))
 const EmailManagement = lazy(() => import('./pages/Email/Management'))
 const SchedulingList = lazy(() => import('./pages/Scheduling/List'))
+const OAuthSettings = lazy(() => import('./pages/OAuthSettings'))
 
 // Loading component for Suspense
 const PageLoading = () => (
@@ -111,6 +112,7 @@ function App() {
                 <Route path="reports" element={<ReportsDashboard />} />
                 <Route path="email-management" element={<EmailManagement />} />
                 <Route path="scheduling" element={<SchedulingList />} />
+                <Route path="oauth-settings" element={<OAuthSettings />} />
               </Route>
             </Routes>
           </Suspense>
