@@ -37,6 +37,7 @@ import dayjs from 'dayjs'
 import { exportToCSV } from '@/utils/exportUtils'
 import { formatAWSDate, formatAWSNumber } from '@/utils/awsStyleHelpers'
 import { BannerPreviewButton } from './BannerPreview'
+import { useTableSort } from '@/hooks/useTableSort'
 
 const { TextArea } = Input
 const { Option } = Select
@@ -45,7 +46,7 @@ const { RangePicker } = DatePicker
 const BannersList = () => {
   const { t } = useTranslation()
   const [page, setPage] = useState(1)
-  const [pageSize] = useState(20)
+  const [pageSize, setPageSize] = useState(20)
   const [modalVisible, setModalVisible] = useState(false)
   const [editingBanner, setEditingBanner] = useState<any>(null)
   const [form] = Form.useForm()
@@ -54,6 +55,12 @@ const BannersList = () => {
   const [imageUrl, setImageUrl] = useState<string>('')
   const [selectedRowKeys, setSelectedRowKeys] = useState<number[]>([])
   const [statusFilter, setStatusFilter] = useState<string | undefined>(undefined)
+
+  // Table sorting
+  const { handleTableChange, getSortParams } = useTableSort({
+    defaultSortBy: 'sort_order',
+    defaultSortOrder: 'desc'
+  })
 
   // Handle image upload
   const handleUpload = async (options: any) => {
@@ -83,13 +90,16 @@ const BannersList = () => {
 
   // Fetch banners
   const { data, isLoading, refetch } = useQuery({
-    queryKey: ['banners', page, pageSize, statusFilter],
+    queryKey: ['banners', page, pageSize, statusFilter, ...Object.values(getSortParams())],
     queryFn: async () => {
-      let url = `/api/v1/admin/banners/banners?page=${page}&page_size=${pageSize}`
-      if (statusFilter) {
-        url += `&status=${statusFilter}`
-      }
-      const response = await axios.get(url)
+      const response = await axios.get('/api/v1/admin/banners/banners', {
+        params: {
+          page,
+          page_size: pageSize,
+          status: statusFilter,
+          ...getSortParams(),
+        },
+      })
       return response.data
     },
     placeholderData: (previousData) => previousData,
@@ -284,6 +294,7 @@ const BannersList = () => {
       dataIndex: 'id',
       key: 'id',
       width: 60,
+      sorter: true,
     },
     {
       title: '预览',
@@ -299,6 +310,7 @@ const BannersList = () => {
       dataIndex: 'title',
       key: 'title',
       ellipsis: true,
+      sorter: true,
     },
     {
       title: '链接',
@@ -313,6 +325,7 @@ const BannersList = () => {
       dataIndex: 'sort_order',
       key: 'sort_order',
       width: 80,
+      sorter: true,
       render: (order: number) => formatAWSNumber(order),
     },
     {
@@ -351,6 +364,7 @@ const BannersList = () => {
       dataIndex: 'created_at',
       key: 'created_at',
       width: 180,
+      sorter: true,
       render: (date: string) => formatAWSDate(date, 'YYYY-MM-DD HH:mm:ss'),
     },
     {
@@ -518,13 +532,19 @@ const BannersList = () => {
           dataSource={data?.items || []}
           rowKey="id"
           loading={isLoading}
+          onChange={(pagination, filters, sorter) => handleTableChange(sorter)}
           scroll={{ x: 1200 }}
           sticky
           pagination={{
             current: page,
             pageSize: pageSize,
             total: data?.total || 0,
-            showSizeChanger: false,
+            onShowSizeChange: (current, size) => {
+              setPageSize(size)
+              setPage(1)
+            },
+            showSizeChanger: true,
+            pageSizeOptions: ['10', '20', '50', '100'],
             showQuickJumper: true,
             showTotal: (total) => t('common.total', { count: total }),
             onChange: (newPage) => setPage(newPage),

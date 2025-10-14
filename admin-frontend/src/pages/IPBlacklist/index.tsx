@@ -351,12 +351,15 @@ const IPBlacklist: React.FC = () => {
             current: page,
             pageSize: pageSize,
             total: total,
-            showSizeChanger: true,
-            showTotal: (total) => `共 ${total} 条`,
-            onChange: (page, pageSize) => {
-              setPage(page)
-              setPageSize(pageSize)
+            onChange: (newPage) => setPage(newPage),
+            onShowSizeChange: (current, size) => {
+              setPageSize(size)
+              setPage(1)
             },
+            showSizeChanger: true,
+            pageSizeOptions: ['10', '20', '50', '100'],
+            showQuickJumper: true,
+            showTotal: (total) => `共 ${total} 条`,
           }}
         />
       </Card>

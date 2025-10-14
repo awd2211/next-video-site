@@ -36,8 +36,9 @@ import {
   RobotOutlined,
   ApiOutlined,
   MailOutlined,
-  ClockCircleOutlined,
-  SafetyOutlined,
+  LineChartOutlined,
+  LockOutlined,
+  CalendarOutlined,
 } from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';
 import Breadcrumb from '../components/Breadcrumb';
@@ -49,6 +50,8 @@ import NotificationBadge from '../components/NotificationBadge';
 import { useGlobalHotkeys } from '../hooks/useGlobalHotkeys';
 import { useMenuBadges } from '../contexts/MenuBadgeContext';
 import { useTheme } from '../contexts/ThemeContext';
+import profileService from '../services/profileService';
+import { useTranslation as useI18n } from 'react-i18next';
 import './AdminLayout.css';
 
 const { Header, Content, Sider } = Layout;
@@ -69,13 +72,14 @@ interface MenuGroup {
 
 const AdminLayout = () => {
   const { t } = useTranslation();
+  const { i18n } = useI18n();
   const navigate = useNavigate();
   const location = useLocation();
   const [collapsed, setCollapsed] = useState(false);
   const [hotkeysHelpVisible, setHotkeysHelpVisible] = useState(false);
   const [searchValue, setSearchValue] = useState('');
   const { badges } = useMenuBadges();
-  const { theme: currentTheme } = useTheme();
+  const { theme: currentTheme, setTheme } = useTheme();
   const {
     token: { colorBgContainer, borderRadiusLG },
   } = theme.useToken();
@@ -90,13 +94,38 @@ const AdminLayout = () => {
   // Enable global hotkeys
   useGlobalHotkeys();
 
+  // Load user preferences on mount
+  useEffect(() => {
+    const loadUserPreferences = async () => {
+      try {
+        const profile = await profileService.getProfile();
+
+        // Apply theme preference
+        if (profile.preferred_theme && profile.preferred_theme !== currentTheme) {
+          setTheme(profile.preferred_theme as 'light' | 'dark');
+        }
+
+        // Apply language preference
+        if (profile.preferred_language && profile.preferred_language !== i18n.language) {
+          i18n.changeLanguage(profile.preferred_language);
+        }
+      } catch (error) {
+        console.error('Failed to load user preferences:', error);
+        // Don't show error to user, just use defaults
+      }
+    };
+
+    loadUserPreferences();
+  }, []); // Only run once on mount
+
   // 更新 CSS 变量（用于设置页面底部栏）
   useEffect(() => {
     document.documentElement.style.setProperty('--sidebar-width', `${sidebarWidth}px`);
   }, [sidebarWidth]);
 
-  // 菜单分组配置（AWS 风格）
+  // 菜单分组配置（优化后的结构 - 方案A）
   const menuGroups: MenuGroup[] = [
+    // 📊 概览
     {
       key: 'overview',
       label: t('menu.groupOverview'),
@@ -108,6 +137,7 @@ const AdminLayout = () => {
         },
       ],
     },
+    // 📹 内容管理
     {
       key: 'content',
       label: t('menu.groupContent'),
@@ -135,14 +165,21 @@ const AdminLayout = () => {
         },
         {
           key: '/scheduling',
-          icon: <ClockCircleOutlined />,
+          icon: <CalendarOutlined />,
           label: t('menu.scheduling') || '内容调度',
+        },
+        {
+          key: '/comments',
+          icon: <CommentOutlined />,
+          label: t('menu.comments'),
+          badge: badges.pendingComments > 0 ? badges.pendingComments : undefined,
         },
       ],
     },
+    // 👥 用户与权限
     {
-      key: 'community',
-      label: t('menu.groupCommunity'),
+      key: 'usersAndPermissions',
+      label: t('menu.groupUsersAndPermissions') || '用户与权限',
       items: [
         {
           key: '/users',
@@ -150,13 +187,23 @@ const AdminLayout = () => {
           label: t('menu.users'),
         },
         {
-          key: '/comments',
-          icon: <CommentOutlined />,
-          label: t('menu.comments'),
-          badge: badges.pendingComments,
+          key: '/roles',
+          icon: <TeamOutlined />,
+          label: t('menu.roles') || '角色管理',
+        },
+        {
+          key: '/ip-blacklist',
+          icon: <StopOutlined />,
+          label: t('menu.ipBlacklist'),
+        },
+        {
+          key: '/oauth-settings',
+          icon: <LockOutlined />,
+          label: t('menu.oauthSettings') || 'OAuth设置',
         },
       ],
     },
+    // 📁 资源库
     {
       key: 'resources',
       label: t('menu.groupResources'),
@@ -178,6 +225,41 @@ const AdminLayout = () => {
         },
       ],
     },
+    // 🤖 AI与智能
+    {
+      key: 'aiAndIntelligence',
+      label: t('menu.groupAIAndIntelligence') || 'AI与智能',
+      items: [
+        {
+          key: '/ai-management',
+          icon: <RobotOutlined />,
+          label: t('menu.aiManagement'),
+        },
+      ],
+    },
+    // 📈 数据分析
+    {
+      key: 'dataAnalytics',
+      label: t('menu.groupDataAnalytics') || '数据分析',
+      items: [
+        {
+          key: '/statistics',
+          icon: <LineChartOutlined />,
+          label: t('menu.statistics'),
+        },
+        {
+          key: '/reports',
+          icon: <BarChartOutlined />,
+          label: t('menu.reports') || '系统报告',
+        },
+        {
+          key: '/logs',
+          icon: <FileTextOutlined />,
+          label: t('menu.logs'),
+        },
+      ],
+    },
+    // ⚙️ 系统管理
     {
       key: 'system',
       label: t('menu.groupSystem'),
@@ -188,44 +270,9 @@ const AdminLayout = () => {
           label: t('menu.systemHealth'),
         },
         {
-          key: '/ai-management',
-          icon: <RobotOutlined />,
-          label: t('menu.aiManagement'),
-        },
-        {
-          key: '/roles',
-          icon: <SafetyOutlined />,
-          label: t('menu.roles') || '角色权限',
-        },
-        {
-          key: '/reports',
-          icon: <FileTextOutlined />,
-          label: t('menu.reports') || '数据报表',
-        },
-        {
           key: '/email-management',
           icon: <MailOutlined />,
           label: t('menu.emailManagement') || '邮件管理',
-        },
-        {
-          key: '/statistics',
-          icon: <BarChartOutlined />,
-          label: t('menu.statistics'),
-        },
-        {
-          key: '/logs',
-          icon: <FileTextOutlined />,
-          label: t('menu.logs'),
-        },
-        {
-          key: '/ip-blacklist',
-          icon: <StopOutlined />,
-          label: t('menu.ipBlacklist'),
-        },
-        {
-          key: '/oauth-settings',
-          icon: <SafetyOutlined />,
-          label: t('menu.oauthSettings') || 'OAuth 设置',
         },
         {
           key: '/settings',
@@ -513,28 +560,15 @@ const AdminLayout = () => {
         <Content
           style={{
             margin: '0',
-            padding: '20px 24px',
+            padding: location.pathname === '/media' ? 0 : '16px 24px 24px',
             minHeight: 'calc(100vh - 56px)',
             background: currentTheme === 'dark' ? '#0f1b2a' : '#f7f6f3',
           }}
         >
-          <div style={{ marginBottom: 16 }}>
-            <Breadcrumb />
-          </div>
-          <div
-            style={{
-              padding: 24,
-              minHeight: 360,
-              background: colorBgContainer,
-              borderRadius: 8,
-              border: currentTheme === 'dark' ? '1px solid rgba(255, 255, 255, 0.08)' : '1px solid #e9e9e7',
-              boxShadow: '0 0 0 1px rgba(0, 7, 22, 0.05), 0 1px 1px 0 rgba(0, 7, 22, 0.05)',
-            }}
-          >
-            <PageTransition>
-              <Outlet />
-            </PageTransition>
-          </div>
+          {location.pathname !== '/media' && <Breadcrumb />}
+          <PageTransition>
+            <Outlet />
+          </PageTransition>
         </Content>
       </Layout>
 

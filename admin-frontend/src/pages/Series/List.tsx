@@ -37,6 +37,7 @@ import seriesService, { SeriesListItem, SeriesType, SeriesStatus } from '@/servi
 import { formatAWSDate, formatAWSNumber, AWSTag } from '@/utils/awsStyleHelpers'
 import { useTranslation } from 'react-i18next'
 import { SeriesPreviewButton } from './SeriesPreview'
+import { useTableSort } from '@/hooks/useTableSort'
 
 const SeriesList: React.FC = () => {
   const { t } = useTranslation()
@@ -52,6 +53,12 @@ const SeriesList: React.FC = () => {
   const [selectedRowKeys, setSelectedRowKeys] = useState<React.Key[]>([])
   const [stats, setStats] = useState<any>(null)
 
+  // Table sorting
+  const { handleTableChange, getSortParams } = useTableSort({
+    defaultSortBy: 'created_at',
+    defaultSortOrder: 'desc'
+  })
+
   // 加载数据
   const loadData = async () => {
     setLoading(true)
@@ -62,6 +69,7 @@ const SeriesList: React.FC = () => {
         status: statusFilter,
         type: typeFilter,
         search: searchText || undefined,
+        ...getSortParams(),
       })
       setDataSource(response.items)
       setTotal(response.total)
@@ -115,6 +123,7 @@ const SeriesList: React.FC = () => {
       dataIndex: 'id',
       key: 'id',
       width: 80,
+      sorter: true,
     },
     {
       title: '封面',
@@ -144,6 +153,7 @@ const SeriesList: React.FC = () => {
       dataIndex: 'title',
       key: 'title',
       ellipsis: true,
+      sorter: true,
     },
     {
       title: '类型',
@@ -164,6 +174,7 @@ const SeriesList: React.FC = () => {
       dataIndex: 'total_episodes',
       key: 'total_episodes',
       width: 80,
+      sorter: true,
       render: (num: number) => formatAWSNumber(num),
     },
     {
@@ -171,6 +182,7 @@ const SeriesList: React.FC = () => {
       dataIndex: 'total_views',
       key: 'total_views',
       width: 100,
+      sorter: true,
       render: (views: number) => formatAWSNumber(views.toLocaleString()),
     },
     {
@@ -178,6 +190,7 @@ const SeriesList: React.FC = () => {
       dataIndex: 'total_favorites',
       key: 'total_favorites',
       width: 100,
+      sorter: true,
       render: (favs: number) => formatAWSNumber(favs.toLocaleString()),
     },
     {
@@ -192,6 +205,7 @@ const SeriesList: React.FC = () => {
       dataIndex: 'created_at',
       key: 'created_at',
       width: 180,
+      sorter: true,
       render: (time: string) => formatAWSDate(time, 'YYYY-MM-DD HH:mm:ss'),
     },
     {
@@ -304,17 +318,21 @@ const SeriesList: React.FC = () => {
           dataSource={dataSource}
           rowKey="id"
           loading={loading}
+          onChange={(pagination, filters, sorter) => handleTableChange(sorter)}
           scroll={{ x: 1400 }}
           pagination={{
             current: page,
             pageSize: pageSize,
             total: total,
-            showSizeChanger: true,
-            showTotal: (total) => t('common.total', { count: total }),
-            onChange: (page, pageSize) => {
-              setPage(page)
-              setPageSize(pageSize)
+            onShowSizeChange: (current, size) => {
+              setPageSize(size)
+              setPage(1)
             },
+            showSizeChanger: true,
+            pageSizeOptions: ['10', '20', '50', '100'],
+            showQuickJumper: true,
+            showTotal: (total) => t('common.total', { count: total }),
+            onChange: (newPage) => setPage(newPage),
           }}
         />
       </Card>

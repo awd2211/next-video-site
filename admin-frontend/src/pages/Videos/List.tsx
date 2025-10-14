@@ -7,6 +7,7 @@ import { useTranslation } from 'react-i18next'
 import { useHotkeys } from 'react-hotkeys-hook'
 import axios from '@/utils/axios'
 import { useDebounce } from '@/hooks/useDebounce'
+import { useTableSort } from '@/hooks/useTableSort'
 import { exportToCSV } from '@/utils/exportUtils'
 import EmptyState from '@/components/EmptyState'
 import VideoPreviewPopover from '@/components/VideoPreviewPopover'
@@ -21,6 +22,7 @@ const VideoList = () => {
   const screens = Grid.useBreakpoint()
   const { theme } = useTheme()
   const [page, setPage] = useState(1)
+  const [pageSize, setPageSize] = useState(20)
   const [search, setSearch] = useState('')
   const [status, setStatus] = useState<string>()
   const [selectedRowKeys, setSelectedRowKeys] = useState<number[]>([])
@@ -28,7 +30,13 @@ const VideoList = () => {
 
   // Debounce search to reduce API calls
   const debouncedSearch = useDebounce(search, 500)
-  
+
+  // Table sorting
+  const { handleTableChange, getSortParams } = useTableSort({
+    defaultSortBy: 'created_at',
+    defaultSortOrder: 'desc'
+  })
+
   // Hotkeys
   useHotkeys('ctrl+n', (e) => {
     e.preventDefault();
@@ -42,10 +50,16 @@ const VideoList = () => {
   }, { enableOnFormTags: false })
 
   const { data, isLoading, refetch } = useQuery({
-    queryKey: ['admin-videos', page, debouncedSearch, status],
+    queryKey: ['admin-videos', page, pageSize, debouncedSearch, status, ...Object.values(getSortParams())],
     queryFn: async () => {
       const response = await axios.get('/api/v1/admin/videos', {
-        params: { page, page_size: 20, search: debouncedSearch, status },
+        params: {
+          page,
+          page_size: pageSize,
+          search: debouncedSearch,
+          status,
+          ...getSortParams(),
+        },
       })
       return response.data
     },
@@ -188,11 +202,13 @@ const VideoList = () => {
       dataIndex: 'id',
       key: 'id',
       width: 80,
+      sorter: true,
     },
     {
       title: t('video.title'),
       dataIndex: 'title',
       key: 'title',
+      sorter: true,
       render: (title: string, record: any) => (
         <VideoPreviewPopover video={record} hoverDelay={300}>
           <div className="video-preview-trigger" style={{ cursor: 'pointer', padding: '4px 0' }}>
@@ -237,11 +253,13 @@ const VideoList = () => {
       title: t('video.views'),
       dataIndex: 'view_count',
       key: 'view_count',
+      sorter: true,
     },
     {
       title: 'Rating',
       dataIndex: 'average_rating',
       key: 'average_rating',
+      sorter: true,
       render: (rating: number) => (
         <span style={{
           fontFamily: 'Monaco, Menlo, Consolas, monospace',
@@ -367,11 +385,18 @@ const VideoList = () => {
         dataSource={data?.items}
         loading={isLoading}
         rowKey="id"
+        onChange={(pagination, filters, sorter) => handleTableChange(sorter)}
         pagination={{
           current: page,
-          pageSize: screens.xs ? 10 : 20,
+          pageSize: pageSize,
           total: data?.total,
           onChange: setPage,
+          onShowSizeChange: (current, size) => {
+            setPageSize(size)
+            setPage(1) // Reset to first page when changing page size
+          },
+          showSizeChanger: true,
+          pageSizeOptions: ['10', '20', '50', '100'],
           showTotal: (total) => t('common.total', { count: total }),
           simple: screens.xs,
         }}

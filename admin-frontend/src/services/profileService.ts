@@ -11,6 +11,9 @@ export interface AdminProfile {
   avatar: string | null
   is_superadmin: boolean
   role_id: number | null
+  timezone?: string | null
+  preferred_language?: string | null
+  preferred_theme?: string | null
   created_at: string
   last_login_at: string | null
 }
@@ -28,6 +31,12 @@ export interface ChangePasswordRequest {
 export interface ChangeEmailRequest {
   new_email: string
   password: string
+}
+
+export interface UpdatePreferencesRequest {
+  timezone?: string | null
+  preferred_language?: string | null
+  preferred_theme?: string | null
 }
 
 const profileService = {
@@ -52,6 +61,12 @@ const profileService = {
   // 修改邮箱
   changeEmail: async (data: ChangeEmailRequest): Promise<AdminProfile> => {
     const response = await api.put<AdminProfile>('/api/v1/admin/profile/me/email', data)
+    return response.data
+  },
+
+  // 更新用户偏好设置
+  updatePreferences: async (data: UpdatePreferencesRequest): Promise<AdminProfile> => {
+    const response = await api.put<AdminProfile>('/api/v1/admin/profile/me/preferences', data)
     return response.data
   },
 }

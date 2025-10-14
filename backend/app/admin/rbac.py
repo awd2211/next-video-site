@@ -158,6 +158,23 @@ async def create_permission(
     await db.refresh(new_permission)
 
     logger.info(f"管理员 {current_admin.username} 创建了权限: {permission.code}")
+
+    # 发送RBAC管理通知
+    try:
+        from app.utils.admin_notification_service import AdminNotificationService
+
+        await AdminNotificationService.notify_rbac_management(
+            db=db,
+            target_type="permission",
+            target_id=new_permission.id,
+            target_name=permission.name,
+            action="created",
+            admin_username=current_admin.username,
+            details=f"模块: {permission.module}, 代码: {permission.code}",
+        )
+    except Exception as e:
+        print(f"Failed to send permission creation notification: {e}")
+
     return new_permission
 
 
@@ -174,10 +191,29 @@ async def delete_permission(
     if not permission:
         raise HTTPException(status_code=404, detail="权限不存在")
 
+    permission_name = permission.name
+    permission_code = permission.code
     await db.delete(permission)
     await db.commit()
 
     logger.info(f"管理员 {current_admin.username} 删除了权限: {permission.code}")
+
+    # 发送RBAC管理通知
+    try:
+        from app.utils.admin_notification_service import AdminNotificationService
+
+        await AdminNotificationService.notify_rbac_management(
+            db=db,
+            target_type="permission",
+            target_id=permission_id,
+            target_name=permission_name,
+            action="deleted",
+            admin_username=current_admin.username,
+            details=f"代码: {permission_code}",
+        )
+    except Exception as e:
+        print(f"Failed to send permission deletion notification: {e}")
+
     return {"message": "权限已删除", "id": permission_id}
 
 
@@ -275,6 +311,23 @@ async def create_role(
     logger.info(
         f"管理员 {current_admin.username} 创建了角色: {role.name} (权限: {len(role.permission_ids)})"
     )
+
+    # 发送RBAC管理通知
+    try:
+        from app.utils.admin_notification_service import AdminNotificationService
+
+        await AdminNotificationService.notify_rbac_management(
+            db=db,
+            target_type="role",
+            target_id=new_role.id,
+            target_name=role.name,
+            action="created",
+            admin_username=current_admin.username,
+            details=f"分配了 {len(role.permission_ids)} 个权限",
+        )
+    except Exception as e:
+        print(f"Failed to send role creation notification: {e}")
+
     return new_role
 
 
@@ -334,6 +387,29 @@ async def update_role(
     db_role = result.scalar_one()
 
     logger.info(f"管理员 {current_admin.username} 更新了角色: {db_role.name}")
+
+    # 发送RBAC管理通知
+    try:
+        from app.utils.admin_notification_service import AdminNotificationService
+
+        details = []
+        if role.name is not None:
+            details.append("更新了名称")
+        if role.permission_ids is not None:
+            details.append(f"更新了权限 ({len(role.permission_ids)} 个)")
+
+        await AdminNotificationService.notify_rbac_management(
+            db=db,
+            target_type="role",
+            target_id=role_id,
+            target_name=db_role.name,
+            action="updated",
+            admin_username=current_admin.username,
+            details=", ".join(details) if details else "更新了角色信息",
+        )
+    except Exception as e:
+        print(f"Failed to send role update notification: {e}")
+
     return db_role
 
 
@@ -355,10 +431,27 @@ async def delete_role(
     if admin_count_result.first():
         raise HTTPException(status_code=400, detail="该角色正在被使用，无法删除")
 
+    role_name = role.name
     await db.delete(role)
     await db.commit()
 
     logger.info(f"管理员 {current_admin.username} 删除了角色: {role.name}")
+
+    # 发送RBAC管理通知
+    try:
+        from app.utils.admin_notification_service import AdminNotificationService
+
+        await AdminNotificationService.notify_rbac_management(
+            db=db,
+            target_type="role",
+            target_id=role_id,
+            target_name=role_name,
+            action="deleted",
+            admin_username=current_admin.username,
+        )
+    except Exception as e:
+        print(f"Failed to send role deletion notification: {e}")
+
     return {"message": "角色已删除", "id": role_id}
 
 
@@ -456,6 +549,22 @@ async def assign_role_to_admin(
 
     logger.info(f"管理员 {current_admin.username} 为 {admin.username} 分配了角色: {role.name}")
 
+    # 发送RBAC管理通知
+    try:
+        from app.utils.admin_notification_service import AdminNotificationService
+
+        await AdminNotificationService.notify_rbac_management(
+            db=db,
+            target_type="admin_role_assignment",
+            target_id=admin_id,
+            target_name=admin.username,
+            action="assigned",
+            admin_username=current_admin.username,
+            details=f"分配角色: {role.name}",
+        )
+    except Exception as e:
+        print(f"Failed to send role assignment notification: {e}")
+
     return {
         "message": "角色分配成功",
         "admin_id": admin_id,
@@ -483,10 +592,27 @@ async def remove_role_from_admin(
 
     # 移除角色
     old_role_id = admin.role_id
+    old_role_name = admin.role.name if admin.role else "未知角色"
     admin.role_id = None
     await db.commit()
 
     logger.info(f"管理员 {current_admin.username} 从 {admin.username} 移除了角色")
+
+    # 发送RBAC管理通知
+    try:
+        from app.utils.admin_notification_service import AdminNotificationService
+
+        await AdminNotificationService.notify_rbac_management(
+            db=db,
+            target_type="admin_role_assignment",
+            target_id=admin_id,
+            target_name=admin.username,
+            action="removed",
+            admin_username=current_admin.username,
+            details=f"移除角色: {old_role_name}",
+        )
+    except Exception as e:
+        print(f"Failed to send role removal notification: {e}")
 
     return {"message": "角色已移除", "admin_id": admin_id, "old_role_id": old_role_id}
 

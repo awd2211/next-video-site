@@ -12,6 +12,7 @@ from app.models.content import Banner, BannerStatus
 from app.models.user import AdminUser
 from app.utils.dependencies import get_current_admin_user
 from app.utils.minio_client import minio_client
+from app.utils.sorting import apply_sorting, normalize_sort_field
 
 router = APIRouter()
 
@@ -72,11 +73,18 @@ async def get_banners(
     page: int = Query(1, ge=1),
     page_size: int = Query(20, ge=1, le=100),
     status: Optional[BannerStatus] = None,
+    sort_by: Optional[str] = Query(
+        "sort_order",
+        description="排序字段: id, title, sort_order, created_at, updated_at, start_date, end_date",
+    ),
+    sort_order: Optional[str] = Query(
+        "desc", regex="^(asc|desc)$", description="排序顺序: asc (升序) 或 desc (降序)"
+    ),
     db: AsyncSession = Depends(get_db),
     current_admin: AdminUser = Depends(get_current_admin_user),
 ):
     """获取Banner列表"""
-    query = select(Banner).order_by(desc(Banner.sort_order), desc(Banner.created_at))
+    query = select(Banner)
 
     if status:
         query = query.where(Banner.status == status)
@@ -84,6 +92,27 @@ async def get_banners(
     # Get total count
     count_result = await db.execute(select(func.count()).select_from(query.subquery()))
     total = count_result.scalar() or 0
+
+    # Apply sorting
+    sort_field = normalize_sort_field(sort_by)
+    allowed_sort_fields = [
+        "id",
+        "title",
+        "sort_order",
+        "status",
+        "created_at",
+        "updated_at",
+        "start_date",
+        "end_date",
+    ]
+    query = apply_sorting(
+        query,
+        Banner,
+        sort_field,
+        sort_order,
+        default_sort="sort_order",
+        allowed_fields=allowed_sort_fields,
+    )
 
     # Get paginated results
     query = query.offset((page - 1) * page_size).limit(page_size)

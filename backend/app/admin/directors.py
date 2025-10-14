@@ -1,4 +1,5 @@
 import math
+from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy import func, select
@@ -15,6 +16,7 @@ from app.schemas.admin_content import (
 )
 from app.utils.cache import Cache
 from app.utils.dependencies import get_current_admin_user
+from app.utils.sorting import apply_sorting, normalize_sort_field
 
 router = APIRouter()
 
@@ -24,6 +26,13 @@ async def get_directors(
     page: int = Query(1, ge=1),
     page_size: int = Query(20, ge=1, le=100),
     search: str = Query("", description="Search directors by name"),
+    sort_by: Optional[str] = Query(
+        "name",
+        description="排序字段: id, name, nationality, birth_date, created_at, updated_at",
+    ),
+    sort_order: Optional[str] = Query(
+        "asc", regex="^(asc|desc)$", description="排序顺序: asc (升序) 或 desc (降序)"
+    ),
     current_admin: AdminUser = Depends(get_current_admin_user),
     db: AsyncSession = Depends(get_db),
 ):
@@ -38,10 +47,27 @@ async def get_directors(
     total_result = await db.execute(count_query)
     total = total_result.scalar() or 0
 
-    # Get paginated results
-    query = (
-        query.order_by(Director.name).offset((page - 1) * page_size).limit(page_size)
+    # Apply sorting
+    sort_field = normalize_sort_field(sort_by)
+    allowed_sort_fields = [
+        "id",
+        "name",
+        "nationality",
+        "birth_date",
+        "created_at",
+        "updated_at",
+    ]
+    query = apply_sorting(
+        query,
+        Director,
+        sort_field,
+        sort_order,
+        default_sort="name",
+        allowed_fields=allowed_sort_fields,
     )
+
+    # Get paginated results
+    query = query.offset((page - 1) * page_size).limit(page_size)
 
     result = await db.execute(query)
     directors = result.scalars().all()

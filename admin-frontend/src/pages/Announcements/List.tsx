@@ -28,6 +28,7 @@ import axios from '@/utils/axios'
 import dayjs from 'dayjs'
 import { formatAWSDate, AWSTag } from '@/utils/awsStyleHelpers'
 import { useTranslation } from 'react-i18next'
+import { useTableSort } from '@/hooks/useTableSort'
 
 const { RangePicker } = DatePicker
 const { TextArea } = Input
@@ -56,18 +57,25 @@ const AnnouncementsList = () => {
   const [form] = Form.useForm()
   const queryClient = useQueryClient()
 
+  // Table sorting
+  const { handleTableChange, getSortParams } = useTableSort({
+    defaultSortBy: 'created_at',
+    defaultSortOrder: 'desc'
+  })
+
   // Fetch announcements
   const { data, isLoading, refetch } = useQuery({
-    queryKey: ['announcements', page, pageSize, filterType, filterActive],
+    queryKey: ['announcements', page, pageSize, filterType, filterActive, ...Object.values(getSortParams())],
     queryFn: async () => {
-      const params = new URLSearchParams({
-        page: page.toString(),
-        page_size: pageSize.toString(),
+      const response = await axios.get('/api/v1/admin/announcements/announcements', {
+        params: {
+          page,
+          page_size: pageSize,
+          type: filterType,
+          is_active: filterActive,
+          ...getSortParams(),
+        },
       })
-      if (filterType) params.append('type', filterType)
-      if (filterActive !== undefined) params.append('is_active', filterActive.toString())
-
-      const response = await axios.get(`/api/v1/admin/announcements/announcements?${params}`)
       return response.data
     },
   })
@@ -185,12 +193,14 @@ const AnnouncementsList = () => {
       dataIndex: 'id',
       key: 'id',
       width: 60,
+      sorter: true,
     },
     {
       title: '标题',
       dataIndex: 'title',
       key: 'title',
       ellipsis: true,
+      sorter: true,
       render: (text: string, record: Announcement) => (
         <Space>
           {record.is_pinned && (
@@ -245,6 +255,7 @@ const AnnouncementsList = () => {
       dataIndex: 'created_at',
       key: 'created_at',
       width: 180,
+      sorter: true,
       render: (date: string) => formatAWSDate(date, 'YYYY-MM-DD HH:mm:ss'),
     },
     {
@@ -328,17 +339,20 @@ const AnnouncementsList = () => {
           dataSource={data?.items || []}
           rowKey="id"
           loading={isLoading}
+          onChange={(pagination, filters, sorter) => handleTableChange(sorter)}
           pagination={{
             current: page,
             pageSize: pageSize,
             total: data?.total || 0,
+            onShowSizeChange: (current, size) => {
+              setPageSize(size)
+              setPage(1)
+            },
             showSizeChanger: true,
+            pageSizeOptions: ['10', '20', '50', '100'],
             showQuickJumper: true,
             showTotal: (total) => t('common.total', { count: total }),
-            onChange: (newPage, newPageSize) => {
-              setPage(newPage)
-              setPageSize(newPageSize)
-            },
+            onChange: (newPage) => setPage(newPage),
           }}
         />
       </Card>

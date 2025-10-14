@@ -119,6 +119,22 @@ async def create_provider(
     await Cache.delete(f"ai_providers:{provider_data.provider_type}")
 
     logger.info(f"Admin {current_admin.username} created AI provider: {provider.name}")
+
+    # 发送AI提供商管理通知
+    try:
+        from app.utils.admin_notification_service import AdminNotificationService
+
+        await AdminNotificationService.notify_ai_provider_management(
+            db=db,
+            provider_id=provider.id,
+            provider_name=provider.name,
+            action="created",
+            admin_username=current_admin.username,
+            details=f"类型: {provider.provider_type}, 模型: {provider.model_name}",
+        )
+    except Exception as e:
+        print(f"Failed to send AI provider creation notification: {e}")
+
     return provider
 
 
@@ -161,6 +177,31 @@ async def update_provider(
     await Cache.delete(f"ai_providers:{provider.provider_type}")
 
     logger.info(f"Admin {current_admin.username} updated AI provider: {provider.name}")
+
+    # 发送AI提供商管理通知
+    try:
+        from app.utils.admin_notification_service import AdminNotificationService
+
+        # 构建更新详情
+        details_parts = []
+        if provider_data.enabled is not None:
+            details_parts.append(f"状态: {'启用' if provider_data.enabled else '禁用'}")
+        if provider_data.model_name is not None:
+            details_parts.append(f"模型: {provider_data.model_name}")
+        if provider_data.is_default is not None and provider_data.is_default:
+            details_parts.append("设置为默认")
+
+        await AdminNotificationService.notify_ai_provider_management(
+            db=db,
+            provider_id=provider.id,
+            provider_name=provider.name,
+            action="updated",
+            admin_username=current_admin.username,
+            details=", ".join(details_parts) if details_parts else "更新了提供商配置",
+        )
+    except Exception as e:
+        print(f"Failed to send AI provider update notification: {e}")
+
     return provider
 
 
@@ -187,6 +228,22 @@ async def delete_provider(
     await Cache.delete(f"ai_providers:{provider_type}")
 
     logger.info(f"Admin {current_admin.username} deleted AI provider: {provider_name}")
+
+    # 发送AI提供商管理通知
+    try:
+        from app.utils.admin_notification_service import AdminNotificationService
+
+        await AdminNotificationService.notify_ai_provider_management(
+            db=db,
+            provider_id=provider_id,
+            provider_name=provider_name,
+            action="deleted",
+            admin_username=current_admin.username,
+            details=f"类型: {provider_type}",
+        )
+    except Exception as e:
+        print(f"Failed to send AI provider deletion notification: {e}")
+
     return None
 
 
@@ -217,6 +274,21 @@ async def test_provider(
     provider.last_test_status = "success" if test_result["success"] else "failed"
     provider.last_test_message = test_result["message"]
     await db.commit()
+
+    # 发送AI提供商测试通知
+    try:
+        from app.utils.admin_notification_service import AdminNotificationService
+
+        await AdminNotificationService.notify_ai_provider_management(
+            db=db,
+            provider_id=provider.id,
+            provider_name=provider.name,
+            action="tested",
+            admin_username=current_admin.username,
+            details=f"测试{'成功' if test_result['success'] else '失败'}, 延迟: {test_result['latency_ms']}ms",
+        )
+    except Exception as e:
+        print(f"Failed to send AI provider test notification: {e}")
 
     if test_result["success"]:
         return AITestResponse(

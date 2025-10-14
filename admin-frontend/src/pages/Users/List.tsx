@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { Table, Tag, Space, Button, Input, message, Modal, Typography, Grid } from 'antd'
+import { Table, Tag, Space, Button, Input, message, Modal, Typography, Grid, Select, DatePicker, Card, Row, Col, Statistic } from 'antd'
 import {
   UserOutlined,
   StopOutlined,
@@ -9,12 +9,14 @@ import {
   SearchOutlined,
   DownloadOutlined,
   EyeOutlined,
+  FilterOutlined,
 } from '@ant-design/icons'
 import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router-dom'
 import axios from '@/utils/axios'
 import dayjs from 'dayjs'
 import { useDebounce } from '@/hooks/useDebounce'
+import { useTableSort } from '@/hooks/useTableSort'
 import { exportToCSV } from '@/utils/exportUtils'
 import { useTheme } from '@/contexts/ThemeContext'
 import { getTagStyle, getTextColor } from '@/utils/awsColorHelpers'
@@ -28,21 +30,46 @@ const UserList = () => {
   const screens = Grid.useBreakpoint()
   const { theme } = useTheme()
   const [page, setPage] = useState(1)
+  const [pageSize, setPageSize] = useState(20)
   const [search, setSearch] = useState('')
   const [selectedRowKeys, setSelectedRowKeys] = useState<number[]>([])
+  const [statusFilter, setStatusFilter] = useState<string>('all')
+  const [vipFilter, setVipFilter] = useState<string>('all')
 
   // Debounce search to reduce API calls
   const debouncedSearch = useDebounce(search, 500)
 
+  // Table sorting
+  const { handleTableChange, getSortParams } = useTableSort({
+    defaultSortBy: 'created_at',
+    defaultSortOrder: 'desc'
+  })
+
   const { data, isLoading, refetch } = useQuery({
-    queryKey: ['admin-users', page, debouncedSearch],
+    queryKey: ['admin-users', page, pageSize, debouncedSearch, statusFilter, vipFilter, ...Object.values(getSortParams())],
     queryFn: async () => {
-      const response = await axios.get('/api/v1/admin/users', {
-        params: { page, page_size: 20, search: debouncedSearch },
-      })
+      const params: any = {
+        page,
+        page_size: pageSize,
+        ...getSortParams(),
+      }
+      if (debouncedSearch) params.search = debouncedSearch
+      if (statusFilter !== 'all') params.status = statusFilter
+      if (vipFilter !== 'all') params.is_vip = vipFilter === 'vip'
+
+      const response = await axios.get('/api/v1/admin/users', { params })
       return response.data
     },
     placeholderData: (previousData) => previousData, // Keep previous data while loading
+  })
+
+  // Fetch user statistics
+  const { data: stats } = useQuery({
+    queryKey: ['admin-user-stats'],
+    queryFn: async () => {
+      const response = await axios.get('/api/v1/admin/users/stats')
+      return response.data
+    },
   })
 
   const handleBanUser = async (userId: number, username: string, isActive: boolean) => {
@@ -127,23 +154,162 @@ const UserList = () => {
     })
   }
   
-  // Export to CSV
-  const handleExport = () => {
-    if (!data?.items || data.items.length === 0) {
-      message.warning(t('message.noDataToExport'))
+  // VIP management mutation
+  const updateVIPMutation = useMutation({
+    mutationFn: async ({ userId, isVip, expiresAt }: { userId: number; isVip: boolean; expiresAt?: string }) => {
+      await axios.put(`/api/v1/admin/users/${userId}/vip`, {
+        is_vip: isVip,
+        vip_expires_at: expiresAt,
+      })
+    },
+    onSuccess: () => {
+      message.success(t('message.success'))
+      queryClient.invalidateQueries({ queryKey: ['admin-users'] })
+    },
+    onError: (error: any) => {
+      message.error(error.response?.data?.detail || t('message.failed'))
+    },
+  })
+
+  const handleVIPToggle = (userId: number, username: string, isVip: boolean) => {
+    if (isVip) {
+      // Remove VIP
+      Modal.confirm({
+        title: t('user.removeVip'),
+        content: `${t('common.confirm')} "${username}"?`,
+        okText: t('common.confirm'),
+        cancelText: t('common.cancel'),
+        okType: 'danger',
+        onOk: () => updateVIPMutation.mutate({ userId, isVip: false }),
+      })
+    } else {
+      // Grant VIP with expiry date picker
+      let expiryDate: string | undefined
+      Modal.confirm({
+        title: t('user.grantVip'),
+        content: (
+          <div style={{ marginTop: 16 }}>
+            <p>{`${t('common.confirm')} "${username}"?`}</p>
+            <Space direction="vertical" style={{ width: '100%' }}>
+              <span>{t('user.vipExpiryDate')}:</span>
+              <DatePicker
+                style={{ width: '100%' }}
+                onChange={(date) => {
+                  expiryDate = date ? date.toISOString() : undefined
+                }}
+                disabledDate={(current) => current && current < dayjs().endOf('day')}
+              />
+            </Space>
+          </div>
+        ),
+        okText: t('common.confirm'),
+        cancelText: t('common.cancel'),
+        onOk: () => updateVIPMutation.mutate({ userId, isVip: true, expiresAt: expiryDate }),
+      })
+    }
+  }
+
+  // Batch VIP management mutations
+  const batchGrantVIPMutation = useMutation({
+    mutationFn: async ({ ids, expiresAt }: { ids: number[]; expiresAt?: string }) => {
+      const params = new URLSearchParams({ is_vip: 'true' })
+      if (expiresAt) params.append('vip_expires_at', expiresAt)
+      await axios.put(`/api/v1/admin/users/batch/vip?${params.toString()}`, { ids })
+    },
+    onSuccess: () => {
+      message.success(t('message.success'))
+      setSelectedRowKeys([])
+      queryClient.invalidateQueries({ queryKey: ['admin-users'] })
+    },
+    onError: (error: any) => {
+      message.error(error.response?.data?.detail || t('message.failed'))
+    },
+  })
+
+  const batchRemoveVIPMutation = useMutation({
+    mutationFn: async (ids: number[]) => {
+      await axios.put('/api/v1/admin/users/batch/vip?is_vip=false', { ids })
+    },
+    onSuccess: () => {
+      message.success(t('message.success'))
+      setSelectedRowKeys([])
+      queryClient.invalidateQueries({ queryKey: ['admin-users'] })
+    },
+    onError: (error: any) => {
+      message.error(error.response?.data?.detail || t('message.failed'))
+    },
+  })
+
+  const handleBatchGrantVIP = () => {
+    if (selectedRowKeys.length === 0) {
+      message.warning(t('message.pleaseSelect'))
       return
     }
-    
-    const exportData = data.items.map((item: any) => ({
-      ID: item.id,
-      [t('user.username')]: item.username,
-      [t('user.email')]: item.email,
-      [t('user.status')]: item.is_active ? t('user.active') : t('user.banned'),
-      [t('user.createdAt')]: item.created_at,
-    }))
-    
-    exportToCSV(exportData, 'users')
-    message.success(t('message.exportSuccess'))
+
+    let expiryDate: string | undefined
+    Modal.confirm({
+      title: t('user.batchGrantVip'),
+      content: (
+        <div style={{ marginTop: 16 }}>
+          <p>{`${t('common.confirm')} ${selectedRowKeys.length} ${t('menu.users')}?`}</p>
+          <Space direction="vertical" style={{ width: '100%', marginTop: 12 }}>
+            <span>{t('user.vipExpiryDate')} ({t('common.optional')}):</span>
+            <DatePicker
+              style={{ width: '100%' }}
+              onChange={(date) => {
+                expiryDate = date ? date.toISOString() : undefined
+              }}
+              disabledDate={(current) => current && current < dayjs().endOf('day')}
+            />
+          </Space>
+        </div>
+      ),
+      okText: t('common.confirm'),
+      cancelText: t('common.cancel'),
+      onOk: () => batchGrantVIPMutation.mutate({ ids: selectedRowKeys, expiresAt: expiryDate }),
+    })
+  }
+
+  const handleBatchRemoveVIP = () => {
+    if (selectedRowKeys.length === 0) {
+      message.warning(t('message.pleaseSelect'))
+      return
+    }
+    Modal.confirm({
+      title: t('user.batchRemoveVip'),
+      content: `${t('common.confirm')} ${selectedRowKeys.length} ${t('menu.users')}?`,
+      okText: t('common.confirm'),
+      okType: 'danger',
+      cancelText: t('common.cancel'),
+      onOk: () => batchRemoveVIPMutation.mutate(selectedRowKeys),
+    })
+  }
+
+  // Export to CSV (now using server-side export)
+  const handleExport = async () => {
+    try {
+      const params = new URLSearchParams()
+      if (debouncedSearch) params.append('search', debouncedSearch)
+      if (statusFilter !== 'all') params.append('status', statusFilter)
+      if (vipFilter !== 'all') params.append('is_vip', vipFilter === 'vip' ? 'true' : 'false')
+
+      const response = await axios.get(`/api/v1/admin/users/export?${params.toString()}`, {
+        responseType: 'blob',
+      })
+
+      // Create download link
+      const url = window.URL.createObjectURL(new Blob([response.data]))
+      const link = document.createElement('a')
+      link.href = url
+      link.setAttribute('download', `users_export_${new Date().toISOString().split('T')[0]}.csv`)
+      document.body.appendChild(link)
+      link.click()
+      link.remove()
+
+      message.success(t('message.exportSuccess'))
+    } catch (error: any) {
+      message.error(error.response?.data?.detail || t('message.exportFailed'))
+    }
   }
 
   const columns = [
@@ -152,11 +318,13 @@ const UserList = () => {
       dataIndex: 'id',
       key: 'id',
       width: 80,
+      sorter: true,
     },
     {
       title: t('user.username'),
       dataIndex: 'username',
       key: 'username',
+      sorter: true,
       render: (text: string) => (
         <Space>
           <UserOutlined />
@@ -168,6 +336,7 @@ const UserList = () => {
       title: t('user.email'),
       dataIndex: 'email',
       key: 'email',
+      sorter: true,
     },
     {
       title: t('user.fullName'),
@@ -224,6 +393,7 @@ const UserList = () => {
       dataIndex: 'created_at',
       key: 'created_at',
       width: 180,
+      sorter: true,
       render: (date: string) => (
         <span style={{
           fontFamily: 'Monaco, Menlo, Consolas, monospace',
@@ -239,6 +409,7 @@ const UserList = () => {
       dataIndex: 'last_login_at',
       key: 'last_login_at',
       width: 180,
+      sorter: true,
       render: (date: string) => (
         <span style={{
           fontFamily: 'Monaco, Menlo, Consolas, monospace',
@@ -252,10 +423,10 @@ const UserList = () => {
     {
       title: t('user.actions'),
       key: 'actions',
-      width: 200,
+      width: 280,
       fixed: 'right' as const,
       render: (_: any, record: any) => (
-        <Space>
+        <Space size="small">
           <Button
             type="link"
             size="small"
@@ -263,6 +434,15 @@ const UserList = () => {
             onClick={() => navigate(`/users/${record.id}`)}
           >
             {t('common.view')}
+          </Button>
+          <Button
+            type={record.is_vip ? 'default' : 'primary'}
+            size="small"
+            icon={<CrownOutlined />}
+            onClick={() => handleVIPToggle(record.id, record.username, record.is_vip)}
+            style={{ color: record.is_vip ? '#faad14' : undefined }}
+          >
+            {record.is_vip ? t('user.removeVip') : t('user.grantVip')}
           </Button>
           <Button
             type={record.is_active ? 'default' : 'primary'}
@@ -285,11 +465,57 @@ const UserList = () => {
 
   return (
     <div>
-      <div style={{ marginBottom: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+      {/* Statistics Cards */}
+      {stats && (
+        <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
+          <Col xs={24} sm={12} md={6}>
+            <Card>
+              <Statistic
+                title={t('user.totalUsers')}
+                value={stats.total_users}
+                prefix={<UserOutlined />}
+                valueStyle={{ color: '#1890ff' }}
+              />
+            </Card>
+          </Col>
+          <Col xs={24} sm={12} md={6}>
+            <Card>
+              <Statistic
+                title={t('user.activeUsers')}
+                value={stats.active_users}
+                prefix={<CheckCircleOutlined />}
+                valueStyle={{ color: '#52c41a' }}
+              />
+            </Card>
+          </Col>
+          <Col xs={24} sm={12} md={6}>
+            <Card>
+              <Statistic
+                title={t('user.vipUsers')}
+                value={stats.vip_users}
+                prefix={<CrownOutlined />}
+                valueStyle={{ color: '#faad14' }}
+              />
+            </Card>
+          </Col>
+          <Col xs={24} sm={12} md={6}>
+            <Card>
+              <Statistic
+                title={t('user.bannedUsers')}
+                value={stats.banned_users}
+                prefix={<StopOutlined />}
+                valueStyle={{ color: '#f5222d' }}
+              />
+            </Card>
+          </Col>
+        </Row>
+      )}
+
+      <div style={{ marginBottom: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 16 }}>
         <Title level={2} style={{ margin: 0 }}>
           {t('menu.users')}
         </Title>
-        <Space>
+        <Space wrap>
           <Input.Search
             placeholder={t('common.search') + '...'}
             value={search}
@@ -297,8 +523,28 @@ const UserList = () => {
             onSearch={setSearch}
             loading={isLoading && !!debouncedSearch}
             allowClear
-            style={{ width: 300 }}
+            style={{ width: 250 }}
             prefix={<SearchOutlined />}
+          />
+          <Select
+            value={statusFilter}
+            onChange={setStatusFilter}
+            style={{ width: 120 }}
+            options={[
+              { label: t('user.allStatus'), value: 'all' },
+              { label: t('user.active'), value: 'active' },
+              { label: t('user.banned'), value: 'banned' },
+            ]}
+          />
+          <Select
+            value={vipFilter}
+            onChange={setVipFilter}
+            style={{ width: 120 }}
+            options={[
+              { label: t('user.allUsers'), value: 'all' },
+              { label: 'VIP', value: 'vip' },
+              { label: t('user.normal'), value: 'normal' },
+            ]}
           />
           <Button
             icon={<DownloadOutlined />}
@@ -311,19 +557,37 @@ const UserList = () => {
 
       {/* Batch operations */}
       {selectedRowKeys.length > 0 && (
-        <div style={{ marginBottom: 16 }}>
-          <Space>
+        <div style={{ marginBottom: 16, padding: 12, background: '#f0f2f5', borderRadius: 8 }}>
+          <Space wrap>
+            <span style={{ fontWeight: 500 }}>
+              {t('common.selected')}: {selectedRowKeys.length} {t('menu.users')}
+            </span>
+            <Button
+              icon={<CrownOutlined />}
+              onClick={handleBatchGrantVIP}
+              style={{ color: '#faad14', borderColor: '#faad14' }}
+            >
+              {t('user.batchGrantVip')}
+            </Button>
+            <Button
+              icon={<CrownOutlined />}
+              onClick={handleBatchRemoveVIP}
+            >
+              {t('user.batchRemoveVip')}
+            </Button>
             <Button
               danger
+              icon={<StopOutlined />}
               onClick={handleBatchBan}
             >
-              {t('user.batchBan')} ({selectedRowKeys.length})
+              {t('user.batchBan')}
             </Button>
             <Button
               type="primary"
+              icon={<CheckCircleOutlined />}
               onClick={handleBatchUnban}
             >
-              {t('user.batchUnban')} ({selectedRowKeys.length})
+              {t('user.batchUnban')}
             </Button>
           </Space>
         </div>
@@ -335,13 +599,19 @@ const UserList = () => {
         dataSource={data?.items}
         loading={isLoading}
         rowKey="id"
+        onChange={(pagination, filters, sorter) => handleTableChange(sorter)}
         pagination={{
           current: page,
-          pageSize: screens.xs ? 10 : 20,
+          pageSize: pageSize,
           total: data?.total,
           onChange: setPage,
+          onShowSizeChange: (current, size) => {
+            setPageSize(size)
+            setPage(1)
+          },
+          showSizeChanger: true,
+          pageSizeOptions: ['10', '20', '50', '100'],
           showTotal: (total) => t('common.total', { count: total }),
-          showSizeChanger: false,
           simple: screens.xs,
         }}
         scroll={{ x: screens.xs ? 800 : 1200 }}

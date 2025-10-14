@@ -28,8 +28,15 @@ from app.schemas.scheduling import (
     BatchScheduleCreate,
     BatchScheduleUpdate,
     CalendarData,
+    CronNextRunRequest,
+    CronNextRunResponse,
+    CronPatternInfo,
+    CronPatternsResponse,
+    CronValidateRequest,
+    CronValidateResponse,
     ExecuteScheduleRequest,
     ExecuteScheduleResponse,
+    HistoryResponse,
     ScheduleCreate,
     ScheduleListResponse,
     ScheduleResponse,
@@ -87,28 +94,72 @@ async def list_schedules(
     content_type: Optional[ScheduleContentType] = None,
     start_date: Optional[datetime] = None,
     end_date: Optional[datetime] = None,
+    search: Optional[str] = Query(None, description="Search by title or description"),
+    created_by: Optional[int] = Query(None, description="Filter by creator"),
+    sort_by: Optional[str] = Query(
+        "scheduled_time", description="Sort field: scheduled_time, priority, created_at"
+    ),
+    sort_order: Optional[str] = Query("desc", description="Sort order: asc, desc"),
     db: AsyncSession = Depends(get_db),
     current_admin: AdminUser = Depends(get_current_admin_user),
 ):
     """
     获取调度列表
-    支持按状态、内容类型、时间范围筛选
+    支持按状态、内容类型、时间范围、创建人筛选，支持搜索和排序
     """
     try:
-        service = SchedulingService(db)
-        schedules, total = await service.list_schedules(
-            skip=skip,
-            limit=limit,
-            status=status,
-            content_type=content_type,
-            start_date=start_date,
-            end_date=end_date,
-        )
+        from sqlalchemy import or_
 
-        # 计算 is_overdue 和 is_due
-        for schedule in schedules:
-            schedule.is_overdue = schedule.is_overdue
-            schedule.is_due = schedule.is_due
+        service = SchedulingService(db)
+
+        # 构建查询条件
+        from app.models.scheduling import ContentSchedule
+
+        conditions = []
+        if status:
+            conditions.append(ContentSchedule.status == status)
+        if content_type:
+            conditions.append(ContentSchedule.content_type == content_type)
+        if start_date:
+            conditions.append(ContentSchedule.scheduled_time >= start_date)
+        if end_date:
+            conditions.append(ContentSchedule.scheduled_time <= end_date)
+        if created_by:
+            conditions.append(ContentSchedule.created_by == created_by)
+        if search:
+            search_filter = or_(
+                ContentSchedule.title.ilike(f"%{search}%"),
+                ContentSchedule.description.ilike(f"%{search}%"),
+            )
+            conditions.append(search_filter)
+
+        # 确定排序字段
+        from sqlalchemy import asc, desc
+
+        sort_column = getattr(ContentSchedule, sort_by, ContentSchedule.scheduled_time)
+        order_func = desc if sort_order == "desc" else asc
+
+        # 查询数据
+        from sqlalchemy import and_, func, select
+
+        query = (
+            select(ContentSchedule)
+            .where(and_(*conditions) if conditions else True)
+            .order_by(order_func(sort_column))
+            .offset(skip)
+            .limit(limit)
+        )
+        result = await db.execute(query)
+        schedules = list(result.scalars().all())
+
+        # 计算总数
+        count_query = select(func.count(ContentSchedule.id)).where(
+            and_(*conditions) if conditions else True
+        )
+        count_result = await db.execute(count_query)
+        total = count_result.scalar() or 0
+
+        # is_overdue and is_due are @property methods, computed automatically
 
         return ScheduleListResponse(
             items=schedules, total=total, skip=skip, limit=limit
@@ -150,15 +201,17 @@ async def get_analytics(
     """
     获取调度分析数据
     包括成功率、执行时间、峰值时段等
+    基于过去30天的历史数据分析
     """
-    # TODO: 实现详细的分析功能
-    return SchedulingAnalytics(
-        success_rate=95.5,
-        avg_execution_time_ms=150.0,
-        peak_hours=[20, 21, 22],
-        best_performing_strategy="immediate",
-        weekly_trends={"monday": [10, 15, 20], "tuesday": [12, 18, 25]},
-    )
+    try:
+        service = SchedulingService(db)
+        analytics = await service.get_analytics()
+
+        return SchedulingAnalytics(**analytics)
+
+    except Exception as e:
+        logger.exception(f"Error getting analytics: {e}")
+        raise HTTPException(status_code=500, detail="Failed to get analytics")
 
 
 @router.get("/calendar", response_model=CalendarData)
@@ -172,8 +225,15 @@ async def get_calendar_data(
     获取日历视图数据
     返回指定月份的所有调度事件
     """
-    # TODO: 实现日历数据查询
-    return CalendarData(events=[], month=month, year=year)
+    try:
+        service = SchedulingService(db)
+        events = await service.get_calendar_data(year, month)
+
+        return CalendarData(events=events, month=month, year=year)
+
+    except Exception as e:
+        logger.exception(f"Error getting calendar data: {e}")
+        raise HTTPException(status_code=500, detail="Failed to get calendar data")
 
 
 @router.get("/suggest-time", response_model=SuggestedTime)
@@ -186,16 +246,52 @@ async def suggest_publish_time(
     智能推荐最佳发布时间
     基于历史数据和用户活跃度分析
     """
-    # TODO: 实现智能推荐算法
-    return SuggestedTime(
-        recommended_times=[
-            TimeSlot(hour=20, score=95.5, reason="用户活跃高峰期"),
-            TimeSlot(hour=21, score=92.3, reason="观看率最高时段"),
-            TimeSlot(hour=12, score=85.0, reason="午间流量高峰"),
-        ],
-        content_type=content_type.value,
-        based_on="historical_data",
-    )
+    try:
+        service = SchedulingService(db)
+        suggestions = await service.get_suggested_times(content_type)
+
+        return SuggestedTime(
+            recommended_times=[TimeSlot(**suggestion) for suggestion in suggestions],
+            content_type=content_type.value,
+            based_on="historical_data",
+        )
+
+    except Exception as e:
+        logger.exception(f"Error getting suggested times: {e}")
+        raise HTTPException(status_code=500, detail="Failed to get suggested times")
+
+
+@router.get("/history", response_model=list[HistoryResponse])
+async def list_all_histories(
+    skip: int = Query(0, ge=0),
+    limit: int = Query(50, ge=1, le=100),
+    action: Optional[str] = Query(None, description="Filter by action"),
+    content_type: Optional[ScheduleContentType] = Query(None),
+    start_date: Optional[datetime] = None,
+    end_date: Optional[datetime] = None,
+    db: AsyncSession = Depends(get_db),
+    current_admin: AdminUser = Depends(get_current_admin_user),
+):
+    """
+    获取所有调度操作历史记录
+    支持按操作类型、内容类型、时间范围筛选
+    """
+    try:
+        service = SchedulingService(db)
+        histories, total = await service.list_all_histories(
+            skip=skip,
+            limit=limit,
+            action=action,
+            content_type=content_type,
+            start_date=start_date,
+            end_date=end_date,
+        )
+
+        return histories
+
+    except Exception as e:
+        logger.exception(f"Error listing histories: {e}")
+        raise HTTPException(status_code=500, detail="Failed to list histories")
 
 
 @router.post("/execute-due")
@@ -260,9 +356,136 @@ async def execute_due_schedules(
 
     except Exception as e:
         logger.exception(f"Error executing due schedules: {e}")
-        raise HTTPException(
-            status_code=500, detail="Failed to execute due schedules"
+        raise HTTPException(status_code=500, detail="Failed to execute due schedules")
+
+
+# ========== Cron Expression 工具 ==========
+
+
+@router.post("/cron/validate", response_model=CronValidateResponse)
+async def validate_cron_expression(
+    data: CronValidateRequest,
+    current_admin: AdminUser = Depends(get_current_admin_user),
+):
+    """
+    验证Cron表达式
+    返回验证结果、人类可读描述和未来5次执行时间
+    """
+    try:
+        from app.utils.cron_utils import CronValidator
+
+        is_valid, error_msg = CronValidator.validate_cron_expression(data.expression)
+
+        if not is_valid:
+            return CronValidateResponse(
+                valid=False,
+                error_message=error_msg,
+                description="",
+                next_occurrences=[],
+            )
+
+        # Get description
+        description = CronValidator.describe_cron(data.expression)
+
+        # Get next occurrences
+        occurrences = CronValidator.get_next_occurrences(data.expression, count=5)
+        occurrence_strs = [occ.isoformat() for occ in occurrences]
+
+        return CronValidateResponse(
+            valid=True,
+            error_message=None,
+            description=description,
+            next_occurrences=occurrence_strs,
         )
+
+    except Exception as e:
+        logger.exception(f"Error validating cron expression: {e}")
+        return CronValidateResponse(
+            valid=False,
+            error_message=f"Validation error: {str(e)}",
+            description="",
+            next_occurrences=[],
+        )
+
+
+@router.get("/cron/patterns", response_model=CronPatternsResponse)
+async def get_cron_patterns(
+    current_admin: AdminUser = Depends(get_current_admin_user),
+):
+    """
+    获取预定义的Cron表达式模式
+    包含常用的调度模式（每分钟、每小时、每天、每周、每月等）
+    """
+    try:
+        from app.utils.cron_utils import CRON_PATTERNS, CronScheduleCalculator
+
+        patterns = []
+        categories = set()
+
+        for name, pattern_data in CRON_PATTERNS.items():
+            # Calculate next run time for preview
+            next_run = CronScheduleCalculator.calculate_next_run(
+                pattern_data["expression"]
+            )
+
+            pattern_info = CronPatternInfo(
+                name=name,
+                expression=pattern_data["expression"],
+                description=pattern_data["description"],
+                category=pattern_data["category"],
+                next_run=next_run.isoformat() if next_run else None,
+            )
+            patterns.append(pattern_info)
+            categories.add(pattern_data["category"])
+
+        return CronPatternsResponse(
+            patterns=patterns,
+            categories=sorted(list(categories)),
+        )
+
+    except Exception as e:
+        logger.exception(f"Error getting cron patterns: {e}")
+        raise HTTPException(status_code=500, detail="Failed to get cron patterns")
+
+
+@router.post("/cron/next-runs", response_model=CronNextRunResponse)
+async def get_cron_next_runs(
+    data: CronNextRunRequest,
+    current_admin: AdminUser = Depends(get_current_admin_user),
+):
+    """
+    计算Cron表达式的下N次执行时间
+    可选择从指定时间开始计算
+    """
+    try:
+        from app.utils.cron_utils import CronValidator
+
+        # Validate expression first
+        is_valid, error_msg = CronValidator.validate_cron_expression(data.expression)
+        if not is_valid:
+            raise HTTPException(status_code=400, detail=error_msg)
+
+        # Get description
+        description = CronValidator.describe_cron(data.expression)
+
+        # Get next occurrences
+        occurrences = CronValidator.get_next_occurrences(
+            data.expression,
+            count=data.count,
+            start_time=data.from_time,
+        )
+
+        return CronNextRunResponse(
+            expression=data.expression,
+            description=description,
+            next_runs=[occ.isoformat() for occ in occurrences],
+        )
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.exception(f"Error calculating next runs: {e}")
+        raise HTTPException(status_code=500, detail="Failed to calculate next runs")
 
 
 # ========== 调度详情 (Parameterized route MUST be after specific routes) ==========
@@ -281,10 +504,42 @@ async def get_schedule(
     if not schedule:
         raise HTTPException(status_code=404, detail="Schedule not found")
 
-    schedule.is_overdue = schedule.is_overdue
-    schedule.is_due = schedule.is_due
+    # is_overdue and is_due are @property methods, computed automatically
 
     return schedule
+
+
+@router.get("/{schedule_id}/history", response_model=list[HistoryResponse])
+async def get_schedule_history(
+    schedule_id: int,
+    skip: int = Query(0, ge=0),
+    limit: int = Query(50, ge=1, le=100),
+    db: AsyncSession = Depends(get_db),
+    current_admin: AdminUser = Depends(get_current_admin_user),
+):
+    """
+    获取指定调度的历史记录
+    返回该调度的所有操作历史
+    """
+    try:
+        service = SchedulingService(db)
+
+        # 先检查调度是否存在
+        schedule = await service.get_schedule(schedule_id)
+        if not schedule:
+            raise HTTPException(status_code=404, detail="Schedule not found")
+
+        histories, total = await service.get_schedule_history(
+            schedule_id=schedule_id, skip=skip, limit=limit
+        )
+
+        return histories
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.exception(f"Error getting schedule history: {e}")
+        raise HTTPException(status_code=500, detail="Failed to get schedule history")
 
 
 @router.put("/{schedule_id}", response_model=ScheduleResponse)
@@ -304,9 +559,7 @@ async def update_schedule(
             schedule_id, data, updated_by=current_admin.id
         )
 
-        logger.info(
-            f"管理员 {current_admin.username} 更新了调度任务: id={schedule_id}"
-        )
+        logger.info(f"管理员 {current_admin.username} 更新了调度任务: id={schedule_id}")
 
         return schedule
 

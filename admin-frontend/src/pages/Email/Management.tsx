@@ -45,6 +45,8 @@ const EmailManagement: React.FC = () => {
   const [templateForm] = Form.useForm()
   const queryClient = useQueryClient()
 
+  const [configPageSize, setConfigPageSize] = useState(20)
+  const [templatePageSize, setTemplatePageSize] = useState(20)
   const [configModalVisible, setConfigModalVisible] = useState(false)
   const [templateModalVisible, setTemplateModalVisible] = useState(false)
   const [previewModalVisible, setPreviewModalVisible] = useState(false)
@@ -411,6 +413,14 @@ const EmailManagement: React.FC = () => {
                     columns={configColumns}
                     rowKey="id"
                     loading={loadingConfigs}
+                    pagination={{
+                      pageSize: configPageSize,
+                      onShowSizeChange: (current, size) => setConfigPageSize(size),
+                      showSizeChanger: true,
+                      pageSizeOptions: ['10', '20', '50', '100'],
+                      showQuickJumper: true,
+                      showTotal: (total) => t('common.total', { count: total }),
+                    }}
                   />
                 </div>
               ),
@@ -438,6 +448,14 @@ const EmailManagement: React.FC = () => {
                     columns={templateColumns}
                     rowKey="id"
                     loading={loadingTemplates}
+                    pagination={{
+                      pageSize: templatePageSize,
+                      onShowSizeChange: (current, size) => setTemplatePageSize(size),
+                      showSizeChanger: true,
+                      pageSizeOptions: ['10', '20', '50', '100'],
+                      showQuickJumper: true,
+                      showTotal: (total) => t('common.total', { count: total }),
+                    }}
                   />
                 </div>
               ),

@@ -12,7 +12,14 @@ from sqlalchemy.orm import selectinload
 
 from app.database import get_db
 from app.models.user import AdminUser
-from app.models.video import Video, VideoActor, VideoCategory, VideoDirector, VideoStatus, VideoTag
+from app.models.video import (
+    Video,
+    VideoActor,
+    VideoCategory,
+    VideoDirector,
+    VideoStatus,
+    VideoTag,
+)
 from app.schemas.video import (
     PaginatedResponse,
     VideoCreate,
@@ -23,6 +30,7 @@ from app.tasks.transcode_av1 import transcode_video_dual_format
 from app.utils.cache import Cache
 from app.utils.dependencies import get_current_admin_user
 from app.utils.minio_client import minio_client
+from app.utils.sorting import apply_sorting, normalize_sort_field
 
 router = APIRouter()
 
@@ -34,16 +42,25 @@ async def admin_list_videos(
     status: Optional[str] = None,
     video_type: Optional[str] = None,
     search: Optional[str] = None,
+    sort_by: Optional[str] = Query(
+        "created_at",
+        description="排序字段: id, title, view_count, average_rating, created_at, updated_at, release_date",
+    ),
+    sort_order: Optional[str] = Query(
+        "desc",
+        regex="^(asc|desc)$",
+        description="排序顺序: asc (升序) 或 desc (降序)",
+    ),
     db: AsyncSession = Depends(get_db),
     current_admin: AdminUser = Depends(get_current_admin_user),
 ):
-    """Admin: Get all videos with filters"""
+    """Admin: Get all videos with filters and sorting"""
     query = select(Video).options(
         selectinload(Video.video_categories).selectinload(VideoCategory.category),
         selectinload(Video.video_actors).selectinload(VideoActor.actor),
         selectinload(Video.video_directors).selectinload(VideoDirector.director),
         selectinload(Video.video_tags).selectinload(VideoTag.tag),
-        selectinload(Video.country)
+        selectinload(Video.country),
     )
 
     # Filters
@@ -53,7 +70,7 @@ async def admin_list_videos(
         if status not in valid_statuses:
             raise HTTPException(
                 status_code=400,
-                detail=f"Invalid status value. Must be one of: {', '.join(valid_statuses)}"
+                detail=f"Invalid status value. Must be one of: {', '.join(valid_statuses)}",
             )
         query = query.filter(Video.status == status)
     if video_type:
@@ -72,8 +89,28 @@ async def admin_list_videos(
     result = await db.execute(count_query)
     total = result.scalar() or 0
 
-    # Sort and paginate
-    query = query.order_by(desc(Video.created_at))
+    # Apply sorting (支持前端传入的字段名)
+    sort_field = normalize_sort_field(sort_by)
+    allowed_sort_fields = [
+        "id",
+        "title",
+        "view_count",
+        "average_rating",
+        "created_at",
+        "updated_at",
+        "release_date",
+        "duration",
+    ]
+    query = apply_sorting(
+        query,
+        Video,
+        sort_field,
+        sort_order,
+        default_sort="created_at",
+        allowed_fields=allowed_sort_fields,
+    )
+
+    # Paginate
     offset = (page - 1) * page_size
     query = query.offset(offset).limit(page_size)
 

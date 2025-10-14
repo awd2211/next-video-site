@@ -14,6 +14,7 @@ from app.schemas.admin_content import (
     PaginatedAnnouncementResponse,
 )
 from app.utils.dependencies import get_current_admin_user
+from app.utils.sorting import apply_sorting, normalize_sort_field
 
 router = APIRouter()
 
@@ -24,13 +25,18 @@ async def get_announcements(
     page_size: int = Query(20, ge=1, le=100),
     is_active: Optional[bool] = None,
     type: Optional[str] = None,
+    sort_by: Optional[str] = Query(
+        "created_at",
+        description="排序字段: id, title, type, is_active, is_pinned, created_at, updated_at, start_date, end_date",
+    ),
+    sort_order: Optional[str] = Query(
+        "desc", regex="^(asc|desc)$", description="排序顺序: asc (升序) 或 desc (降序)"
+    ),
     db: AsyncSession = Depends(get_db),
     current_admin: AdminUser = Depends(get_current_admin_user),
 ):
     """获取公告列表"""
-    query = select(Announcement).order_by(
-        desc(Announcement.is_pinned), desc(Announcement.created_at)
-    )
+    query = select(Announcement)
 
     if is_active is not None:
         query = query.where(Announcement.is_active == is_active)
@@ -42,6 +48,28 @@ async def get_announcements(
     count_query = select(func.count()).select_from(query.subquery())
     result = await db.execute(count_query)
     total = result.scalar() or 0
+
+    # Apply sorting
+    sort_field = normalize_sort_field(sort_by)
+    allowed_sort_fields = [
+        "id",
+        "title",
+        "type",
+        "is_active",
+        "is_pinned",
+        "created_at",
+        "updated_at",
+        "start_date",
+        "end_date",
+    ]
+    query = apply_sorting(
+        query,
+        Announcement,
+        sort_field,
+        sort_order,
+        default_sort="created_at",
+        allowed_fields=allowed_sort_fields,
+    )
 
     # Pagination
     query = query.offset((page - 1) * page_size).limit(page_size)

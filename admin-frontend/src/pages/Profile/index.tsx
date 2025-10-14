@@ -2,8 +2,8 @@
  * 管理员个人资料页面
  */
 import { useState, useEffect } from 'react'
-import { Card, Form, Input, Button, Avatar, message, Tabs, Space, Typography, Descriptions, Alert, Switch, Modal } from 'antd'
-import { UserOutlined, LockOutlined, MailOutlined, SaveOutlined, SafetyOutlined, CopyOutlined } from '@ant-design/icons'
+import { Card, Form, Input, Button, Avatar, message, Tabs, Space, Typography, Descriptions, Alert, Switch, Modal, Select } from 'antd'
+import { UserOutlined, LockOutlined, MailOutlined, SaveOutlined, SafetyOutlined, CopyOutlined, SettingOutlined, GlobalOutlined, BgColorsOutlined } from '@ant-design/icons'
 import profileService, { type AdminProfile, type UpdateProfileRequest } from '../../services/profileService'
 import { get2FAStatus, disable2FA, regenerateBackupCodes, type TwoFactorStatus } from '../../services/twoFactorService'
 import TwoFactorSetup from '../../components/TwoFactorSetup'
@@ -15,6 +15,7 @@ export default function Profile() {
   const [profileForm] = Form.useForm()
   const [passwordForm] = Form.useForm()
   const [emailForm] = Form.useForm()
+  const [preferencesForm] = Form.useForm()
 
   const [profile, setProfile] = useState<AdminProfile | null>(null)
   const [loading, setLoading] = useState(false)
@@ -36,6 +37,11 @@ export default function Profile() {
       profileForm.setFieldsValue({
         full_name: data.full_name,
         avatar: data.avatar,
+      })
+      preferencesForm.setFieldsValue({
+        timezone: data.timezone || 'UTC',
+        preferred_language: data.preferred_language || 'en-US',
+        preferred_theme: data.preferred_theme || 'light',
       })
     } catch (error: any) {
       message.error(error.response?.data?.detail || '加载个人资料失败')
@@ -202,6 +208,28 @@ export default function Profile() {
       setActiveTab('info')
     } catch (error: any) {
       message.error(error.response?.data?.detail || '修改邮箱失败')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  // 更新用户偏好设置
+  const handleUpdatePreferences = async (values: any) => {
+    try {
+      setLoading(true)
+      const updated = await profileService.updatePreferences(values)
+      setProfile(updated)
+      message.success('偏好设置更新成功')
+      // 如果更改了语言或主题，可能需要触发页面刷新
+      if (values.preferred_language !== profile?.preferred_language ||
+          values.preferred_theme !== profile?.preferred_theme) {
+        message.info('语言或主题设置已更改，刷新页面以应用更改', 3)
+        setTimeout(() => {
+          window.location.reload()
+        }, 3000)
+      }
+    } catch (error: any) {
+      message.error(error.response?.data?.detail || '更新偏好设置失败')
     } finally {
       setLoading(false)
     }
@@ -445,6 +473,89 @@ export default function Profile() {
                     修改邮箱
                   </Button>
                   <Button onClick={() => emailForm.resetFields()}>
+                    重置
+                  </Button>
+                </Space>
+              </Form.Item>
+            </Form>
+          </TabPane>
+
+          {/* 偏好设置标签 */}
+          <TabPane tab={<span><SettingOutlined /> 偏好设置</span>} key="preferences">
+            <Title level={4}>用户偏好设置</Title>
+            <Alert
+              message="个性化您的体验"
+              description="自定义您的时区、语言和主题偏好"
+              type="info"
+              showIcon
+              style={{ marginBottom: 24 }}
+            />
+
+            <Form
+              form={preferencesForm}
+              layout="vertical"
+              onFinish={handleUpdatePreferences}
+              style={{ maxWidth: '600px' }}
+            >
+              <Form.Item
+                label="时区"
+                name="timezone"
+                extra="设置您所在的时区，将影响日期和时间的显示"
+              >
+                <Select
+                  showSearch
+                  placeholder="选择时区"
+                  optionFilterProp="children"
+                  prefix={<GlobalOutlined />}
+                >
+                  <Select.Option value="UTC">UTC (协调世界时)</Select.Option>
+                  <Select.Option value="Asia/Shanghai">Asia/Shanghai (中国标准时间 GMT+8)</Select.Option>
+                  <Select.Option value="Asia/Tokyo">Asia/Tokyo (日本标准时间 GMT+9)</Select.Option>
+                  <Select.Option value="Asia/Seoul">Asia/Seoul (韩国标准时间 GMT+9)</Select.Option>
+                  <Select.Option value="Asia/Hong_Kong">Asia/Hong_Kong (香港时间 GMT+8)</Select.Option>
+                  <Select.Option value="America/New_York">America/New_York (美国东部时间 GMT-5)</Select.Option>
+                  <Select.Option value="America/Los_Angeles">America/Los_Angeles (美国太平洋时间 GMT-8)</Select.Option>
+                  <Select.Option value="America/Chicago">America/Chicago (美国中部时间 GMT-6)</Select.Option>
+                  <Select.Option value="Europe/London">Europe/London (英国时间 GMT+0)</Select.Option>
+                  <Select.Option value="Europe/Paris">Europe/Paris (欧洲中部时间 GMT+1)</Select.Option>
+                  <Select.Option value="Europe/Berlin">Europe/Berlin (德国时间 GMT+1)</Select.Option>
+                  <Select.Option value="Australia/Sydney">Australia/Sydney (澳大利亚东部时间 GMT+10)</Select.Option>
+                </Select>
+              </Form.Item>
+
+              <Form.Item
+                label="首选语言"
+                name="preferred_language"
+                extra="选择您的首选界面语言"
+              >
+                <Select placeholder="选择语言">
+                  <Select.Option value="en-US">English (US)</Select.Option>
+                  <Select.Option value="zh-CN">简体中文</Select.Option>
+                </Select>
+              </Form.Item>
+
+              <Form.Item
+                label="主题"
+                name="preferred_theme"
+                extra="选择您的界面主题"
+              >
+                <Select placeholder="选择主题" suffixIcon={<BgColorsOutlined />}>
+                  <Select.Option value="light">浅色主题</Select.Option>
+                  <Select.Option value="dark">深色主题</Select.Option>
+                </Select>
+              </Form.Item>
+
+              <Form.Item>
+                <Space>
+                  <Button
+                    type="primary"
+                    htmlType="submit"
+                    loading={loading}
+                    icon={<SaveOutlined />}
+                  >
+                    保存偏好设置
+                  </Button>
+                  <Button onClick={() => preferencesForm.resetFields()}>
                     重置
                   </Button>
                 </Space>

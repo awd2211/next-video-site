@@ -84,7 +84,9 @@ class AdminNotificationService:
 
             # 通过WebSocket发送实时通知
             if send_websocket:
-                await AdminNotificationService._send_websocket_notification(notification)
+                await AdminNotificationService._send_websocket_notification(
+                    notification
+                )
 
             return notification
 
@@ -157,14 +159,18 @@ class AdminNotificationService:
             user_name: 评论者名称
             comment_preview: 评论预览（前50字）
         """
-        preview = comment_preview[:50] + "..." if len(comment_preview) > 50 else comment_preview
+        preview = (
+            comment_preview[:50] + "..."
+            if len(comment_preview) > 50
+            else comment_preview
+        )
 
         await AdminNotificationService.create_admin_notification(
             db=db,
             admin_user_id=None,
             type=NotificationType.PENDING_COMMENT_REVIEW,
             title="待审核评论",
-            content=f'{user_name} 在《{video_title}》评论: {preview}',
+            content=f"{user_name} 在《{video_title}》评论: {preview}",
             severity="info",
             related_type="comment",
             related_id=comment_id,
@@ -196,7 +202,11 @@ class AdminNotificationService:
             severity="error",
             related_type="error_log",
             related_id=error_id,
-            link=f"/logs?tab=error&error_id={error_id}" if error_id else "/logs?tab=error",
+            link=(
+                f"/logs?tab=error&error_id={error_id}"
+                if error_id
+                else "/logs?tab=error"
+            ),
         )
 
     @staticmethod
@@ -215,7 +225,11 @@ class AdminNotificationService:
             used_gb: 已用空间(GB)
             total_gb: 总空间(GB)
         """
-        severity = "critical" if usage_percent >= 90 else "warning" if usage_percent >= 80 else "info"
+        severity = (
+            "critical"
+            if usage_percent >= 90
+            else "warning" if usage_percent >= 80 else "info"
+        )
 
         await AdminNotificationService.create_admin_notification(
             db=db,
@@ -274,7 +288,7 @@ class AdminNotificationService:
             admin_user_id=None,
             type=NotificationType.VIDEO_PROCESSING_COMPLETE,
             title="视频处理完成",
-            content=f'视频《{video_title}》{processing_type}处理完成',
+            content=f"视频《{video_title}》{processing_type}处理完成",
             severity="info",
             related_type="video",
             related_id=video_id,
@@ -348,7 +362,7 @@ class AdminNotificationService:
             link = "/comments"
         else:
             title = f"评论{action_text}"
-            content = f'管理员 {admin_username} {action_text}《{video_title}》的评论'
+            content = f"管理员 {admin_username} {action_text}《{video_title}》的评论"
             link = f"/comments?comment_id={comment_id}"
 
         severity = "info" if action == "approved" else "warning"
@@ -481,7 +495,7 @@ class AdminNotificationService:
             admin_user_id=None,
             type="video_published",
             title="视频已发布",
-            content=f'管理员 {admin_username} 发布了视频《{video_title}》',
+            content=f"管理员 {admin_username} 发布了视频《{video_title}》",
             severity="info",
             related_type="video",
             related_id=video_id,
@@ -521,7 +535,7 @@ class AdminNotificationService:
             admin_user_id=None,
             type="announcement_management",
             title=f"公告{action_text}",
-            content=f'管理员 {admin_username} {action_text}了公告《{announcement_title}》',
+            content=f"管理员 {admin_username} {action_text}了公告《{announcement_title}》",
             severity=severity,
             related_type="announcement",
             related_id=announcement_id,
@@ -561,7 +575,7 @@ class AdminNotificationService:
             admin_user_id=None,
             type="banner_management",
             title=f"横幅{action_text}",
-            content=f'管理员 {admin_username} {action_text}了横幅《{banner_title}》',
+            content=f"管理员 {admin_username} {action_text}了横幅《{banner_title}》",
             severity=severity,
             related_type="banner",
             related_id=banner_id,
@@ -646,7 +660,7 @@ class AdminNotificationService:
             link = "/series"
         else:
             title = f"专辑{action_text}"
-            content = f'管理员 {admin_username} {action_text}了专辑《{series_title}》'
+            content = f"管理员 {admin_username} {action_text}了专辑《{series_title}》"
             link = f"/series/{series_id}"
 
         severity = "warning" if action == "deleted" else "info"
@@ -697,17 +711,19 @@ class AdminNotificationService:
 
         if action == "scheduled":
             title = f"{type_text}定时发布"
-            content = f'管理员 {admin_username} 为{type_text}《{content_title}》设置定时发布'
+            content = (
+                f"管理员 {admin_username} 为{type_text}《{content_title}》设置定时发布"
+            )
             if scheduled_time:
                 content += f": {scheduled_time}"
             severity = "info"
         elif action == "cancelled":
             title = f"取消定时发布"
-            content = f'管理员 {admin_username} 取消了{type_text}《{content_title}》的定时发布'
+            content = f"管理员 {admin_username} 取消了{type_text}《{content_title}》的定时发布"
             severity = "info"
         else:  # published
             title = f"{type_text}自动发布"
-            content = f'{type_text}《{content_title}》已按计划自动发布'
+            content = f"{type_text}《{content_title}》已按计划自动发布"
             severity = "info"
 
         await AdminNotificationService.create_admin_notification(
@@ -757,7 +773,9 @@ class AdminNotificationService:
         else:
             title = f"弹幕{action_text}"
             if video_title:
-                content = f'管理员 {admin_username} {action_text}《{video_title}》的弹幕'
+                content = (
+                    f"管理员 {admin_username} {action_text}《{video_title}》的弹幕"
+                )
             else:
                 content = f"管理员 {admin_username} {action_text}弹幕"
             link = f"/danmaku?danmaku_id={danmaku_id}"
@@ -815,7 +833,7 @@ class AdminNotificationService:
         action_text = action_map.get(action, action)
 
         title = f"{type_text}{action_text}"
-        content = f'管理员 {admin_username} {action_text}了{type_text}《{target_name}》'
+        content = f"管理员 {admin_username} {action_text}了{type_text}《{target_name}》"
         if details:
             content += f" - {details}"
 
@@ -864,7 +882,7 @@ class AdminNotificationService:
         action_text = action_map.get(action, action)
 
         title = f"AI提供商{action_text}"
-        content = f'管理员 {admin_username} {action_text}了AI提供商《{provider_name}》'
+        content = f"管理员 {admin_username} {action_text}了AI提供商《{provider_name}》"
         if details:
             content += f" - {details}"
 
@@ -880,6 +898,55 @@ class AdminNotificationService:
             related_type="ai_provider",
             related_id=provider_id,
             link=f"/ai-management/providers/{provider_id}",
+        )
+
+    @staticmethod
+    async def notify_system_settings_change(
+        db: AsyncSession,
+        setting_category: str,  # site/video/comment/user/security/other
+        action: str,  # updated/reset
+        admin_username: str,
+        details: Optional[str] = None,
+    ):
+        """
+        系统设置变更通知
+
+        Args:
+            db: 数据库会话
+            setting_category: 设置类别
+            action: 操作类型 (updated/reset)
+            admin_username: 执行操作的管理员
+            details: 变更详情
+        """
+        category_map = {
+            "site": "网站设置",
+            "video": "视频设置",
+            "comment": "评论设置",
+            "user": "用户设置",
+            "security": "安全设置",
+            "other": "其他设置",
+            "all": "所有设置",
+        }
+        action_map = {"updated": "已更新", "reset": "已重置"}
+
+        category_text = category_map.get(setting_category, setting_category)
+        action_text = action_map.get(action, action)
+
+        title = f"{category_text}{action_text}"
+        content = f"管理员 {admin_username} {action_text}{category_text}"
+        if details:
+            content += f" - {details}"
+
+        severity = "info"
+
+        await AdminNotificationService.create_admin_notification(
+            db=db,
+            admin_user_id=None,
+            type="system_settings_change",
+            title=title,
+            content=content,
+            severity=severity,
+            link="/settings",
         )
 
     @staticmethod
@@ -902,7 +969,9 @@ class AdminNotificationService:
         try:
             from datetime import datetime, timezone
 
-            query = select(AdminNotification).where(AdminNotification.id == notification_id)
+            query = select(AdminNotification).where(
+                AdminNotification.id == notification_id
+            )
             result = await db.execute(query)
             notification = result.scalar_one_or_none()
 
@@ -910,7 +979,10 @@ class AdminNotificationService:
                 return False
 
             # 检查权限（如果通知指定了管理员）
-            if notification.admin_user_id and notification.admin_user_id != admin_user_id:
+            if (
+                notification.admin_user_id
+                and notification.admin_user_id != admin_user_id
+            ):
                 return False
 
             notification.is_read = True

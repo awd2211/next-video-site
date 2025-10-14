@@ -22,25 +22,36 @@ import axios from '@/utils/axios'
 import dayjs from 'dayjs'
 import { formatAWSDate } from '@/utils/awsStyleHelpers'
 import { useTranslation } from 'react-i18next'
+import { useTableSort } from '@/hooks/useTableSort'
 
 const { TextArea } = Input
 
 const ActorsList = () => {
   const { t } = useTranslation()
   const [page, setPage] = useState(1)
-  const [pageSize] = useState(20)
+  const [pageSize, setPageSize] = useState(20)
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [editingActor, setEditingActor] = useState<any>(null)
   const [form] = Form.useForm()
   const queryClient = useQueryClient()
 
+  // Table sorting
+  const { handleTableChange, getSortParams } = useTableSort({
+    defaultSortBy: 'created_at',
+    defaultSortOrder: 'desc'
+  })
+
   // Fetch actors
   const { data, isLoading } = useQuery({
-    queryKey: ['actors', page, pageSize],
+    queryKey: ['actors', page, pageSize, ...Object.values(getSortParams())],
     queryFn: async () => {
-      const response = await axios.get(
-        `/api/v1/admin/actors/?page=${page}&page_size=${pageSize}`
-      )
+      const response = await axios.get('/api/v1/admin/actors/', {
+        params: {
+          page,
+          page_size: pageSize,
+          ...getSortParams(),
+        },
+      })
       return response.data
     },
   })
@@ -129,6 +140,7 @@ const ActorsList = () => {
       dataIndex: 'id',
       key: 'id',
       width: 80,
+      sorter: true,
     },
     {
       title: '头像',
@@ -149,11 +161,13 @@ const ActorsList = () => {
       title: '姓名',
       dataIndex: 'name',
       key: 'name',
+      sorter: true,
     },
     {
       title: '出生日期',
       dataIndex: 'birth_date',
       key: 'birth_date',
+      sorter: true,
       render: (date: string) => (date ? formatAWSDate(date, 'YYYY-MM-DD') : '-'),
     },
     {
@@ -176,6 +190,7 @@ const ActorsList = () => {
       title: '创建时间',
       dataIndex: 'created_at',
       key: 'created_at',
+      sorter: true,
       render: (date: string) => formatAWSDate(date, 'YYYY-MM-DD HH:mm'),
     },
     {
@@ -220,12 +235,19 @@ const ActorsList = () => {
         dataSource={data?.items || []}
         rowKey="id"
         loading={isLoading}
+        onChange={(pagination, filters, sorter) => handleTableChange(sorter)}
         pagination={{
           current: page,
-          pageSize,
+          pageSize: pageSize,
           total: data?.total || 0,
           onChange: (newPage) => setPage(newPage),
-          showSizeChanger: false,
+          onShowSizeChange: (current, size) => {
+            setPageSize(size)
+            setPage(1)
+          },
+          showSizeChanger: true,
+          pageSizeOptions: ['10', '20', '50', '100'],
+          showQuickJumper: true,
           showTotal: (total) => t('common.total', { count: total }),
         }}
       />

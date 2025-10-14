@@ -41,6 +41,7 @@ const AIManagement = () => {
   const { t } = useTranslation();
   const queryClient = useQueryClient();
   const [selectedTab, setSelectedTab] = useState<string>('openai');
+  const [pageSize, setPageSize] = useState(20);
   const [formVisible, setFormVisible] = useState(false);
   const [testVisible, setTestVisible] = useState(false);
   const [editingProvider, setEditingProvider] = useState<AIProvider | undefined>();
@@ -343,7 +344,11 @@ const AIManagement = () => {
           rowKey="id"
           loading={isLoading}
           pagination={{
-            pageSize: 10,
+            pageSize: pageSize,
+            onShowSizeChange: (current, size) => setPageSize(size),
+            showSizeChanger: true,
+            pageSizeOptions: ['10', '20', '50', '100'],
+            showQuickJumper: true,
             showTotal: (total) => t('common.total', { count: total }),
           }}
           scroll={{ x: 1200 }}

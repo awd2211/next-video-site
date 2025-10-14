@@ -13,7 +13,8 @@ celery_app = Celery(
     broker=settings.CELERY_BROKER_URL,
     backend=settings.CELERY_RESULT_BACKEND,
     include=[
-        "app.tasks.scheduled_publish",  # 调度任务
+        "app.tasks.scheduled_publish",  # 原有调度任务
+        "app.tasks.scheduler_enhanced",  # 增强版调度任务
         "app.tasks.transcode_av1",  # 转码任务（如果存在）
     ],
 )
@@ -37,7 +38,14 @@ celery_app.conf.update(
     worker_max_tasks_per_child=1000,
     # Beat 调度配置
     beat_schedule={
-        # 每分钟检查到期的调度任务
+        # ========== 核心调度任务 ==========
+        # 每分钟检查到期的调度任务（增强版）
+        "execute-due-schedules-enhanced": {
+            "task": "scheduler.execute_due_schedules",
+            "schedule": crontab(minute="*"),  # 每分钟
+            "options": {"queue": "scheduler", "expires": 50},
+        },
+        # 原有的调度检查（保留作为备份）
         "check-due-schedules": {
             "task": "scheduling.check_due_schedules",
             "schedule": 60.0,  # 每60秒
@@ -59,6 +67,31 @@ celery_app.conf.update(
         "cleanup-old-histories": {
             "task": "scheduling.cleanup_old_histories",
             "schedule": crontab(hour=3, minute=0),
+        },
+        # ========== 智能优化任务 ==========
+        # 每6小时优化调度时间
+        "optimize-schedule-times": {
+            "task": "scheduler.optimize_schedule_times",
+            "schedule": crontab(hour="*/6", minute=0),  # 每6小时
+            "options": {"queue": "scheduler"},
+        },
+        # 每小时检测冲突
+        "detect-conflicts": {
+            "task": "scheduler.detect_conflicts",
+            "schedule": crontab(hour="*", minute=30),  # 每小时30分
+            "options": {"queue": "scheduler"},
+        },
+        # 每天凌晨2点生成报告
+        "generate-daily-report": {
+            "task": "scheduler.generate_daily_report",
+            "schedule": crontab(hour=2, minute=0),
+            "options": {"queue": "scheduler"},
+        },
+        # 每30分钟健康检查
+        "health-check": {
+            "task": "scheduler.health_check",
+            "schedule": crontab(minute="*/30"),
+            "options": {"queue": "scheduler"},
         },
     },
 )

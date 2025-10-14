@@ -13,6 +13,7 @@ from pathlib import Path
 
 from celery import shared_task
 
+from app.config import settings
 from app.database import SessionLocal
 from app.models.video import Video
 from app.utils.av1_transcoder import AV1Transcoder, format_size
@@ -93,8 +94,6 @@ def transcode_video_to_av1(self, video_id: int):
 
         logger.info(f"下载原始视频: {video.source_url}")
         # 假设source_url是MinIO路径
-        # minio_client.download_file(video.source_url, str(original_path))
-        # 临时: 如果source_url是本地路径
         if not video.source_url.startswith("http"):
             # 验证源路径安全性，防止路径遍历攻击
             try:
@@ -103,8 +102,20 @@ def transcode_video_to_av1(self, video_id: int):
             except ValueError as e:
                 raise ValueError(f"不安全的源路径: {e}")
         else:
-            # TODO: 从MinIO下载
-            pass
+            # 从MinIO下载
+            # source_url格式: http://minio-url/bucket/videos/123/original.mp4
+            # 提取对象名称（去掉URL前缀和bucket名称）
+            url_parts = video.source_url.replace(
+                f"{settings.MINIO_PUBLIC_URL}/{minio_client.bucket_name}/", ""
+            )
+            object_name = url_parts
+
+            logger.info(f"从MinIO下载: {object_name}")
+            minio_client.download_file(object_name, str(original_path))
+            logger.info(f"下载完成: {original_path}")
+
+            if not original_path.exists() or original_path.stat().st_size == 0:
+                raise ValueError(f"下载的文件无效: {original_path}")
 
         # 4. 分析源视频
         logger.info("分析视频元数据...")
@@ -238,8 +249,17 @@ def transcode_video_to_av1(self, video_id: int):
         master_path = temp_dir / "master.m3u8"
         master_path.write_text(master_content)
 
-        # TODO: 上传master.m3u8到MinIO
-        master_url = f"videos/{video_id}/av1/master.m3u8"
+        # 上传master.m3u8到MinIO
+        master_object_name = f"videos/{video_id}/av1/master.m3u8"
+        minio_client.upload_file_from_path(
+            str(master_path),
+            master_object_name,
+            content_type="application/vnd.apple.mpegurl",
+        )
+        logger.info(f"已上传Master Playlist到MinIO: {master_object_name}")
+
+        # 生成公开访问URL
+        master_url = minio_client.get_file_url(master_object_name)
 
         # 9. 计算文件大小 (统计节省空间)
         av1_total_size = sum(
@@ -394,24 +414,36 @@ def upload_hls_directory(
         format_type: 'av1' or 'h264'
 
     Returns:
-        index.m3u8的URL
+        index.m3u8的完整URL
     """
-    MinIOClient()
+    minio = MinIOClient()
 
     # 上传所有文件
+    uploaded_count = 0
     for file_path in hls_dir.glob("*"):
         if file_path.is_file():
             object_name = (
                 f"videos/{video_id}/{format_type}/{resolution}/{file_path.name}"
             )
 
-            # TODO: 实际上传到MinIO
-            # minio_client.upload_file(str(file_path), object_name)
+            # 根据文件类型设置Content-Type
+            if file_path.suffix == ".m3u8":
+                content_type = "application/vnd.apple.mpegurl"
+            elif file_path.suffix == ".ts":
+                content_type = "video/mp2t"
+            else:
+                content_type = "application/octet-stream"
 
-            logger.info(f"上传: {object_name}")
+            # 实际上传到MinIO
+            minio.upload_file_from_path(str(file_path), object_name, content_type)
+            uploaded_count += 1
+            logger.info(f"已上传 ({uploaded_count}): {object_name}")
 
-    # 返回index.m3u8的URL
-    return f"videos/{video_id}/{format_type}/{resolution}/index.m3u8"
+    logger.info(f"成功上传 {uploaded_count} 个文件到 {format_type}/{resolution}")
+
+    # 返回index.m3u8的完整URL
+    index_object_name = f"videos/{video_id}/{format_type}/{resolution}/index.m3u8"
+    return minio.get_file_url(index_object_name)
 
 
 @shared_task(name="transcode_video_dual_format")

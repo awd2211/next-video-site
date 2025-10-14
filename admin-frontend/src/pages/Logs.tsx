@@ -175,7 +175,7 @@ const Logs = () => {
 // Operation Logs Tab Component
 const OperationLogsTab = () => {
   const [page, setPage] = useState(1)
-  const [pageSize] = useState(20)
+  const [pageSize, setPageSize] = useState(20)
   const [search, setSearch] = useState('')
   const [module, setModule] = useState<string | undefined>(undefined)
   const [action, setAction] = useState<string | undefined>(undefined)
@@ -375,10 +375,15 @@ const OperationLogsTab = () => {
           current: page,
           pageSize: pageSize,
           total: data?.total || 0,
-          showSizeChanger: false,
+          onChange: (newPage) => setPage(newPage),
+          onShowSizeChange: (current, size) => {
+            setPageSize(size)
+            setPage(1)
+          },
+          showSizeChanger: true,
+          pageSizeOptions: ['10', '20', '50', '100'],
           showQuickJumper: true,
           showTotal: (total) => `共 ${total} 条`,
-          onChange: (newPage) => setPage(newPage),
         }}
       />
 
@@ -434,7 +439,7 @@ const OperationLogsTab = () => {
 // Login Logs Tab Component
 const LoginLogsTab = () => {
   const [page, setPage] = useState(1)
-  const [pageSize] = useState(20)
+  const [pageSize, setPageSize] = useState(20)
   const [search, setSearch] = useState('')
   const [userType, setUserType] = useState<string | undefined>(undefined)
   const [status, setStatus] = useState<string | undefined>(undefined)
@@ -622,10 +627,15 @@ const LoginLogsTab = () => {
           current: page,
           pageSize: pageSize,
           total: data?.total || 0,
-          showSizeChanger: false,
+          onChange: (newPage) => setPage(newPage),
+          onShowSizeChange: (current, size) => {
+            setPageSize(size)
+            setPage(1)
+          },
+          showSizeChanger: true,
+          pageSizeOptions: ['10', '20', '50', '100'],
           showQuickJumper: true,
           showTotal: (total) => `共 ${total} 条`,
-          onChange: (newPage) => setPage(newPage),
         }}
       />
 
@@ -669,7 +679,7 @@ const LoginLogsTab = () => {
 // System Logs Tab Component
 const SystemLogsTab = () => {
   const [page, setPage] = useState(1)
-  const [pageSize] = useState(20)
+  const [pageSize, setPageSize] = useState(20)
   const [search, setSearch] = useState('')
   const [level, setLevel] = useState<string | undefined>(undefined)
   const [category, setCategory] = useState<string | undefined>(undefined)
@@ -853,10 +863,15 @@ const SystemLogsTab = () => {
           current: page,
           pageSize: pageSize,
           total: data?.total || 0,
-          showSizeChanger: false,
+          onChange: (newPage) => setPage(newPage),
+          onShowSizeChange: (current, size) => {
+            setPageSize(size)
+            setPage(1)
+          },
+          showSizeChanger: true,
+          pageSizeOptions: ['10', '20', '50', '100'],
           showQuickJumper: true,
           showTotal: (total) => `共 ${total} 条`,
-          onChange: (newPage) => setPage(newPage),
         }}
       />
 
@@ -901,7 +916,7 @@ const SystemLogsTab = () => {
 // Error Logs Tab Component
 const ErrorLogsTab = () => {
   const [page, setPage] = useState(1)
-  const [pageSize] = useState(20)
+  const [pageSize, setPageSize] = useState(20)
   const [search, setSearch] = useState('')
   const [level, setLevel] = useState<string | undefined>(undefined)
   const [errorType, setErrorType] = useState<string | undefined>(undefined)
@@ -1142,10 +1157,15 @@ const ErrorLogsTab = () => {
           current: page,
           pageSize: pageSize,
           total: data?.total || 0,
-          showSizeChanger: false,
+          onChange: (newPage) => setPage(newPage),
+          onShowSizeChange: (current, size) => {
+            setPageSize(size)
+            setPage(1)
+          },
+          showSizeChanger: true,
+          pageSizeOptions: ['10', '20', '50', '100'],
           showQuickJumper: true,
           showTotal: (total) => `共 ${total} 条`,
-          onChange: (newPage) => setPage(newPage),
         }}
       />
 

@@ -5,7 +5,7 @@
 from datetime import datetime
 from typing import Any, Optional
 
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field, field_validator, model_validator
 
 from app.models.scheduling import (
     PublishStrategy,
@@ -61,6 +61,22 @@ class ScheduleBase(BaseModel):
             if scheduled_time and v <= scheduled_time:
                 raise ValueError("end_time must be after scheduled_time")
         return v
+
+    @model_validator(mode='after')
+    def validate_cron_recurrence(self) -> 'ScheduleBase':
+        """验证CRON表达式重复规则"""
+        if self.recurrence == ScheduleRecurrence.CUSTOM:
+            cron_expression = self.recurrence_config.get('cron_expression')
+            if not cron_expression:
+                raise ValueError("CUSTOM recurrence requires 'cron_expression' in recurrence_config")
+
+            # Validate cron expression
+            from app.utils.cron_utils import CronValidator
+            is_valid, error_msg = CronValidator.validate_cron_expression(cron_expression)
+            if not is_valid:
+                raise ValueError(f"Invalid cron expression: {error_msg}")
+
+        return self
 
 
 class ScheduleCreate(ScheduleBase):
@@ -267,8 +283,8 @@ class CalendarEvent(BaseModel):
     id: int
     title: str
     content_type: str
-    scheduled_time: datetime
-    end_time: Optional[datetime] = None
+    scheduled_time: str  # ISO格式字符串
+    end_time: Optional[str] = None  # ISO格式字符串
     status: str
     priority: int
     color: str  # 前端显示用的颜色
@@ -333,3 +349,54 @@ class RollbackResponse(BaseModel):
     message: str
     previous_status: str
     current_status: str
+
+
+# ========== Cron Expression 相关 ==========
+
+
+class CronValidateRequest(BaseModel):
+    """Cron表达式验证请求"""
+
+    expression: str = Field(..., min_length=9, max_length=100)
+
+
+class CronValidateResponse(BaseModel):
+    """Cron表达式验证响应"""
+
+    valid: bool
+    error_message: Optional[str] = None
+    description: str
+    next_occurrences: list[str] = Field(default_factory=list)  # ISO格式字符串
+
+
+class CronPatternInfo(BaseModel):
+    """Cron模式信息"""
+
+    name: str
+    expression: str
+    description: str
+    category: str
+    next_run: Optional[str] = None  # ISO格式字符串
+
+
+class CronPatternsResponse(BaseModel):
+    """Cron模式列表响应"""
+
+    patterns: list[CronPatternInfo]
+    categories: list[str]
+
+
+class CronNextRunRequest(BaseModel):
+    """计算下次执行时间请求"""
+
+    expression: str
+    count: int = Field(default=5, ge=1, le=20)
+    from_time: Optional[datetime] = None
+
+
+class CronNextRunResponse(BaseModel):
+    """下次执行时间响应"""
+
+    expression: str
+    description: str
+    next_runs: list[str]  # ISO格式字符串

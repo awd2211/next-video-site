@@ -34,7 +34,7 @@ const CommentsList = () => {
   const screens = Grid.useBreakpoint()
   const { theme } = useTheme()
   const [page, setPage] = useState(1)
-  const [pageSize] = useState(20)
+  const [pageSize, setPageSize] = useState(20)
   const [search, setSearch] = useState('')
   const [status, setStatus] = useState('all')
   const [selectedRowKeys, setSelectedRowKeys] = useState<number[]>([])
@@ -461,13 +461,18 @@ const CommentsList = () => {
           sticky
           pagination={{
             current: page,
-            pageSize: screens.xs ? 10 : pageSize,
+            pageSize: pageSize,
             total: data?.total || 0,
-            simple: screens.xs,
-            showSizeChanger: false,
+            onChange: (newPage) => setPage(newPage),
+            onShowSizeChange: (current, size) => {
+              setPageSize(size)
+              setPage(1)
+            },
+            showSizeChanger: true,
+            pageSizeOptions: ['10', '20', '50', '100'],
             showQuickJumper: true,
             showTotal: (total) => t('common.total', { count: total }),
-            onChange: (newPage) => setPage(newPage),
+            simple: screens.xs,
           }}
         />
       </Card>

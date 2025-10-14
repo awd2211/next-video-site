@@ -75,8 +75,39 @@ class AdminUserResponse(BaseModel):
     is_active: bool
     is_superadmin: bool
     role_id: Optional[int] = None
+    timezone: Optional[str] = "UTC"
+    preferred_language: Optional[str] = "en-US"
+    preferred_theme: Optional[str] = "light"
     created_at: datetime
     last_login_at: Optional[datetime] = None
 
     class Config:
         from_attributes = True
+
+
+class AdminUserPreferencesUpdate(BaseModel):
+    """Admin user preferences update schema"""
+
+    timezone: Optional[str] = Field(None, description="User timezone (e.g., 'America/New_York', 'Asia/Shanghai', 'UTC')")
+    preferred_language: Optional[str] = Field(None, description="Preferred language (e.g., 'en-US', 'zh-CN')")
+    preferred_theme: Optional[str] = Field(None, description="Preferred theme ('light' or 'dark')")
+
+    @field_validator("preferred_language")
+    @classmethod
+    def validate_language(cls, v: Optional[str]) -> Optional[str]:
+        """Validate language code"""
+        if v is not None:
+            allowed_languages = ["en-US", "zh-CN"]
+            if v not in allowed_languages:
+                raise ValueError(f"Language must be one of: {', '.join(allowed_languages)}")
+        return v
+
+    @field_validator("preferred_theme")
+    @classmethod
+    def validate_theme(cls, v: Optional[str]) -> Optional[str]:
+        """Validate theme"""
+        if v is not None:
+            allowed_themes = ["light", "dark"]
+            if v not in allowed_themes:
+                raise ValueError(f"Theme must be one of: {', '.join(allowed_themes)}")
+        return v

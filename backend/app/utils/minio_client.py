@@ -396,6 +396,65 @@ class MinIOClient:
             logger.error(f"Error listing files: {e}", exc_info=True)
             return []
 
+    def download_file(self, object_name: str, local_path: str) -> bool:
+        """
+        从MinIO下载文件到本地路径
+
+        Args:
+            object_name: MinIO对象名称（如 "videos/123/original.mp4"）
+            local_path: 本地文件保存路径
+
+        Returns:
+            bool: 是否下载成功
+
+        Raises:
+            S3Error: 如果文件不存在或下载失败
+        """
+        try:
+            self.client.fget_object(
+                self.bucket_name,
+                object_name,
+                local_path,
+            )
+            logger.info(f"Downloaded {object_name} to {local_path}")
+            return True
+        except S3Error as e:
+            logger.error(f"Error downloading file: {e}", exc_info=True)
+            raise
+
+    def upload_file_from_path(
+        self,
+        local_path: str,
+        object_name: str,
+        content_type: str = "application/octet-stream",
+    ) -> str:
+        """
+        从本地路径上传文件到MinIO
+
+        Args:
+            local_path: 本地文件路径
+            object_name: MinIO对象名称
+            content_type: 文件MIME类型
+
+        Returns:
+            str: 对象名称
+
+        Raises:
+            S3Error: 如果上传失败
+        """
+        try:
+            self.client.fput_object(
+                self.bucket_name,
+                object_name,
+                local_path,
+                content_type=content_type,
+            )
+            logger.info(f"Uploaded {local_path} to {object_name}")
+            return object_name
+        except S3Error as e:
+            logger.error(f"Error uploading file from path: {e}", exc_info=True)
+            raise
+
 
 # 创建全局实例
 minio_client = MinIOClient()

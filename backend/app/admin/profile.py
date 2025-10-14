@@ -24,6 +24,9 @@ class AdminProfileResponse(BaseModel):
     avatar: str | None
     is_superadmin: bool
     role_id: int | None
+    timezone: str | None = "UTC"
+    preferred_language: str | None = "en-US"
+    preferred_theme: str | None = "light"
     created_at: str
     last_login_at: str | None
 
@@ -52,6 +55,14 @@ class ChangeEmailRequest(BaseModel):
     password: str = Field(..., description="当前密码用于验证")
 
 
+class UpdatePreferencesRequest(BaseModel):
+    """更新用户偏好设置请求"""
+
+    timezone: str | None = Field(None, description="时区 (e.g., 'America/New_York', 'Asia/Shanghai', 'UTC')")
+    preferred_language: str | None = Field(None, description="首选语言 (e.g., 'en-US', 'zh-CN')")
+    preferred_theme: str | None = Field(None, description="首选主题 ('light' 或 'dark')")
+
+
 @router.get("/me", response_model=AdminProfileResponse, summary="获取当前管理员信息")
 async def get_current_admin_profile(
     current_admin: AdminUser = Depends(get_current_admin_user),
@@ -69,6 +80,9 @@ async def get_current_admin_profile(
         avatar=current_admin.avatar,
         is_superadmin=current_admin.is_superadmin,
         role_id=current_admin.role_id,
+        timezone=current_admin.timezone or "UTC",
+        preferred_language=current_admin.preferred_language or "en-US",
+        preferred_theme=current_admin.preferred_theme or "light",
         created_at=current_admin.created_at.isoformat() if current_admin.created_at else None,
         last_login_at=current_admin.last_login_at.isoformat() if current_admin.last_login_at else None,
     )
@@ -107,6 +121,9 @@ async def update_admin_profile(
         avatar=current_admin.avatar,
         is_superadmin=current_admin.is_superadmin,
         role_id=current_admin.role_id,
+        timezone=current_admin.timezone or "UTC",
+        preferred_language=current_admin.preferred_language or "en-US",
+        preferred_theme=current_admin.preferred_theme or "light",
         created_at=current_admin.created_at.isoformat() if current_admin.created_at else None,
         last_login_at=current_admin.last_login_at.isoformat() if current_admin.last_login_at else None,
     )
@@ -186,6 +203,68 @@ async def change_admin_email(
         avatar=current_admin.avatar,
         is_superadmin=current_admin.is_superadmin,
         role_id=current_admin.role_id,
+        timezone=current_admin.timezone or "UTC",
+        preferred_language=current_admin.preferred_language or "en-US",
+        preferred_theme=current_admin.preferred_theme or "light",
+        created_at=current_admin.created_at.isoformat() if current_admin.created_at else None,
+        last_login_at=current_admin.last_login_at.isoformat() if current_admin.last_login_at else None,
+    )
+
+
+@router.put("/me/preferences", response_model=AdminProfileResponse, summary="更新用户偏好设置")
+async def update_admin_preferences(
+    preferences: UpdatePreferencesRequest,
+    current_admin: AdminUser = Depends(get_current_admin_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    更新当前管理员的偏好设置
+
+    可以更新以下设置:
+    - timezone: 时区设置（例如: 'UTC', 'America/New_York', 'Asia/Shanghai'）
+    - preferred_language: 首选语言（'en-US' 或 'zh-CN'）
+    - preferred_theme: 首选主题（'light' 或 'dark'）
+
+    所有字段都是可选的，只更新提供的字段
+    """
+    # 验证并更新时区
+    if preferences.timezone is not None:
+        current_admin.timezone = preferences.timezone
+
+    # 验证并更新语言
+    if preferences.preferred_language is not None:
+        allowed_languages = ["en-US", "zh-CN"]
+        if preferences.preferred_language not in allowed_languages:
+            raise HTTPException(
+                status_code=400,
+                detail=f"不支持的语言。允许的语言: {', '.join(allowed_languages)}"
+            )
+        current_admin.preferred_language = preferences.preferred_language
+
+    # 验证并更新主题
+    if preferences.preferred_theme is not None:
+        allowed_themes = ["light", "dark"]
+        if preferences.preferred_theme not in allowed_themes:
+            raise HTTPException(
+                status_code=400,
+                detail=f"不支持的主题。允许的主题: {', '.join(allowed_themes)}"
+            )
+        current_admin.preferred_theme = preferences.preferred_theme
+
+    await db.commit()
+    await db.refresh(current_admin)
+
+    return AdminProfileResponse(
+        id=current_admin.id,
+        email=current_admin.email,
+        username=current_admin.username,
+        full_name=current_admin.full_name,
+        avatar=current_admin.avatar,
+        is_superadmin=current_admin.is_superadmin,
+        role_id=current_admin.role_id,
+        timezone=current_admin.timezone or "UTC",
+        preferred_language=current_admin.preferred_language or "en-US",
+        preferred_theme=current_admin.preferred_theme or "light",
         created_at=current_admin.created_at.isoformat() if current_admin.created_at else None,
         last_login_at=current_admin.last_login_at.isoformat() if current_admin.last_login_at else None,
     )

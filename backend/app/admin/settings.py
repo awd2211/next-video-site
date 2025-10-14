@@ -189,6 +189,49 @@ async def update_settings(
     # 清除缓存
     await Cache.delete("system_settings")
 
+    # 发送系统设置变更通知
+    try:
+        from app.utils.admin_notification_service import AdminNotificationService
+
+        # 确定变更的设置类别
+        changed_categories = set()
+        for key in update_data.keys():
+            if key.startswith("site_") or key in ["site_name", "site_url"]:
+                changed_categories.add("site")
+            elif key.startswith("video_"):
+                changed_categories.add("video")
+            elif key.startswith("comment_"):
+                changed_categories.add("comment")
+            elif key.startswith("user_"):
+                changed_categories.add("user")
+            elif key.startswith("security_"):
+                changed_categories.add("security")
+            else:
+                changed_categories.add("other")
+
+        # 生成详情
+        if len(changed_categories) == 1:
+            category = list(changed_categories)[0]
+        elif len(changed_categories) > 1:
+            category = "other"
+            details = f"更新了 {len(update_data)} 项设置"
+        else:
+            category = "other"
+            details = None
+
+        if len(changed_categories) == 1:
+            details = f"更新了 {len(update_data)} 项设置"
+
+        await AdminNotificationService.notify_system_settings_change(
+            db=db,
+            setting_category=category,
+            action="updated",
+            admin_username=current_admin.username,
+            details=details,
+        )
+    except Exception as e:
+        print(f"Failed to send settings update notification: {e}")
+
     return settings
 
 
@@ -249,5 +292,19 @@ async def reset_settings(
 
     # 清除缓存
     await Cache.delete("system_settings")
+
+    # 发送系统设置重置通知
+    try:
+        from app.utils.admin_notification_service import AdminNotificationService
+
+        await AdminNotificationService.notify_system_settings_change(
+            db=db,
+            setting_category="all",
+            action="reset",
+            admin_username=current_admin.username,
+            details="已重置所有设置为默认值",
+        )
+    except Exception as e:
+        print(f"Failed to send settings reset notification: {e}")
 
     return settings

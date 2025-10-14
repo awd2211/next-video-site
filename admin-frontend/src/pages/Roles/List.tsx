@@ -46,6 +46,10 @@ const RolesList = () => {
   const [permissionModuleFilter, setPermissionModuleFilter] = useState<string>('all')
   const [adminSearchText, setAdminSearchText] = useState('')
 
+  // 分页状态
+  const [rolePageSize, setRolePageSize] = useState(20)
+  const [adminPageSize, setAdminPageSize] = useState(20)
+
   // 获取角色列表
   const { data: rolesData, isLoading: rolesLoading } = useQuery({
     queryKey: ['roles'],
@@ -372,7 +376,14 @@ const RolesList = () => {
                   dataSource={filteredRoles}
                   loading={rolesLoading}
                   rowKey="id"
-                  pagination={{ pageSize: 20 }}
+                  pagination={{
+                    pageSize: rolePageSize,
+                    onShowSizeChange: (current, size) => setRolePageSize(size),
+                    showSizeChanger: true,
+                    pageSizeOptions: ['10', '20', '50', '100'],
+                    showQuickJumper: true,
+                    showTotal: (total) => t('common.total', { count: total }),
+                  }}
                   locale={{
                     emptyText: (
                       <Empty
@@ -476,7 +487,14 @@ const RolesList = () => {
                   dataSource={filteredAdmins}
                   loading={adminUsersLoading}
                   rowKey="id"
-                  pagination={{ pageSize: 20 }}
+                  pagination={{
+                    pageSize: adminPageSize,
+                    onShowSizeChange: (current, size) => setAdminPageSize(size),
+                    showSizeChanger: true,
+                    pageSizeOptions: ['10', '20', '50', '100'],
+                    showQuickJumper: true,
+                    showTotal: (total) => t('common.total', { count: total }),
+                  }}
                   locale={{
                     emptyText: (
                       <Empty

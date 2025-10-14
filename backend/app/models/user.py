@@ -108,6 +108,11 @@ class AdminUser(Base):
     backup_codes: Mapped[Optional[str]] = mapped_column(String(2000))  # JSON array of encrypted backup codes
     totp_verified_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
 
+    # User preferences
+    timezone: Mapped[Optional[str]] = mapped_column(String(100), default="UTC")  # User's timezone (e.g., "America/New_York", "Asia/Shanghai")
+    preferred_language: Mapped[Optional[str]] = mapped_column(String(10), default="en-US")  # Language preference (e.g., "en-US", "zh-CN")
+    preferred_theme: Mapped[Optional[str]] = mapped_column(String(20), default="light")  # Theme preference ("light" or "dark")
+
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
     updated_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), onupdate=func.now())
     last_login_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)

@@ -40,6 +40,7 @@ const ReportsDashboard: React.FC = () => {
   const [reportType, setReportType] = useState<string>('user-activity')
   const [days, setDays] = useState<number>(30)
   const [topLimit, setTopLimit] = useState<number>(20)
+  const [topVideosPageSize, setTopVideosPageSize] = useState(20)
   const [exporting, setExporting] = useState(false)
 
   // Fetch available report types
@@ -358,7 +359,14 @@ const ReportsDashboard: React.FC = () => {
             dataSource={contentPerformance.top_videos}
             columns={topVideosColumns}
             rowKey="id"
-            pagination={{ pageSize: 10 }}
+            pagination={{
+              pageSize: topVideosPageSize,
+              onShowSizeChange: (current, size) => setTopVideosPageSize(size),
+              showSizeChanger: true,
+              pageSizeOptions: ['10', '20', '50', '100'],
+              showQuickJumper: true,
+              showTotal: (total) => t('common.total', { count: total }),
+            }}
           />
         </Card>
 

@@ -28,6 +28,7 @@ from app.schemas.series import (
 from app.utils.cache import Cache
 from app.utils.dependencies import get_current_admin_user
 from app.utils.rate_limit import RateLimitPresets, limiter
+from app.utils.sorting import apply_sorting, normalize_sort_field
 
 router = APIRouter()
 
@@ -43,6 +44,13 @@ async def admin_get_series_list(
     status: Optional[SeriesStatus] = Query(None, description="状态筛选"),
     type: Optional[SeriesType] = Query(None, description="类型筛选"),
     search: Optional[str] = Query(None, description="搜索标题"),
+    sort_by: Optional[str] = Query(
+        "created_at",
+        description="排序字段: id, title, type, status, total_episodes, total_views, total_favorites, display_order, is_featured, created_at, updated_at",
+    ),
+    sort_order: Optional[str] = Query(
+        "desc", regex="^(asc|desc)$", description="排序顺序: asc (升序) 或 desc (降序)"
+    ),
     current_admin: AdminUser = Depends(get_current_admin_user),
     db: AsyncSession = Depends(get_db),
 ):
@@ -66,12 +74,32 @@ async def admin_get_series_list(
     total_result = await db.execute(count_query)
     total = total_result.scalar() or 0
 
-    # 排序和分页
-    query = (
-        query.order_by(Series.created_at.desc())
-        .offset((page - 1) * page_size)
-        .limit(page_size)
+    # Apply sorting
+    sort_field = normalize_sort_field(sort_by)
+    allowed_sort_fields = [
+        "id",
+        "title",
+        "type",
+        "status",
+        "total_episodes",
+        "total_views",
+        "total_favorites",
+        "display_order",
+        "is_featured",
+        "created_at",
+        "updated_at",
+    ]
+    query = apply_sorting(
+        query,
+        Series,
+        sort_field,
+        sort_order,
+        default_sort="created_at",
+        allowed_fields=allowed_sort_fields,
     )
+
+    # 分页
+    query = query.offset((page - 1) * page_size).limit(page_size)
 
     result = await db.execute(query)
     series_list = result.scalars().all()
@@ -519,15 +547,13 @@ async def get_series_stats(
 
     # 状态分布
     status_result = await db.execute(
-        select(Series.status, func.count(Series.id))
-        .group_by(Series.status)
+        select(Series.status, func.count(Series.id)).group_by(Series.status)
     )
     status_stats = {row[0].value: row[1] for row in status_result.all()}
 
     # 类型分布
     type_result = await db.execute(
-        select(Series.type, func.count(Series.id))
-        .group_by(Series.type)
+        select(Series.type, func.count(Series.id)).group_by(Series.type)
     )
     type_stats = {row[0].value: row[1] for row in type_result.all()}
 
@@ -570,9 +596,7 @@ async def batch_publish_series(
     db: AsyncSession = Depends(get_db),
 ):
     """批量发布剧集"""
-    result = await db.execute(
-        select(Series).where(Series.id.in_(series_ids))
-    )
+    result = await db.execute(select(Series).where(Series.id.in_(series_ids)))
     series_list = result.scalars().all()
 
     count = 0
@@ -620,9 +644,7 @@ async def batch_archive_series(
     db: AsyncSession = Depends(get_db),
 ):
     """批量归档剧集"""
-    result = await db.execute(
-        select(Series).where(Series.id.in_(series_ids))
-    )
+    result = await db.execute(select(Series).where(Series.id.in_(series_ids)))
     series_list = result.scalars().all()
 
     count = 0
@@ -670,9 +692,7 @@ async def batch_delete_series(
     db: AsyncSession = Depends(get_db),
 ):
     """批量删除剧集"""
-    result = await db.execute(
-        select(Series).where(Series.id.in_(series_ids))
-    )
+    result = await db.execute(select(Series).where(Series.id.in_(series_ids)))
     series_list = result.scalars().all()
 
     count = len(series_list)
@@ -722,9 +742,7 @@ async def batch_feature_series(
     db: AsyncSession = Depends(get_db),
 ):
     """批量设置/取消推荐"""
-    result = await db.execute(
-        select(Series).where(Series.id.in_(series_ids))
-    )
+    result = await db.execute(select(Series).where(Series.id.in_(series_ids)))
     series_list = result.scalars().all()
 
     for series in series_list:
