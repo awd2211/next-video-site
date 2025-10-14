@@ -3,8 +3,8 @@ from datetime import datetime, timezone
 from typing import Optional
 
 from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile
-from pydantic import BaseModel
-from sqlalchemy import desc, func, select
+from pydantic import BaseModel, Field, field_validator
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
@@ -13,33 +13,51 @@ from app.models.user import AdminUser
 from app.utils.dependencies import get_current_admin_user
 from app.utils.minio_client import minio_client
 from app.utils.sorting import apply_sorting, normalize_sort_field
+from app.utils.validation_config import (
+    BANNER_TITLE_MAX_LENGTH,
+    BANNER_DESCRIPTION_MAX_LENGTH,
+    URL_MAX_LENGTH,
+)
+from app.utils.validators import validate_safe_url
 
 router = APIRouter()
 
 
 # Pydantic schemas
 class BannerCreate(BaseModel):
-    title: str
-    image_url: str
-    link_url: Optional[str] = None
-    video_id: Optional[int] = None
-    description: Optional[str] = None
+    title: str = Field(..., min_length=1, max_length=BANNER_TITLE_MAX_LENGTH)
+    image_url: str = Field(..., max_length=URL_MAX_LENGTH)
+    link_url: Optional[str] = Field(None, max_length=URL_MAX_LENGTH)
+    video_id: Optional[int] = Field(None, gt=0)
+    description: Optional[str] = Field(None, max_length=BANNER_DESCRIPTION_MAX_LENGTH)
     status: BannerStatus = BannerStatus.ACTIVE
     sort_order: int = 0
     start_date: Optional[datetime] = None
     end_date: Optional[datetime] = None
 
+    @field_validator("image_url", "link_url")
+    @classmethod
+    def validate_banner_urls(cls, v: Optional[str]) -> Optional[str]:
+        """验证Banner URL安全性"""
+        return validate_safe_url(v)
+
 
 class BannerUpdate(BaseModel):
-    title: Optional[str] = None
-    image_url: Optional[str] = None
-    link_url: Optional[str] = None
-    video_id: Optional[int] = None
-    description: Optional[str] = None
+    title: Optional[str] = Field(None, min_length=1, max_length=BANNER_TITLE_MAX_LENGTH)
+    image_url: Optional[str] = Field(None, max_length=URL_MAX_LENGTH)
+    link_url: Optional[str] = Field(None, max_length=URL_MAX_LENGTH)
+    video_id: Optional[int] = Field(None, gt=0)
+    description: Optional[str] = Field(None, max_length=BANNER_DESCRIPTION_MAX_LENGTH)
     status: Optional[BannerStatus] = None
     sort_order: Optional[int] = None
     start_date: Optional[datetime] = None
     end_date: Optional[datetime] = None
+
+    @field_validator("image_url", "link_url")
+    @classmethod
+    def validate_banner_urls(cls, v: Optional[str]) -> Optional[str]:
+        """验证Banner URL安全性"""
+        return validate_safe_url(v)
 
 
 class BannerResponse(BaseModel):

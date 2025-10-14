@@ -5,9 +5,11 @@
 from datetime import datetime
 from typing import List, Optional
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 from app.models.series import SeriesStatus, SeriesType
+from app.utils.validation_config import SERIES_NAME_MAX_LENGTH, DESCRIPTION_MAX_LENGTH, URL_MAX_LENGTH
+from app.utils.validators import validate_safe_url
 
 
 class SeriesVideoItem(BaseModel):
@@ -28,25 +30,37 @@ class SeriesVideoItem(BaseModel):
 class SeriesCreate(BaseModel):
     """创建专辑"""
 
-    title: str = Field(..., min_length=1, max_length=255)
-    description: Optional[str] = None
-    cover_image: Optional[str] = None
+    title: str = Field(..., min_length=1, max_length=SERIES_NAME_MAX_LENGTH)
+    description: Optional[str] = Field(None, max_length=DESCRIPTION_MAX_LENGTH)
+    cover_image: Optional[str] = Field(None, max_length=URL_MAX_LENGTH)
     type: SeriesType = SeriesType.SERIES
     status: SeriesStatus = SeriesStatus.DRAFT
     display_order: int = 0
     is_featured: bool = False
+    
+    @field_validator("cover_image")
+    @classmethod
+    def validate_cover_url(cls, v: Optional[str]) -> Optional[str]:
+        """验证封面URL安全性"""
+        return validate_safe_url(v)
 
 
 class SeriesUpdate(BaseModel):
     """更新专辑"""
 
-    title: Optional[str] = Field(None, min_length=1, max_length=255)
-    description: Optional[str] = None
-    cover_image: Optional[str] = None
+    title: Optional[str] = Field(None, min_length=1, max_length=SERIES_NAME_MAX_LENGTH)
+    description: Optional[str] = Field(None, max_length=DESCRIPTION_MAX_LENGTH)
+    cover_image: Optional[str] = Field(None, max_length=URL_MAX_LENGTH)
     type: Optional[SeriesType] = None
     status: Optional[SeriesStatus] = None
     display_order: Optional[int] = None
     is_featured: Optional[bool] = None
+    
+    @field_validator("cover_image")
+    @classmethod
+    def validate_cover_url(cls, v: Optional[str]) -> Optional[str]:
+        """验证封面URL安全性"""
+        return validate_safe_url(v)
 
 
 class SeriesAddVideos(BaseModel):

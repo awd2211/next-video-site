@@ -3,6 +3,8 @@ from typing import List, Optional
 
 from pydantic import BaseModel, Field
 
+from app.utils.validation_config import DESCRIPTION_MAX_LENGTH
+
 
 # Tag Schemas
 class TagCreate(BaseModel):
@@ -91,8 +93,8 @@ class CategoryCreate(BaseModel):
     name: str = Field(..., min_length=1, max_length=100, description="中文名称")
     name_en: Optional[str] = Field(None, max_length=100, description="英文名称")
     slug: str = Field(..., min_length=1, max_length=100)
-    description: Optional[str] = Field(None, description="中文描述")
-    description_en: Optional[str] = Field(None, description="英文描述")
+    description: Optional[str] = Field(None, max_length=DESCRIPTION_MAX_LENGTH, description="中文描述")
+    description_en: Optional[str] = Field(None, max_length=DESCRIPTION_MAX_LENGTH, description="英文描述")
     parent_id: Optional[int] = None
     sort_order: int = Field(0, ge=0)
     is_active: bool = True
@@ -104,8 +106,8 @@ class CategoryUpdate(BaseModel):
     name: Optional[str] = Field(None, min_length=1, max_length=100, description="中文名称")
     name_en: Optional[str] = Field(None, max_length=100, description="英文名称")
     slug: Optional[str] = Field(None, min_length=1, max_length=100)
-    description: Optional[str] = Field(None, description="中文描述")
-    description_en: Optional[str] = Field(None, description="英文描述")
+    description: Optional[str] = Field(None, max_length=DESCRIPTION_MAX_LENGTH, description="中文描述")
+    description_en: Optional[str] = Field(None, max_length=DESCRIPTION_MAX_LENGTH, description="英文描述")
     parent_id: Optional[int] = None
     sort_order: Optional[int] = Field(None, ge=0)
     is_active: Optional[bool] = None
@@ -144,8 +146,8 @@ class ActorCreate(BaseModel):
     """Actor creation schema"""
 
     name: str = Field(..., min_length=1, max_length=200)
-    avatar: Optional[str] = None
-    biography: Optional[str] = None
+    avatar: Optional[str] = Field(None, max_length=2048)
+    biography: Optional[str] = Field(None, max_length=1000)
     birth_date: Optional[datetime] = None
     country_id: Optional[int] = None
 
@@ -154,8 +156,8 @@ class ActorUpdate(BaseModel):
     """Actor update schema"""
 
     name: Optional[str] = Field(None, min_length=1, max_length=200)
-    avatar: Optional[str] = None
-    biography: Optional[str] = None
+    avatar: Optional[str] = Field(None, max_length=2048)
+    biography: Optional[str] = Field(None, max_length=1000)
     birth_date: Optional[datetime] = None
     country_id: Optional[int] = None
 
@@ -190,8 +192,8 @@ class DirectorCreate(BaseModel):
     """Director creation schema"""
 
     name: str = Field(..., min_length=1, max_length=200)
-    avatar: Optional[str] = None
-    biography: Optional[str] = None
+    avatar: Optional[str] = Field(None, max_length=2048)
+    biography: Optional[str] = Field(None, max_length=1000)
     birth_date: Optional[datetime] = None
     country_id: Optional[int] = None
 
@@ -200,8 +202,8 @@ class DirectorUpdate(BaseModel):
     """Director update schema"""
 
     name: Optional[str] = Field(None, min_length=1, max_length=200)
-    avatar: Optional[str] = None
-    biography: Optional[str] = None
+    avatar: Optional[str] = Field(None, max_length=2048)
+    biography: Optional[str] = Field(None, max_length=1000)
     birth_date: Optional[datetime] = None
     country_id: Optional[int] = None
 
@@ -237,8 +239,8 @@ class AnnouncementCreate(BaseModel):
 
     title: str = Field(..., min_length=1, max_length=200, description="中文标题")
     title_en: Optional[str] = Field(None, max_length=200, description="英文标题")
-    content: str = Field(..., min_length=1, description="中文内容")
-    content_en: Optional[str] = Field(None, description="英文内容")
+    content: str = Field(..., min_length=1, max_length=2000, description="中文内容")
+    content_en: Optional[str] = Field(None, max_length=2000, description="英文内容")
     type: str = Field("info", description="类型: info, warning, success, error")
     is_active: bool = True
     is_pinned: bool = False
@@ -251,8 +253,8 @@ class AnnouncementUpdate(BaseModel):
 
     title: Optional[str] = Field(None, min_length=1, max_length=200, description="中文标题")
     title_en: Optional[str] = Field(None, max_length=200, description="英文标题")
-    content: Optional[str] = Field(None, min_length=1, description="中文内容")
-    content_en: Optional[str] = Field(None, description="英文内容")
+    content: Optional[str] = Field(None, min_length=1, max_length=2000, description="中文内容")
+    content_en: Optional[str] = Field(None, max_length=2000, description="英文内容")
     type: Optional[str] = Field(None, description="类型: info, warning, success, error")
     is_active: Optional[bool] = None
     is_pinned: Optional[bool] = None

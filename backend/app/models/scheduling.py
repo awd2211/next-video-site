@@ -64,6 +64,7 @@ class ScheduleRecurrence(str, enum.Enum):
     DAILY = "daily"  # 每日
     WEEKLY = "weekly"  # 每周
     MONTHLY = "monthly"  # 每月
+    CUSTOM = "custom"  # 自定义（使用CRON表达式）
 
 
 class ContentSchedule(Base):

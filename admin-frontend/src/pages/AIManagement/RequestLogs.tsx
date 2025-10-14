@@ -171,7 +171,7 @@ const RequestLogs: React.FC = () => {
       key: 'total_tokens',
       width: 100,
       render: (tokens: number, record: AIRequestLog) => (
-        <span title={`Prompt: ${record.prompt_tokens}, Completion: ${record.completion_tokens}`}>
+        <span title={`${t('common.prompt')}: ${record.prompt_tokens}, ${t('common.completion')}: ${record.completion_tokens}`}>
           {tokens.toLocaleString()}
         </span>
       ),
@@ -317,9 +317,9 @@ const RequestLogs: React.FC = () => {
                 value={statusFilter}
                 onChange={setStatusFilter}
               >
-                <Option value="success">Success</Option>
-                <Option value="failed">Failed</Option>
-                <Option value="timeout">Timeout</Option>
+                <Option value="success">{t('common.success')}</Option>
+                <Option value="failed">{t('common.failed')}</Option>
+                <Option value="timeout">{t('common.timeout')}</Option>
               </Select>
 
               <RangePicker

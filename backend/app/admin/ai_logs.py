@@ -1,22 +1,20 @@
 """AI 请求日志、配额、模板管理 API"""
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, func, and_, or_, desc
+from sqlalchemy import select, func, and_, desc
 from typing import Optional, List
 from datetime import datetime, timedelta
 
 from app.database import get_db
-from app.models.ai_log import AIRequestLog, AIQuota, AITemplate, AIPerformanceMetric
+from app.models.ai_log import AIRequestLog, AIQuota, AITemplate
 from app.schemas.ai_log import (
     AIRequestLogResponse,
-    AIRequestLogQuery,
     AIQuotaCreate,
     AIQuotaUpdate,
     AIQuotaResponse,
     AITemplateCreate,
     AITemplateUpdate,
     AITemplateResponse,
-    AIPerformanceMetricResponse,
     AIUsageStats,
     AICostStats,
     AIQuotaStatus,
@@ -24,7 +22,7 @@ from app.schemas.ai_log import (
 from app.utils.dependencies import get_current_admin_user
 from app.models.user import AdminUser
 
-router = APIRouter(prefix="/ai-logs", tags=["AI Logs & Management"])
+router = APIRouter(tags=["AI Logs & Management"])
 
 
 # ============= AI Request Logs =============
@@ -36,8 +34,8 @@ async def get_request_logs(
     status: Optional[str] = None,
     start_date: Optional[datetime] = None,
     end_date: Optional[datetime] = None,
-    page: int = Query(1, ge=1),
-    page_size: int = Query(50, ge=1, le=100),
+    skip: int = Query(0, ge=0),
+    limit: int = Query(20, ge=1, le=100),
     db: AsyncSession = Depends(get_db),
     current_admin: AdminUser = Depends(get_current_admin_user),
 ):
@@ -69,7 +67,7 @@ async def get_request_logs(
 
     # 分页
     query = query.order_by(desc(AIRequestLog.created_at))
-    query = query.offset((page - 1) * page_size).limit(page_size)
+    query = query.offset(skip).limit(limit)
 
     result = await db.execute(query)
     logs = result.scalars().all()
@@ -77,8 +75,8 @@ async def get_request_logs(
     return {
         "items": [AIRequestLogResponse.from_orm(log) for log in logs],
         "total": total,
-        "page": page,
-        "page_size": page_size,
+        "skip": skip,
+        "limit": limit,
     }
 
 
@@ -230,6 +228,7 @@ async def get_usage_stats(
 
 @router.get("/stats/cost", response_model=AICostStats)
 async def get_cost_stats(
+    days: int = Query(30, ge=1, le=365, description="统计天数"),
     db: AsyncSession = Depends(get_db),
     current_admin: AdminUser = Depends(get_current_admin_user),
 ):
@@ -278,9 +277,9 @@ async def get_cost_stats(
     )
     last_month_cost = float(last_month_cost_result.scalar() or 0)
 
-    # 最近30天每日成本趋势
+    # 最近N天每日成本趋势
     cost_trend = []
-    for i in range(30):
+    for i in range(days):
         day_start = today_start - timedelta(days=i)
         day_end = day_start + timedelta(days=1)
 
@@ -410,7 +409,7 @@ async def get_global_quota_status(
     """获取全局配额使用状态"""
     result = await db.execute(
         select(AIQuota).where(
-            and_(AIQuota.quota_type == "global", AIQuota.is_active == True)
+            and_(AIQuota.quota_type == "global", AIQuota.is_active.is_(True))
         )
     )
     quota = result.scalar_one_or_none()
@@ -428,28 +427,31 @@ async def get_global_quota_status(
             warning_level="normal",
         )
 
-    daily_remaining = (
-        quota.daily_request_limit - quota.daily_requests_used
-        if quota.daily_request_limit
-        else None
-    )
-    monthly_remaining = (
-        quota.monthly_request_limit - quota.monthly_requests_used
-        if quota.monthly_request_limit
-        else None
-    )
+    # 类型转换为Python原生类型
+    daily_limit = quota.daily_request_limit if quota.daily_request_limit is None else int(quota.daily_request_limit)  # type: ignore
+    daily_used = int(quota.daily_requests_used)  # type: ignore
+    monthly_limit = quota.monthly_request_limit if quota.monthly_request_limit is None else int(quota.monthly_request_limit)  # type: ignore
+    monthly_used = int(quota.monthly_requests_used)  # type: ignore
+
+    daily_remaining: int | None = None
+    if daily_limit is not None:
+        daily_remaining = daily_limit - daily_used
+
+    monthly_remaining: int | None = None
+    if monthly_limit is not None:
+        monthly_remaining = monthly_limit - monthly_used
 
     # 判断是否超额
     is_exceeded = False
-    if quota.daily_request_limit and quota.daily_requests_used >= quota.daily_request_limit:
+    if daily_limit and daily_used >= daily_limit:
         is_exceeded = True
-    if quota.monthly_request_limit and quota.monthly_requests_used >= quota.monthly_request_limit:
+    if monthly_limit and monthly_used >= monthly_limit:
         is_exceeded = True
 
     # 警告级别
     warning_level = "normal"
-    if quota.daily_request_limit:
-        usage_percent = quota.daily_requests_used / quota.daily_request_limit * 100
+    if daily_limit:
+        usage_percent = daily_used / daily_limit * 100
         if usage_percent >= 90:
             warning_level = "critical"
         elif usage_percent >= 70:
@@ -457,11 +459,11 @@ async def get_global_quota_status(
 
     return AIQuotaStatus(
         quota_type="global",
-        daily_limit=quota.daily_request_limit,
-        daily_used=quota.daily_requests_used,
+        daily_limit=daily_limit,
+        daily_used=daily_used,
         daily_remaining=daily_remaining,
-        monthly_limit=quota.monthly_request_limit,
-        monthly_used=quota.monthly_requests_used,
+        monthly_limit=monthly_limit,
+        monthly_used=monthly_used,
         monthly_remaining=monthly_remaining,
         is_exceeded=is_exceeded,
         warning_level=warning_level,

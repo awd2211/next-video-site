@@ -27,7 +27,7 @@ const queryClient = new QueryClient({
 })
 
 // Wrapper component to access language and theme context
-const AppWithProviders = () => {
+function AppWithProviders() {
   const { language } = useLanguage();
   const { theme } = useTheme();
   const antdLocale = language === 'zh-CN' ? zhCN : enUS;
@@ -45,20 +45,14 @@ const AppWithProviders = () => {
       <App />
     </ConfigProvider>
   );
-};
+}
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
-  // 注意：暂时移除 StrictMode 以避免 WebSocket 重复连接
-  // StrictMode 在开发模式下会导致组件渲染两次
-  // 生产构建时会自动优化，无需 StrictMode
-  // <React.StrictMode>
-    <QueryClientProvider client={queryClient}>
-      <ThemeProvider>
-        <LanguageProvider>
-          <AppWithProviders />
-        </LanguageProvider>
-      </ThemeProvider>
-    </QueryClientProvider>
-  // </React.StrictMode>
-  ,
+  <QueryClientProvider client={queryClient}>
+    <ThemeProvider>
+      <LanguageProvider>
+        <AppWithProviders />
+      </LanguageProvider>
+    </ThemeProvider>
+  </QueryClientProvider>
 )

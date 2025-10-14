@@ -1,5 +1,6 @@
 from app.models.admin import OperationLog, Permission, Role, RolePermission
 from app.models.ai_config import AIProvider, AIProviderType  # 🆕 AI提供商配置
+from app.models.ai_log import AIRequestLog, AIQuota, AITemplate, AIPerformanceMetric  # 🆕 AI日志和配额管理
 from app.models.comment import Comment, Rating
 from app.models.content import Announcement, Banner, Recommendation, Report
 from app.models.oauth_config import OAuthConfig  # 🆕 OAuth配置
@@ -85,6 +86,10 @@ __all__ = [
     "OperationLog",
     "AIProvider",  # 🆕 AI提供商配置
     "AIProviderType",  # 🆕 AI提供商类型枚举
+    "AIRequestLog",  # 🆕 AI请求日志
+    "AIQuota",  # 🆕 AI配额管理
+    "AITemplate",  # 🆕 AI模板
+    "AIPerformanceMetric",  # 🆕 AI性能指标
     "OAuthConfig",  # 🆕 OAuth配置
     "ContentSchedule",  # 🆕 统一内容调度
     "ScheduleTemplate",  # 🆕 调度模板

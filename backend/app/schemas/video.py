@@ -2,7 +2,16 @@ from datetime import datetime
 from enum import Enum
 from typing import List, Optional
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
+
+from app.utils.validation_config import (
+    TITLE_MAX_LENGTH,
+    DESCRIPTION_MAX_LENGTH,
+    URL_MAX_LENGTH,
+    YEAR_MIN,
+    YEAR_MAX,
+)
+from app.utils.validators import validate_safe_url
 
 
 class VideoTypeEnum(str, Enum):
@@ -143,51 +152,63 @@ class VideoDetailResponse(VideoListResponse):
 class VideoCreate(BaseModel):
     """Video creation schema"""
 
-    title: str = Field(..., min_length=1, max_length=500)
-    original_title: Optional[str] = None
-    description: Optional[str] = None
+    title: str = Field(..., min_length=1, max_length=TITLE_MAX_LENGTH)
+    original_title: Optional[str] = Field(None, max_length=TITLE_MAX_LENGTH)
+    description: Optional[str] = Field(None, max_length=DESCRIPTION_MAX_LENGTH)
     video_type: VideoTypeEnum
     status: VideoStatusEnum = VideoStatusEnum.DRAFT
-    video_url: Optional[str] = None
-    trailer_url: Optional[str] = None
-    poster_url: Optional[str] = None
-    backdrop_url: Optional[str] = None
-    release_year: Optional[int] = None
+    video_url: Optional[str] = Field(None, max_length=URL_MAX_LENGTH)
+    trailer_url: Optional[str] = Field(None, max_length=URL_MAX_LENGTH)
+    poster_url: Optional[str] = Field(None, max_length=URL_MAX_LENGTH)
+    backdrop_url: Optional[str] = Field(None, max_length=URL_MAX_LENGTH)
+    release_year: Optional[int] = Field(None, ge=YEAR_MIN, le=YEAR_MAX)
     release_date: Optional[datetime] = None
-    duration: Optional[int] = None
+    duration: Optional[int] = Field(None, gt=0)
     country_id: Optional[int] = None
-    language: Optional[str] = None
-    total_seasons: Optional[int] = None
-    total_episodes: Optional[int] = None
+    language: Optional[str] = Field(None, max_length=100)
+    total_seasons: Optional[int] = Field(None, ge=0)
+    total_episodes: Optional[int] = Field(None, ge=0)
     category_ids: List[int] = []
     tag_ids: List[int] = []
     actor_ids: List[int] = []
     director_ids: List[int] = []
+    
+    @field_validator("video_url", "trailer_url", "poster_url", "backdrop_url")
+    @classmethod
+    def validate_video_urls(cls, v: Optional[str]) -> Optional[str]:
+        """验证视频相关URL的安全性"""
+        return validate_safe_url(v)
 
 
 class VideoUpdate(BaseModel):
     """Video update schema"""
 
-    title: Optional[str] = None
-    original_title: Optional[str] = None
-    description: Optional[str] = None
+    title: Optional[str] = Field(None, min_length=1, max_length=TITLE_MAX_LENGTH)
+    original_title: Optional[str] = Field(None, max_length=TITLE_MAX_LENGTH)
+    description: Optional[str] = Field(None, max_length=DESCRIPTION_MAX_LENGTH)
     video_type: Optional[VideoTypeEnum] = None
     status: Optional[VideoStatusEnum] = None
-    video_url: Optional[str] = None
-    trailer_url: Optional[str] = None
-    poster_url: Optional[str] = None
-    backdrop_url: Optional[str] = None
-    release_year: Optional[int] = None
+    video_url: Optional[str] = Field(None, max_length=URL_MAX_LENGTH)
+    trailer_url: Optional[str] = Field(None, max_length=URL_MAX_LENGTH)
+    poster_url: Optional[str] = Field(None, max_length=URL_MAX_LENGTH)
+    backdrop_url: Optional[str] = Field(None, max_length=URL_MAX_LENGTH)
+    release_year: Optional[int] = Field(None, ge=YEAR_MIN, le=YEAR_MAX)
     release_date: Optional[datetime] = None
-    duration: Optional[int] = None
+    duration: Optional[int] = Field(None, gt=0)
     country_id: Optional[int] = None
-    language: Optional[str] = None
-    total_seasons: Optional[int] = None
-    total_episodes: Optional[int] = None
+    language: Optional[str] = Field(None, max_length=100)
+    total_seasons: Optional[int] = Field(None, ge=0)
+    total_episodes: Optional[int] = Field(None, ge=0)
     category_ids: Optional[List[int]] = None
     tag_ids: Optional[List[int]] = None
     actor_ids: Optional[List[int]] = None
     director_ids: Optional[List[int]] = None
+    
+    @field_validator("video_url", "trailer_url", "poster_url", "backdrop_url")
+    @classmethod
+    def validate_video_urls(cls, v: Optional[str]) -> Optional[str]:
+        """验证视频相关URL的安全性"""
+        return validate_safe_url(v)
 
 
 class PaginatedResponse(BaseModel):
