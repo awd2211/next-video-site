@@ -38,6 +38,8 @@ import { exportToCSV } from '@/utils/exportUtils'
 import { formatAWSDate, formatAWSNumber } from '@/utils/awsStyleHelpers'
 import { BannerPreviewButton } from './BannerPreview'
 import { useTableSort } from '@/hooks/useTableSort'
+import { createFormRules } from '@/utils/formRules'
+import { VALIDATION_LIMITS } from '@/utils/validationConfig'
 import '@/styles/page-layout.css'
 
 const { TextArea } = Input
@@ -46,6 +48,7 @@ const { RangePicker } = DatePicker
 
 const BannersList = () => {
   const { t } = useTranslation()
+  const formRules = createFormRules(t)
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(20)
   const [modalVisible, setModalVisible] = useState(false)
@@ -565,18 +568,28 @@ const BannersList = () => {
       >
         <Form form={form} layout="vertical">
           <Form.Item
-            label="标题"
+            label={t('banner.title')}
             name="title"
-            rules={[{ required: true, message: '请输入Banner标题' }]}
+            rules={[
+              formRules.required(t('banner.title')),
+              formRules.maxLength(VALIDATION_LIMITS.BANNER_TITLE.max)
+            ]}
           >
-            <Input placeholder="请输入Banner标题" />
+            <Input 
+              placeholder={t('banner.titlePlaceholder')}
+              showCount
+              maxLength={VALIDATION_LIMITS.BANNER_TITLE.max}
+            />
           </Form.Item>
 
           <Form.Item
-            label="图片"
+            label={t('banner.image')}
             name="image_url"
-            rules={[{ required: true, message: '请上传或输入图片URL' }]}
-            extra="建议尺寸：1920x600"
+            rules={[
+              formRules.required(t('banner.image')),
+              formRules.url
+            ]}
+            extra={t('banner.imageSizeHint')}
           >
             <Space direction="vertical" style={{ width: '100%' }}>
               <Upload
@@ -590,12 +603,12 @@ const BannersList = () => {
                   <img src={imageUrl} alt="banner" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                 ) : (
                   <div>
-                    {uploading ? <div>上传中...</div> : <><UploadOutlined /><div>上传图片</div></>}
+                    {uploading ? <div>{t('common.uploading')}</div> : <><UploadOutlined /><div>{t('banner.uploadImage')}</div></>}
                   </div>
                 )}
               </Upload>
               <Input
-                placeholder="或直接输入图片URL: https://example.com/banner.jpg"
+                placeholder={t('banner.imageUrlPlaceholder')}
                 value={imageUrl}
                 onChange={(e) => {
                   setImageUrl(e.target.value)
@@ -605,30 +618,47 @@ const BannersList = () => {
             </Space>
           </Form.Item>
 
-          <Form.Item label="链接URL" name="link_url">
+          <Form.Item 
+            label={t('banner.linkUrl')} 
+            name="link_url"
+            rules={[formRules.url]}
+          >
             <Input placeholder="https://example.com/video/123" />
           </Form.Item>
 
-          <Form.Item label="关联视频ID" name="video_id">
-            <InputNumber placeholder="输入视频ID" style={{ width: '100%' }} min={1} />
+          <Form.Item 
+            label={t('banner.videoId')} 
+            name="video_id"
+            rules={[formRules.numberRange(1, undefined)]}
+          >
+            <InputNumber placeholder={t('banner.videoIdPlaceholder')} style={{ width: '100%' }} min={1} />
           </Form.Item>
 
-          <Form.Item label="描述" name="description">
-            <TextArea rows={3} placeholder="Banner描述" />
+          <Form.Item 
+            label={t('banner.description')} 
+            name="description"
+            rules={[formRules.maxLength(VALIDATION_LIMITS.BANNER_DESCRIPTION.max)]}
+          >
+            <TextArea 
+              rows={3} 
+              placeholder={t('banner.descriptionPlaceholder')}
+              showCount
+              maxLength={VALIDATION_LIMITS.BANNER_DESCRIPTION.max}
+            />
           </Form.Item>
 
-          <Form.Item label="排序" name="sort_order" initialValue={0}>
-            <InputNumber placeholder="数字越大越靠前" style={{ width: '100%' }} />
+          <Form.Item label={t('banner.sortOrder')} name="sort_order" initialValue={0}>
+            <InputNumber placeholder={t('banner.sortOrderHint')} style={{ width: '100%' }} />
           </Form.Item>
 
-          <Form.Item label="状态" name="status" initialValue="active">
+          <Form.Item label={t('banner.status')} name="status" initialValue="active">
             <Select>
-              <Option value="active">激活</Option>
-              <Option value="inactive">停用</Option>
+              <Option value="active">{t('banner.active')}</Option>
+              <Option value="inactive">{t('banner.inactive')}</Option>
             </Select>
           </Form.Item>
 
-          <Form.Item label="显示时间" name="date_range">
+          <Form.Item label={t('banner.displayTime')} name="date_range">
             <RangePicker
               style={{ width: '100%' }}
               showTime

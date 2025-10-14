@@ -5,6 +5,8 @@
 import { useState, useEffect } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import watchlistService from '@/services/watchlistService'
+import { useTranslation } from 'react-i18next'
+import toast from 'react-hot-toast'
 
 interface AddToListButtonProps {
   videoId: number
@@ -19,6 +21,7 @@ const AddToListButton: React.FC<AddToListButtonProps> = ({
   className = '',
   onSuccess,
 }) => {
+  const { t } = useTranslation()
   const queryClient = useQueryClient()
   const [isInList, setIsInList] = useState(false)
 
@@ -63,7 +66,7 @@ const AddToListButton: React.FC<AddToListButtonProps> = ({
 
     const token = localStorage.getItem('access_token')
     if (!token) {
-      alert('请先登录')
+      toast.error(t('validation.loginRequired'))
       return
     }
 

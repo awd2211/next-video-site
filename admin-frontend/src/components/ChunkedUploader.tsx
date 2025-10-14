@@ -3,6 +3,7 @@ import { Upload, Progress, message, Button } from 'antd'
 import { InboxOutlined, PauseCircleOutlined, PlayCircleOutlined } from '@ant-design/icons'
 import axios from '@/utils/axios'
 import type { UploadFile } from 'antd/es/upload/interface'
+import { validateFile, FileValidationPresets, formatFileSize } from '@/utils/fileValidation'
 
 const { Dragger } = Upload
 
@@ -82,13 +83,25 @@ const ChunkedUploader = ({
       setProgress(0)
       setCurrentFile(file)
 
-      // Check file size
-      const maxSizeBytes = maxSize * 1024 * 1024
-      if (file.size > maxSizeBytes) {
-        message.error(`文件大小不能超过 ${maxSize}MB`)
+      // Validate file based on upload type
+      let validationConfig = FileValidationPresets.video
+      if (uploadType === 'poster' || uploadType === 'backdrop') {
+        validationConfig = FileValidationPresets.poster
+      }
+
+      // Override with custom maxSize if provided
+      if (maxSize) {
+        validationConfig = { ...validationConfig, maxSize }
+      }
+
+      const validation = validateFile(file, validationConfig)
+      if (!validation.valid) {
+        message.error(validation.error || '文件验证失败')
         setUploading(false)
         return
       }
+
+      message.info(`开始上传: ${file.name} (${formatFileSize(file.size)})`)
 
       // Initialize upload
       const initData = await initUpload(file)

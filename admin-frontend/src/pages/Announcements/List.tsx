@@ -29,6 +29,8 @@ import dayjs from 'dayjs'
 import { formatAWSDate, AWSTag } from '@/utils/awsStyleHelpers'
 import { useTranslation } from 'react-i18next'
 import { useTableSort } from '@/hooks/useTableSort'
+import { createFormRules } from '@/utils/formRules'
+import { VALIDATION_LIMITS } from '@/utils/validationConfig'
 import '@/styles/page-layout.css'
 
 const { RangePicker } = DatePicker
@@ -49,6 +51,7 @@ interface Announcement {
 
 const AnnouncementsList = () => {
   const { t } = useTranslation()
+  const formRules = createFormRules(t)
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(20)
   const [modalVisible, setModalVisible] = useState(false)
@@ -384,51 +387,61 @@ const AnnouncementsList = () => {
       >
         <Form form={form} layout="vertical" style={{ marginTop: 24 }}>
           <Form.Item
-            label="标题"
+            label={t('announcement.title')}
             name="title"
-            rules={[{ required: true, message: '请输入标题' }]}
+            rules={[
+              formRules.required(t('announcement.title')),
+              formRules.maxLength(VALIDATION_LIMITS.ANNOUNCEMENT_TITLE.max)
+            ]}
           >
-            <Input placeholder="请输入公告标题" maxLength={200} />
+            <Input 
+              placeholder={t('announcement.titlePlaceholder')} 
+              maxLength={VALIDATION_LIMITS.ANNOUNCEMENT_TITLE.max} 
+              showCount
+            />
           </Form.Item>
 
           <Form.Item
-            label="内容"
+            label={t('announcement.content')}
             name="content"
-            rules={[{ required: true, message: '请输入内容' }]}
+            rules={[
+              formRules.required(t('announcement.content')),
+              formRules.maxLength(VALIDATION_LIMITS.ANNOUNCEMENT_CONTENT.max)
+            ]}
           >
             <TextArea
               rows={6}
-              placeholder="请输入公告内容"
+              placeholder={t('announcement.contentPlaceholder')}
               showCount
-              maxLength={2000}
+              maxLength={VALIDATION_LIMITS.ANNOUNCEMENT_CONTENT.max}
             />
           </Form.Item>
 
           <Row gutter={16}>
             <Col span={12}>
               <Form.Item
-                label="类型"
+                label={t('announcement.type')}
                 name="type"
-                rules={[{ required: true, message: '请选择类型' }]}
+                rules={[formRules.required(t('announcement.type'))]}
               >
                 <Select>
                   <Select.Option value="info">
-                    <Tag color="blue">信息</Tag>
+                    <Tag color="blue">{t('announcement.info')}</Tag>
                   </Select.Option>
                   <Select.Option value="warning">
-                    <Tag color="orange">警告</Tag>
+                    <Tag color="orange">{t('announcement.warning')}</Tag>
                   </Select.Option>
                   <Select.Option value="success">
-                    <Tag color="green">成功</Tag>
+                    <Tag color="green">{t('announcement.success')}</Tag>
                   </Select.Option>
                   <Select.Option value="error">
-                    <Tag color="red">错误</Tag>
+                    <Tag color="red">{t('announcement.error')}</Tag>
                   </Select.Option>
                 </Select>
               </Form.Item>
             </Col>
             <Col span={12}>
-              <Form.Item label="显示时间" name="dateRange">
+              <Form.Item label={t('announcement.displayTime')} name="dateRange">
                 <RangePicker style={{ width: '100%' }} />
               </Form.Item>
             </Col>
@@ -436,13 +449,13 @@ const AnnouncementsList = () => {
 
           <Row gutter={16}>
             <Col span={12}>
-              <Form.Item label="是否启用" name="is_active" valuePropName="checked">
-                <Switch checkedChildren="启用" unCheckedChildren="禁用" />
+              <Form.Item label={t('announcement.isActive')} name="is_active" valuePropName="checked">
+                <Switch checkedChildren={t('common.active')} unCheckedChildren={t('common.inactive')} />
               </Form.Item>
             </Col>
             <Col span={12}>
-              <Form.Item label="是否置顶" name="is_pinned" valuePropName="checked">
-                <Switch checkedChildren="置顶" unCheckedChildren="不置顶" />
+              <Form.Item label={t('announcement.isPinned')} name="is_pinned" valuePropName="checked">
+                <Switch checkedChildren={t('common.pinned')} unCheckedChildren={t('common.unpinned')} />
               </Form.Item>
             </Col>
           </Row>

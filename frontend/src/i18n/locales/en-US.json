@@ -24,7 +24,9 @@
     "close": "Close",
     "open": "Open",
     "more": "More",
-    "less": "Less"
+    "less": "Less",
+    "page": "Page {{current}} of {{total}}",
+    "uploading": "Uploading..."
   },
   "nav": {
     "home": "Home",
@@ -113,6 +115,11 @@
     "rating": "Rating",
     "yourRating": "Your Rating",
     "rateThisVideo": "Rate this video",
+    "averageRating": "Average Rating",
+    "ratingCount": "{{count}} ratings",
+    "clickToRate": "Click to rate",
+    "ratingSuccess": "Rating submitted successfully",
+    "ratingFailed": "Failed to submit rating",
     "watchLater": "Watch Later",
     "addedToWatchLater": "Added to Watch Later",
     "quality": "Quality",
@@ -124,7 +131,8 @@
     "mute": "Mute",
     "unmute": "Unmute",
     "play": "Play",
-    "pause": "Pause"
+    "pause": "Pause",
+    "downloadFailed": "Download failed, please try again"
   },
   "search": {
     "title": "Search",
@@ -227,7 +235,24 @@
     "vipExpiry": "VIP Expiry",
     "upgradeToVip": "Upgrade to VIP",
     "vipBenefits": "VIP Benefits",
-    "memberSince": "Member Since"
+    "memberSince": "Member Since",
+    "avatarSelected": "Avatar selected, click save to upload"
+  },
+  "myList": {
+    "title": "My List",
+    "emptyList": "List is empty, cannot share",
+    "myWatchlist": "My Watchlist",
+    "videos": " videos",
+    "titleRequired": "Please enter a title",
+    "titlePlaceholder": "Give your list a name",
+    "descriptionPlaceholder": "Describe your list",
+    "linkCopied": "Link copied to clipboard",
+    "shareFailed": "Share failed, please try again",
+    "removeConfirm": "Are you sure you want to remove?",
+    "clearAllConfirm": "Are you sure you want to clear all videos?",
+    "batchRemoveConfirm": "Are you sure you want to remove selected videos?",
+    "batchRemoveSuccess": "Batch removal successful",
+    "batchRemoveFailed": "Batch removal failed, please try again"
   },
   "favorites": {
     "title": "My Favorites",
@@ -237,18 +262,42 @@
     "removedFromFavorites": "Removed from favorites",
     "removeConfirm": "Remove from favorites?",
     "clearAll": "Clear All",
-    "clearConfirm": "Clear all favorites?"
+    "clearConfirm": "Clear all favorites?",
+    "loadFailed": "Failed to load folders",
+    "createSuccess": "Folder created successfully",
+    "createFailed": "Failed to create folder",
+    "updateSuccess": "Folder updated successfully",
+    "updateFailed": "Failed to update folder",
+    "addFailed": "Failed to add to favorites",
+    "removeFailed": "Failed to remove from favorites",
+    "deleteSuccess": "Folder deleted successfully",
+    "deleteFailed": "Failed to delete folder",
+    "deleteConfirm": "Are you sure you want to delete this folder? Videos will be moved to the default folder.",
+    "nameRequired": "Please enter folder name",
+    "folderName": "Folder Name",
+    "folderNamePlaceholder": "Enter folder name",
+    "folderDescription": "Folder Description",
+    "folderDescriptionPlaceholder": "Folder description (optional)",
+    "publicFolder": "Public (visible to other users)",
+    "createFolder": "Create Folder",
+    "editFolder": "Edit Folder",
+    "folderNotFound": "Folder not found"
   },
   "history": {
     "title": "Watch History",
     "emptyHistory": "No watch history",
     "emptyDescription": "Videos you watch will appear here",
     "clearHistory": "Clear History",
-    "clearConfirm": "Clear all watch history?",
+    "clearConfirm": "Clear all watch history? This cannot be undone.",
+    "removeConfirm": "Remove from history?",
     "continueWatching": "Continue Watching",
     "watchedOn": "Watched on {{date}}",
     "progress": "{{percent}}% watched",
-    "removeFromHistory": "Remove from history"
+    "removeFromHistory": "Remove from history",
+    "removeSuccess": "Removed from history",
+    "removeFailed": "Failed to remove",
+    "clearSuccess": "History cleared",
+    "clearFailed": "Failed to clear history"
   },
   "notifications": {
     "title": "Notifications",
@@ -375,6 +424,16 @@
     "emailRequired": "Email is required",
     "subjectRequired": "Subject is required",
     "messageRequired": "Message is required",
+    "namePlaceholder": "Enter your name",
+    "emailPlaceholder": "your@email.com",
+    "subjectPlaceholder": "Select a subject",
+    "messagePlaceholder": "Please describe your question or suggestion in detail...",
+    "technical": "Technical Support",
+    "account": "Account Issues",
+    "billing": "Billing Inquiry",
+    "content": "Content Feedback",
+    "suggestion": "Suggestions",
+    "other": "Other Issues",
     "contactInfo": "Contact Information",
     "businessHours": "Business Hours",
     "responseTime": "We typically respond within 24 hours"
@@ -460,5 +519,26 @@
     "yourRights": "Your Rights",
     "changes": "Changes to This Policy",
     "contactUs": "Contact Us"
+  },
+  "validation": {
+    "required": "{{field}} is required",
+    "field": "This field",
+    "invalidEmail": "Please enter a valid email address",
+    "invalidUrl": "Please enter a valid URL (must start with http:// or https://)",
+    "invalidUsername": "Username can only contain letters, numbers, underscores, and Chinese characters (3-30 characters)",
+    "length": "Length should be between {{min}} and {{max}} characters",
+    "maxLength": "Cannot exceed {{max}} characters",
+    "minLength": "At least {{min}} characters required",
+    "passwordWeak": "Password must meet all security requirements (at least 8 characters, including uppercase, lowercase, numbers, and special characters)",
+    "passwordMismatch": "Passwords do not match",
+    "captchaInvalid": "Please enter a 4-digit captcha code",
+    "fileTooBig": "File size exceeds limit (max {{max}}MB)",
+    "fileInvalidType": "Unsupported file type",
+    "commentEmpty": "Comment cannot be empty",
+    "commentTooLong": "Comment cannot exceed {{max}} characters",
+    "danmakuEmpty": "Danmaku content cannot be empty",
+    "danmakuTooLong": "Danmaku content cannot exceed {{max}} characters",
+    "loginRequired": "Please login first",
+    "rateLimitExceeded": "Too many requests, please try again later"
   }
 }

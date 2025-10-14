@@ -17,14 +17,19 @@ import {
 import { SaveOutlined, ArrowLeftOutlined } from '@ant-design/icons'
 import { useQuery } from '@tanstack/react-query'
 import { useHotkeys } from 'react-hotkeys-hook'
+import { useTranslation } from 'react-i18next'
 import axios from '@/utils/axios'
 import dayjs from 'dayjs'
 import ChunkedUploader from '../../components/ChunkedUploader'
+import { createFormRules } from '@/utils/formRules'
+import { VALIDATION_LIMITS, NUMBER_LIMITS } from '@/utils/validationConfig'
 
 const { TextArea } = Input
 const { Option } = Select
 
 const VideoForm = () => {
+  const { t } = useTranslation()
+  const formRules = createFormRules(t)
   const navigate = useNavigate()
   const { id } = useParams()
   const [form] = Form.useForm()
@@ -162,48 +167,47 @@ const VideoForm = () => {
             <Card title="基本信息" style={{ marginBottom: 24 }}>
               <Form.Item
                 name="title"
-                label="标题"
+                label={t('video.title')}
                 rules={[
-                  { required: true, message: '请输入标题' },
-                  { min: 2, message: '标题至少2个字符' },
-                  { max: 500, message: '标题不能超过500个字符' },
+                  formRules.required(t('video.title')),
+                  formRules.length(VALIDATION_LIMITS.VIDEO_TITLE.min, VALIDATION_LIMITS.VIDEO_TITLE.max)
                 ]}
                 hasFeedback
               >
                 <Input 
-                  placeholder="请输入视频标题" 
+                  placeholder={t('video.titlePlaceholder')} 
                   size="large"
                   showCount
-                  maxLength={500}
+                  maxLength={VALIDATION_LIMITS.VIDEO_TITLE.max}
                 />
               </Form.Item>
 
               <Form.Item 
                 name="original_title" 
-                label="原始标题"
+                label={t('video.originalTitle')}
                 rules={[
-                  { max: 500, message: '原始标题不能超过500个字符' },
+                  formRules.maxLength(VALIDATION_LIMITS.VIDEO_ORIGINAL_TITLE.max)
                 ]}
               >
                 <Input 
-                  placeholder="请输入原始标题（如外文标题）"
+                  placeholder={t('video.originalTitlePlaceholder')}
                   showCount
-                  maxLength={500}
+                  maxLength={VALIDATION_LIMITS.VIDEO_ORIGINAL_TITLE.max}
                 />
               </Form.Item>
 
               <Form.Item 
                 name="description" 
-                label="简介"
+                label={t('video.description')}
                 rules={[
-                  { max: 2000, message: '简介不能超过2000个字符' },
+                  formRules.maxLength(VALIDATION_LIMITS.VIDEO_DESCRIPTION.max)
                 ]}
               >
                 <TextArea 
                   rows={6} 
-                  placeholder="请输入视频简介"
+                  placeholder={t('video.descriptionPlaceholder')}
                   showCount
-                  maxLength={2000}
+                  maxLength={VALIDATION_LIMITS.VIDEO_DESCRIPTION.max}
                 />
               </Form.Item>
 
@@ -211,29 +215,29 @@ const VideoForm = () => {
                 <Col span={12}>
                   <Form.Item
                     name="video_type"
-                    label="类型"
-                    rules={[{ required: true, message: '请选择类型' }]}
+                    label={t('video.type')}
+                    rules={[formRules.required(t('video.type'))]}
                     hasFeedback
                   >
-                    <Select placeholder="请选择视频类型">
-                      <Option value="movie">电影</Option>
-                      <Option value="tv_series">电视剧</Option>
-                      <Option value="anime">动漫</Option>
-                      <Option value="documentary">纪录片</Option>
+                    <Select placeholder={t('video.typePlaceholder')}>
+                      <Option value="movie">{t('category.movie')}</Option>
+                      <Option value="tv_series">{t('category.tvSeries')}</Option>
+                      <Option value="anime">{t('category.anime')}</Option>
+                      <Option value="documentary">{t('category.documentary')}</Option>
                     </Select>
                   </Form.Item>
                 </Col>
                 <Col span={12}>
                   <Form.Item
                     name="status"
-                    label="状态"
-                    rules={[{ required: true, message: '请选择状态' }]}
+                    label={t('video.status')}
+                    rules={[formRules.required(t('video.status'))]}
                     hasFeedback
                   >
-                    <Select placeholder="请选择状态">
-                      <Option value="DRAFT">草稿</Option>
-                      <Option value="PUBLISHED">已发布</Option>
-                      <Option value="ARCHIVED">已归档</Option>
+                    <Select placeholder={t('video.statusPlaceholder')}>
+                      <Option value="DRAFT">{t('video.draft')}</Option>
+                      <Option value="PUBLISHED">{t('video.published')}</Option>
+                      <Option value="ARCHIVED">{t('video.archived')}</Option>
                     </Select>
                   </Form.Item>
                 </Col>
@@ -241,18 +245,34 @@ const VideoForm = () => {
 
               <Row gutter={16}>
                 <Col span={8}>
-                  <Form.Item name="release_year" label="上映年份">
-                    <InputNumber style={{ width: '100%' }} min={1900} max={2100} />
+                  <Form.Item 
+                    name="release_year" 
+                    label={t('video.releaseYear')}
+                    rules={[formRules.numberRange(NUMBER_LIMITS.YEAR.min, NUMBER_LIMITS.YEAR.max)]}
+                  >
+                    <InputNumber 
+                      style={{ width: '100%' }} 
+                      min={NUMBER_LIMITS.YEAR.min} 
+                      max={NUMBER_LIMITS.YEAR.max} 
+                    />
                   </Form.Item>
                 </Col>
                 <Col span={8}>
-                  <Form.Item name="release_date" label="上映日期">
+                  <Form.Item name="release_date" label={t('video.releaseDate')}>
                     <DatePicker style={{ width: '100%' }} />
                   </Form.Item>
                 </Col>
                 <Col span={8}>
-                  <Form.Item name="duration" label="时长（分钟）">
-                    <InputNumber style={{ width: '100%' }} min={1} />
+                  <Form.Item 
+                    name="duration" 
+                    label={t('video.duration')}
+                    rules={[formRules.numberRange(1, NUMBER_LIMITS.DURATION.max)]}
+                  >
+                    <InputNumber 
+                      style={{ width: '100%' }} 
+                      min={1}
+                      max={NUMBER_LIMITS.DURATION.max}
+                    />
                   </Form.Item>
                 </Col>
               </Row>
@@ -291,11 +311,15 @@ const VideoForm = () => {
                 />
               </Form.Item>
 
-              <Form.Item name="video_url" label="视频地址">
-                <Input placeholder="视频播放地址（自动填充或手动输入）" />
+              <Form.Item
+                name="video_url"
+                label={t('video.videoUrl')}
+                rules={[formRules.url]}
+              >
+                <Input placeholder={t('video.videoUrlPlaceholder')} />
               </Form.Item>
 
-              <Form.Item label="海报图片上传">
+              <Form.Item label={t('video.posterUpload')}>
                 <ChunkedUploader
                   videoId={isEdit ? Number(id) : undefined}
                   uploadType="poster"
@@ -303,16 +327,20 @@ const VideoForm = () => {
                   maxSize={10}
                   onUploadComplete={(url) => {
                     form.setFieldsValue({ poster_url: url })
-                    message.success('海报上传成功')
+                    message.success(t('video.posterUploadSuccess'))
                   }}
                 />
               </Form.Item>
 
-              <Form.Item name="poster_url" label="海报地址">
-                <Input placeholder="海报图片 URL（自动填充或手动输入）" />
+              <Form.Item
+                name="poster_url"
+                label={t('video.posterUrl')}
+                rules={[formRules.url]}
+              >
+                <Input placeholder={t('video.posterUrlPlaceholder')} />
               </Form.Item>
 
-              <Form.Item label="背景图片上传">
+              <Form.Item label={t('video.backdropUpload')}>
                 <ChunkedUploader
                   videoId={isEdit ? Number(id) : undefined}
                   uploadType="backdrop"
@@ -320,17 +348,25 @@ const VideoForm = () => {
                   maxSize={10}
                   onUploadComplete={(url) => {
                     form.setFieldsValue({ backdrop_url: url })
-                    message.success('背景图片上传成功')
+                    message.success(t('video.backdropUploadSuccess'))
                   }}
                 />
               </Form.Item>
 
-              <Form.Item name="backdrop_url" label="背景地址">
-                <Input placeholder="背景图片 URL（自动填充或手动输入）" />
+              <Form.Item
+                name="backdrop_url"
+                label={t('video.backdropUrl')}
+                rules={[formRules.url]}
+              >
+                <Input placeholder={t('video.backdropUrlPlaceholder')} />
               </Form.Item>
 
-              <Form.Item name="trailer_url" label="预告片地址">
-                <Input placeholder="预告片地址（可选）" />
+              <Form.Item
+                name="trailer_url"
+                label={t('video.trailerUrl')}
+                rules={[formRules.url]}
+              >
+                <Input placeholder={t('video.trailerUrlPlaceholder')} />
               </Form.Item>
             </Card>
 

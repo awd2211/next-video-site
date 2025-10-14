@@ -1,7 +1,12 @@
 import { useState } from 'react'
 import { Mail, MessageCircle, Phone, MapPin, Send, CheckCircle } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
+import toast from 'react-hot-toast'
+import { sanitizeInput } from '@/utils/security'
+import { VALIDATION_LIMITS } from '@/utils/validationConfig'
 
 const ContactUs = () => {
+  const { t } = useTranslation()
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -20,12 +25,38 @@ const ContactUs = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+
+    // 验证输入
+    const cleanedName = sanitizeInput(formData.name, VALIDATION_LIMITS.CONTACT_NAME.max)
+    const cleanedMessage = sanitizeInput(formData.message, VALIDATION_LIMITS.CONTACT_MESSAGE.max)
+
+    if (!cleanedName) {
+      toast.error(t('contact.nameRequired'))
+      return
+    }
+
+    if (!formData.email) {
+      toast.error(t('contact.emailRequired'))
+      return
+    }
+
+    if (!formData.subject) {
+      toast.error(t('contact.subjectRequired'))
+      return
+    }
+
+    if (!cleanedMessage) {
+      toast.error(t('contact.messageRequired'))
+      return
+    }
+
     setIsSubmitting(true)
 
-    // 模拟提交
+    // 模拟提交（实际项目中应调用API）
     setTimeout(() => {
       setIsSubmitting(false)
       setIsSubmitted(true)
+      toast.success(t('contact.sendSuccess'))
       setFormData({ name: '', email: '', subject: '', message: '' })
 
       // 3秒后重置成功状态
@@ -135,23 +166,27 @@ const ContactUs = () => {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
                       <label htmlFor="name" className="block text-sm font-medium mb-2">
-                        姓名 <span className="text-red-500">*</span>
+                        {t('contact.name')} <span className="text-red-500">*</span>
                       </label>
                       <input
                         type="text"
                         id="name"
                         name="name"
                         required
+                        maxLength={VALIDATION_LIMITS.CONTACT_NAME.max}
                         value={formData.name}
                         onChange={handleChange}
                         className="w-full px-4 py-3 bg-gray-900 border border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-600 focus:border-transparent"
-                        placeholder="请输入您的姓名"
+                        placeholder={t('contact.namePlaceholder')}
                       />
+                      <div className="text-xs text-gray-500 mt-1">
+                        {formData.name.length}/{VALIDATION_LIMITS.CONTACT_NAME.max}
+                      </div>
                     </div>
 
                     <div>
                       <label htmlFor="email" className="block text-sm font-medium mb-2">
-                        邮箱 <span className="text-red-500">*</span>
+                        {t('contact.email')} <span className="text-red-500">*</span>
                       </label>
                       <input
                         type="email"
@@ -161,14 +196,14 @@ const ContactUs = () => {
                         value={formData.email}
                         onChange={handleChange}
                         className="w-full px-4 py-3 bg-gray-900 border border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-600 focus:border-transparent"
-                        placeholder="your@email.com"
+                        placeholder={t('contact.emailPlaceholder')}
                       />
                     </div>
                   </div>
 
                   <div>
                     <label htmlFor="subject" className="block text-sm font-medium mb-2">
-                      主题 <span className="text-red-500">*</span>
+                      {t('contact.subject')} <span className="text-red-500">*</span>
                     </label>
                     <select
                       id="subject"
@@ -178,30 +213,34 @@ const ContactUs = () => {
                       onChange={handleChange}
                       className="w-full px-4 py-3 bg-gray-900 border border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-600 focus:border-transparent"
                     >
-                      <option value="">请选择主题</option>
-                      <option value="technical">技术支持</option>
-                      <option value="account">账号问题</option>
-                      <option value="billing">付费咨询</option>
-                      <option value="content">内容反馈</option>
-                      <option value="suggestion">建议意见</option>
-                      <option value="other">其他问题</option>
+                      <option value="">{t('contact.subjectPlaceholder')}</option>
+                      <option value="technical">{t('contact.technical')}</option>
+                      <option value="account">{t('contact.account')}</option>
+                      <option value="billing">{t('contact.billing')}</option>
+                      <option value="content">{t('contact.content')}</option>
+                      <option value="suggestion">{t('contact.suggestion')}</option>
+                      <option value="other">{t('contact.other')}</option>
                     </select>
                   </div>
 
                   <div>
                     <label htmlFor="message" className="block text-sm font-medium mb-2">
-                      消息内容 <span className="text-red-500">*</span>
+                      {t('contact.message')} <span className="text-red-500">*</span>
                     </label>
                     <textarea
                       id="message"
                       name="message"
                       required
+                      maxLength={VALIDATION_LIMITS.CONTACT_MESSAGE.max}
                       value={formData.message}
                       onChange={handleChange}
                       rows={6}
                       className="w-full px-4 py-3 bg-gray-900 border border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-600 focus:border-transparent resize-none"
-                      placeholder="请详细描述您的问题或建议..."
+                      placeholder={t('contact.messagePlaceholder')}
                     />
+                    <div className="text-xs text-gray-500 mt-1 text-right">
+                      {formData.message.length}/{VALIDATION_LIMITS.CONTACT_MESSAGE.max}
+                    </div>
                   </div>
 
                   <button

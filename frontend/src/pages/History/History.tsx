@@ -1,8 +1,11 @@
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { historyService, PaginatedHistory } from '../../services/historyService'
+import { useTranslation } from 'react-i18next'
+import toast from 'react-hot-toast'
 
 const History = () => {
+  const { t } = useTranslation()
   const [history, setHistory] = useState<PaginatedHistory | null>(null)
   const [loading, setLoading] = useState(true)
   const [page, setPage] = useState(1)
@@ -25,24 +28,26 @@ const History = () => {
   }, [page])
 
   const handleRemove = async (videoId: number) => {
-    if (!confirm('Remove from history?')) return
+    if (!confirm(t('history.removeConfirm'))) return
 
     try {
       await historyService.deleteHistory(videoId)
+      toast.success(t('history.removeSuccess'))
       loadHistory()
     } catch (error) {
-      alert('Failed to remove from history')
+      toast.error(t('history.removeFailed'))
     }
   }
 
   const handleClearAll = async () => {
-    if (!confirm('Clear all watch history? This cannot be undone.')) return
+    if (!confirm(t('history.clearConfirm'))) return
 
     try {
       await historyService.clearHistory()
+      toast.success(t('history.clearSuccess'))
       loadHistory()
     } catch (error) {
-      alert('Failed to clear history')
+      toast.error(t('history.clearFailed'))
     }
   }
 

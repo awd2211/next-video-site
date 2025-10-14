@@ -1,11 +1,14 @@
 import { useState, useEffect } from 'react'
 import { ratingService } from '../../services/ratingService'
+import { useTranslation } from 'react-i18next'
+import toast from 'react-hot-toast'
 
 interface RatingStarsProps {
   videoId: number
 }
 
 const RatingStars = ({ videoId }: RatingStarsProps) => {
+  const { t } = useTranslation()
   const [averageRating, setAverageRating] = useState(0)
   const [ratingCount, setRatingCount] = useState(0)
   const [userRating, setUserRating] = useState<number | null>(null)
@@ -32,11 +35,12 @@ const RatingStars = ({ videoId }: RatingStarsProps) => {
       setLoading(true)
       await ratingService.rateVideo(videoId, score)
       await loadRatingStats()
+      toast.success(t('video.ratingSuccess'))
     } catch (error: any) {
       if (error.response?.status === 401) {
-        alert('Please login to rate this video')
+        toast.error(t('validation.loginRequired'))
       } else {
-        alert('Failed to rate video')
+        toast.error(t('video.ratingFailed'))
       }
     } finally {
       setLoading(false)
@@ -76,11 +80,11 @@ const RatingStars = ({ videoId }: RatingStarsProps) => {
     <div className="rating-stars">
       <div className="flex items-center space-x-4">
         <div>
-          <div className="text-sm text-gray-600 mb-1">Average Rating</div>
+          <div className="text-sm text-gray-600 mb-1">{t('video.averageRating')}</div>
           <div className="flex items-center space-x-1">
             {renderStars(averageRating, false)}
             <span className="ml-2 text-sm text-gray-600">
-              {averageRating.toFixed(1)}/10 ({ratingCount} {ratingCount === 1 ? 'rating' : 'ratings'})
+              {averageRating.toFixed(1)}/10 ({t('video.ratingCount', { count: ratingCount })})
             </span>
           </div>
         </div>
@@ -88,7 +92,7 @@ const RatingStars = ({ videoId }: RatingStarsProps) => {
 
       <div className="mt-4">
         <div className="text-sm text-gray-600 mb-1">
-          {userRating ? 'Your Rating' : 'Rate this video'}
+          {userRating ? t('video.yourRating') : t('video.rateThisVideo')}
         </div>
         <div className="flex items-center space-x-1">
           {renderStars(userRating ?? hoveredRating, true)}
@@ -100,7 +104,7 @@ const RatingStars = ({ videoId }: RatingStarsProps) => {
         </div>
         {hoveredRating > 0 && !userRating && (
           <div className="text-sm text-gray-500 mt-1">
-            Click to rate: {hoveredRating.toFixed(1)}/10
+            {t('video.clickToRate')}: {hoveredRating.toFixed(1)}/10
           </div>
         )}
       </div>

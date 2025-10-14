@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { ChevronDown, ChevronUp, Search, HelpCircle } from 'lucide-react'
+import { useDebounce } from '@/hooks/useDebounce'
 
 interface FAQItem {
   id: string
@@ -10,6 +11,7 @@ interface FAQItem {
 
 const FAQ = () => {
   const [searchQuery, setSearchQuery] = useState('')
+  const debouncedSearchQuery = useDebounce(searchQuery, 300)
   const [expandedId, setExpandedId] = useState<string | null>(null)
   const [selectedCategory, setSelectedCategory] = useState<string>('all')
 
@@ -178,9 +180,9 @@ const FAQ = () => {
 
   const filteredFAQs = faqs.filter(faq => {
     const matchesCategory = selectedCategory === 'all' || faq.category === selectedCategory
-    const matchesSearch = searchQuery === '' ||
-      faq.question.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      faq.answer.toLowerCase().includes(searchQuery.toLowerCase())
+    const matchesSearch = debouncedSearchQuery === '' ||
+      faq.question.toLowerCase().includes(debouncedSearchQuery.toLowerCase()) ||
+      faq.answer.toLowerCase().includes(debouncedSearchQuery.toLowerCase())
     return matchesCategory && matchesSearch
   })
 

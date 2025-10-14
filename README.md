@@ -597,10 +597,94 @@ make db-init
 4. **推送**到分支 (`git push origin feature/AmazingFeature`)
 5. **打开** Pull Request
 
+### 表单验证规范
+
+**统一的验证配置**
+
+项目使用统一的验证配置和规则，确保前后端的验证逻辑一致：
+
+```typescript
+// 验证配置位置
+frontend / src / utils / validationConfig.ts;
+admin - frontend / src / utils / validationConfig.ts;
+
+// 表单规则位置
+frontend / src / utils / formRules.ts;
+admin - frontend / src / utils / formRules.ts;
+```
+
+**使用方式**
+
+```typescript
+import { createFormRules } from '@/utils/formRules';
+import { VALIDATION_LIMITS } from '@/utils/validationConfig';
+import { useTranslation } from 'react-i18next';
+
+const MyComponent = () => {
+  const { t } = useTranslation();
+  const formRules = createFormRules(t);
+
+  return (
+    <Form.Item name="email" rules={[formRules.required('Email'), formRules.email]}>
+      <Input maxLength={VALIDATION_LIMITS.EMAIL.max} />
+    </Form.Item>
+  );
+};
+```
+
+**验证工具**
+
+- **XSS 防护**: 使用 `sanitizeHTML()` 清理用户 HTML 输入
+- **输入清理**: 使用 `sanitizeInput()` 移除危险字符
+- **URL 验证**: 使用 `isValidURL()` 验证 URL 格式
+- **邮箱验证**: 使用 `isValidEmail()` 验证邮箱格式
+- **文件验证**: 使用 `validateFile()` 验证文件类型和大小
+
+### 测试规范
+
+**运行测试**
+
+```bash
+# 用户前端测试
+cd frontend
+pnpm test                    # 运行所有测试
+pnpm test:coverage           # 生成覆盖率报告
+pnpm test:ui                 # 打开测试UI
+
+# 管理后台测试
+cd admin-frontend
+pnpm test
+pnpm test:coverage
+
+# 后端测试
+cd backend
+source venv/bin/activate
+pytest                       # 运行所有测试
+pytest --cov=app             # 生成覆盖率报告
+pytest -v                    # 详细输出
+```
+
+**测试文件位置**
+
+- 前端: `frontend/src/utils/__tests__/`
+- 管理后台: `admin-frontend/src/utils/__tests__/`
+- 后端: `backend/tests/`
+
+**编写测试**
+
+每个验证函数都应有对应的测试用例，测试内容包括：
+
+- 有效输入的正常情况
+- 无效输入的边界情况
+- 空值/null 的处理
+- 安全性测试（XSS、SQL 注入等）
+
 ### 开发规范
 
 - 遵循现有代码风格
-- 为新功能编写测试
+- **为新功能编写测试（必需）**
+- **所有表单必须使用统一的验证规则**
+- **所有用户输入必须经过清理和验证**
 - 根据需要更新文档
 - 使用约定式提交规范
 

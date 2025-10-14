@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next'
 import api from '@/services/api'
 import { useAuthStore } from '@/store/authStore'
 import OAuthButtons from '@/components/OAuthButtons'
+import { checkLoginRateLimit, rateLimiter } from '@/utils/rateLimit'
 
 const Login = () => {
   const { t } = useTranslation()
@@ -13,6 +14,7 @@ const Login = () => {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
+  const [rateLimitInfo, setRateLimitInfo] = useState<{ message: string; waitTime: number } | null>(null)
 
   // 验证码状态
   const [captchaId, setCaptchaId] = useState('')
@@ -44,12 +46,21 @@ const Login = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
+    // 检查速率限制
+    const rateLimit = checkLoginRateLimit()
+    if (!rateLimit.allowed) {
+      setRateLimitInfo({ message: rateLimit.message, waitTime: rateLimit.waitTime })
+      toast.error(rateLimit.message)
+      return
+    }
+
     if (!captchaCode || captchaCode.length !== 4) {
       toast.error('请输入4位验证码')
       return
     }
 
     setLoading(true)
+    setRateLimitInfo(null)
 
     try {
       const response = await api.post('/auth/login', {
@@ -66,6 +77,9 @@ const Login = () => {
 
       // Update auth state
       setAuth(user, access_token)
+
+      // 登录成功，重置速率限制
+      rateLimiter.reset('login')
 
       toast.success(`欢迎回来，${user.username || user.email}！`)
 
@@ -88,6 +102,21 @@ const Login = () => {
     <div className="min-h-screen bg-gray-900 flex items-center justify-center px-4">
       <div className="max-w-md w-full bg-gray-800 rounded-lg shadow-lg p-8">
         <h1 className="text-3xl font-bold text-center mb-8">登录 VideoSite</h1>
+
+        {/* 速率限制警告 */}
+        {rateLimitInfo && (
+          <div className="bg-yellow-500 bg-opacity-10 border border-yellow-500 text-yellow-500 rounded p-3 mb-4 text-sm">
+            <div className="flex items-center">
+              <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+              </svg>
+              <div>
+                <p className="font-medium">{rateLimitInfo.message}</p>
+                <p className="text-xs mt-1">请等待 {rateLimitInfo.waitTime} 秒后重试</p>
+              </div>
+            </div>
+          </div>
+        )}
 
         <form onSubmit={handleSubmit} className="space-y-6">
           <div>

@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { ChevronDown, ChevronUp, Search, Book, MessageCircle, Shield, Video } from 'lucide-react'
+import { useDebounce } from '@/hooks/useDebounce'
 
 interface HelpTopic {
   id: string
@@ -15,6 +16,7 @@ interface HelpTopic {
 
 const HelpCenter = () => {
   const [searchQuery, setSearchQuery] = useState('')
+  const debouncedSearchQuery = useDebounce(searchQuery, 300)
   const [expandedArticle, setExpandedArticle] = useState<string | null>(null)
 
   const helpTopics: HelpTopic[] = [
@@ -129,9 +131,9 @@ const HelpCenter = () => {
   const filteredTopics = helpTopics.map(topic => ({
     ...topic,
     articles: topic.articles.filter(article =>
-      searchQuery === '' ||
-      article.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      article.content.toLowerCase().includes(searchQuery.toLowerCase())
+      debouncedSearchQuery === '' ||
+      article.title.toLowerCase().includes(debouncedSearchQuery.toLowerCase()) ||
+      article.content.toLowerCase().includes(debouncedSearchQuery.toLowerCase())
     )
   })).filter(topic => topic.articles.length > 0)
 

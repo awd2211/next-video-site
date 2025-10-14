@@ -235,6 +235,11 @@ const AdminLayout = () => {
           icon: <RobotOutlined />,
           label: t('menu.aiManagement'),
         },
+        {
+          key: '/ai-logs',
+          icon: <FileTextOutlined />,
+          label: t('menu.aiLogs') || 'AI日志',
+        },
       ],
     },
     // 📈 数据分析

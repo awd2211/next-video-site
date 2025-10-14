@@ -1,11 +1,19 @@
 import { useState, useEffect } from 'react'
 import { commentService, Comment, CommentCreate } from '../../services/commentService'
+import { sanitizeHTML, sanitizeInput } from '@/utils/security'
+import { checkCommentRateLimit } from '@/utils/rateLimit'
+import { VALIDATION_LIMITS } from '@/utils/validationConfig'
+import { useTranslation } from 'react-i18next'
+import toast from 'react-hot-toast'
 
 interface CommentSectionProps {
   videoId: number
 }
 
+const MAX_COMMENT_LENGTH = VALIDATION_LIMITS.COMMENT.max
+
 const CommentSection = ({ videoId }: CommentSectionProps) => {
+  const { t } = useTranslation()
   const [comments, setComments] = useState<Comment[]>([])
   const [loading, setLoading] = useState(false)
   const [newComment, setNewComment] = useState('')
@@ -33,12 +41,31 @@ const CommentSection = ({ videoId }: CommentSectionProps) => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!newComment.trim()) return
+
+    // 检查速率限制
+    const rateLimit = checkCommentRateLimit()
+    if (!rateLimit.allowed) {
+      toast.error(t('validation.rateLimitExceeded'))
+      return
+    }
+
+    // 清理输入
+    const cleanedComment = sanitizeInput(newComment, MAX_COMMENT_LENGTH)
+
+    if (!cleanedComment) {
+      toast.error(t('validation.commentEmpty'))
+      return
+    }
+
+    if (cleanedComment.length > MAX_COMMENT_LENGTH) {
+      toast.error(t('validation.commentTooLong', { max: MAX_COMMENT_LENGTH }))
+      return
+    }
 
     try {
       const data: CommentCreate = {
         video_id: videoId,
-        content: newComment.trim()
+        content: cleanedComment
       }
       if (replyTo) {
         data.parent_id = replyTo
@@ -47,24 +74,26 @@ const CommentSection = ({ videoId }: CommentSectionProps) => {
       await commentService.createComment(data)
       setNewComment('')
       setReplyTo(null)
+      toast.success(t('comment.commentSuccess'))
       loadComments() // Reload comments
     } catch (error: any) {
       if (error.response?.status === 401) {
-        alert('Please login to comment')
+        toast.error(t('validation.loginRequired'))
       } else {
-        alert('Failed to post comment')
+        toast.error(t('comment.commentFailed'))
       }
     }
   }
 
   const handleDelete = async (commentId: number) => {
-    if (!confirm('Are you sure you want to delete this comment?')) return
+    if (!confirm(t('comment.deleteConfirm'))) return
 
     try {
       await commentService.deleteComment(commentId)
+      toast.success(t('comment.deleteSuccess'))
       loadComments()
     } catch (error) {
-      alert('Failed to delete comment')
+      toast.error(t('comment.deleteFailed'))
     }
   }
 
@@ -81,9 +110,9 @@ const CommentSection = ({ videoId }: CommentSectionProps) => {
       )
     } catch (error: any) {
       if (error.response?.status === 401) {
-        alert('Please login to like comments')
+        toast.error(t('validation.loginRequired'))
       } else {
-        alert('Failed to like comment')
+        toast.error(t('common.error'))
       }
     }
   }
@@ -95,44 +124,50 @@ const CommentSection = ({ videoId }: CommentSectionProps) => {
 
   return (
     <div className="comment-section mt-8">
-      <h3 className="text-2xl font-bold mb-4">Comments ({total})</h3>
+      <h3 className="text-2xl font-bold mb-4">{t('comment.title')} ({total})</h3>
 
       {/* Comment Form */}
       <form onSubmit={handleSubmit} className="mb-6">
         {replyTo && (
           <div className="mb-2 text-sm text-gray-600">
-            Replying to comment #{replyTo}
+            {t('comment.replyTo', { name: `#${replyTo}` })}
             <button
               type="button"
               onClick={() => setReplyTo(null)}
               className="ml-2 text-red-600"
             >
-              Cancel
+              {t('common.cancel')}
             </button>
           </div>
         )}
-        <textarea
-          value={newComment}
-          onChange={(e) => setNewComment(e.target.value)}
-          placeholder="Write a comment..."
-          className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-          rows={3}
-        />
+        <div className="relative">
+          <textarea
+            value={newComment}
+            onChange={(e) => setNewComment(e.target.value)}
+            placeholder={t('comment.addComment')}
+            className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            rows={3}
+            maxLength={MAX_COMMENT_LENGTH}
+          />
+          <div className="absolute bottom-2 right-2 text-xs text-gray-500">
+            {newComment.length}/{MAX_COMMENT_LENGTH}
+          </div>
+        </div>
         <button
           type="submit"
           disabled={!newComment.trim()}
           className="mt-2 px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
         >
-          Post Comment
+          {t('comment.postComment')}
         </button>
       </form>
 
       {/* Comments List */}
       {loading ? (
-        <div className="text-center py-4">Loading comments...</div>
+        <div className="text-center py-4">{t('common.loading')}</div>
       ) : comments.length === 0 ? (
         <div className="text-center py-8 text-gray-500">
-          No comments yet. Be the first to comment!
+          {t('comment.noComments')}. {t('comment.beFirst')}
         </div>
       ) : (
         <div className="space-y-4">
@@ -162,7 +197,10 @@ const CommentSection = ({ videoId }: CommentSectionProps) => {
                 </div>
               </div>
 
-              <div className="mt-3 text-gray-800">{comment.content}</div>
+              <div
+                className="mt-3 text-gray-800"
+                dangerouslySetInnerHTML={{ __html: sanitizeHTML(comment.content) }}
+              />
 
               <div className="mt-3 flex items-center space-x-4 text-sm">
                 <button
@@ -178,18 +216,18 @@ const CommentSection = ({ videoId }: CommentSectionProps) => {
                   onClick={() => setReplyTo(comment.id)}
                   className="text-blue-600 hover:text-blue-800"
                 >
-                  Reply
+                  {t('comment.reply')}
                 </button>
                 {comment.reply_count > 0 && (
                   <span className="text-gray-500">
-                    {comment.reply_count} {comment.reply_count === 1 ? 'reply' : 'replies'}
+                    {t('comment.replies', { count: comment.reply_count })}
                   </span>
                 )}
                 <button
                   onClick={() => handleDelete(comment.id)}
                   className="text-red-600 hover:text-red-800"
                 >
-                  Delete
+                  {t('comment.deleteComment')}
                 </button>
               </div>
             </div>
@@ -205,17 +243,17 @@ const CommentSection = ({ videoId }: CommentSectionProps) => {
             disabled={page === 1}
             className="px-4 py-2 border rounded hover:bg-gray-100 disabled:opacity-50"
           >
-            Previous
+            {t('common.previous')}
           </button>
           <span className="px-4 py-2">
-            Page {page} of {Math.ceil(total / pageSize)}
+            {t('common.page', { current: page, total: Math.ceil(total / pageSize) })}
           </span>
           <button
             onClick={() => setPage(p => p + 1)}
             disabled={page >= Math.ceil(total / pageSize)}
             className="px-4 py-2 border rounded hover:bg-gray-100 disabled:opacity-50"
           >
-            Next
+            {t('common.next')}
           </button>
         </div>
       )}

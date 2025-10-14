@@ -4,6 +4,8 @@ import { Search, Clock, TrendingUp, X } from 'lucide-react'
 import { videoService } from '@/services/videoService'
 import { searchHistoryService } from '@/services/searchHistoryService'
 import { useAuthStore } from '@/store/authStore'
+import { sanitizeSearchQuery } from '@/utils/security'
+import { VALIDATION_LIMITS } from '@/utils/validationConfig'
 import type { Video } from '@/types'
 
 interface SearchAutocompleteProps {
@@ -70,10 +72,19 @@ const SearchAutocomplete = ({ onSearch }: SearchAutocompleteProps) => {
   const handleSearch = async (searchQuery: string) => {
     if (!searchQuery.trim()) return
 
+    // 清理和验证查询
+    let cleanedQuery = sanitizeSearchQuery(searchQuery.trim())
+    
+    if (!cleanedQuery) return
+    
+    if (cleanedQuery.length > VALIDATION_LIMITS.SEARCH_QUERY.max) {
+      cleanedQuery = cleanedQuery.substring(0, VALIDATION_LIMITS.SEARCH_QUERY.max)
+    }
+
     // 保存到本地搜索历史 (localStorage)
     const newHistory = [
-      searchQuery,
-      ...searchHistory.filter(item => item !== searchQuery),
+      cleanedQuery,
+      ...searchHistory.filter(item => item !== cleanedQuery),
     ].slice(0, 10) // 最多保存 10 条
 
     setSearchHistory(newHistory)
@@ -82,21 +93,21 @@ const SearchAutocomplete = ({ onSearch }: SearchAutocompleteProps) => {
     // 🆕 同步到服务器 (如果已登录) - 静默记录,不阻塞用户
     if (isAuthenticated) {
       // 先执行搜索获取结果数,然后异步记录
-      videoService.searchVideos(searchQuery, { page: 1, page_size: 1 }).then((data) => {
-        searchHistoryService.recordSearch(searchQuery, data.total)
+      videoService.searchVideos(cleanedQuery, { page: 1, page_size: 1 }).then((data) => {
+        searchHistoryService.recordSearch(cleanedQuery, data.total)
       }).catch(() => {
         // 静默失败 - 使用默认值
-        searchHistoryService.recordSearch(searchQuery, 0)
+        searchHistoryService.recordSearch(cleanedQuery, 0)
       })
     }
 
     // 执行搜索导航
     setIsOpen(false)
-    setQuery(searchQuery)
-    navigate(`/search?q=${encodeURIComponent(searchQuery)}`)
+    setQuery(cleanedQuery)
+    navigate(`/search?q=${encodeURIComponent(cleanedQuery)}`)
 
     if (onSearch) {
-      onSearch(searchQuery)
+      onSearch(cleanedQuery)
     }
   }
 
@@ -128,6 +139,7 @@ const SearchAutocomplete = ({ onSearch }: SearchAutocompleteProps) => {
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             onFocus={() => setIsOpen(true)}
+            maxLength={VALIDATION_LIMITS.SEARCH_QUERY.max}
             className="w-full bg-gray-700 dark:bg-gray-700 light:bg-gray-100 text-white dark:text-white light:text-gray-900 rounded-full px-4 py-2 pl-10 pr-10 focus:outline-none focus:ring-2 focus:ring-red-600 transition-colors"
           />
           {query && (

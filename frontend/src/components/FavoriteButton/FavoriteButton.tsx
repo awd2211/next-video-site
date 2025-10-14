@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react'
 import { favoriteService } from '../../services/favoriteService'
 import FolderSelector from '../FolderSelector'
+import { useTranslation } from 'react-i18next'
+import toast from 'react-hot-toast'
 
 interface FavoriteButtonProps {
   videoId: number
@@ -13,6 +15,7 @@ const FavoriteButton = ({
   className = '',
   enableFolderSelection = true
 }: FavoriteButtonProps) => {
+  const { t } = useTranslation()
   const [isFavorited, setIsFavorited] = useState(false)
   const [loading, setLoading] = useState(false)
   const [showFolderSelector, setShowFolderSelector] = useState(false)
@@ -49,9 +52,9 @@ const FavoriteButton = ({
       }
     } catch (error: any) {
       if (error.response?.status === 401) {
-        alert('Please login to add favorites')
+        toast.error(t('validation.loginRequired'))
       } else {
-        alert('Failed to update favorite status')
+        toast.error(t('favorites.updateFailed'))
       }
     } finally {
       setLoading(false)
@@ -64,11 +67,12 @@ const FavoriteButton = ({
       setShowFolderSelector(false)
       await favoriteService.addFavorite(videoId, folderId)
       setIsFavorited(true)
+      toast.success(t('favorites.addedToFavorites'))
     } catch (error: any) {
       if (error.response?.status === 401) {
-        alert('Please login to add favorites')
+        toast.error(t('validation.loginRequired'))
       } else {
-        alert('Failed to add to favorites')
+        toast.error(t('favorites.addFailed'))
       }
     } finally {
       setLoading(false)

@@ -12,6 +12,10 @@ import watchlistService, { WatchlistItem } from '@/services/watchlistService'
 import sharedWatchlistService from '@/services/sharedWatchlistService'
 import EmptyState from '@/components/EmptyState'
 import { VideoCardSkeleton } from '@/components/Skeleton'
+import { sanitizeInput } from '@/utils/security'
+import { VALIDATION_LIMITS } from '@/utils/validationConfig'
+import { useTranslation } from 'react-i18next'
+import toast from 'react-hot-toast'
 
 // Video type labels
 const VIDEO_TYPE_LABELS: Record<string, string> = {
@@ -22,6 +26,7 @@ const VIDEO_TYPE_LABELS: Record<string, string> = {
 }
 
 const MyList = () => {
+  const { t } = useTranslation()
   const queryClient = useQueryClient()
   const [removingId, setRemovingId] = useState<number | null>(null)
   const [localWatchlist, setLocalWatchlist] = useState<WatchlistItem[]>([])
@@ -226,12 +231,13 @@ const MyList = () => {
         )
         // Refresh the list
         queryClient.invalidateQueries({ queryKey: ['watchlist'] })
+        toast.success(t('myList.batchRemoveSuccess'))
         // Exit batch mode
         setBatchMode(false)
         setSelectedIds(new Set())
       } catch (error) {
         console.error('Batch remove failed:', error)
-        alert('批量移除失败，请重试')
+        toast.error(t('myList.batchRemoveFailed'))
       }
     }
   }
@@ -272,17 +278,17 @@ const MyList = () => {
     },
     onError: (error) => {
       console.error('Share failed:', error)
-      alert('分享失败，请重试')
+      toast.error(t('myList.shareFailed'))
     },
   })
 
   const handleShare = () => {
     if (!filteredWatchlist || filteredWatchlist.length === 0) {
-      alert('列表为空，无法分享')
+      toast.error(t('myList.emptyList'))
       return
     }
 
-    setShareTitle(`我的待看列表 - ${filteredWatchlist.length}个视频`)
+    setShareTitle(`${t('myList.myWatchlist')} - ${filteredWatchlist.length}${t('myList.videos')}`)
     setShareDescription('')
     setShareExpireDays(undefined)
     setShareUrl('')
@@ -290,16 +296,24 @@ const MyList = () => {
   }
 
   const handleConfirmShare = () => {
-    if (!shareTitle.trim()) {
-      alert('请输入标题')
+    const cleanedTitle = sanitizeInput(shareTitle, VALIDATION_LIMITS.TITLE.max)
+    const cleanedDescription = sanitizeInput(shareDescription, VALIDATION_LIMITS.DESCRIPTION.max)
+
+    if (!cleanedTitle.trim()) {
+      toast.error(t('myList.titleRequired'))
+      return
+    }
+
+    if (cleanedTitle.length > VALIDATION_LIMITS.TITLE.max) {
+      toast.error(t('validation.maxLength', { max: VALIDATION_LIMITS.TITLE.max }))
       return
     }
 
     const videoIds = filteredWatchlist.map(item => item.video_id)
 
     shareMutation.mutate({
-      title: shareTitle,
-      description: shareDescription || undefined,
+      title: cleanedTitle,
+      description: cleanedDescription || undefined,
       video_ids: videoIds,
       expires_in_days: shareExpireDays,
     })
@@ -308,7 +322,7 @@ const MyList = () => {
   const handleCopyShareUrl = () => {
     if (shareUrl) {
       navigator.clipboard.writeText(shareUrl)
-      alert('链接已复制到剪贴板')
+      toast.success(t('myList.linkCopied'))
     }
   }
 
@@ -696,9 +710,12 @@ const MyList = () => {
                         value={shareTitle}
                         onChange={(e) => setShareTitle(e.target.value)}
                         className="w-full bg-gray-800 text-white rounded-lg px-4 py-2 border border-gray-700 focus:border-green-500 focus:ring-1 focus:ring-green-500 outline-none"
-                        placeholder="给你的列表起个名字"
-                        maxLength={200}
+                        placeholder={t('myList.titlePlaceholder')}
+                        maxLength={VALIDATION_LIMITS.TITLE.max}
                       />
+                      <div className="text-xs text-gray-400 mt-1">
+                        {shareTitle.length}/{VALIDATION_LIMITS.TITLE.max}
+                      </div>
                     </div>
 
                     <div>
@@ -709,10 +726,13 @@ const MyList = () => {
                         value={shareDescription}
                         onChange={(e) => setShareDescription(e.target.value)}
                         className="w-full bg-gray-800 text-white rounded-lg px-4 py-2 border border-gray-700 focus:border-green-500 focus:ring-1 focus:ring-green-500 outline-none resize-none"
-                        placeholder="描述一下你的列表"
+                        placeholder={t('myList.descriptionPlaceholder')}
                         rows={3}
-                        maxLength={1000}
+                        maxLength={VALIDATION_LIMITS.DESCRIPTION.max}
                       />
+                      <div className="text-xs text-gray-400 mt-1 text-right">
+                        {shareDescription.length}/{VALIDATION_LIMITS.DESCRIPTION.max}
+                      </div>
                     </div>
 
                     <div>

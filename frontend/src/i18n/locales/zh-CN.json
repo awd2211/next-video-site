@@ -24,7 +24,9 @@
     "close": "关闭",
     "open": "打开",
     "more": "更多",
-    "less": "收起"
+    "less": "收起",
+    "page": "第 {{current}} 页，共 {{total}} 页",
+    "uploading": "上传中..."
   },
   "nav": {
     "home": "首页",
@@ -113,6 +115,11 @@
     "rating": "评分",
     "yourRating": "你的评分",
     "rateThisVideo": "为这个视频评分",
+    "averageRating": "平均评分",
+    "ratingCount": "{{count}} 个评分",
+    "clickToRate": "点击评分",
+    "ratingSuccess": "评分成功",
+    "ratingFailed": "评分失败",
     "watchLater": "稍后观看",
     "addedToWatchLater": "已添加到稍后观看",
     "quality": "画质",
@@ -124,7 +131,8 @@
     "mute": "静音",
     "unmute": "取消静音",
     "play": "播放",
-    "pause": "暂停"
+    "pause": "暂停",
+    "downloadFailed": "下载失败，请重试"
   },
   "search": {
     "title": "搜索",
@@ -227,7 +235,24 @@
     "vipExpiry": "VIP 到期时间",
     "upgradeToVip": "升级为 VIP",
     "vipBenefits": "VIP 特权",
-    "memberSince": "注册时间"
+    "memberSince": "注册时间",
+    "avatarSelected": "头像已选择，请点击保存以上传"
+  },
+  "myList": {
+    "title": "我的列表",
+    "emptyList": "列表为空，无法分享",
+    "myWatchlist": "我的待看列表",
+    "videos": "个视频",
+    "titleRequired": "请输入标题",
+    "titlePlaceholder": "给你的列表起个名字",
+    "descriptionPlaceholder": "描述一下你的列表",
+    "linkCopied": "链接已复制到剪贴板",
+    "shareFailed": "分享失败，请重试",
+    "removeConfirm": "确定要移除吗？",
+    "clearAllConfirm": "确定要清空所有视频吗？",
+    "batchRemoveConfirm": "确定要移除选中的视频吗？",
+    "batchRemoveSuccess": "批量移除成功",
+    "batchRemoveFailed": "批量移除失败，请重试"
   },
   "favorites": {
     "title": "我的收藏",
@@ -237,18 +262,42 @@
     "removedFromFavorites": "已取消收藏",
     "removeConfirm": "确认取消收藏？",
     "clearAll": "清空全部",
-    "clearConfirm": "确认清空所有收藏？"
+    "clearConfirm": "确认清空所有收藏？",
+    "loadFailed": "加载收藏夹失败",
+    "createSuccess": "收藏夹创建成功",
+    "createFailed": "创建收藏夹失败",
+    "updateSuccess": "收藏夹更新成功",
+    "updateFailed": "更新收藏夹失败",
+    "addFailed": "添加到收藏失败",
+    "removeFailed": "移除收藏失败",
+    "deleteSuccess": "收藏夹删除成功",
+    "deleteFailed": "删除收藏夹失败",
+    "deleteConfirm": "确定要删除这个收藏夹吗？视频将移动到默认收藏夹。",
+    "nameRequired": "请输入收藏夹名称",
+    "folderName": "收藏夹名称",
+    "folderNamePlaceholder": "请输入收藏夹名称",
+    "folderDescription": "收藏夹描述",
+    "folderDescriptionPlaceholder": "收藏夹描述（可选）",
+    "publicFolder": "公开（其他用户可见）",
+    "createFolder": "新建收藏夹",
+    "editFolder": "编辑收藏夹",
+    "folderNotFound": "收藏夹不存在"
   },
   "history": {
     "title": "观看历史",
     "emptyHistory": "还没有观看记录",
     "emptyDescription": "你观看的视频将显示在这里",
     "clearHistory": "清空历史",
-    "clearConfirm": "确认清空所有观看历史？",
+    "clearConfirm": "确认清空所有观看历史？此操作无法撤销。",
+    "removeConfirm": "确认从历史中移除？",
     "continueWatching": "继续观看",
     "watchedOn": "观看于 {{date}}",
     "progress": "已观看 {{percent}}%",
-    "removeFromHistory": "从历史中移除"
+    "removeFromHistory": "从历史中移除",
+    "removeSuccess": "已从历史中移除",
+    "removeFailed": "移除失败",
+    "clearSuccess": "历史已清空",
+    "clearFailed": "清空失败"
   },
   "notifications": {
     "title": "通知",
@@ -375,6 +424,16 @@
     "emailRequired": "请输入邮箱",
     "subjectRequired": "请输入主题",
     "messageRequired": "请输入消息内容",
+    "namePlaceholder": "请输入您的姓名",
+    "emailPlaceholder": "your@email.com",
+    "subjectPlaceholder": "请选择主题",
+    "messagePlaceholder": "请详细描述您的问题或建议...",
+    "technical": "技术支持",
+    "account": "账号问题",
+    "billing": "付费咨询",
+    "content": "内容反馈",
+    "suggestion": "建议意见",
+    "other": "其他问题",
     "contactInfo": "联系信息",
     "businessHours": "工作时间",
     "responseTime": "我们通常在 24 小时内回复"
@@ -460,5 +519,26 @@
     "yourRights": "您的权利",
     "changes": "政策变更",
     "contactUs": "联系我们"
+  },
+  "validation": {
+    "required": "{{field}}为必填项",
+    "field": "此字段",
+    "invalidEmail": "请输入有效的邮箱地址",
+    "invalidUrl": "请输入有效的URL地址（需以 http:// 或 https:// 开头）",
+    "invalidUsername": "用户名只能包含字母、数字、下划线和中文，长度3-30个字符",
+    "length": "长度应在 {{min}} 到 {{max}} 个字符之间",
+    "maxLength": "不能超过 {{max}} 个字符",
+    "minLength": "至少需要 {{min}} 个字符",
+    "passwordWeak": "密码必须满足所有安全要求（至少8个字符，包含大小写字母、数字和特殊字符）",
+    "passwordMismatch": "两次输入的密码不一致",
+    "captchaInvalid": "请输入4位验证码",
+    "fileTooBig": "文件大小超过限制（最大 {{max}}MB）",
+    "fileInvalidType": "不支持的文件类型",
+    "commentEmpty": "评论内容不能为空",
+    "commentTooLong": "评论内容不能超过 {{max}} 个字符",
+    "danmakuEmpty": "弹幕内容不能为空",
+    "danmakuTooLong": "弹幕内容不能超过 {{max}} 字",
+    "loginRequired": "请先登录",
+    "rateLimitExceeded": "操作过于频繁，请稍后再试"
   }
 }

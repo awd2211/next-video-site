@@ -1,10 +1,16 @@
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { userService, UserUpdate, PasswordChange, User } from '@/services/userService'
 import { historyService } from '@/services/historyService'
 import { favoriteService } from '@/services/favoriteService'
+import { sanitizeInput, isValidURL, calculatePasswordStrength } from '@/utils/security'
+import { FileValidationPresets, validateFile } from '@/utils/fileValidation'
+import { VALIDATION_LIMITS } from '@/utils/validationConfig'
+import { useTranslation } from 'react-i18next'
+import toast from 'react-hot-toast'
 
 const Profile = () => {
+  const { t } = useTranslation()
   const queryClient = useQueryClient()
   const [activeTab, setActiveTab] = useState<'profile' | 'password' | 'stats'>('profile')
   const [isEditing, setIsEditing] = useState(false)
@@ -13,6 +19,11 @@ const Profile = () => {
     old_password: '',
     new_password: '',
   })
+  const [passwordStrength, setPasswordStrength] = useState(0)
+  const [errors, setErrors] = useState<{fullName?: string; avatar?: string; newPassword?: string}>({})
+  const [avatarPreview, setAvatarPreview] = useState<string>('')
+  const fileInputRef = useRef<HTMLInputElement>(null)
+
 
   // Fetch user data
   const { data: user, isLoading } = useQuery<User>({
@@ -39,10 +50,11 @@ const Profile = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['current-user'] })
       setIsEditing(false)
-      alert('个人信息更新成功！')
+      setErrors({})
+      toast.success('个人信息更新成功！')
     },
     onError: (error: any) => {
-      alert(error.response?.data?.detail || '更新失败')
+      toast.error(error.response?.data?.detail || '更新失败')
     },
   })
 
@@ -51,25 +63,107 @@ const Profile = () => {
     mutationFn: userService.changePassword,
     onSuccess: () => {
       setPasswordData({ old_password: '', new_password: '' })
-      alert('密码修改成功！')
+      setPasswordStrength(0)
+      setErrors({})
+      toast.success('密码修改成功！')
     },
     onError: (error: any) => {
-      alert(error.response?.data?.detail || '密码修改失败')
+      toast.error(error.response?.data?.detail || '密码修改失败')
     },
   })
 
   const handleUpdateProfile = (e: React.FormEvent) => {
     e.preventDefault()
+
+    // 验证输入
+    const newErrors: {fullName?: string; avatar?: string} = {}
+
+    // 清理并验证 full_name
+    if (formData.full_name) {
+      const cleanedFullName = sanitizeInput(formData.full_name, VALIDATION_LIMITS.CONTACT_NAME.max)
+      if (cleanedFullName.length > VALIDATION_LIMITS.CONTACT_NAME.max) {
+        newErrors.fullName = t('validation.maxLength', { max: VALIDATION_LIMITS.CONTACT_NAME.max })
+      }
+      formData.full_name = cleanedFullName
+    }
+
+    // 验证avatar URL
+    if (formData.avatar) {
+      if (!isValidURL(formData.avatar)) {
+        newErrors.avatar = t('validation.invalidUrl')
+      }
+    }
+
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors)
+      toast.error(t('profile.updateFailed'))
+      return
+    }
+
     updateProfileMutation.mutate(formData)
   }
 
   const handleChangePassword = (e: React.FormEvent) => {
     e.preventDefault()
-    if (passwordData.new_password.length < 6) {
-      alert('新密码长度不能少于6位')
+
+    if (passwordData.new_password.length < VALIDATION_LIMITS.PASSWORD.min) {
+      setErrors({ newPassword: t('validation.minLength', { min: VALIDATION_LIMITS.PASSWORD.min }) })
+      toast.error(t('validation.minLength', { min: VALIDATION_LIMITS.PASSWORD.min }))
       return
     }
+
+    const strength = calculatePasswordStrength(passwordData.new_password)
+    if (strength < 40) {
+      setErrors({ newPassword: t('validation.passwordWeak') })
+      toast.error(t('validation.passwordWeak'))
+      return
+    }
+
+    setErrors({})
     changePasswordMutation.mutate(passwordData)
+  }
+
+  const handlePasswordChange = (value: string) => {
+    setPasswordData({ ...passwordData, new_password: value })
+    setPasswordStrength(calculatePasswordStrength(value))
+    if (value.length >= 8) {
+      setErrors({ ...errors, newPassword: undefined })
+    }
+  }
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    // Validate file
+    const validation = validateFile(file, FileValidationPresets.avatar)
+    if (!validation.valid) {
+      setErrors({ ...errors, avatar: validation.error })
+      toast.error(validation.error || t('validation.fileInvalidType'))
+      return
+    }
+
+    // Create preview
+    try {
+      const reader = new FileReader()
+      reader.onload = (e) => {
+        setAvatarPreview(e.target?.result as string)
+        setFormData({ ...formData, avatar: e.target?.result as string })
+        setErrors({ ...errors, avatar: undefined })
+      }
+      reader.readAsDataURL(file)
+      toast.success(t('profile.avatarSelected'))
+    } catch (error) {
+      toast.error(t('common.error'))
+    }
+  }
+
+  const handleRemoveAvatar = () => {
+    setAvatarPreview('')
+    setFormData({ ...formData, avatar: '' })
+    if (fileInputRef.current) {
+      fileInputRef.current.value = ''
+    }
   }
 
   const startEditing = () => {
@@ -206,20 +300,70 @@ const Profile = () => {
                   type="text"
                   value={formData.full_name || ''}
                   onChange={(e) => setFormData({ ...formData, full_name: e.target.value })}
-                  className="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  maxLength={50}
+                  className={`w-full bg-gray-700 border rounded-lg px-4 py-2 focus:outline-none focus:ring-2 ${
+                    errors.fullName ? 'border-red-500 focus:ring-red-500' : 'border-gray-600 focus:ring-blue-500'
+                  }`}
                   placeholder="输入您的姓名"
                 />
+                {errors.fullName && <p className="text-red-400 text-sm mt-1">{errors.fullName}</p>}
+                <p className="text-xs text-gray-400 mt-1">{formData.full_name?.length || 0}/50</p>
               </div>
 
               <div>
-                <label className="block text-sm font-medium mb-2">头像URL</label>
-                <input
-                  type="url"
-                  value={formData.avatar || ''}
-                  onChange={(e) => setFormData({ ...formData, avatar: e.target.value })}
-                  className="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="输入头像图片链接"
-                />
+                <label className="block text-sm font-medium mb-2">头像</label>
+
+                {/* Avatar preview */}
+                {(avatarPreview || formData.avatar) && (
+                  <div className="mb-3 flex items-center gap-4">
+                    <img
+                      src={avatarPreview || formData.avatar}
+                      alt="Avatar preview"
+                      className="w-20 h-20 rounded-full object-cover border-2 border-gray-600"
+                    />
+                    <button
+                      type="button"
+                      onClick={handleRemoveAvatar}
+                      className="text-red-400 hover:text-red-300 text-sm"
+                    >
+                      移除头像
+                    </button>
+                  </div>
+                )}
+
+                {/* File upload */}
+                <div className="flex gap-2">
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp,image/gif"
+                    onChange={handleFileChange}
+                    className="hidden"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    className="bg-gray-700 hover:bg-gray-600 text-white px-4 py-2 rounded-lg transition-colors text-sm"
+                  >
+                    选择图片
+                  </button>
+                  <span className="text-xs text-gray-400 self-center">支持 JPG、PNG、WebP、GIF 格式，最大 5MB</span>
+                </div>
+
+                {/* Or URL input */}
+                <div className="mt-2">
+                  <label className="block text-xs text-gray-400 mb-1">或者输入图片URL</label>
+                  <input
+                    type="url"
+                    value={formData.avatar || ''}
+                    onChange={(e) => setFormData({ ...formData, avatar: e.target.value })}
+                    className={`w-full bg-gray-700 border rounded-lg px-4 py-2 focus:outline-none focus:ring-2 ${
+                      errors.avatar ? 'border-red-500 focus:ring-red-500' : 'border-gray-600 focus:ring-blue-500'
+                    }`}
+                    placeholder="https://..."
+                  />
+                </div>
+                {errors.avatar && <p className="text-red-400 text-sm mt-1">{errors.avatar}</p>}
               </div>
 
               <div className="flex gap-4 mt-6">
@@ -264,12 +408,30 @@ const Profile = () => {
               <input
                 type="password"
                 value={passwordData.new_password}
-                onChange={(e) => setPasswordData({ ...passwordData, new_password: e.target.value })}
-                className="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                placeholder="输入新密码（至少6位）"
+                onChange={(e) => handlePasswordChange(e.target.value)}
+                className={`w-full bg-gray-700 border rounded-lg px-4 py-2 focus:outline-none focus:ring-2 ${
+                  errors.newPassword ? 'border-red-500 focus:ring-red-500' : 'border-gray-600 focus:ring-blue-500'
+                }`}
+                placeholder="输入新密码（至少8位）"
                 required
-                minLength={6}
+                minLength={8}
               />
+              {errors.newPassword && <p className="text-red-400 text-sm mt-1">{errors.newPassword}</p>}
+              {passwordData.new_password && (
+                <div className="mt-2">
+                  <div className="w-full bg-gray-700 rounded-full h-2">
+                    <div
+                      className={`h-2 rounded-full transition-all duration-300 ${
+                        passwordStrength < 40 ? 'bg-red-500' : passwordStrength < 70 ? 'bg-yellow-500' : 'bg-green-500'
+                      }`}
+                      style={{ width: `${passwordStrength}%` }}
+                    />
+                  </div>
+                  <p className="text-xs text-gray-400 mt-1">
+                    密码强度: {passwordStrength < 40 ? '弱' : passwordStrength < 70 ? '中等' : '强'}
+                  </p>
+                </div>
+              )}
             </div>
 
             <button

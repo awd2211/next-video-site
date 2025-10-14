@@ -29,6 +29,7 @@ const SeriesEdit = lazy(() => import('./pages/Series/Edit'))
 const MediaManager = lazy(() => import('./pages/MediaManager'))
 const Profile = lazy(() => import('./pages/Profile'))
 const AIManagement = lazy(() => import('./pages/AIManagement'))
+const AILogsHub = lazy(() => import('./pages/AIManagement/AILogsHub'))
 const SystemHealth = lazy(() => import('./pages/SystemHealth'))
 const UserDetail = lazy(() => import('./pages/Users/Detail'))
 const RolesList = lazy(() => import('./pages/Roles/List'))
@@ -114,6 +115,7 @@ function App() {
                 <Route path="media" element={<MediaManager />} />
                 <Route path="profile" element={<Profile />} />
                 <Route path="ai-management" element={<AIManagement />} />
+                <Route path="ai-logs" element={<AILogsHub />} />
                 <Route path="system-health" element={<SystemHealth />} />
                 <Route path="roles" element={<RolesList />} />
                 <Route path="reports" element={<ReportsDashboard />} />

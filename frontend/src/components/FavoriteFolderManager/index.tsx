@@ -11,6 +11,10 @@ import {
   deleteFavoriteFolder,
   FavoriteFolder,
 } from '../../services/favoriteFolderService'
+import { sanitizeInput } from '@/utils/security'
+import { VALIDATION_LIMITS } from '@/utils/validationConfig'
+import { useTranslation } from 'react-i18next'
+import toast from 'react-hot-toast'
 import './styles.css'
 
 interface FavoriteFolderManagerProps {
@@ -22,6 +26,7 @@ const FavoriteFolderManager: React.FC<FavoriteFolderManagerProps> = ({
   onSelectFolder,
   selectedFolderId,
 }) => {
+  const { t } = useTranslation()
   const navigate = useNavigate()
   const [folders, setFolders] = useState<FavoriteFolder[]>([])
   const [loading, setLoading] = useState(true)
@@ -44,7 +49,7 @@ const FavoriteFolderManager: React.FC<FavoriteFolderManagerProps> = ({
       setFolders(data)
     } catch (error) {
       console.error('Failed to load folders:', error)
-      alert('加载收藏夹失败')
+      toast.error(t('favorites.loadFailed'))
     } finally {
       setLoading(false)
     }
@@ -52,18 +57,34 @@ const FavoriteFolderManager: React.FC<FavoriteFolderManagerProps> = ({
 
   const handleCreateFolder = async (e: React.FormEvent) => {
     e.preventDefault()
+    
+    // 验证和清理输入
+    const cleanedName = sanitizeInput(formData.name, VALIDATION_LIMITS.TITLE.max)
+    const cleanedDescription = sanitizeInput(formData.description, VALIDATION_LIMITS.DESCRIPTION.max)
+    
+    if (!cleanedName.trim()) {
+      toast.error(t('favorites.nameRequired'))
+      return
+    }
+    
+    if (cleanedName.length > VALIDATION_LIMITS.TITLE.max) {
+      toast.error(t('validation.maxLength', { max: VALIDATION_LIMITS.TITLE.max }))
+      return
+    }
+    
     try {
       await createFavoriteFolder({
-        name: formData.name,
-        description: formData.description || undefined,
+        name: cleanedName,
+        description: cleanedDescription || undefined,
         is_public: formData.is_public,
       })
       setFormData({ name: '', description: '', is_public: false })
       setShowCreateForm(false)
+      toast.success(t('favorites.createSuccess'))
       await loadFolders()
     } catch (error: any) {
       console.error('Failed to create folder:', error)
-      alert(error.response?.data?.detail || '创建收藏夹失败')
+      toast.error(error.response?.data?.detail || t('favorites.createFailed'))
     }
   }
 
@@ -71,30 +92,41 @@ const FavoriteFolderManager: React.FC<FavoriteFolderManagerProps> = ({
     e.preventDefault()
     if (!editingFolder) return
 
+    // 验证和清理输入
+    const cleanedName = sanitizeInput(formData.name, VALIDATION_LIMITS.TITLE.max)
+    const cleanedDescription = sanitizeInput(formData.description, VALIDATION_LIMITS.DESCRIPTION.max)
+    
+    if (!cleanedName.trim()) {
+      toast.error(t('favorites.nameRequired'))
+      return
+    }
+
     try {
       await updateFavoriteFolder(editingFolder.id, {
-        name: formData.name,
-        description: formData.description || undefined,
+        name: cleanedName,
+        description: cleanedDescription || undefined,
         is_public: formData.is_public,
       })
       setEditingFolder(null)
       setFormData({ name: '', description: '', is_public: false })
+      toast.success(t('favorites.updateSuccess'))
       await loadFolders()
     } catch (error: any) {
       console.error('Failed to update folder:', error)
-      alert(error.response?.data?.detail || '更新收藏夹失败')
+      toast.error(error.response?.data?.detail || t('favorites.updateFailed'))
     }
   }
 
   const handleDeleteFolder = async (folderId: number) => {
-    if (!confirm('确定要删除这个收藏夹吗？视频将移动到默认收藏夹。')) return
+    if (!confirm(t('favorites.deleteConfirm'))) return
 
     try {
       await deleteFavoriteFolder(folderId, true)
+      toast.success(t('favorites.deleteSuccess'))
       await loadFolders()
     } catch (error: any) {
       console.error('Failed to delete folder:', error)
-      alert(error.response?.data?.detail || '删除收藏夹失败')
+      toast.error(error.response?.data?.detail || t('favorites.deleteFailed'))
     }
   }
 
@@ -140,29 +172,35 @@ const FavoriteFolderManager: React.FC<FavoriteFolderManagerProps> = ({
           className="folder-form"
           onSubmit={editingFolder ? handleUpdateFolder : handleCreateFolder}
         >
-          <h3>{editingFolder ? '编辑收藏夹' : '新建收藏夹'}</h3>
+          <h3>{editingFolder ? t('favorites.editFolder') : t('favorites.createFolder')}</h3>
           <div className="form-group">
-            <label>名称 *</label>
+            <label>{t('favorites.folderName')} *</label>
             <input
               type="text"
               value={formData.name}
               onChange={(e) => setFormData({ ...formData, name: e.target.value })}
               required
-              maxLength={100}
-              placeholder="收藏夹名称"
+              maxLength={VALIDATION_LIMITS.TITLE.max}
+              placeholder={t('favorites.folderNamePlaceholder')}
             />
+            <div className="char-count">
+              {formData.name.length}/{VALIDATION_LIMITS.TITLE.max}
+            </div>
           </div>
           <div className="form-group">
-            <label>描述</label>
+            <label>{t('favorites.folderDescription')}</label>
             <textarea
               value={formData.description}
               onChange={(e) =>
                 setFormData({ ...formData, description: e.target.value })
               }
-              maxLength={500}
-              placeholder="收藏夹描述（可选）"
+              maxLength={VALIDATION_LIMITS.DESCRIPTION.max}
+              placeholder={t('favorites.folderDescriptionPlaceholder')}
               rows={3}
             />
+            <div className="char-count">
+              {formData.description.length}/{VALIDATION_LIMITS.DESCRIPTION.max}
+            </div>
           </div>
           <div className="form-group">
             <label className="checkbox-label">
@@ -173,12 +211,12 @@ const FavoriteFolderManager: React.FC<FavoriteFolderManagerProps> = ({
                   setFormData({ ...formData, is_public: e.target.checked })
                 }
               />
-              <span>公开（其他用户可见）</span>
+              <span>{t('favorites.publicFolder')}</span>
             </label>
           </div>
           <div className="form-actions">
             <button type="submit" className="btn-submit">
-              {editingFolder ? '保存' : '创建'}
+              {editingFolder ? t('common.save') : t('common.create')}
             </button>
             <button
               type="button"

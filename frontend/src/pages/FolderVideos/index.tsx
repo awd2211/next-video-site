@@ -9,9 +9,12 @@ import {
   FavoriteFolderWithVideos,
 } from '../../services/favoriteFolderService'
 import VideoCard from '../../components/VideoCard'
+import { useTranslation } from 'react-i18next'
+import toast from 'react-hot-toast'
 import './styles.css'
 
 const FolderVideos: React.FC = () => {
+  const { t } = useTranslation()
   const { folderId } = useParams<{ folderId: string }>()
   const navigate = useNavigate()
   const [folder, setFolder] = useState<FavoriteFolderWithVideos | null>(null)
@@ -33,10 +36,10 @@ const FolderVideos: React.FC = () => {
     } catch (error: any) {
       console.error('Failed to load folder videos:', error)
       if (error.response?.status === 404) {
-        alert('收藏夹不存在')
+        toast.error(t('favorites.folderNotFound'))
         navigate('/favorites')
       } else {
-        alert('加载失败')
+        toast.error(t('favorites.loadFailed'))
       }
     } finally {
       setLoading(false)

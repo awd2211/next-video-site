@@ -2,8 +2,11 @@ import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { favoriteService, PaginatedFavorites } from '../../services/favoriteService'
 import FavoriteFolderManager from '../../components/FavoriteFolderManager'
+import { useTranslation } from 'react-i18next'
+import toast from 'react-hot-toast'
 
 const Favorites = () => {
+  const { t } = useTranslation()
   const [favorites, setFavorites] = useState<PaginatedFavorites | null>(null)
   const [loading, setLoading] = useState(true)
   const [page, setPage] = useState(1)
@@ -27,13 +30,14 @@ const Favorites = () => {
   }, [page])
 
   const handleRemove = async (videoId: number) => {
-    if (!confirm('Remove from favorites?')) return
+    if (!confirm(t('favorites.removeConfirm'))) return
 
     try {
       await favoriteService.removeFavorite(videoId)
+      toast.success(t('favorites.removedFromFavorites'))
       loadFavorites()
     } catch (error) {
-      alert('Failed to remove from favorites')
+      toast.error(t('favorites.removeFailed'))
     }
   }
 

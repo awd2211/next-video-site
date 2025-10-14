@@ -15,9 +15,10 @@ Admin Notification Service - 管理员通知服务
 """
 
 import logging
+from datetime import datetime, timezone
 from typing import List, Optional
 
-from sqlalchemy import select
+from sqlalchemy import and_, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.notification import AdminNotification, NotificationType
@@ -967,8 +968,6 @@ class AdminNotificationService:
             是否成功
         """
         try:
-            from datetime import datetime, timezone
-
             query = select(AdminNotification).where(
                 AdminNotification.id == notification_id
             )
@@ -1012,8 +1011,6 @@ class AdminNotificationService:
         Returns:
             未读数量
         """
-        from sqlalchemy import and_, func, or_
-
         try:
             # 查询条件：未读 且 (广播给所有人 或 指定给该管理员)
             conditions = [AdminNotification.is_read.is_(False)]

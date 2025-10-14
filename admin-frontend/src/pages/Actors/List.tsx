@@ -23,12 +23,15 @@ import dayjs from 'dayjs'
 import { formatAWSDate } from '@/utils/awsStyleHelpers'
 import { useTranslation } from 'react-i18next'
 import { useTableSort } from '@/hooks/useTableSort'
+import { createFormRules, getValidationLimit } from '@/utils/formRules'
+import { VALIDATION_LIMITS } from '@/utils/validationConfig'
 import '@/styles/page-layout.css'
 
 const { TextArea } = Input
 
 const ActorsList = () => {
   const { t } = useTranslation()
+  const formRules = createFormRules(t)
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(20)
   const [isModalOpen, setIsModalOpen] = useState(false)
@@ -276,22 +279,29 @@ const ActorsList = () => {
         <Form form={form} layout="vertical">
           <Form.Item
             name="name"
-            label="姓名"
-            rules={[{ required: true, message: '请输入演员姓名' }]}
+            label={t('actor.name')}
+            rules={[
+              formRules.required(t('actor.name')),
+              formRules.maxLength(VALIDATION_LIMITS.PERSON_NAME.max)
+            ]}
           >
-            <Input placeholder="请输入演员姓名" />
+            <Input placeholder={t('actor.namePlaceholder')} />
           </Form.Item>
 
-          <Form.Item name="avatar" label="头像URL">
-            <Input placeholder="请输入头像图片链接" />
+          <Form.Item 
+            name="avatar" 
+            label={t('actor.avatar')}
+            rules={[formRules.url]}
+          >
+            <Input placeholder={t('actor.avatarPlaceholder')} />
           </Form.Item>
 
-          <Form.Item name="birth_date" label="出生日期">
+          <Form.Item name="birth_date" label={t('actor.birthDate')}>
             <DatePicker style={{ width: '100%' }} />
           </Form.Item>
 
-          <Form.Item name="country_id" label="国籍">
-            <Select placeholder="请选择国籍" allowClear>
+          <Form.Item name="country_id" label={t('actor.nationality')}>
+            <Select placeholder={t('actor.nationalityPlaceholder')} allowClear>
               {countries?.map((country: any) => (
                 <Select.Option key={country.id} value={country.id}>
                   {country.name}
@@ -300,8 +310,17 @@ const ActorsList = () => {
             </Select>
           </Form.Item>
 
-          <Form.Item name="biography" label="简介">
-            <TextArea rows={4} placeholder="请输入演员简介" />
+          <Form.Item 
+            name="biography" 
+            label={t('actor.biography')}
+            rules={[formRules.maxLength(VALIDATION_LIMITS.BIOGRAPHY.max)]}
+          >
+            <TextArea 
+              rows={4} 
+              placeholder={t('actor.biographyPlaceholder')}
+              showCount
+              maxLength={VALIDATION_LIMITS.BIOGRAPHY.max}
+            />
           </Form.Item>
         </Form>
       </Modal>

@@ -1,13 +1,30 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { videoService } from '@/services/videoService'
 import { dataService } from '@/services/dataService'
 import VideoCard from '@/components/VideoCard'
+import { sanitizeSearchQuery } from '@/utils/security'
+import { useDebounce } from '@/hooks/useDebounce'
 
 const Search = () => {
   const [searchParams, setSearchParams] = useSearchParams()
-  const query = searchParams.get('q') || ''
+  const rawQuery = searchParams.get('q') || ''
+  const [query, setQuery] = useState(sanitizeSearchQuery(rawQuery))
+  const debouncedQuery = useDebounce(query, 500)
+
+  // 当 URL 参数变化时更新查询
+  useEffect(() => {
+    const cleanedQuery = sanitizeSearchQuery(rawQuery)
+    setQuery(cleanedQuery)
+
+    // 如果清理后的查询与原始查询不同，更新 URL
+    if (cleanedQuery !== rawQuery && rawQuery) {
+      const newParams = new URLSearchParams(searchParams)
+      newParams.set('q', cleanedQuery)
+      setSearchParams(newParams, { replace: true })
+    }
+  }, [rawQuery])
 
   const [filters, setFilters] = useState({
     category_id: searchParams.get('category_id') || '',
@@ -29,16 +46,16 @@ const Search = () => {
   })
 
   const { data, isLoading } = useQuery({
-    queryKey: ['search', query, filters],
+    queryKey: ['search', debouncedQuery, filters],
     queryFn: () =>
-      videoService.searchVideos(query, {
+      videoService.searchVideos(debouncedQuery, {
         category_id: filters.category_id ? Number(filters.category_id) : undefined,
         country_id: filters.country_id ? Number(filters.country_id) : undefined,
         year: filters.year ? Number(filters.year) : undefined,
         min_rating: filters.min_rating ? Number(filters.min_rating) : undefined,
         sort_by: filters.sort_by || 'created_at',
       }),
-    enabled: !!query,
+    enabled: !!debouncedQuery,
   })
 
   const handleFilterChange = (key: string, value: string) => {

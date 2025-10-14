@@ -3,6 +3,11 @@
  */
 import React, { useState, useRef } from 'react'
 import { danmakuService, DanmakuType } from '../../services/danmakuService'
+import { sanitizeInput } from '@/utils/security'
+import { checkDanmakuRateLimit } from '@/utils/rateLimit'
+import { VALIDATION_LIMITS } from '@/utils/validationConfig'
+import { useTranslation } from 'react-i18next'
+import toast from 'react-hot-toast'
 import './styles.css'
 
 interface DanmakuInputProps {
@@ -10,6 +15,8 @@ interface DanmakuInputProps {
   currentTime: number
   onSent?: () => void
 }
+
+const MAX_DANMAKU_LENGTH = VALIDATION_LIMITS.DANMAKU.max
 
 const COLORS = [
   { name: '白色', value: '#FFFFFF' },
@@ -40,6 +47,7 @@ const DanmakuInput: React.FC<DanmakuInputProps> = ({
   currentTime,
   onSent,
 }) => {
+  const { t } = useTranslation()
   const [content, setContent] = useState('')
   const [color, setColor] = useState('#FFFFFF')
   const [fontSize, setFontSize] = useState(25)
@@ -49,13 +57,23 @@ const DanmakuInput: React.FC<DanmakuInputProps> = ({
   const inputRef = useRef<HTMLInputElement>(null)
 
   const handleSend = async () => {
-    if (!content.trim()) {
-      alert('请输入弹幕内容')
+    // 检查速率限制
+    const rateLimit = checkDanmakuRateLimit()
+    if (!rateLimit.allowed) {
+      toast.error(t('validation.rateLimitExceeded'))
       return
     }
 
-    if (content.length > 100) {
-      alert('弹幕内容不能超过100字')
+    // 清理输入
+    const cleanedContent = sanitizeInput(content, MAX_DANMAKU_LENGTH)
+
+    if (!cleanedContent) {
+      toast.error(t('validation.danmakuEmpty'))
+      return
+    }
+
+    if (cleanedContent.length > MAX_DANMAKU_LENGTH) {
+      toast.error(t('validation.danmakuTooLong', { max: MAX_DANMAKU_LENGTH }))
       return
     }
 
@@ -63,7 +81,7 @@ const DanmakuInput: React.FC<DanmakuInputProps> = ({
       setLoading(true)
       await danmakuService.send({
         video_id: videoId,
-        content: content.trim(),
+        content: cleanedContent,
         time: currentTime,
         type,
         color,
@@ -72,12 +90,13 @@ const DanmakuInput: React.FC<DanmakuInputProps> = ({
 
       setContent('')
       inputRef.current?.focus()
+      toast.success(t('common.success'))
       if (onSent) onSent()
     } catch (error: any) {
       if (error.response?.status === 401) {
-        alert('请先登录')
+        toast.error(t('validation.loginRequired'))
       } else {
-        alert(error.response?.data?.detail || '发送失败')
+        toast.error(error.response?.data?.detail || t('common.failed'))
       }
     } finally {
       setLoading(false)
@@ -102,7 +121,7 @@ const DanmakuInput: React.FC<DanmakuInputProps> = ({
           value={content}
           onChange={(e) => setContent(e.target.value)}
           onKeyPress={handleKeyPress}
-          maxLength={100}
+          maxLength={MAX_DANMAKU_LENGTH}
           disabled={loading}
         />
 

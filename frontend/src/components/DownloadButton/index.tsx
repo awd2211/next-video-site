@@ -4,6 +4,8 @@
  */
 import React, { useState } from 'react'
 import { downloadVideo, formatFileSize } from '../../services/downloadService'
+import { useTranslation } from 'react-i18next'
+import toast from 'react-hot-toast'
 import './styles.css'
 
 interface DownloadButtonProps {
@@ -17,6 +19,7 @@ const DownloadButton: React.FC<DownloadButtonProps> = ({
   className = '',
   buttonText = 'Download',
 }) => {
+  const { t } = useTranslation()
   const [showMenu, setShowMenu] = useState(false)
   const [loading, setLoading] = useState(false)
   const [selectedQuality, setSelectedQuality] = useState<string | null>(null)
@@ -44,7 +47,7 @@ const DownloadButton: React.FC<DownloadButtonProps> = ({
       }
     } catch (error: any) {
       console.error('Download failed:', error)
-      alert(error.response?.data?.detail || 'Download failed. Please try again.')
+      toast.error(error.response?.data?.detail || t('video.downloadFailed'))
     } finally {
       setLoading(false)
       setSelectedQuality(null)
