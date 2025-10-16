@@ -7,7 +7,11 @@ import App from './App.tsx'
 import './index.css'
 import { shouldRetry } from './utils/apiErrorHandler'
 import { initPerformanceMonitoring } from './utils/performance'
+import { initializeSentry } from './utils/sentry'
 import './i18n/config'
+
+// Initialize Sentry
+initializeSentry()
 
 const queryClient = new QueryClient({
   defaultOptions: {

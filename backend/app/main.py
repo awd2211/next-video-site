@@ -40,6 +40,7 @@ from app.admin import profile as admin_profile
 from app.admin import rbac as admin_rbac
 from app.admin import reports as admin_reports
 from app.admin import scheduling as admin_scheduling
+from app.admin import sentry_config as admin_sentry_config
 from app.admin import series as admin_series
 from app.admin import settings as admin_settings
 from app.admin import settings_enhanced as admin_settings_enhanced
@@ -69,6 +70,7 @@ from app.api import (
     ratings,
     recommendations,
     search,
+    sentry_config,
     series,
     share,
     shared_watchlist,
@@ -463,6 +465,11 @@ app.include_router(
     prefix=f"{settings.API_V1_PREFIX}",
     tags=["Shared Watchlist"],
 )
+app.include_router(
+    sentry_config.router,
+    prefix=f"{settings.API_V1_PREFIX}",
+    tags=["Public Sentry Config"],
+)
 
 # Admin API routes
 app.include_router(
@@ -664,6 +671,11 @@ app.include_router(
     admin_rbac.router,
     prefix=f"{settings.API_V1_PREFIX}/admin/rbac",
     tags=["Admin - RBAC (Role-Based Access Control)"],
+)
+app.include_router(
+    admin_sentry_config.router,
+    prefix=f"{settings.API_V1_PREFIX}/admin",
+    tags=["Admin - Sentry Configuration"],
 )
 
 

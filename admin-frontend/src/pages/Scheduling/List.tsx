@@ -60,6 +60,7 @@ import type { Dayjs } from 'dayjs'
 import { debounce } from 'lodash'
 import { useNavigate } from 'react-router-dom'
 import '@/styles/page-layout.css'
+import ScheduleHistoryDrawer from '@/components/ScheduleHistoryDrawer'
 
 const { Title, Text, Paragraph } = Typography
 const { Option } = Select
@@ -75,6 +76,8 @@ const SchedulingList: React.FC = () => {
   const [scheduleModalVisible, setScheduleModalVisible] = useState(false)
   const [editingSchedule, setEditingSchedule] = useState<ScheduledVideo | null>(null)
   const [selectedRowKeys, setSelectedRowKeys] = useState<number[]>([])
+  const [historyDrawerVisible, setHistoryDrawerVisible] = useState(false)
+  const [selectedScheduleId, setSelectedScheduleId] = useState<number | null>(null)
 
   // 过滤器状态
   const [statusFilter, setStatusFilter] = useState<string>('pending')
@@ -484,8 +487,8 @@ const SchedulingList: React.FC = () => {
               size="small"
               icon={<HistoryOutlined />}
               onClick={() => {
-                // TODO: Open history drawer
-                message.info('历史记录功能待实现')
+                setSelectedScheduleId(record.id)
+                setHistoryDrawerVisible(true)
               }}
             />
           </Tooltip>
@@ -1080,6 +1083,16 @@ const SchedulingList: React.FC = () => {
           />
         </Form>
       </Modal>
+
+      {/* History Drawer */}
+      <ScheduleHistoryDrawer
+        scheduleId={selectedScheduleId}
+        open={historyDrawerVisible}
+        onClose={() => {
+          setHistoryDrawerVisible(false)
+          setSelectedScheduleId(null)
+        }}
+      />
     </div>
   )
 }

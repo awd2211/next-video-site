@@ -3,6 +3,8 @@
  * Provides consistent error handling across the application
  */
 
+import { captureException, addBreadcrumb } from './sentry'
+
 interface ApiError {
   response?: {
     status: number
@@ -16,10 +18,21 @@ interface ApiError {
 }
 
 /**
- * Log error to monitoring service (placeholder)
+ * Log error to monitoring service
  */
 const logErrorToService = (error: any) => {
-  // TODO: Integrate with monitoring service (e.g., Sentry, LogRocket)
+  // Log to Sentry
+  captureException(error, {
+    api: {
+      url: window.location.href,
+      timestamp: new Date().toISOString(),
+      userAgent: navigator.userAgent,
+      status: error.response?.status,
+      statusText: error.response?.statusText,
+    },
+  })
+
+  // Also log to console in production
   if (process.env.NODE_ENV === 'production') {
     console.error('[Error Logged]:', {
       message: error.message,
@@ -36,6 +49,17 @@ const logErrorToService = (error: any) => {
  */
 export const handleApiError = (error: ApiError): string => {
   let errorMessage = '发生错误，请稍后重试'
+
+  // Add breadcrumb for debugging
+  addBreadcrumb({
+    message: 'API Error occurred',
+    category: 'api',
+    level: 'error',
+    data: {
+      status: error.response?.status,
+      url: error.request?.url,
+    },
+  })
 
   if (error.response) {
     // Server responded with error status

@@ -1,4 +1,5 @@
 import { Component, ErrorInfo, ReactNode } from 'react'
+import { captureException } from '@/utils/sentry'
 
 interface Props {
   children: ReactNode
@@ -43,8 +44,12 @@ class ErrorBoundary extends Component<Props, State> {
       errorInfo,
     })
 
-    // TODO: Send error to error tracking service (e.g., Sentry)
-    // Example: Sentry.captureException(error, { extra: errorInfo })
+    // Send error to Sentry
+    captureException(error, {
+      errorBoundary: {
+        componentStack: errorInfo.componentStack,
+      },
+    })
   }
 
   handleReset = () => {

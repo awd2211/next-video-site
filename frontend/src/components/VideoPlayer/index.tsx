@@ -62,6 +62,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
   })
   const [playbackRate, setPlaybackRate] = useState(1)
   const [showPlaybackRateIndicator, setShowPlaybackRateIndicator] = useState(false)
+  const [currentQuality, setCurrentQuality] = useState<string>('Auto')
   const controlBarTimeoutRef = useRef<NodeJS.Timeout | null>(null)
   const lastClickTimeRef = useRef<number>(0)
   const clickCountRef = useRef<number>(0)
@@ -115,6 +116,28 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
             currentPlayer.hlsQualitySelector({
               displayCurrentQuality: true, // Display current quality in the button
             })
+
+            // Listen for quality level changes
+            const qualityLevels = currentPlayer.qualityLevels?.()
+            if (qualityLevels) {
+              qualityLevels.on('change', () => {
+                const selectedLevel = qualityLevels[qualityLevels.selectedIndex]
+                if (selectedLevel) {
+                  const height = selectedLevel.height
+                  setCurrentQuality(`${height}p`)
+                } else {
+                  setCurrentQuality('Auto')
+                }
+              })
+
+              // Set initial quality
+              if (qualityLevels.length > 0 && qualityLevels.selectedIndex >= 0) {
+                const selectedLevel = qualityLevels[qualityLevels.selectedIndex]
+                if (selectedLevel && selectedLevel.height) {
+                  setCurrentQuality(`${selectedLevel.height}p`)
+                }
+              }
+            }
           } catch (error) {
             console.warn('HLS Quality Selector initialization failed:', error)
           }
@@ -607,7 +630,51 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
   }, [])
 
   const handleChangeQuality = useCallback((quality: string) => {
-    // Quality change handled by HLS quality selector plugin
+    const player = playerRef.current
+    if (!player) return
+
+    try {
+      const qualityLevels = player.qualityLevels?.()
+      if (!qualityLevels || qualityLevels.length === 0) {
+        toast.error('当前视频不支持画质切换', { duration: 2000 })
+        return
+      }
+
+      // Parse quality string (e.g., "1080p" -> 1080, "Auto" -> -1)
+      if (quality === 'Auto' || quality === '自动') {
+        // Enable all quality levels for adaptive selection
+        for (let i = 0; i < qualityLevels.length; i++) {
+          qualityLevels[i].enabled = true
+        }
+        setCurrentQuality('Auto')
+        toast.success('已切换至自动画质', { duration: 2000 })
+      } else {
+        // Parse target height from quality string
+        const targetHeight = parseInt(quality.replace('p', ''))
+        let foundQuality = false
+
+        // Disable all except target quality
+        for (let i = 0; i < qualityLevels.length; i++) {
+          const level = qualityLevels[i]
+          if (level.height === targetHeight) {
+            level.enabled = true
+            foundQuality = true
+          } else {
+            level.enabled = false
+          }
+        }
+
+        if (foundQuality) {
+          setCurrentQuality(quality)
+          toast.success(`已切换至 ${quality} 画质`, { duration: 2000 })
+        } else {
+          toast.error(`不支持 ${quality} 画质`, { duration: 2000 })
+        }
+      }
+    } catch (error) {
+      console.error('Quality change failed:', error)
+      toast.error('画质切换失败', { duration: 2000 })
+    }
   }, [])
 
   const handleCopyVideoUrl = useCallback(() => {
@@ -875,7 +942,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
         onToggleLoop={handleToggleLoop}
         currentPlaybackRate={playerRef.current?.playbackRate() || 1}
         onChangePlaybackRate={handleChangePlaybackRate}
-        currentQuality="Auto" // TODO: Get from HLS quality selector
+        currentQuality={currentQuality}
         onChangeQuality={handleChangeQuality}
         onCopyVideoUrl={handleCopyVideoUrl}
         onCopyVideoUrlWithTime={handleCopyVideoUrlWithTime}

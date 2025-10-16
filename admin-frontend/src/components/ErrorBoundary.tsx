@@ -1,6 +1,7 @@
 import { Component, ErrorInfo, ReactNode } from 'react'
 import { Button, Result } from 'antd'
 import { ReloadOutlined, HomeOutlined } from '@ant-design/icons'
+import { captureException } from '@/utils/sentry'
 
 interface Props {
   children: ReactNode
@@ -40,8 +41,12 @@ class ErrorBoundary extends Component<Props, State> {
       errorInfo,
     })
 
-    // TODO: Log error to error reporting service
-    // logErrorToService(error, errorInfo)
+    // Log error to Sentry
+    captureException(error, {
+      errorBoundary: {
+        componentStack: errorInfo.componentStack,
+      },
+    })
   }
 
   handleReset = () => {

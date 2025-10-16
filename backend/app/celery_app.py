@@ -14,8 +14,11 @@ celery_app = Celery(
     backend=settings.CELERY_RESULT_BACKEND,
     include=[
         "app.tasks.scheduled_publish",  # 原有调度任务
-        "app.tasks.scheduler_enhanced",  # 增强版调度任务
+        "app.tasks.scheduler_executor",  # 调度任务执行器
+        "app.tasks.scheduler_optimizer",  # 调度任务优化器
+        "app.tasks.scheduler_monitor",  # 调度任务监控器
         "app.tasks.transcode_av1",  # 转码任务（如果存在）
+        "app.tasks.cleanup_temp_uploads",  # 🆕 临时文件清理任务
     ],
 )
 
@@ -92,6 +95,25 @@ celery_app.conf.update(
             "task": "scheduler.health_check",
             "schedule": crontab(minute="*/30"),
             "options": {"queue": "scheduler"},
+        },
+        # ========== 上传文件清理任务 ==========
+        # 每小时清理临时上传文件
+        "cleanup-temp-uploads": {
+            "task": "cleanup_temp_uploads",
+            "schedule": crontab(hour="*", minute=15),  # 每小时15分
+            "options": {"queue": "cleanup"},
+        },
+        # 每6小时清理过期的Redis会话
+        "cleanup-expired-redis-sessions": {
+            "task": "cleanup_expired_redis_sessions",
+            "schedule": crontab(hour="*/6", minute=30),  # 每6小时
+            "options": {"queue": "cleanup"},
+        },
+        # 每天凌晨4点检查孤立的multipart uploads
+        "cleanup-orphaned-multipart-uploads": {
+            "task": "cleanup_orphaned_multipart_uploads",
+            "schedule": crontab(hour=4, minute=0),
+            "options": {"queue": "cleanup"},
         },
     },
 )

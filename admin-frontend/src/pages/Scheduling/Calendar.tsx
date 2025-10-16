@@ -1,5 +1,5 @@
 import React, { useState, useCallback } from 'react'
-import { Card, Badge, Tag, Tooltip, Spin, Button, Space, Select, Modal, message } from 'antd'
+import { Card, Badge, Tag, Tooltip, Spin, Button, Space, Select, Modal, message, Form, Input, InputNumber, DatePicker, Checkbox } from 'antd'
 import {
   CalendarOutlined,
   ReloadOutlined,
@@ -7,13 +7,13 @@ import {
   LeftOutlined,
   RightOutlined,
 } from '@ant-design/icons'
-import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { useQuery, useQueryClient, useMutation } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import FullCalendar from '@fullcalendar/react'
 import dayGridPlugin from '@fullcalendar/daygrid'
 import timeGridPlugin from '@fullcalendar/timegrid'
 import interactionPlugin from '@fullcalendar/interaction'
-import { schedulingService } from '@/services/scheduling'
+import { schedulingService, ScheduleCreate } from '@/services/scheduling'
 import dayjs from 'dayjs'
 
 const { Option } = Select
@@ -40,6 +40,7 @@ const SchedulingCalendar: React.FC = () => {
   const { t } = useTranslation()
   const queryClient = useQueryClient()
   const calendarRef = React.useRef<any>(null)
+  const [form] = Form.useForm()
 
   const [currentDate, setCurrentDate] = useState(dayjs())
   const [viewType, setViewType] = useState<'dayGridMonth' | 'timeGridWeek' | 'timeGridDay'>(
@@ -49,6 +50,8 @@ const SchedulingCalendar: React.FC = () => {
   const [filterStatus, setFilterStatus] = useState<string>('all')
   const [selectedEvent, setSelectedEvent] = useState<any>(null)
   const [modalVisible, setModalVisible] = useState(false)
+  const [createModalVisible, setCreateModalVisible] = useState(false)
+  const [clickedDate, setClickedDate] = useState<dayjs.Dayjs | null>(null)
 
   // 获取日历数据
   const { data: calendarData, isLoading, refetch } = useQuery({
@@ -97,11 +100,55 @@ const SchedulingCalendar: React.FC = () => {
     setModalVisible(true)
   }, [])
 
-  // 处理日期点击
+  // 创建调度 mutation
+  const createScheduleMutation = useMutation({
+    mutationFn: async (data: ScheduleCreate) => {
+      return await schedulingService.createSchedule(data)
+    },
+    onSuccess: () => {
+      message.success(t('scheduling.scheduleSuccess'))
+      queryClient.invalidateQueries({ queryKey: ['scheduling-calendar'] })
+      setCreateModalVisible(false)
+      form.resetFields()
+    },
+    onError: (error: any) => {
+      message.error(error.response?.data?.detail || t('common.operationFailed'))
+    },
+  })
+
+  // 处理日期点击 - 打开快速创建模态框
   const handleDateClick = useCallback((info: any) => {
-    message.info(`点击日期: ${info.dateStr}`)
-    // TODO: 可以打开创建调度的模态框
-  }, [])
+    const clickedDateTime = dayjs(info.dateStr)
+    setClickedDate(clickedDateTime)
+    form.setFieldsValue({
+      scheduled_time: clickedDateTime.hour(12).minute(0), // 默认设置为中午12点
+      content_type: 'video',
+      auto_publish: true,
+      priority: 0,
+    })
+    setCreateModalVisible(true)
+  }, [form])
+
+  // 处理快速创建提交
+  const handleQuickCreate = async () => {
+    try {
+      const values = await form.validateFields()
+      const scheduleData: ScheduleCreate = {
+        content_type: values.content_type,
+        content_id: values.content_id,
+        scheduled_time: values.scheduled_time.toISOString(),
+        auto_publish: values.auto_publish ?? true,
+        notify_subscribers: values.notify_subscribers ?? false,
+        priority: values.priority ?? 0,
+        title: values.title,
+        recurrence: 'once',
+        publish_strategy: 'immediate',
+      }
+      await createScheduleMutation.mutateAsync(scheduleData)
+    } catch (error) {
+      console.error('Validation failed:', error)
+    }
+  }
 
   // 处理视图切换
   const handleViewChange = useCallback((view: string) => {
@@ -311,6 +358,102 @@ const SchedulingCalendar: React.FC = () => {
             )}
           </div>
         )}
+      </Modal>
+
+      {/* 快速创建调度模态框 */}
+      <Modal
+        title={
+          <Space>
+            <CalendarOutlined />
+            {t('scheduling.quickCreate')}
+            {clickedDate && (
+              <Tag color="blue">{clickedDate.format('YYYY-MM-DD')}</Tag>
+            )}
+          </Space>
+        }
+        open={createModalVisible}
+        onOk={handleQuickCreate}
+        onCancel={() => {
+          setCreateModalVisible(false)
+          form.resetFields()
+        }}
+        confirmLoading={createScheduleMutation.isPending}
+        width={600}
+      >
+        <Form form={form} layout="vertical" style={{ marginTop: 16 }}>
+          <Form.Item
+            name="content_type"
+            label={t('scheduling.contentType')}
+            rules={[{ required: true, message: t('form.pleaseSelect') }]}
+          >
+            <Select>
+              <Option value="video">{t('scheduling.video')}</Option>
+              <Option value="banner">{t('scheduling.banner')}</Option>
+              <Option value="announcement">{t('scheduling.announcement')}</Option>
+              <Option value="recommendation">{t('scheduling.recommendation')}</Option>
+              <Option value="series">{t('scheduling.series')}</Option>
+            </Select>
+          </Form.Item>
+
+          <Form.Item
+            name="content_id"
+            label={t('video.id')}
+            rules={[{ required: true, message: t('form.pleaseInput') }]}
+          >
+            <InputNumber
+              style={{ width: '100%' }}
+              placeholder={t('scheduling.enterVideoId')}
+              min={1}
+            />
+          </Form.Item>
+
+          <Form.Item name="title" label={t('scheduling.title')}>
+            <Input placeholder={t('form.pleaseInput')} />
+          </Form.Item>
+
+          <Form.Item
+            name="scheduled_time"
+            label={t('scheduling.scheduledTime')}
+            rules={[{ required: true, message: t('form.pleaseSelect') }]}
+          >
+            <DatePicker
+              showTime
+              format="YYYY-MM-DD HH:mm"
+              style={{ width: '100%' }}
+              disabledDate={(current) => current && current < dayjs().startOf('day')}
+            />
+          </Form.Item>
+
+          <Form.Item
+            name="priority"
+            label={t('scheduling.priority')}
+            tooltip={t('scheduling.priorityTooltip')}
+          >
+            <InputNumber
+              style={{ width: '100%' }}
+              min={0}
+              max={100}
+              placeholder="0-100"
+            />
+          </Form.Item>
+
+          <Space>
+            <Form.Item
+              name="auto_publish"
+              valuePropName="checked"
+              noStyle
+            >
+              <Checkbox>{t('scheduling.autoPublish')}</Checkbox>
+            </Form.Item>
+            <Form.Item
+              name="notify_subscribers"
+              valuePropName="checked"
+              noStyle
+            >
+              <Checkbox>{t('scheduling.notifySubscribers')}</Checkbox>
+            </Form.Item>
+          </Space>
+        </Form>
       </Modal>
     </div>
   )

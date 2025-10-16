@@ -25,3 +25,36 @@ global.DOMPurify = {
   },
 } as any
 
+// Mock window.matchMedia for Ant Design Grid and responsive components
+Object.defineProperty(window, 'matchMedia', {
+  writable: true,
+  value: (query: string) => ({
+    matches: false,
+    media: query,
+    onchange: null,
+    addListener: () => {}, // deprecated
+    removeListener: () => {}, // deprecated
+    addEventListener: () => {},
+    removeEventListener: () => {},
+    dispatchEvent: () => true,
+  }),
+})
+
+// Mock window.getComputedStyle for Ant Design components
+Object.defineProperty(window, 'getComputedStyle', {
+  writable: true,
+  value: () => ({
+    getPropertyValue: () => '',
+    display: 'none',
+    paddingLeft: '0',
+    paddingRight: '0',
+    paddingTop: '0',
+    paddingBottom: '0',
+    marginLeft: '0',
+    marginRight: '0',
+    marginTop: '0',
+    marginBottom: '0',
+    overflow: 'visible',
+  }),
+})
+

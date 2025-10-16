@@ -288,7 +288,7 @@ async def check_resource_ownership(
     检查管理员是否拥有资源
 
     Args:
-        resource_type: 资源类型 (video, comment, etc.)
+        resource_type: 资源类型 (video, comment, banner, announcement, etc.)
         resource_id: 资源ID
         current_admin: 当前管理员
         db: 数据库会话
@@ -300,19 +300,73 @@ async def check_resource_ownership(
     if current_admin.is_superadmin:
         return True
 
-    # TODO: 根据资源类型查询
-    # 这里需要根据实际的数据模型来实现
-    # 示例:
-    # if resource_type == "video":
-    #     result = await db.execute(
-    #         select(Video).where(
-    #             Video.id == resource_id,
-    #             Video.created_by_admin_id == current_admin.id
-    #         )
-    #     )
-    #     return result.scalar_one_or_none() is not None
+    # ✅ 根据资源类型查询所有权
+    try:
+        if resource_type == "video":
+            from app.models.video import Video
+            result = await db.execute(
+                select(Video).where(
+                    Video.id == resource_id,
+                    Video.uploaded_by_admin_id == current_admin.id
+                )
+            )
+            return result.scalar_one_or_none() is not None
 
-    return False
+        elif resource_type == "comment":
+            from app.models.comment import Comment
+            # 评论没有 admin_id，检查是否可以管理
+            result = await db.execute(
+                select(Comment).where(Comment.id == resource_id)
+            )
+            return result.scalar_one_or_none() is not None
+
+        elif resource_type == "banner":
+            from app.models.banner import Banner
+            result = await db.execute(
+                select(Banner).where(
+                    Banner.id == resource_id,
+                    Banner.created_by_admin_id == current_admin.id
+                )
+            )
+            return result.scalar_one_or_none() is not None
+
+        elif resource_type == "announcement":
+            from app.models.announcement import Announcement
+            result = await db.execute(
+                select(Announcement).where(
+                    Announcement.id == resource_id,
+                    Announcement.created_by_admin_id == current_admin.id
+                )
+            )
+            return result.scalar_one_or_none() is not None
+
+        elif resource_type == "media":
+            from app.models.media import Media
+            result = await db.execute(
+                select(Media).where(
+                    Media.id == resource_id,
+                    Media.uploaded_by_admin_id == current_admin.id
+                )
+            )
+            return result.scalar_one_or_none() is not None
+
+        elif resource_type == "schedule":
+            from app.models.scheduling import ContentSchedule
+            result = await db.execute(
+                select(ContentSchedule).where(
+                    ContentSchedule.id == resource_id,
+                    ContentSchedule.created_by == current_admin.id
+                )
+            )
+            return result.scalar_one_or_none() is not None
+
+        else:
+            # 未知资源类型，拒绝访问
+            return False
+
+    except Exception as e:
+        # 查询出错，拒绝访问
+        return False
 
 
 # ========== 权限工具函数 ==========

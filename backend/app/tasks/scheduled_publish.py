@@ -71,12 +71,47 @@ async def _check_due_schedules_async():
                         logger.warning(
                             f"Schedule {schedule.id} execution failed: {message}"
                         )
+                        # ✅ 发送失败通知
+                        try:
+                            from app.utils.admin_notification_service import AdminNotificationService
+                            await AdminNotificationService.notify_system_alert(
+                                db=db,
+                                alert_type="schedule_execution_failed",
+                                severity="high",
+                                message=f"调度任务执行失败：{schedule.content_type.value} #{schedule.content_id}",
+                                details={
+                                    "schedule_id": schedule.id,
+                                    "content_type": schedule.content_type.value,
+                                    "content_id": schedule.content_id,
+                                    "error_message": message,
+                                    "scheduled_time": schedule.scheduled_time.isoformat(),
+                                },
+                            )
+                        except Exception as notify_error:
+                            logger.error(f"Failed to send failure notification: {notify_error}")
 
                 except Exception as e:
                     failed_count += 1
                     logger.exception(
                         f"Error executing schedule {schedule.id}: {e}"
                     )
+                    # ✅ 发送异常通知
+                    try:
+                        from app.utils.admin_notification_service import AdminNotificationService
+                        await AdminNotificationService.notify_system_alert(
+                            db=db,
+                            alert_type="schedule_execution_error",
+                            severity="high",
+                            message=f"调度任务执行异常：{schedule.content_type.value} #{schedule.content_id}",
+                            details={
+                                "schedule_id": schedule.id,
+                                "content_type": schedule.content_type.value if hasattr(schedule, 'content_type') else None,
+                                "content_id": schedule.content_id if hasattr(schedule, 'content_id') else None,
+                                "error": str(e),
+                            },
+                        )
+                    except Exception as notify_error:
+                        logger.error(f"Failed to send error notification: {notify_error}")
 
             logger.info(
                 f"Scheduled publishing completed: "
@@ -192,8 +227,22 @@ async def _send_schedule_reminders_async():
 
                 if now >= reminder_time and not schedule.notification_sent:
                     try:
-                        # TODO: 发送通知到管理员
-                        # await send_admin_notification(...)
+                        # ✅ 发送通知到管理员
+                        from app.utils.admin_notification_service import AdminNotificationService
+
+                        await AdminNotificationService.notify_system_alert(
+                            db=db,
+                            alert_type="schedule_reminder",
+                            severity="info",
+                            message=f"调度任务即将执行：{schedule.content_type.value} #{schedule.content_id}",
+                            details={
+                                "schedule_id": schedule.id,
+                                "content_type": schedule.content_type.value,
+                                "content_id": schedule.content_id,
+                                "scheduled_time": schedule.scheduled_time.isoformat(),
+                                "notify_before_minutes": schedule.notify_before_minutes,
+                            },
+                        )
 
                         schedule.notification_sent = True
                         sent_count += 1

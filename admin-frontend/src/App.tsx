@@ -38,6 +38,7 @@ const EmailManagement = lazy(() => import('./pages/Email/Management'))
 const SchedulingList = lazy(() => import('./pages/Scheduling/List'))
 const SchedulingCalendar = lazy(() => import('./pages/Scheduling/Calendar'))
 const OAuthSettings = lazy(() => import('./pages/OAuthSettings'))
+const SentryConfig = lazy(() => import('./pages/SentryConfig'))
 
 // Loading component for Suspense
 const PageLoading = () => (
@@ -123,6 +124,7 @@ function App() {
                 <Route path="scheduling" element={<SchedulingList />} />
                 <Route path="scheduling/calendar" element={<SchedulingCalendar />} />
                 <Route path="oauth-settings" element={<OAuthSettings />} />
+                <Route path="sentry-config" element={<SentryConfig />} />
               </Route>
             </Routes>
           </Suspense>

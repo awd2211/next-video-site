@@ -280,6 +280,11 @@ const AdminLayout = () => {
           label: t('menu.emailManagement') || '邮件管理',
         },
         {
+          key: '/sentry-config',
+          icon: <ApiOutlined />,
+          label: t('menu.sentryConfig') || 'Sentry 配置',
+        },
+        {
           key: '/settings',
           icon: <SettingOutlined />,
           label: t('menu.settings'),

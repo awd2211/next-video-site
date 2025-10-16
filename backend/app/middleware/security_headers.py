@@ -17,11 +17,12 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
 
         # Content Security Policy - 防止XSS攻击
         if not settings.DEBUG:
-            # 生产环境使用严格的CSP
+            # 生产环境使用严格的CSP（已移除 unsafe-inline 和 unsafe-eval）
+            # 注意：前端需要相应调整，使用 nonce 或外部脚本文件
             response.headers["Content-Security-Policy"] = (
                 "default-src 'self'; "
-                "script-src 'self' 'unsafe-inline' 'unsafe-eval'; "  # TODO: 移除unsafe-*
-                "style-src 'self' 'unsafe-inline'; "
+                "script-src 'self'; "  # ✅ 已移除 unsafe-inline 和 unsafe-eval
+                "style-src 'self'; "  # ✅ 已移除 unsafe-inline
                 "img-src 'self' data: https:; "
                 "font-src 'self' data:; "
                 "connect-src 'self'; "

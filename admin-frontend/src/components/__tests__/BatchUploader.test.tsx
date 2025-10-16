@@ -43,12 +43,10 @@ describe('BatchUploader Component', () => {
 
     it('should show upload instructions', () => {
       render(<BatchUploader />)
-      
-      // Should have some upload text
-      const uploadText = screen.getByText(/upload/i) || screen.getByText(/drag/i)
-      if (uploadText) {
-        expect(uploadText).toBeInTheDocument()
-      }
+
+      // Should have Chinese upload text
+      const uploadText = screen.getByText(/点击或拖拽文件到此区域批量上传/)
+      expect(uploadText).toBeInTheDocument()
     })
 
     it('should accept custom props', () => {
@@ -69,47 +67,80 @@ describe('BatchUploader Component', () => {
 
   describe('File Selection', () => {
     it('should handle file selection', async () => {
+      vi.mocked(axios.post).mockResolvedValue({
+        data: {
+          batch_id: 'batch-123',
+          sessions: [{ upload_id: 'upload-1', total_chunks: 1 }],
+        },
+      })
+
       render(<BatchUploader />)
-      
+
       const file = new File(['video content'], 'test.mp4', { type: 'video/mp4' })
       const input = document.querySelector('input[type="file"]')
-      
+
+      expect(input).toBeInTheDocument()
+
       if (input) {
         Object.defineProperty(input, 'files', {
           value: [file],
           writable: false,
         })
-        
+
         fireEvent.change(input)
-        
-        // Should handle file
+
+        // Should call init API
         await waitFor(() => {
-          expect(input).toBeInTheDocument()
+          expect(axios.post).toHaveBeenCalledWith(
+            '/api/v1/admin/upload/batch/init',
+            expect.any(Array)
+          )
         })
       }
     })
 
     it('should handle multiple file selection', async () => {
+      vi.mocked(axios.post).mockResolvedValue({
+        data: {
+          batch_id: 'batch-123',
+          sessions: [
+            { upload_id: 'upload-1', total_chunks: 1 },
+            { upload_id: 'upload-2', total_chunks: 1 },
+            { upload_id: 'upload-3', total_chunks: 1 },
+          ],
+        },
+      })
+
       render(<BatchUploader maxCount={3} />)
-      
+
       const files = [
         new File(['content1'], 'video1.mp4', { type: 'video/mp4' }),
         new File(['content2'], 'video2.mp4', { type: 'video/mp4' }),
         new File(['content3'], 'video3.mp4', { type: 'video/mp4' }),
       ]
-      
+
       const input = document.querySelector('input[type="file"]')
-      
+
+      expect(input).toBeInTheDocument()
+
       if (input) {
         Object.defineProperty(input, 'files', {
           value: files,
           writable: false,
         })
-        
+
         fireEvent.change(input)
-        
+
+        // Should initialize with 3 files
         await waitFor(() => {
-          expect(input).toBeInTheDocument()
+          expect(axios.post).toHaveBeenCalledWith(
+            '/api/v1/admin/upload/batch/init',
+            expect.arrayContaining([
+              expect.objectContaining({ filename: 'video1.mp4' }),
+              expect.objectContaining({ filename: 'video2.mp4' }),
+              expect.objectContaining({ filename: 'video3.mp4' }),
+            ])
+          )
         })
       }
     })
@@ -162,26 +193,31 @@ describe('BatchUploader Component', () => {
       vi.mocked(axios.post).mockResolvedValue({
         data: {
           batch_id: 'batch-123',
-          uploads: [{ upload_id: 'upload-1', filename: 'test.mp4' }],
+          sessions: [{ upload_id: 'upload-1', total_chunks: 1 }],
         },
       })
-      
+
       render(<BatchUploader autoUpload={true} />)
-      
+
       const file = new File(['content'], 'test.mp4', { type: 'video/mp4' })
       const input = document.querySelector('input[type="file"]')
-      
+
+      expect(input).toBeInTheDocument()
+
       if (input) {
         Object.defineProperty(input, 'files', {
           value: [file],
           writable: false,
         })
-        
+
         fireEvent.change(input)
-        
+
+        // Should call batch init API
         await waitFor(() => {
-          // Should initialize upload
-          expect(input).toBeInTheDocument()
+          expect(axios.post).toHaveBeenCalledWith(
+            '/api/v1/admin/upload/batch/init',
+            expect.any(Array)
+          )
         })
       }
     })

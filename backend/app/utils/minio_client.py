@@ -455,6 +455,145 @@ class MinIOClient:
             logger.error(f"Error uploading file from path: {e}", exc_info=True)
             raise
 
+    # ========== Multipart Upload Methods ==========
+
+    def create_multipart_upload(
+        self,
+        object_name: str,
+        content_type: str = "application/octet-stream",
+        metadata: Optional[dict] = None,
+    ) -> str:
+        """
+        创建 MinIO Multipart Upload
+
+        Args:
+            object_name: 对象名称
+            content_type: 文件类型
+            metadata: 元数据
+
+        Returns:
+            str: Upload ID
+
+        Raises:
+            S3Error: 如果创建失败
+        """
+        try:
+            # MinIO Python SDK 使用底层 S3 API
+            upload_id = self.client._create_multipart_upload(
+                self.bucket_name, object_name, metadata or {}
+            )
+            logger.info(
+                f"Created multipart upload: {upload_id} for object {object_name}"
+            )
+            return upload_id
+        except S3Error as e:
+            logger.error(f"Error creating multipart upload: {e}", exc_info=True)
+            raise
+
+    def upload_part(
+        self,
+        object_name: str,
+        upload_id: str,
+        part_number: int,
+        data: bytes,
+    ) -> str:
+        """
+        上传一个分片
+
+        Args:
+            object_name: 对象名称
+            upload_id: Multipart Upload ID
+            part_number: 分片编号（从 1 开始）
+            data: 分片数据
+
+        Returns:
+            str: ETag
+
+        Raises:
+            S3Error: 如果上传失败
+        """
+        try:
+            from io import BytesIO
+
+            # 上传分片
+            etag = self.client._upload_part(
+                self.bucket_name,
+                object_name,
+                upload_id,
+                part_number,
+                BytesIO(data),
+                len(data),
+            )
+            logger.debug(
+                f"Uploaded part {part_number} for {object_name}, ETag: {etag}"
+            )
+            return etag
+        except S3Error as e:
+            logger.error(
+                f"Error uploading part {part_number}: {e}", exc_info=True
+            )
+            raise
+
+    def complete_multipart_upload(
+        self,
+        object_name: str,
+        upload_id: str,
+        parts: list,
+    ) -> str:
+        """
+        完成 Multipart Upload
+
+        Args:
+            object_name: 对象名称
+            upload_id: Upload ID
+            parts: 分片列表 [(part_number, etag), ...]
+
+        Returns:
+            str: 文件 URL
+
+        Raises:
+            S3Error: 如果完成失败
+        """
+        try:
+            # 完成上传
+            self.client._complete_multipart_upload(
+                self.bucket_name, object_name, upload_id, parts
+            )
+            logger.info(
+                f"Completed multipart upload for {object_name}, total parts: {len(parts)}"
+            )
+
+            # 返回文件 URL
+            return f"{settings.MINIO_PUBLIC_URL}/{self.bucket_name}/{object_name}"
+
+        except S3Error as e:
+            logger.error(f"Error completing multipart upload: {e}", exc_info=True)
+            raise
+
+    def abort_multipart_upload(
+        self,
+        object_name: str,
+        upload_id: str,
+    ) -> None:
+        """
+        取消 Multipart Upload
+
+        Args:
+            object_name: 对象名称
+            upload_id: Upload ID
+
+        Raises:
+            S3Error: 如果取消失败
+        """
+        try:
+            self.client._abort_multipart_upload(
+                self.bucket_name, object_name, upload_id
+            )
+            logger.info(f"Aborted multipart upload: {upload_id} for {object_name}")
+        except S3Error as e:
+            logger.error(f"Error aborting multipart upload: {e}", exc_info=True)
+            raise
+
 
 # 创建全局实例
 minio_client = MinIOClient()

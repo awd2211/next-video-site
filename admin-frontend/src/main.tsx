@@ -7,9 +7,13 @@ import enUS from 'antd/locale/en_US'
 import { LanguageProvider, useLanguage } from './contexts/LanguageContext'
 import { ThemeProvider, useTheme } from './contexts/ThemeContext'
 import { getAWSThemeConfig } from './styles/awsTheme'
+import { initializeSentry } from './utils/sentry'
 import './i18n/config' // Initialize i18next
 import App from './App.tsx'
 import './index.css'
+
+// Initialize Sentry
+initializeSentry()
 
 const queryClient = new QueryClient({
   defaultOptions: {

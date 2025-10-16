@@ -17,6 +17,43 @@ from app.utils.security import verify_password
 router = APIRouter()
 
 
+async def _is_subfolder_of(db: AsyncSession, folder_id: int, root_folder_id: int, max_depth: int = 20) -> bool:
+    """
+    检查 folder_id 是否是 root_folder_id 的子文件夹
+    通过递归检查 parent_id 链实现
+
+    Args:
+        db: 数据库会话
+        folder_id: 要检查的文件夹ID
+        root_folder_id: 根文件夹ID
+        max_depth: 最大递归深度，防止无限循环
+
+    Returns:
+        bool: 如果是子文件夹返回 True，否则返回 False
+    """
+    current_id = folder_id
+    depth = 0
+
+    while current_id and depth < max_depth:
+        # 查询当前文件夹
+        query = select(Media).where(Media.id == current_id)
+        result = await db.execute(query)
+        media = result.scalar_one_or_none()
+
+        if not media:
+            return False
+
+        # 如果找到根文件夹，返回 True
+        if current_id == root_folder_id:
+            return True
+
+        # 移动到父文件夹
+        current_id = media.parent_id
+        depth += 1
+
+    return False
+
+
 @router.get("/share/{share_code}")
 async def get_share_info(
     share_code: str,
@@ -139,8 +176,10 @@ async def get_folder_contents(
         if not target:
             raise HTTPException(status_code=404, detail="文件夹不存在")
 
-        # 检查是否是子文件夹（简化版，应该检查完整路径）
-        # TODO: 更严格的权限检查
+        # ✅ 增强：检查目标文件夹是否是分享根文件夹的子文件夹
+        # 通过递归检查 parent_id 链确保权限安全
+        if not await _is_subfolder_of(db, folder_id, share.media_id):
+            raise HTTPException(status_code=403, detail="无权访问此文件夹")
 
     # 获取文件夹内容
     contents_query = select(Media).where(
