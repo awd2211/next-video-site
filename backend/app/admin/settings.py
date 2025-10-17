@@ -1,19 +1,16 @@
-import json
 from datetime import datetime
 from typing import Any, Dict, List, Optional
 
-from fastapi import APIRouter, Depends, HTTPException, status
-from pydantic import BaseModel, EmailStr
+from fastapi import APIRouter, Depends
+from pydantic import BaseModel
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
-from app.models.email import EmailConfiguration
 from app.models.settings import SystemSettings
 from app.models.user import AdminUser
-from app.utils.cache import Cache, CacheStats
+from app.utils.cache import Cache
 from app.utils.dependencies import get_current_admin_user
-from app.utils.email_service import send_test_email
 
 router = APIRouter()
 

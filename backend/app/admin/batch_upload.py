@@ -140,8 +140,8 @@ async def upload_batch_chunk(
 @router.post("/batch/complete/{upload_id}")
 async def complete_batch_upload_item(
     upload_id: str,
+    background_tasks: BackgroundTasks,
     video_id: Optional[int] = None,
-    background_tasks: BackgroundTasks = None,
     db: AsyncSession = Depends(get_db),
     current_admin: AdminUser = Depends(get_current_admin_user),
 ):
@@ -214,11 +214,7 @@ async def complete_batch_upload_item(
         await db.commit()
 
         # 后台任务清理临时文件
-        if background_tasks:
-            background_tasks.add_task(cleanup_temp_files, session.temp_dir)
-        else:
-            # 立即清理
-            shutil.rmtree(session.temp_dir, ignore_errors=True)
+        background_tasks.add_task(cleanup_temp_files, session.temp_dir)
 
         return {
             "upload_id": upload_id,

@@ -5,7 +5,6 @@
 
 from typing import Optional, Type
 from sqlalchemy import asc, desc
-from sqlalchemy.orm import Query
 from sqlalchemy.sql.selectable import Select
 from fastapi import HTTPException
 

@@ -698,7 +698,7 @@ async def batch_delete_series(
     count = len(series_list)
 
     # 保存信息用于通知
-    series_titles = [s.title for s in series_list]
+    [s.title for s in series_list]
     series_title = series_list[0].title if len(series_list) == 1 else "多个专辑"
     series_id = series_list[0].id if len(series_list) == 1 else 0
 

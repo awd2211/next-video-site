@@ -110,8 +110,6 @@ async def list_schedules(
     try:
         from sqlalchemy import or_
 
-        service = SchedulingService(db)
-
         # 构建查询条件
         from app.models.scheduling import ContentSchedule
 

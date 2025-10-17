@@ -2,7 +2,6 @@
 API endpoints for shared watchlist feature
 """
 from datetime import datetime, timedelta
-from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy import select

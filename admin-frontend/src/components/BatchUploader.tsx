@@ -7,7 +7,6 @@ import {
   List,
   Space,
   Tag,
-  Modal,
   Tooltip,
 } from 'antd'
 import {
@@ -51,7 +50,7 @@ const BatchUploader = ({
   autoUpload = false,
 }: BatchUploaderProps) => {
   const [uploadItems, setUploadItems] = useState<UploadItem[]>([])
-  const [batchId, setBatchId] = useState<string>()
+  const [, setBatchId] = useState<string>()
   const [uploading, setUploading] = useState(false)
   const [fileList, setFileList] = useState<UploadFile[]>([])
   const abortControllersRef = useRef<Map<string, AbortController>>(new Map())
@@ -257,7 +256,7 @@ const BatchUploader = ({
    */
   const handlePause = (index: number) => {
     const item = uploadItems[index]
-    if (item.uploadId) {
+    if (item && item.uploadId) {
       abortControllersRef.current.get(item.uploadId)?.abort()
       updateItemStatus(index, { status: 'paused' })
     }
@@ -268,8 +267,10 @@ const BatchUploader = ({
    */
   const handleResume = (index: number) => {
     const item = uploadItems[index]
-    updateItemStatus(index, { status: 'pending' })
-    uploadFile(item, index)
+    if (item) {
+      updateItemStatus(index, { status: 'pending' })
+      uploadFile(item, index)
+    }
   }
 
   /**
@@ -278,7 +279,7 @@ const BatchUploader = ({
   const handleRemove = async (index: number) => {
     const item = uploadItems[index]
 
-    if (item.uploadId && item.status !== 'completed') {
+    if (item && item.uploadId && item.status !== 'completed') {
       try {
         await cancelUpload(item.uploadId)
       } catch (error) {

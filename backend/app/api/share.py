@@ -2,10 +2,9 @@
 公开分享访问 API
 用于访问通过分享链接分享的文件/文件夹
 """
-from datetime import datetime
 from typing import Optional
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import and_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 

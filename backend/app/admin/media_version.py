@@ -5,12 +5,12 @@ from datetime import datetime
 from typing import Optional
 import uuid
 
-from fastapi import APIRouter, Depends, HTTPException, Query, UploadFile, File
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
 from sqlalchemy import and_, desc, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
-from app.models.media import Media, MediaStatus
+from app.models.media import Media
 from app.models.media_version import MediaVersion
 from app.models.user import AdminUser
 from app.utils.dependencies import get_current_admin_user

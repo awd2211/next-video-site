@@ -7,14 +7,12 @@ import shutil
 from fastapi import APIRouter, Depends, HTTPException, Query, UploadFile, File, Form
 from sqlalchemy import and_, desc, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import selectinload
 
 from app.database import get_db
 from app.models.media import Media, MediaStatus, MediaType
 from app.models.upload_session import UploadSession
 from app.models.user import AdminUser
 from app.schemas.media import (
-    MediaCreate,
     MediaListResponse,
     MediaResponse,
     MediaStatsResponse,
@@ -298,12 +296,12 @@ async def get_folders(
 
 
 @router.post("/media/folders")
-async def create_folder(
+async def check_folder_availability(
     folder_name: str = Query(..., min_length=1, max_length=255),
     db: AsyncSession = Depends(get_db),
     current_user: AdminUser = Depends(get_current_admin_user),
 ):
-    """创建新文件夹"""
+    """检查文件夹名称是否可用"""
     # 检查文件夹是否已存在
     query = select(Media.folder).where(
         and_(Media.folder == folder_name, Media.is_deleted == False)

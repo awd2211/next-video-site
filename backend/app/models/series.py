@@ -10,11 +10,11 @@ from typing import TYPE_CHECKING, Optional
 
 from sqlalchemy import (
     Boolean,
-    Column,
     DateTime,
 )
 from sqlalchemy import Enum as SQLEnum
 from sqlalchemy import (
+    Column,
     ForeignKey,
     Integer,
     String,

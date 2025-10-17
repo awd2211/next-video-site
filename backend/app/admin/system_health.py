@@ -5,7 +5,7 @@ Provides real-time system health metrics for admin dashboard
 
 from fastapi import APIRouter, Depends, Query, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
-from typing import Dict, Any, List, Optional
+from typing import Dict, Any
 import psutil
 import time
 from datetime import datetime, timedelta
@@ -116,9 +116,10 @@ async def check_minio_health() -> Dict[str, Any]:
         # Try to get bucket stats (this may not be available on all MinIO versions)
         try:
             # List objects to verify read access
-            objects = list(minio_client.list_objects("videos", max_keys=1))
+            _ = list(minio_client.list_objects("videos", max_keys=1))
             can_read = True
-        except:
+        except Exception as e:
+            logger.debug(f"MinIO read check failed: {e}")
             can_read = False
 
         return {

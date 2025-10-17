@@ -13,7 +13,6 @@ from sqlalchemy import and_, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
-from app.models.content import Announcement, Banner
 from app.models.user import AdminUser
 from app.models.video import Video, VideoStatus
 from app.utils.dependencies import get_current_admin_user
@@ -337,7 +336,6 @@ async def get_scheduling_stats(
     pending_videos = len(pending_videos_result.scalars().all())
 
     # 今天到期的视频数量
-    from datetime import timedelta
 
     today_end = datetime.now(timezone.utc).replace(
         hour=23, minute=59, second=59, microsecond=999999

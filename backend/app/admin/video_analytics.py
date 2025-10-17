@@ -5,9 +5,8 @@
 from datetime import datetime, timedelta, timezone
 
 from fastapi import APIRouter, Depends, HTTPException, Query
-from sqlalchemy import Integer, case, desc, extract, func, select
+from sqlalchemy import case, desc, extract, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import selectinload
 
 from app.database import get_db
 from app.models.comment import Comment

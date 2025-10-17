@@ -8,7 +8,6 @@ import logging
 from fastapi import APIRouter, Query, WebSocket, WebSocketDisconnect
 from sqlalchemy import select
 
-from app.database import SessionLocal
 from app.models.user import AdminUser, User
 from app.utils.security import decode_token
 from app.utils.websocket_manager import manager

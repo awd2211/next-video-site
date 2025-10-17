@@ -4,7 +4,7 @@
 """
 
 import json
-from typing import Any, Dict, Optional
+from typing import Any, Optional
 from fastapi import Request
 from sqlalchemy.ext.asyncio import AsyncSession
 

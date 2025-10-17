@@ -8,7 +8,6 @@ from datetime import datetime, timezone
 from typing import Optional
 
 from loguru import logger
-from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import async_session_maker
 from app.utils.admin_notification_service import AdminNotificationService

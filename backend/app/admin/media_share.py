@@ -2,12 +2,12 @@
 媒体文件分享 API
 """
 from datetime import datetime
-from typing import List, Optional
+from typing import Optional
 import secrets
 import string
 
 from fastapi import APIRouter, Depends, HTTPException, Query
-from sqlalchemy import and_, desc, func, or_, select
+from sqlalchemy import and_, desc, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db

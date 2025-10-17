@@ -221,7 +221,7 @@ const ConfigForm: React.FC<ConfigFormProps> = ({ config, onSuccess, onCancel }) 
           <Form.Item
             label={t('忽略的错误')}
             name="ignore_errors"
-            tooltip="JSON 数组格式，如：[\"ResizeObserver\", \"NetworkError\"]"
+            tooltip={'JSON 数组格式，如：["ResizeObserver", "NetworkError"]'}
           >
             <TextArea
               rows={3}

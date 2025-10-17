@@ -3,10 +3,17 @@
 防止恶意文件上传、文件类型伪造等攻击
 """
 
+import hashlib
 import re
 from typing import List, Tuple
 
 from fastapi import HTTPException, UploadFile, status
+
+
+class FileValidationError(Exception):
+    """文件验证错误"""
+
+    pass
 
 
 def sanitize_filename(filename: str) -> str:
@@ -238,3 +245,91 @@ class FileValidationPresets:
             FileValidationPresets.SUBTITLE_MAX_SIZE,
             check_magic=False,  # 文本文件无需魔数检查
         )
+
+
+class FileValidator:
+    """文件验证器 - 兼容旧代码"""
+
+    @staticmethod
+    def validate_video_file(
+        filename: str, content_type: str, file_size: int = 0, max_size: int = 5368709120
+    ) -> Tuple[bool, str]:
+        """
+        验证视频文件
+
+        Args:
+            filename: 文件名
+            content_type: MIME类型
+            file_size: 文件大小（字节）
+            max_size: 最大文件大小（字节），默认5GB
+
+        Returns:
+            (是否有效, 错误信息)
+        """
+        ext = get_file_extension(filename)
+        if ext not in FileValidationPresets.VIDEO_EXTENSIONS:
+            return False, f"不支持的视频格式: {ext}"
+
+        if content_type not in FileValidationPresets.VIDEO_MIMES:
+            return False, f"不支持的MIME类型: {content_type}"
+
+        if file_size > 0 and file_size > max_size:
+            return False, f"文件过大，最大允许 {max_size // (1024 * 1024 * 1024)}GB"
+
+        return True, ""
+
+    @staticmethod
+    def validate_image_file(
+        filename: str, content_type: str, file_size: int = 0, max_size: int = 10485760
+    ) -> Tuple[bool, str]:
+        """
+        验证图片文件
+
+        Args:
+            filename: 文件名
+            content_type: MIME类型
+            file_size: 文件大小（字节）
+            max_size: 最大文件大小（字节），默认10MB
+
+        Returns:
+            (是否有效, 错误信息)
+        """
+        ext = get_file_extension(filename)
+        if ext not in FileValidationPresets.IMAGE_EXTENSIONS:
+            return False, f"不支持的图片格式: {ext}"
+
+        if content_type not in FileValidationPresets.IMAGE_MIMES:
+            return False, f"不支持的MIME类型: {content_type}"
+
+        if file_size > 0 and file_size > max_size:
+            return False, f"文件过大，最大允许 {max_size // (1024 * 1024)}MB"
+
+        return True, ""
+
+    @staticmethod
+    def get_file_extension(filename: str) -> str:
+        """
+        获取文件扩展名
+
+        Args:
+            filename: 文件名
+
+        Returns:
+            小写扩展名（包含点号）
+        """
+        return get_file_extension(filename)
+
+    @staticmethod
+    def validate_chunk_hash(chunk_data: bytes, expected_hash: str) -> bool:
+        """
+        验证分块数据的哈希值
+
+        Args:
+            chunk_data: 分块数据
+            expected_hash: 期望的哈希值（MD5）
+
+        Returns:
+            哈希值是否匹配
+        """
+        actual_hash = hashlib.md5(chunk_data).hexdigest()
+        return actual_hash == expected_hash

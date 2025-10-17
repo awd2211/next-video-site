@@ -4,7 +4,6 @@ Logging utilities for recording various types of logs
 
 import json
 import traceback
-from datetime import datetime
 from typing import Optional
 
 from fastapi import Request

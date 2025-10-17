@@ -22,7 +22,7 @@ from app.models.upload_statistics import UploadStatistics
 from app.models.user import AdminUser
 from app.utils.admin_notification_service import AdminNotificationService
 from app.utils.dependencies import get_current_admin_user
-from app.utils.file_validator import FileValidationError, FileValidator
+from app.utils.file_validator import FileValidator
 from app.utils.minio_client import minio_client
 from app.utils.upload_session_manager import UploadSessionManager
 
@@ -92,7 +92,7 @@ async def init_multipart_upload(
             )
 
         # 6. 创建 Redis 会话
-        session_data = await UploadSessionManager.create_session(
+        await UploadSessionManager.create_session(
             upload_id=upload_id,
             filename=filename,
             file_size=file_size,
@@ -252,8 +252,6 @@ async def complete_multipart_upload(
     - 记录上传统计
     """
     try:
-        start_time = datetime.now(timezone.utc)
-
         # 1. 获取会话
         session = await UploadSessionManager.get_session(upload_id)
         if not session:

@@ -1,7 +1,7 @@
 from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query
-from sqlalchemy import desc, func, select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
@@ -11,7 +11,6 @@ from app.schemas.admin_content import (
     AnnouncementCreate,
     AnnouncementResponse,
     AnnouncementUpdate,
-    PaginatedAnnouncementResponse,
 )
 from app.utils.dependencies import get_current_admin_user
 from app.utils.sorting import apply_sorting, normalize_sort_field

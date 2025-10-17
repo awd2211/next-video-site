@@ -12,7 +12,6 @@ from app.models.oauth_config import OAuthConfig
 from app.models.user import User
 from app.schemas.oauth import (
     OAuthCallbackResponse,
-    OAuthLoginRequest,
     OAuthLoginResponse,
 )
 from app.utils.oauth_service import OAuthService
@@ -73,7 +72,7 @@ async def oauth_login(
     }
 
     # Clean up old states (older than 10 minutes)
-    current_time = datetime.now(timezone.utc)
+    datetime.now(timezone.utc)
     _oauth_states.clear()  # Simple cleanup - in production use Redis EXPIRE
 
     # Generate authorization URL

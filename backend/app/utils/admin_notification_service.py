@@ -16,13 +16,12 @@ Admin Notification Service - 管理员通知服务
 
 import logging
 from datetime import datetime, timezone
-from typing import List, Optional
+from typing import Optional
 
 from sqlalchemy import and_, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.notification import AdminNotification, NotificationType
-from app.models.user import AdminUser
 from app.utils.websocket_manager import manager
 
 logger = logging.getLogger(__name__)
@@ -708,7 +707,7 @@ class AdminNotificationService:
         }
 
         type_text = type_map.get(content_type, content_type)
-        action_text = action_map.get(action, action)
+        action_map.get(action, action)
 
         if action == "scheduled":
             title = f"{type_text}定时发布"

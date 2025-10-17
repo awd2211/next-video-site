@@ -2,7 +2,6 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from fastapi.responses import StreamingResponse
 from sqlalchemy import func, select, desc, or_
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import selectinload
 from datetime import datetime, timedelta
 from typing import Optional
 from pydantic import BaseModel

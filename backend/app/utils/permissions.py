@@ -3,12 +3,11 @@
 提供便捷的权限检查装饰器和工具函数
 """
 
-from typing import List, Set, Optional, Callable
+from typing import List, Set
 from fastapi import Depends, HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
-from functools import wraps
 
 from app.database import get_db
 from app.models.user import AdminUser
@@ -364,7 +363,7 @@ async def check_resource_ownership(
             # 未知资源类型，拒绝访问
             return False
 
-    except Exception as e:
+    except Exception:
         # 查询出错，拒绝访问
         return False
 

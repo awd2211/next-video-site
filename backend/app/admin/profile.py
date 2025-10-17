@@ -27,7 +27,7 @@ class AdminProfileResponse(BaseModel):
     timezone: str | None = "UTC"
     preferred_language: str | None = "en-US"
     preferred_theme: str | None = "light"
-    created_at: str
+    created_at: str | None
     last_login_at: str | None
 
     class Config:
@@ -63,6 +63,24 @@ class UpdatePreferencesRequest(BaseModel):
     preferred_theme: str | None = Field(None, description="首选主题 ('light' 或 'dark')")
 
 
+def _build_profile_response(admin: AdminUser) -> AdminProfileResponse:
+    """构建管理员资料响应（辅助函数，减少代码重复）"""
+    return AdminProfileResponse(
+        id=admin.id,
+        email=admin.email,
+        username=admin.username,
+        full_name=admin.full_name,
+        avatar=admin.avatar,
+        is_superadmin=admin.is_superadmin,
+        role_id=admin.role_id,
+        timezone=admin.timezone or "UTC",
+        preferred_language=admin.preferred_language or "en-US",
+        preferred_theme=admin.preferred_theme or "light",
+        created_at=admin.created_at.isoformat() if admin.created_at else None,
+        last_login_at=admin.last_login_at.isoformat() if admin.last_login_at else None,
+    )
+
+
 @router.get("/me", response_model=AdminProfileResponse, summary="获取当前管理员信息")
 async def get_current_admin_profile(
     current_admin: AdminUser = Depends(get_current_admin_user),
@@ -72,20 +90,7 @@ async def get_current_admin_profile(
 
     返回管理员的完整信息，不包括敏感字段如密码
     """
-    return AdminProfileResponse(
-        id=current_admin.id,
-        email=current_admin.email,
-        username=current_admin.username,
-        full_name=current_admin.full_name,
-        avatar=current_admin.avatar,
-        is_superadmin=current_admin.is_superadmin,
-        role_id=current_admin.role_id,
-        timezone=current_admin.timezone or "UTC",
-        preferred_language=current_admin.preferred_language or "en-US",
-        preferred_theme=current_admin.preferred_theme or "light",
-        created_at=current_admin.created_at.isoformat() if current_admin.created_at else None,
-        last_login_at=current_admin.last_login_at.isoformat() if current_admin.last_login_at else None,
-    )
+    return _build_profile_response(current_admin)
 
 
 @router.put("/me", response_model=AdminProfileResponse, summary="更新个人资料")
@@ -113,20 +118,7 @@ async def update_admin_profile(
     await db.commit()
     await db.refresh(current_admin)
 
-    return AdminProfileResponse(
-        id=current_admin.id,
-        email=current_admin.email,
-        username=current_admin.username,
-        full_name=current_admin.full_name,
-        avatar=current_admin.avatar,
-        is_superadmin=current_admin.is_superadmin,
-        role_id=current_admin.role_id,
-        timezone=current_admin.timezone or "UTC",
-        preferred_language=current_admin.preferred_language or "en-US",
-        preferred_theme=current_admin.preferred_theme or "light",
-        created_at=current_admin.created_at.isoformat() if current_admin.created_at else None,
-        last_login_at=current_admin.last_login_at.isoformat() if current_admin.last_login_at else None,
-    )
+    return _build_profile_response(current_admin)
 
 
 @router.put("/me/password", summary="修改密码")
@@ -195,20 +187,7 @@ async def change_admin_email(
     await db.commit()
     await db.refresh(current_admin)
 
-    return AdminProfileResponse(
-        id=current_admin.id,
-        email=current_admin.email,
-        username=current_admin.username,
-        full_name=current_admin.full_name,
-        avatar=current_admin.avatar,
-        is_superadmin=current_admin.is_superadmin,
-        role_id=current_admin.role_id,
-        timezone=current_admin.timezone or "UTC",
-        preferred_language=current_admin.preferred_language or "en-US",
-        preferred_theme=current_admin.preferred_theme or "light",
-        created_at=current_admin.created_at.isoformat() if current_admin.created_at else None,
-        last_login_at=current_admin.last_login_at.isoformat() if current_admin.last_login_at else None,
-    )
+    return _build_profile_response(current_admin)
 
 
 @router.put("/me/preferences", response_model=AdminProfileResponse, summary="更新用户偏好设置")
@@ -254,17 +233,4 @@ async def update_admin_preferences(
     await db.commit()
     await db.refresh(current_admin)
 
-    return AdminProfileResponse(
-        id=current_admin.id,
-        email=current_admin.email,
-        username=current_admin.username,
-        full_name=current_admin.full_name,
-        avatar=current_admin.avatar,
-        is_superadmin=current_admin.is_superadmin,
-        role_id=current_admin.role_id,
-        timezone=current_admin.timezone or "UTC",
-        preferred_language=current_admin.preferred_language or "en-US",
-        preferred_theme=current_admin.preferred_theme or "light",
-        created_at=current_admin.created_at.isoformat() if current_admin.created_at else None,
-        last_login_at=current_admin.last_login_at.isoformat() if current_admin.last_login_at else None,
-    )
+    return _build_profile_response(current_admin)
