@@ -158,9 +158,11 @@ async def list_schedules(
         total = count_result.scalar() or 0
 
         # is_overdue and is_due are @property methods, computed automatically
+        # Convert ORM models to Pydantic schemas
+        schedule_items = [ScheduleResponse.model_validate(s) for s in schedules]
 
         return ScheduleListResponse(
-            items=schedules, total=total, skip=skip, limit=limit
+            items=schedule_items, total=total, skip=skip, limit=limit
         )
 
     except Exception as e:

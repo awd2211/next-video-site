@@ -4,9 +4,11 @@ import uuid
 import os
 import shutil
 
-from fastapi import APIRouter, Depends, HTTPException, Query, UploadFile, File, Form
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, UploadFile, File, Form
+from loguru import logger
 from sqlalchemy import and_, desc, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import attributes
 
 from app.database import get_db
 from app.models.media import Media, MediaStatus, MediaType
@@ -21,6 +23,8 @@ from app.schemas.media import (
 )
 from app.utils.dependencies import get_current_admin_user
 from app.utils.minio_client import minio_client
+from app.utils.rate_limit import limiter, RateLimitPresets
+from app.utils.video_thumbnail import generate_and_upload_thumbnail
 
 router = APIRouter()
 
@@ -406,6 +410,7 @@ async def rename_folder(
 async def get_media_list(
     page: int = Query(1, ge=1),
     page_size: int = Query(20, ge=1, le=100),
+    parent_id: Optional[int] = Query(None, description="父文件夹ID，用于文件管理器"),
     media_type: Optional[MediaType] = None,
     status: Optional[MediaStatus] = None,
     folder: Optional[str] = None,
@@ -413,18 +418,28 @@ async def get_media_list(
     db: AsyncSession = Depends(get_db),
     current_user: AdminUser = Depends(get_current_admin_user),
 ):
-    """获取媒体资源列表"""
+    """
+    获取媒体资源列表
+
+    支持文件管理器模式（parent_id）和传统列表模式（folder）
+    """
 
     # 构建查询
     query = select(Media).where(Media.is_deleted == False)
 
     # 过滤条件
+    # 文件管理器模式：按 parent_id 过滤
+    if parent_id is not None:
+        query = query.where(Media.parent_id == parent_id)
+    elif 'parent_id' in locals():  # 如果明确传递了 parent_id=None，则获取根目录
+        pass  # parent_id=None 已经在上面处理
+    elif folder:  # 传统模式：按 folder 字符串过滤
+        query = query.where(Media.folder == folder)
+
     if media_type:
         query = query.where(Media.media_type == media_type)
     if status:
         query = query.where(Media.status == status)
-    if folder:
-        query = query.where(Media.folder == folder)
     if search:
         search_filter = or_(
             Media.title.ilike(f"%{search}%"),
@@ -446,8 +461,44 @@ async def get_media_list(
     result = await db.execute(query)
     items = result.scalars().all()
 
+    # 为文件夹添加子项计数和预览图
+    items_with_counts = []
+    for item in items:
+        item_dict = MediaResponse.model_validate(item).model_dump()
+
+        if item.is_folder:
+            # 查询该文件夹下的子项数量（不包括已删除的）
+            children_count_query = select(func.count()).where(
+                and_(
+                    Media.parent_id == item.id,
+                    Media.is_deleted == False
+                )
+            )
+            children_count_result = await db.execute(children_count_query)
+            children_count = children_count_result.scalar() or 0
+            item_dict['children_count'] = children_count
+
+            # ✅ 查询第一个媒体文件的缩略图作为文件夹预览图
+            first_media_query = select(Media.thumbnail_url).where(
+                and_(
+                    Media.parent_id == item.id,
+                    Media.is_folder == False,
+                    Media.is_deleted == False,
+                    Media.thumbnail_url.isnot(None)
+                )
+            ).order_by(desc(Media.created_at)).limit(1)
+
+            first_media_result = await db.execute(first_media_query)
+            folder_thumbnail = first_media_result.scalar_one_or_none()
+            item_dict['folder_thumbnail_url'] = folder_thumbnail
+        else:
+            item_dict['children_count'] = 0
+            item_dict['folder_thumbnail_url'] = None
+
+        items_with_counts.append(item_dict)
+
     return MediaListResponse(
-        items=[MediaResponse.model_validate(item) for item in items],
+        items=items_with_counts,
         total=total,
         page=page,
         page_size=page_size,
@@ -748,13 +799,17 @@ async def upload_chunk(
 
         # 标记分块已上传
         session.mark_chunk_uploaded(chunk_index)
+        # ✅ 显式标记 JSON 列已修改（SQLAlchemy 变更跟踪）
+        attributes.flag_modified(session, "uploaded_chunks")
         session.updated_at = datetime.utcnow()
 
         # 检查是否所有分块都已上传
         if session.is_upload_complete():
             session.is_completed = True
+            logger.info(f"Upload completed: {upload_id} ({len(session.uploaded_chunks)}/{session.total_chunks} chunks)")
 
         await db.commit()
+        await db.refresh(session)  # ✅ 刷新以确保获取最新状态
 
         return {
             "message": "分块上传成功",
@@ -790,8 +845,16 @@ async def complete_chunk_upload(
     if not session:
         raise HTTPException(status_code=404, detail="上传会话不存在")
 
+    # 记录调试信息
+    logger.info(f"Complete upload request: {upload_id}")
+    logger.info(f"Session status: is_completed={session.is_completed}, is_merged={session.is_merged}")
+    logger.info(f"Upload progress: {len(session.uploaded_chunks)}/{session.total_chunks} chunks")
+
     if not session.is_completed:
-        raise HTTPException(status_code=400, detail="还有分块未上传完成")
+        raise HTTPException(
+            status_code=400,
+            detail=f"还有分块未上传完成 ({len(session.uploaded_chunks)}/{session.total_chunks})"
+        )
 
     if session.is_merged:
         raise HTTPException(status_code=400, detail="文件已合并")
@@ -864,6 +927,34 @@ async def complete_chunk_upload(
         await db.commit()
         await db.refresh(media)
 
+        # ✅ 如果是视频，生成缩略图
+        if media_type == MediaType.VIDEO:
+            try:
+                logger.info(f"Generating thumbnail for video: {media.filename}")
+
+                # 生成缩略图并上传到 MinIO
+                thumbnail_path, thumbnail_url = await generate_and_upload_thumbnail(
+                    video_local_path=merged_file_path,
+                    video_object_name=object_name,
+                    minio_client=minio_client,
+                    timestamp="00:00:02",  # 从第2秒提取帧
+                    width=640  # 640px 宽度
+                )
+
+                # 更新媒体记录
+                media.thumbnail_path = thumbnail_path
+                media.thumbnail_url = thumbnail_url
+
+                await db.commit()
+                await db.refresh(media)
+
+                logger.info(f"Thumbnail generated successfully: {thumbnail_url}")
+
+            except Exception as e:
+                # 缩略图生成失败不影响主流程
+                logger.error(f"Failed to generate thumbnail: {e}")
+                # 继续执行，不抛出异常
+
         # 清理临时文件
         try:
             shutil.rmtree(session.temp_dir)
@@ -874,6 +965,7 @@ async def complete_chunk_upload(
             "message": "上传完成",
             "media_id": media.id,
             "url": url,
+            "thumbnail_url": media.thumbnail_url,  # ✅ 返回缩略图URL
             "media": {
                 "id": media.id,
                 "title": media.title,
@@ -881,6 +973,7 @@ async def complete_chunk_upload(
                 "file_size": media.file_size,
                 "mime_type": media.mime_type,
                 "url": media.url,
+                "thumbnail_url": media.thumbnail_url,  # ✅ 包含缩略图
             }
         }
 
@@ -985,53 +1078,130 @@ async def batch_move_media(
 
 
 @router.delete("/media/batch/delete")
+@limiter.limit(RateLimitPresets.STRICT)
 async def batch_delete_media(
-    media_ids: List[int] = Query(...),
-    permanent: bool = Query(False),
+    request: Request,
+    media_ids: List[int] = Query(..., max_length=100, description="媒体ID列表，最多100个"),
+    permanent: bool = Query(False, description="是否永久删除"),
+    recursive: bool = Query(True, description="删除文件夹时是否递归删除子项"),
     db: AsyncSession = Depends(get_db),
     current_user: AdminUser = Depends(get_current_admin_user),
 ):
-    """批量删除文件/文件夹"""
+    """
+    批量删除文件/文件夹
+
+    特性:
+    - 支持软删除和永久删除
+    - 删除文件夹时自动递归删除所有子项（可选）
+    - 永久删除时清理MinIO存储
+    - 限流保护和批量大小限制
+    """
+
+    if len(media_ids) > 100:
+        raise HTTPException(status_code=400, detail="一次最多删除100个文件")
 
     deleted_count = 0
     errors = []
 
+    async def delete_item_recursive(media_id: int, permanent: bool) -> int:
+        """
+        递归删除项目及其子项
+
+        Args:
+            media_id: 要删除的媒体ID
+            permanent: 是否永久删除
+
+        Returns:
+            删除的项目总数
+        """
+        # 获取媒体项
+        media = await db.get(Media, media_id)
+
+        if not media or media.is_deleted:
+            return 0
+
+        count = 0
+
+        # 如果是文件夹且启用递归，先删除所有子项
+        if media.is_folder and recursive:
+            logger.info(f"Deleting folder recursively: {media.title} (id={media_id})")
+
+            # 查找所有直接子项
+            children_query = select(Media).where(
+                and_(
+                    Media.parent_id == media_id,
+                    Media.is_deleted == False
+                )
+            )
+            children_result = await db.execute(children_query)
+            children = children_result.scalars().all()
+
+            logger.info(f"Found {len(children)} children in folder {media.title}")
+
+            # 递归删除每个子项
+            for child in children:
+                child_count = await delete_item_recursive(child.id, permanent)
+                count += child_count
+
+        # 删除当前项
+        if permanent:
+            # 永久删除
+            logger.info(f"Permanently deleting: {media.title} (id={media_id}, is_folder={media.is_folder})")
+
+            if not media.is_folder:
+                # 删除MinIO中的文件
+                try:
+                    if media.file_path:
+                        minio_client.delete_file(media.file_path)
+                        logger.info(f"Deleted file from MinIO: {media.file_path}")
+
+                    if media.thumbnail_path:
+                        minio_client.delete_file(media.thumbnail_path)
+                        logger.info(f"Deleted thumbnail from MinIO: {media.thumbnail_path}")
+
+                except Exception as e:
+                    logger.error(f"Failed to delete file from MinIO: {e}")
+                    # 继续删除数据库记录，即使MinIO删除失败
+
+            # 从数据库删除
+            await db.delete(media)
+        else:
+            # 软删除
+            logger.info(f"Soft deleting: {media.title} (id={media_id})")
+            media.is_deleted = True
+            media.deleted_at = datetime.utcnow()
+
+        return count + 1
+
+    # 处理每个请求的ID
     for media_id in media_ids:
         try:
-            media_query = select(Media).where(Media.id == media_id)
-            media_result = await db.execute(media_query)
-            media = media_result.scalar_one_or_none()
+            count = await delete_item_recursive(media_id, permanent)
+            deleted_count += count
 
-            if not media:
-                errors.append({"id": media_id, "error": "不存在"})
-                continue
-
-            if permanent:
-                # 永久删除
-                if not media.is_folder:
-                    try:
-                        minio_client.delete_file(media.file_path)
-                    except Exception as e:
-                        print(f"删除文件失败: {e}")
-
-                await db.delete(media)
-            else:
-                # 软删除
-                media.is_deleted = True
-                media.deleted_at = datetime.utcnow()
-
-            deleted_count += 1
+            logger.info(f"Successfully deleted media_id={media_id}, total items deleted: {count}")
 
         except Exception as e:
-            errors.append({"id": media_id, "error": str(e)})
+            error_msg = str(e)
+            errors.append({"id": media_id, "error": error_msg})
+            logger.error(f"Failed to delete media_id={media_id}: {error_msg}", exc_info=True)
 
-    await db.commit()
+    # 提交所有更改
+    try:
+        await db.commit()
+        logger.info(f"Batch delete committed: {deleted_count} items deleted")
+    except Exception as e:
+        await db.rollback()
+        logger.error(f"Failed to commit batch delete: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"删除失败: {str(e)}")
 
     return {
         "message": "批量删除完成",
         "deleted_count": deleted_count,
-        "total_count": len(media_ids),
-        "errors": errors
+        "total_requested": len(media_ids),
+        "errors": errors,
+        "recursive": recursive,
+        "permanent": permanent
     }
 
 

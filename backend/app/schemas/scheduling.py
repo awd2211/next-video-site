@@ -41,6 +41,10 @@ class ScheduleBase(BaseModel):
     tags: list[str] = Field(default_factory=list)
     extra_data: dict[str, Any] = Field(default_factory=dict)
 
+
+class ScheduleCreate(ScheduleBase):
+    """创建调度请求"""
+
     @field_validator("scheduled_time")
     @classmethod
     def validate_scheduled_time(cls, v: datetime) -> datetime:
@@ -63,7 +67,7 @@ class ScheduleBase(BaseModel):
         return v
 
     @model_validator(mode='after')
-    def validate_cron_recurrence(self) -> 'ScheduleBase':
+    def validate_cron_recurrence(self) -> 'ScheduleCreate':
         """验证CRON表达式重复规则"""
         if self.recurrence == ScheduleRecurrence.CUSTOM:
             cron_expression = self.recurrence_config.get('cron_expression')
@@ -77,12 +81,6 @@ class ScheduleBase(BaseModel):
                 raise ValueError(f"Invalid cron expression: {error_msg}")
 
         return self
-
-
-class ScheduleCreate(ScheduleBase):
-    """创建调度请求"""
-
-    pass
 
 
 class ScheduleUpdate(BaseModel):

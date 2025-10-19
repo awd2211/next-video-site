@@ -59,6 +59,15 @@ class MediaResponse(MediaBase):
     updated_at: Optional[datetime]
     is_deleted: bool
 
+    # 🆕 树形结构字段
+    parent_id: Optional[int] = None
+    is_folder: bool = False
+    path: Optional[str] = None
+
+    # 🆕 文件夹扩展字段
+    children_count: Optional[int] = None  # 子项数量
+    folder_thumbnail_url: Optional[str] = None  # 文件夹预览图URL
+
     class Config:
         from_attributes = True
 

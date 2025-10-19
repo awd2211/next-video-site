@@ -20,6 +20,8 @@ export interface MediaItem {
   parent_id?: number
   path?: string
   is_folder: boolean
+  children_count?: number  // 文件夹包含的子项数量
+  folder_thumbnail_url?: string  // 📸 文件夹预览图URL
   tags?: string
   view_count: number
   download_count: number

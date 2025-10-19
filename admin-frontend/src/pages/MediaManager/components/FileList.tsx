@@ -261,6 +261,54 @@ const FileList: React.FC<FileListProps> = ({
     const iconStyle = isListView ? { fontSize: 24 } : {}
 
     if (item.is_folder) {
+      // ✅ 优先显示文件夹预览图
+      if (item.folder_thumbnail_url) {
+        if (isListView) {
+          return (
+            <img
+              src={item.folder_thumbnail_url}
+              alt={item.title}
+              style={{
+                width: 32,
+                height: 32,
+                objectFit: 'cover',
+                borderRadius: 4,
+                border: '1px solid #d9d9d9',
+              }}
+            />
+          )
+        }
+        // 网格视图：显示预览图 + 左上角文件夹图标标识
+        return (
+          <div style={{ position: 'relative', width: '100%', height: '100%' }}>
+            <img
+              src={item.folder_thumbnail_url}
+              alt={item.title}
+              style={{
+                width: '100%',
+                height: '100%',
+                objectFit: 'cover',
+              }}
+            />
+            {/* 文件夹标识 - 左上角半透明图标 */}
+            <div
+              style={{
+                position: 'absolute',
+                top: 4,
+                left: 4,
+                background: 'rgba(0, 0, 0, 0.5)',
+                borderRadius: 4,
+                padding: '2px 6px',
+                display: 'flex',
+                alignItems: 'center',
+              }}
+            >
+              <FolderOutlined style={{ fontSize: 16, color: '#fff' }} />
+            </div>
+          </div>
+        )
+      }
+      // 无预览图，显示默认文件夹图标
       return <FolderOutlined className="file-card-preview-icon" style={iconStyle} />
     }
 
@@ -322,7 +370,12 @@ const FileList: React.FC<FileListProps> = ({
       dataIndex: 'file_size',
       key: 'file_size',
       width: 120,
-      render: (size) => formatFileSize(size),
+      render: (size, record) => {
+        if (record.is_folder) {
+          return `${record.children_count || 0} 项`
+        }
+        return formatFileSize(size)
+      },
     },
     {
       title: '类型',
@@ -517,11 +570,11 @@ const FileList: React.FC<FileListProps> = ({
               </div>
 
               <div className="file-card-info">
-                <div>{formatFileSize(item.file_size)}</div>
+                <div>{item.is_folder ? `${item.children_count || 0} 项` : formatFileSize(item.file_size)}</div>
                 <div>
-                  {item.media_type === 'video' && item.duration
+                  {!item.is_folder && item.media_type === 'video' && item.duration
                     ? `${Math.floor(item.duration / 60)}:${(item.duration % 60).toString().padStart(2, '0')}`
-                    : item.media_type === 'image' && item.width
+                    : !item.is_folder && item.media_type === 'image' && item.width
                     ? `${item.width}×${item.height}`
                     : ''}
                 </div>
