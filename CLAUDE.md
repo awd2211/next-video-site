@@ -105,10 +105,12 @@ docker-compose restart backend                 # Restart service
 - `database.py` - SQLAlchemy async engine, session management, connection pooling
 
 **Key Directories:**
-- `models/` - SQLAlchemy ORM models (User, Video, Comment, Notification, Dashboard, etc.)
+- `models/` - SQLAlchemy ORM models (User, Video, Comment, Notification, Dashboard, Payment, Subscription, etc.)
 - `schemas/` - Pydantic schemas for request/response validation
 - `api/` - Public API endpoints (auth, videos, search, categories, websocket)
-- `admin/` - Admin API endpoints (video management, stats, logs, AI management, system health, etc.)
+- `api/v1/` - Versioned API endpoints (subscriptions, payments, invoices, coupons, webhooks)
+- `admin/` - Admin API endpoints (video management, stats, logs, AI management, system health, payment management, etc.)
+- `services/` - Business logic services (payment gateway, subscription service, invoice service, coupon service, etc.)
 - `utils/` - Utilities (security, dependencies, cache, email, MinIO client, logging, notifications, storage monitoring)
 - `middleware/` - Custom middleware (see Middleware Stack section)
 
@@ -163,6 +165,16 @@ docker-compose restart backend                 # Restart service
    - Content moderation notifications (new comments, videos pending review)
    - User activity alerts (spam detection, violations)
    - Delivered via `AdminNotificationService` in `utils/admin_notification_service.py`
+
+8. **Payment & Subscription System:**
+   - Multi-gateway support: Stripe, PayPal, Alipay via `services/payment_gateway.py`
+   - Subscription lifecycle management via `services/subscription_service.py`
+   - Automatic recurring billing and renewal
+   - Coupon/discount system via `services/coupon_service.py`
+   - Invoice generation via `services/invoice_service.py`
+   - Webhook handlers for payment events in `api/v1/webhooks.py`
+   - Business metrics: MRR, churn rate, ARPU, LTV calculations
+   - See `PAYMENT_SYSTEM_GUIDE.md` for detailed documentation
 
 ### Frontend Structure (`/frontend/src`)
 
@@ -244,12 +256,21 @@ docker-compose restart backend                 # Restart service
 - `AIConfig` - AI provider settings
 - `AdminNotification` - Admin notification system
 - `DashboardLayout` - Customizable dashboard layouts
+- `SubscriptionPlan` - Subscription tier definitions (monthly, yearly, lifetime, etc.)
+- `UserSubscription` - User subscription records with auto-renewal tracking
+- `Payment` - Payment transactions linked to payment gateways
+- `Coupon` - Discount codes with usage tracking and validation rules
+- `Invoice` - Generated invoices for payments with tax calculations
 
 **Important Relationships:**
 - Videos have many-to-many with Categories, Tags, Actors, Directors
 - Comments belong to Users and Videos (with moderation status)
 - Watch history tracks progress and completion
 - AdminNotifications link to various entity types (videos, comments, users)
+- UserSubscription links User to SubscriptionPlan with billing metadata
+- Payment links User to UserSubscription with gateway-specific transaction IDs
+- Invoice links to Payment and includes line items, tax, and discount calculations
+- Coupon can apply to specific SubscriptionPlans with usage limits
 
 ## Development Workflow
 
@@ -304,6 +325,40 @@ docker-compose restart backend                 # Restart service
 - **Statistics:** Cache with 5-minute TTL
 - Use cache invalidation on updates (delete cache keys)
 
+### Payment & Subscription Workflow
+
+**Subscription Purchase Flow:**
+1. User selects plan on `/subscription` page
+2. Optional: Apply coupon code and validate via `CouponService`
+3. Redirect to `/checkout` with plan and coupon
+4. User selects payment gateway (Stripe/PayPal/Alipay)
+5. Frontend initiates payment via appropriate gateway SDK
+6. Backend creates Payment record with `pending` status
+7. Payment gateway processes payment and sends webhook
+8. Webhook handler in `api/v1/webhooks.py` verifies and updates Payment
+9. `PaymentService.process_payment_success()` creates/activates UserSubscription
+10. `InvoiceService.generate_invoice()` creates invoice record
+11. User redirected to success page, subscription activated
+
+**Recurring Billing Flow:**
+1. Backend scheduled job checks subscriptions expiring soon
+2. `SubscriptionService.renew_subscription()` initiates renewal
+3. Payment processed through saved payment method
+4. Webhook confirms payment, subscription extended
+5. If payment fails: subscription marked for cancellation, user notified
+
+**Webhook Security:**
+- Stripe: Verify `Stripe-Signature` header using webhook secret
+- PayPal: Verify webhook ID against PayPal API
+- Alipay: Verify RSA signature of notification parameters
+- All webhooks logged to database for audit
+
+**Business Metrics Calculation:**
+- MRR: Sum of active monthly recurring revenue
+- Churn Rate: (Cancelled subs / Total subs) per period
+- ARPU: Total revenue / Active users
+- Calculated in `SubscriptionService.get_statistics()`
+
 ## Configuration
 
 ### Environment Variables (backend/.env)
@@ -324,6 +379,18 @@ Optional:
 - `SMTP_*` - Email configuration
 - `ELASTICSEARCH_URL` - For full-text search (future)
 - `CELERY_BROKER_URL` - For async tasks (future)
+
+Payment Gateways (for subscription system):
+- `STRIPE_SECRET_KEY` - Stripe API secret key
+- `STRIPE_PUBLISHABLE_KEY` - Stripe public key for frontend
+- `STRIPE_WEBHOOK_SECRET` - Stripe webhook signing secret
+- `PAYPAL_CLIENT_ID` - PayPal client ID
+- `PAYPAL_CLIENT_SECRET` - PayPal secret
+- `PAYPAL_ENVIRONMENT` - `sandbox` or `live`
+- `ALIPAY_APP_ID` - Alipay application ID
+- `ALIPAY_PRIVATE_KEY` - Alipay RSA private key
+- `ALIPAY_PUBLIC_KEY` - Alipay RSA public key
+- `ALIPAY_GATEWAY_URL` - Alipay gateway endpoint
 
 ### Default Ports
 
@@ -398,6 +465,35 @@ stats = await get_storage_stats()
 # Returns: total_size, used_size, available_size, usage_percentage
 ```
 
+### Initialize Payment System
+```bash
+cd backend && source venv/bin/activate
+
+# Run database migrations for payment tables
+alembic upgrade head
+
+# Seed initial subscription plans and test coupons
+python scripts/seed_payment_data.py
+
+# This creates:
+# - 7 subscription plans (Basic/Premium/Ultimate in Monthly/Quarterly/Yearly + Lifetime)
+# - 5 test coupons (WELCOME20, SPRING10, VIP30, TEST99)
+# - Sample payment gateway configurations
+```
+
+### Test Payment Webhooks Locally
+```bash
+# Install Stripe CLI
+stripe listen --forward-to localhost:8000/api/v1/webhooks/stripe
+
+# Trigger test webhook
+stripe trigger payment_intent.succeeded
+
+# For PayPal/Alipay: Use ngrok to expose local server
+ngrok http 8000
+# Configure webhook URL in payment gateway dashboard
+```
+
 ## Important Notes
 
 - **Never commit `.env` files** - use `.env.example` as template
@@ -416,10 +512,22 @@ stats = await get_storage_stats()
 - **i18n changes**: Update both `en-US.json` and `zh-CN.json` when adding new UI text
 - **Middleware order matters**: Request flows through middleware in reverse order of registration
 - **Storage monitoring** runs automatically on startup, checking MinIO usage every 5 minutes
+- **Payment webhooks** must be configured in each gateway dashboard with correct endpoints
+- **Subscription renewals** require background job scheduler (Celery recommended for production)
+- **Invoice PDFs** generation requires `pdf_generator.py` service (uses ReportLab)
+- **Payment testing** use Stripe test cards (4242 4242 4242 4242) or PayPal sandbox
 
 ## Recent Improvements
 
 This project has recently received major enhancements including:
+- **Complete Payment & Subscription System** (66 API endpoints):
+  - Multi-gateway support: Stripe, PayPal, Alipay
+  - Subscription management with auto-renewal
+  - Coupon/discount system with validation rules
+  - Invoice generation with tax calculations
+  - Webhook handlers for payment events
+  - Business metrics dashboard (MRR, churn, ARPU, LTV)
+  - See `PAYMENT_SYSTEM_GUIDE.md` for complete documentation
 - Full internationalization (i18n) support with English and Chinese locales
 - Dark/light theme implementation across both frontends
 - Enhanced UX improvements in admin panel (Videos, Users, Banners pages)
@@ -434,4 +542,4 @@ This project has recently received major enhancements including:
 - Enhanced error logging with admin notifications
 - Batch upload functionality with progress tracking
 
-For detailed feature documentation, see [FEATURE_SHOWCASE.md](FEATURE_SHOWCASE.md) and [README.md](README.md).
+For detailed feature documentation, see [PAYMENT_SYSTEM_GUIDE.md](PAYMENT_SYSTEM_GUIDE.md), [FEATURE_SHOWCASE.md](FEATURE_SHOWCASE.md) and [README.md](README.md).
