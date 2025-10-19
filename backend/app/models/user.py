@@ -16,9 +16,12 @@ if TYPE_CHECKING:
     from app.models.dashboard import DashboardLayout
     from app.models.danmaku import Danmaku
     from app.models.favorite_folder import FavoriteFolder
+    from app.models.invoice import Invoice
     from app.models.media import Media
+    from app.models.payment import Payment, PaymentMethod
     from app.models.share import VideoShare
     from app.models.shared_watchlist import SharedWatchlist
+    from app.models.subscription import UserSubscription
     from app.models.user_activity import Favorite, SearchHistory, WatchHistory
     from app.models.watchlist import Watchlist
 
@@ -83,6 +86,20 @@ class User(Base):
     shared_watchlists: Mapped[list[SharedWatchlist]] = relationship(
         "SharedWatchlist", back_populates="user", cascade="all, delete-orphan"
     )  # 🆕 分享的待看列表
+
+    # 🆕 订阅和支付
+    subscriptions: Mapped[list[UserSubscription]] = relationship(
+        "UserSubscription", back_populates="user", cascade="all, delete-orphan"
+    )
+    payments: Mapped[list[Payment]] = relationship(
+        "Payment", back_populates="user", cascade="all, delete-orphan"
+    )
+    payment_methods: Mapped[list[PaymentMethod]] = relationship(
+        "PaymentMethod", back_populates="user", cascade="all, delete-orphan"
+    )
+    invoices: Mapped[list[Invoice]] = relationship(
+        "Invoice", back_populates="user", cascade="all, delete-orphan"
+    )
 
 
 class AdminUser(Base):

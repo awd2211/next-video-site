@@ -39,6 +39,10 @@ import {
   LineChartOutlined,
   LockOutlined,
   CalendarOutlined,
+  DollarOutlined,
+  CreditCardOutlined,
+  GiftOutlined,
+  WalletOutlined,
 } from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';
 import Breadcrumb from '../components/Breadcrumb';
@@ -261,6 +265,33 @@ const AdminLayout = () => {
           key: '/logs',
           icon: <FileTextOutlined />,
           label: t('menu.logs'),
+        },
+      ],
+    },
+    // 💳 支付管理
+    {
+      key: 'payment',
+      label: t('menu.groupPayment') || '支付管理',
+      items: [
+        {
+          key: '/payment/plans',
+          icon: <DollarOutlined />,
+          label: t('menu.subscriptionPlans') || '订阅计划',
+        },
+        {
+          key: '/payment/subscriptions',
+          icon: <WalletOutlined />,
+          label: t('menu.subscriptions') || '订阅管理',
+        },
+        {
+          key: '/payment/payments',
+          icon: <CreditCardOutlined />,
+          label: t('menu.payments') || '支付记录',
+        },
+        {
+          key: '/payment/coupons',
+          icon: <GiftOutlined />,
+          label: t('menu.coupons') || '优惠券',
         },
       ],
     },

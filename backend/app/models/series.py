@@ -27,6 +27,7 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.database import Base
 
 if TYPE_CHECKING:
+    from app.models.season import Season
     from app.models.user import AdminUser
     from app.models.video import Video
 
@@ -113,6 +114,13 @@ class Series(Base):
     # 关系
     videos: Mapped[list[Video]] = relationship("Video", secondary=series_videos, back_populates="series")
     creator: Mapped[Optional[AdminUser]] = relationship("AdminUser", foreign_keys=[created_by])
+    # 🆕 Season-Episode 架构支持
+    seasons: Mapped[list["Season"]] = relationship(
+        "Season",
+        back_populates="series",
+        cascade="all, delete-orphan",
+        order_by="Season.season_number",
+    )
 
     def __repr__(self):
         return f"<Series {self.id}: {self.title}>"

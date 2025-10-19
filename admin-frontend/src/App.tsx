@@ -39,6 +39,11 @@ const SchedulingList = lazy(() => import('./pages/Scheduling/List'))
 const SchedulingCalendar = lazy(() => import('./pages/Scheduling/Calendar'))
 const OAuthSettings = lazy(() => import('./pages/OAuthSettings'))
 const SentryConfig = lazy(() => import('./pages/SentryConfig'))
+// Payment Management Pages
+const SubscriptionPlans = lazy(() => import('./pages/Payment/SubscriptionPlans'))
+const Payments = lazy(() => import('./pages/Payment/Payments'))
+const Coupons = lazy(() => import('./pages/Payment/Coupons'))
+const Subscriptions = lazy(() => import('./pages/Payment/Subscriptions'))
 
 // Loading component for Suspense
 const PageLoading = () => (
@@ -125,6 +130,10 @@ function App() {
                 <Route path="scheduling/calendar" element={<SchedulingCalendar />} />
                 <Route path="oauth-settings" element={<OAuthSettings />} />
                 <Route path="sentry-config" element={<SentryConfig />} />
+                <Route path="payment/plans" element={<SubscriptionPlans />} />
+                <Route path="payment/payments" element={<Payments />} />
+                <Route path="payment/coupons" element={<Coupons />} />
+                <Route path="payment/subscriptions" element={<Subscriptions />} />
               </Route>
             </Routes>
           </Suspense>

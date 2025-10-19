@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react'
+import React, { useEffect, useRef } from 'react'
 import { Drawer, Progress, Button, Space, Tag, message } from 'antd'
 import {
   CheckCircleOutlined,
@@ -23,6 +23,9 @@ const UploadManager: React.FC<UploadManagerProps> = ({
   parentId,
   onComplete,
 }) => {
+  // ✅ 跟踪正在启动的任务，防止重复上传
+  const startingTasksRef = useRef<Set<string>>(new Set())
+
   // 更新任务状态
   const updateTask = (taskId: string, updates: Partial<UploadTask>) => {
     onTaskUpdate(
@@ -34,7 +37,11 @@ const UploadManager: React.FC<UploadManagerProps> = ({
 
   // 开始上传单个任务
   const startUpload = async (task: UploadTask) => {
-    if (task.status === 'uploading') return
+    // ✅ 防止重复上传：检查状态和启动标记
+    if (task.status === 'uploading' || startingTasksRef.current.has(task.id)) return
+
+    // ✅ 标记为正在启动
+    startingTasksRef.current.add(task.id)
 
     const startTime = Date.now()
     updateTask(task.id, {
@@ -65,6 +72,8 @@ const UploadManager: React.FC<UploadManagerProps> = ({
         })
       },
       onComplete: (mediaId, url) => {
+        // ✅ 清除启动标记
+        startingTasksRef.current.delete(task.id)
         updateTask(task.id, {
           status: 'completed',
           progress: 100,
@@ -78,6 +87,8 @@ const UploadManager: React.FC<UploadManagerProps> = ({
         onComplete()
       },
       onError: (error) => {
+        // ✅ 清除启动标记
+        startingTasksRef.current.delete(task.id)
         updateTask(task.id, {
           status: 'error',
           error: error.message,
@@ -95,17 +106,22 @@ const UploadManager: React.FC<UploadManagerProps> = ({
 
   // 自动开始上传 pending 状态的任务
   useEffect(() => {
-    const pendingTasks = tasks.filter((task) => task.status === 'pending')
+    // ✅ 过滤出真正需要启动的任务：pending 且未被标记为正在启动
+    const pendingTasks = tasks.filter(
+      (task) => task.status === 'pending' && !startingTasksRef.current.has(task.id)
+    )
+
     if (pendingTasks.length > 0 && visible) {
       // 限制并发数量，每次最多3个
       const concurrentLimit = 3
       const uploadingCount = tasks.filter((t) => t.status === 'uploading').length
 
-      pendingTasks
-        .slice(0, Math.max(0, concurrentLimit - uploadingCount))
-        .forEach((task) => {
-          startUpload(task)
-        })
+      const tasksToStart = pendingTasks.slice(0, Math.max(0, concurrentLimit - uploadingCount))
+
+      // 启动上传（startUpload 内部会标记）
+      tasksToStart.forEach((task) => {
+        startUpload(task)
+      })
     }
   }, [tasks, visible])
 

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import toast from 'react-hot-toast'
 import { useTranslation } from 'react-i18next'
@@ -21,16 +21,29 @@ const Login = () => {
   const [captchaUrl, setCaptchaUrl] = useState('')
   const [captchaCode, setCaptchaCode] = useState('')
 
+  // 使用 ref 防止 StrictMode 导致的双重执行
+  const isInitialMount = useRef(true)
+
   // 加载验证码
   const loadCaptcha = async () => {
     try {
+      // Revoke old blob URL to free memory
+      if (captchaUrl) {
+        URL.revokeObjectURL(captchaUrl)
+      }
+
       const timestamp = new Date().getTime()
-      const url = `/api/v1/captcha/?t=${timestamp}`
-      const response = await fetch(url)
+      const response = await fetch(`/api/v1/captcha/?t=${timestamp}`)
+
+      // Get captcha ID from response headers
       const captchaId = response.headers.get('X-Captcha-ID')
       if (captchaId) {
         setCaptchaId(captchaId)
-        setCaptchaUrl(url)
+
+        // Create blob URL from image data to prevent multiple requests
+        const blob = await response.blob()
+        const imageUrl = URL.createObjectURL(blob)
+        setCaptchaUrl(imageUrl)
       }
     } catch (err) {
       console.error('Failed to load captcha:', err)
@@ -40,7 +53,18 @@ const Login = () => {
 
   // 初始加载验证码
   useEffect(() => {
-    loadCaptcha()
+    // 防止 StrictMode 双重执行导致验证码ID不匹配
+    if (isInitialMount.current) {
+      isInitialMount.current = false
+      loadCaptcha()
+    }
+
+    // Cleanup blob URL on unmount
+    return () => {
+      if (captchaUrl) {
+        URL.revokeObjectURL(captchaUrl)
+      }
+    }
   }, [])
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -69,6 +93,8 @@ const Login = () => {
         captcha_id: captchaId,
         captcha_code: captchaCode,
       })
+
+      console.log('登录响应:', response)
       const { access_token, refresh_token, user } = response.data
 
       // Store tokens
@@ -84,8 +110,13 @@ const Login = () => {
       toast.success(`欢迎回来，${user.username || user.email}！`)
 
       // Navigate after a brief delay to show toast
-      setTimeout(() => navigate('/'), 500)
+      console.log('准备跳转到首页...')
+      setTimeout(() => {
+        console.log('执行跳转...')
+        navigate('/')
+      }, 500)
     } catch (err: any) {
+      console.error('登录错误:', err)
       const errorMessage = err.response?.data?.detail || '登录失败，请检查邮箱和密码'
       toast.error(errorMessage)
       // 验证码错误时刷新验证码

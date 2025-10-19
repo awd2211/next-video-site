@@ -93,6 +93,34 @@ class SystemSettings(Base):
         String(20), nullable=True
     )  # success/failed
 
+    # 支付网关配置
+    payment_gateway_config: Mapped[Optional[dict[str, Any]]] = mapped_column(
+        JSON, nullable=True
+    )  # 支付网关配置（Stripe, PayPal, Alipay）
+    # 格式示例:
+    # {
+    #   "stripe": {
+    #     "enabled": true,
+    #     "secret_key": "sk_test_...",
+    #     "publishable_key": "pk_test_...",
+    #     "webhook_secret": "whsec_...",
+    #     "environment": "test"
+    #   },
+    #   "paypal": {
+    #     "enabled": true,
+    #     "client_id": "...",
+    #     "client_secret": "...",
+    #     "environment": "sandbox"
+    #   },
+    #   "alipay": {
+    #     "enabled": false,
+    #     "app_id": "...",
+    #     "private_key": "...",
+    #     "public_key": "...",
+    #     "gateway_url": "https://openapi.alipaydev.com/gateway.do"
+    #   }
+    # }
+
     created_at: Mapped[datetime] = mapped_column(DateTime, nullable=False, server_default=func.now())
     updated_at: Mapped[datetime] = mapped_column(
         DateTime, nullable=False, server_default=func.now(), onupdate=func.now()

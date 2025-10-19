@@ -3,6 +3,10 @@ from app.models.ai_config import AIProvider, AIProviderType  # 🆕 AI提供商�
 from app.models.ai_log import AIRequestLog, AIQuota, AITemplate, AIPerformanceMetric  # 🆕 AI日志和配额管理
 from app.models.comment import Comment, Rating
 from app.models.content import Announcement, Banner, Recommendation, Report
+from app.models.coupon import Coupon, CouponStatus, DiscountType  # 🆕 优惠券系统
+from app.models.invoice import Invoice, InvoiceStatus  # 🆕 发票系统
+from app.models.payment import Payment, PaymentMethod, PaymentProvider, PaymentStatus, PaymentType, Currency  # 🆕 支付系统
+from app.models.subscription import SubscriptionPlan, UserSubscription, BillingPeriod, SubscriptionStatus  # 🆕 订阅系统
 from app.models.oauth_config import OAuthConfig  # 🆕 OAuth配置
 from app.models.dashboard import DashboardLayout  # 🆕 仪表板布局
 from app.models.danmaku import (  # 🆕 弹幕系统
@@ -13,6 +17,8 @@ from app.models.danmaku import (  # 🆕 弹幕系统
 )
 from app.models.favorite_folder import FavoriteFolder  # 🆕 收藏夹分组
 from app.models.series import Series, SeriesStatus, SeriesType  # 🆕 视频系列/专辑
+from app.models.season import Season, SeasonStatus  # 🆕 电视剧季度管理
+from app.models.episode import Episode, EpisodeStatus  # 🆕 电视剧单集管理
 from app.models.settings import SystemSettings
 from app.models.media import Media  # 🆕 媒体资源
 from app.models.media_share import MediaShare  # 🆕 媒体文件分享
@@ -80,6 +86,10 @@ __all__ = [
     "Series",  # 🆕 视频系列/专辑
     "SeriesType",  # 🆕 系列类型枚举
     "SeriesStatus",  # 🆕 系列状态枚举
+    "Season",  # 🆕 电视剧季度
+    "SeasonStatus",  # 🆕 季度状态枚举
+    "Episode",  # 🆕 电视剧单集
+    "EpisodeStatus",  # 🆕 单集状态枚举
     "Role",
     "Permission",
     "RolePermission",
@@ -107,4 +117,20 @@ __all__ = [
     "Department",  # 🆕 部门
     "DataScope",  # 🆕 数据范围权限
     "AdminUserDepartment",  # 🆕 管理员部门关联
+    # 支付和订阅系统 🆕
+    "SubscriptionPlan",
+    "UserSubscription",
+    "BillingPeriod",
+    "SubscriptionStatus",
+    "Payment",
+    "PaymentMethod",
+    "PaymentProvider",
+    "PaymentStatus",
+    "PaymentType",
+    "Currency",
+    "Coupon",
+    "DiscountType",
+    "CouponStatus",
+    "Invoice",
+    "InvoiceStatus",
 ]

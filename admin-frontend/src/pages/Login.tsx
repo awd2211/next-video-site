@@ -4,12 +4,16 @@ import { Form, Input, Button, Card, Space, Switch, Checkbox, Divider, Modal, Ste
 import { UserOutlined, LockOutlined, SafetyOutlined, ReloadOutlined, SunOutlined, MoonOutlined, VideoCameraOutlined, MailOutlined, ClockCircleOutlined, CheckCircleOutlined } from '@ant-design/icons'
 import axios from 'axios'  // Use native axios for login, not the intercepted instance
 import { useTheme } from '../contexts/ThemeContext'
+import { useLanguage } from '../contexts/LanguageContext'
+import { useTranslation } from 'react-i18next'
 import { getColor, getTextColor } from '../utils/awsColorHelpers'
 import './Login.css'
 
 const Login = () => {
   const navigate = useNavigate()
   const { theme, toggleTheme } = useTheme()
+  const { language } = useLanguage()
+  const { t } = useTranslation()
   const { message } = App.useApp()
   const [loading, setLoading] = useState(false)
   const [captchaId, setCaptchaId] = useState('')
@@ -108,8 +112,8 @@ const Login = () => {
       setCaptchaUrl(imageUrl)
     } catch (error: any) {
       const errorMsg = error.code === 'ECONNABORTED'
-        ? '验证码加载超时，请重试'
-        : '验证码加载失败，请刷新重试'
+        ? t('auth.captchaTimeout')
+        : t('auth.captchaLoadFailed')
       message.error({
         content: errorMsg,
         duration: 3,
@@ -130,15 +134,15 @@ const Login = () => {
       setResetStep(2)
       setCountdown(60) // Start 60 second countdown
       message.success({
-        content: '验证码已发送到您的邮箱，请查收',
+        content: t('auth.codeSentSuccess'),
         duration: 3,
       })
     } catch (error: any) {
-      let errorMsg = '发送失败，请检查邮箱地址'
+      let errorMsg = t('auth.sendFailed')
       if (error.response?.status === 503) {
-        errorMsg = '邮件服务未配置，请联系管理员'
+        errorMsg = t('auth.emailNotConfigured')
       } else if (error.response?.status === 500) {
-        errorMsg = '邮件发送失败，请稍后重试'
+        errorMsg = t('auth.emailSendFailed')
       } else if (error.response?.data?.detail) {
         errorMsg = error.response.data.detail
       }
@@ -162,12 +166,12 @@ const Login = () => {
 
       setCountdown(60)
       message.success({
-        content: '验证码已重新发送',
+        content: t('auth.codeResent'),
         duration: 2,
       })
     } catch (error: any) {
       message.error({
-        content: '发送失败，请稍后重试',
+        content: t('auth.resendFailed'),
         duration: 3,
       })
     } finally {
@@ -178,7 +182,7 @@ const Login = () => {
   // Handle forgot password - Step 2: Reset password with verification code
   const handleResetPassword = async (values: { code: string; new_password: string; confirm_password: string }) => {
     if (values.new_password !== values.confirm_password) {
-      message.error('两次输入的密码不一致')
+      message.error(t('auth.passwordMismatch'))
       return
     }
 
@@ -191,7 +195,7 @@ const Login = () => {
       })
 
       message.success({
-        content: '密码重置成功！请使用新密码登录',
+        content: t('auth.resetSuccess'),
         duration: 3,
       })
 
@@ -201,13 +205,13 @@ const Login = () => {
       setResetEmail('')
       resetForm.resetFields()
     } catch (error: any) {
-      let errorMsg = '重置失败，请检查验证码是否正确'
+      let errorMsg = t('auth.resetFailed')
       if (error.response?.status === 400) {
-        errorMsg = '验证码错误或已过期'
+        errorMsg = t('auth.codeInvalidOrExpired')
       } else if (error.response?.status === 404) {
-        errorMsg = '用户不存在'
+        errorMsg = t('auth.userNotFound')
       } else if (error.response?.status === 403) {
-        errorMsg = '账户已被禁用'
+        errorMsg = t('auth.accountDisabled')
       } else if (error.response?.data?.detail) {
         errorMsg = error.response.data.detail
       }
@@ -245,7 +249,7 @@ const Login = () => {
         setLoginCredentials(values)
         setRequires2FA(true)
         message.info({
-          content: '请输入双因素认证码',
+          content: t('auth.enter2FACode'),
           duration: 3,
         })
         return
@@ -263,7 +267,7 @@ const Login = () => {
       }
 
       message.success({
-        content: '登录成功！正在跳转...',
+        content: t('auth.loginSuccess'),
         duration: 2,
       })
 
@@ -274,15 +278,15 @@ const Login = () => {
       }, 300)
     } catch (error: any) {
       // Determine error message
-      let errorMsg = '登录失败，请检查用户名和密码'
+      let errorMsg = t('auth.loginFailed')
       if (error.response?.status === 401) {
-        errorMsg = '用户名或密码错误'
+        errorMsg = t('auth.wrongCredentials')
       } else if (error.response?.status === 400) {
-        errorMsg = error.response?.data?.detail || '验证码错误或已过期'
+        errorMsg = error.response?.data?.detail || t('auth.captchaInvalid')
       } else if (error.response?.status === 429) {
-        errorMsg = '登录尝试过多，请稍后再试'
+        errorMsg = t('auth.tooManyAttempts')
       } else if (error.code === 'ECONNABORTED' || error.code === 'ERR_NETWORK') {
-        errorMsg = '网络连接失败，请检查网络'
+        errorMsg = t('auth.networkError')
       }
 
       message.error({
@@ -304,7 +308,7 @@ const Login = () => {
   // Handle 2FA verification
   const handle2FAVerification = async (values: { twofa_code: string }) => {
     if (!loginCredentials) {
-      message.error('登录会话已过期，请重新登录')
+      message.error(t('auth.sessionExpired'))
       setRequires2FA(false)
       return
     }
@@ -338,7 +342,7 @@ const Login = () => {
       }
 
       message.success({
-        content: '登录成功！正在跳转...',
+        content: t('auth.loginSuccess'),
         duration: 2,
       })
 
@@ -346,9 +350,9 @@ const Login = () => {
         navigate('/')
       }, 300)
     } catch (error: any) {
-      let errorMsg = '2FA验证失败'
+      let errorMsg = t('auth.twoFactorFailed')
       if (error.response?.status === 401) {
-        errorMsg = '验证码错误，请重试'
+        errorMsg = t('auth.twoFactorInvalid')
       } else if (error.response?.data?.detail) {
         errorMsg = error.response.data.detail
       }
@@ -380,8 +384,8 @@ const Login = () => {
           <div className="logo-container">
             <VideoCameraOutlined className="logo-icon" />
           </div>
-          <h1 className="login-title">视频管理后台</h1>
-          <p className="login-subtitle">Video Site Admin Panel</p>
+          <h1 className="login-title">{t('auth.pageTitle')}</h1>
+          <p className="login-subtitle">{t('auth.pageSubtitle')}</p>
         </div>
 
         {!requires2FA ? (
@@ -396,40 +400,40 @@ const Login = () => {
           >
             <Form.Item
               name="username"
-              label="用户名"
-              rules={[{ required: true, message: '请输入用户名' }]}
+              label={t('auth.username')}
+              rules={[{ required: true, message: t('auth.usernamePlaceholder') }]}
             >
               <Input
                 prefix={<UserOutlined />}
-                placeholder="请输入用户名"
+                placeholder={t('auth.usernamePlaceholder')}
                 autoComplete="username"
               />
             </Form.Item>
 
             <Form.Item
               name="password"
-              label="密码"
-              rules={[{ required: true, message: '请输入密码' }]}
+              label={t('auth.password')}
+              rules={[{ required: true, message: t('auth.passwordPlaceholder') }]}
             >
               <Input.Password
                 prefix={<LockOutlined />}
-                placeholder="请输入密码"
+                placeholder={t('auth.passwordPlaceholder')}
                 autoComplete="current-password"
               />
             </Form.Item>
 
             <Form.Item
               name="captcha_code"
-              label="验证码"
+              label={t('auth.captcha')}
               rules={[
-                { required: true, message: '请输入验证码' },
-                { len: 4, message: '验证码为4位字符' }
+                { required: true, message: t('auth.captchaPlaceholder') },
+                { len: 4, message: t('auth.captchaLength') }
               ]}
             >
               <Space.Compact style={{ width: '100%' }}>
                 <Input
                   prefix={<SafetyOutlined />}
-                  placeholder="请输入4位验证码"
+                  placeholder={t('auth.captchaPlaceholder')}
                   maxLength={4}
                   style={{ width: '60%' }}
                   autoComplete="off"
@@ -437,7 +441,7 @@ const Login = () => {
                 <div
                   className="captcha-image-container"
                   onClick={loadCaptcha}
-                  title="点击刷新验证码"
+                  title={t('auth.clickToRefresh')}
                 >
                   {captchaLoading ? (
                     <ReloadOutlined spin style={{ fontSize: 18, color: getColor('primary', theme) }} />
@@ -448,7 +452,7 @@ const Login = () => {
                       style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                     />
                   ) : (
-                    <span style={{ color: getTextColor('disabled', theme), fontSize: 12 }}>加载中...</span>
+                    <span style={{ color: getTextColor('disabled', theme), fontSize: 12 }}>{t('auth.captchaLoading')}</span>
                   )}
                 </div>
               </Space.Compact>
@@ -460,13 +464,13 @@ const Login = () => {
                   checked={rememberMe}
                   onChange={(e) => setRememberMe(e.target.checked)}
                 >
-                  记住用户名
+                  {t('auth.rememberMe')}
                 </Checkbox>
                 <a
                   className="forgot-password-link"
                   onClick={() => setForgotPasswordVisible(true)}
                 >
-                  忘记密码？
+                  {t('auth.forgotPassword')}
                 </a>
               </div>
             </Form.Item>
@@ -479,7 +483,7 @@ const Login = () => {
                 loading={loading}
                 className="login-button"
               >
-                {loading ? '登录中...' : '登录'}
+                {loading ? t('auth.loggingIn') : t('auth.login')}
               </Button>
             </Form.Item>
           </Form>
@@ -494,27 +498,27 @@ const Login = () => {
           >
             <div style={{ textAlign: 'center', marginBottom: 24 }}>
               <SafetyOutlined style={{ fontSize: 48, color: getColor('primary', theme) }} />
-              <h3 style={{ marginTop: 16, marginBottom: 8 }}>双因素认证</h3>
+              <h3 style={{ marginTop: 16, marginBottom: 8 }}>{t('auth.twoFactorAuth')}</h3>
               <p style={{ color: getTextColor('secondary', theme) }}>
-                请输入身份验证器应用中的6位验证码
+                {t('auth.twoFactorDescription')}
                 <br />
-                <small>或使用备份码（格式：XXXX-XXXX）</small>
+                <small>{t('auth.twoFactorBackupHint')}</small>
               </p>
             </div>
 
             <Form.Item
               name="twofa_code"
               rules={[
-                { required: true, message: '请输入验证码' },
+                { required: true, message: t('auth.twoFactorCodeRequired') },
                 {
                   pattern: /^(\d{6}|[A-Z0-9]{4}-[A-Z0-9]{4})$/i,
-                  message: '请输入6位验证码或备份码（XXXX-XXXX）'
+                  message: t('auth.twoFactorCodeFormat')
                 }
               ]}
             >
               <Input
                 prefix={<SafetyOutlined />}
-                placeholder="输入6位验证码或备份码"
+                placeholder={t('auth.twoFactorPlaceholder')}
                 maxLength={9}
                 size="large"
                 style={{
@@ -536,7 +540,7 @@ const Login = () => {
                 size="large"
                 className="login-button"
               >
-                {loading ? '验证中...' : '验证'}
+                {loading ? t('auth.verifying') : t('auth.verify')}
               </Button>
             </Form.Item>
 
@@ -550,7 +554,7 @@ const Login = () => {
                 }}
                 size="large"
               >
-                返回登录
+                {t('auth.backToLogin')}
               </Button>
             </Form.Item>
           </Form>
@@ -560,20 +564,20 @@ const Login = () => {
 
         {/* Default account info */}
         <div className="account-info">
-          <div className="account-info-title">测试账号</div>
+          <div className="account-info-title">{t('auth.testAccount')}</div>
           <div className="account-info-item">
-            <span className="account-label">管理员</span>
+            <span className="account-label">{t('auth.adminAccount')}</span>
             <span className="account-value">admin / admin123456</span>
           </div>
           <div className="account-info-item">
-            <span className="account-label">编辑员</span>
+            <span className="account-label">{t('auth.editorAccount')}</span>
             <span className="account-value">editor / editor123456</span>
           </div>
         </div>
 
         {/* Footer */}
         <div className="login-footer">
-          <p>© 2025 Video Site. All rights reserved.</p>
+          <p>{t('auth.footerText')}</p>
         </div>
       </Card>
 
@@ -581,14 +585,14 @@ const Login = () => {
       <Modal
         title={
           <div className="reset-modal-header">
-            <span className="reset-modal-title">密码重置</span>
+            <span className="reset-modal-title">{t('auth.passwordReset')}</span>
             <Steps
               current={resetStep - 1}
               size="small"
               className="reset-steps"
               items={[
-                { title: '验证邮箱', icon: <MailOutlined /> },
-                { title: '重置密码', icon: <LockOutlined /> },
+                { title: t('auth.verifyEmail'), icon: <MailOutlined /> },
+                { title: t('auth.resetPassword'), icon: <LockOutlined /> },
               ]}
             />
           </div>
@@ -610,15 +614,15 @@ const Login = () => {
           >
             <div className="reset-step-description">
               <MailOutlined className="desc-icon" />
-              <span>请输入您注册时使用的邮箱地址，我们将向您发送6位数字验证码</span>
+              <span>{t('auth.resetEmailDescription')}</span>
             </div>
 
             <Form.Item
               name="email"
-              label="邮箱地址"
+              label={t('auth.emailAddress')}
               rules={[
-                { required: true, message: '请输入邮箱地址' },
-                { type: 'email', message: '请输入有效的邮箱地址' }
+                { required: true, message: t('auth.emailRequired') },
+                { type: 'email', message: t('auth.emailInvalid') }
               ]}
             >
               <Input
@@ -633,7 +637,7 @@ const Login = () => {
             <Form.Item style={{ marginBottom: 0 }}>
               <Space style={{ width: '100%', justifyContent: 'flex-end' }}>
                 <Button onClick={handleResetCancel} size="large">
-                  取消
+                  {t('auth.cancel')}
                 </Button>
                 <Button
                   type="primary"
@@ -643,7 +647,7 @@ const Login = () => {
                   size="large"
                   icon={!resetLoading && <MailOutlined />}
                 >
-                  {resetLoading ? '发送中...' : '发送验证码'}
+                  {resetLoading ? t('auth.sending') : t('auth.sendCode')}
                 </Button>
               </Space>
             </Form.Item>
@@ -658,9 +662,9 @@ const Login = () => {
             <div className="reset-step-description">
               <CheckCircleOutlined className="desc-icon success" />
               <span>
-                验证码已发送到 <strong>{resetEmail}</strong>
+                {t('auth.codeSentTo')} <strong>{resetEmail}</strong>
                 <br />
-                <small>有效期15分钟，请及时查收邮件</small>
+                <small>{t('auth.codeExpiry')}</small>
               </span>
             </div>
 
@@ -668,25 +672,25 @@ const Login = () => {
               name="code"
               label={
                 <span>
-                  验证码
+                  {t('auth.verificationCode')}
                   {countdown > 0 && (
                     <span className="countdown-text">
-                      <ClockCircleOutlined /> {countdown}秒后可重新发送
+                      <ClockCircleOutlined /> {countdown}{t('auth.resendAfter')}
                     </span>
                   )}
                 </span>
               }
               rules={[
-                { required: true, message: '请输入验证码' },
-                { len: 6, message: '验证码为6位数字' },
-                { pattern: /^\d{6}$/, message: '验证码必须是6位数字' }
+                { required: true, message: t('auth.codeRequired') },
+                { len: 6, message: t('auth.codeLength') },
+                { pattern: /^\d{6}$/, message: t('auth.codeDigitsOnly') }
               ]}
             >
               <Space.Compact style={{ width: '100%' }}>
                 <Input
                   ref={codeInputRef}
                   prefix={<SafetyOutlined />}
-                  placeholder="请输入6位验证码"
+                  placeholder={t('auth.codePlaceholder')}
                   maxLength={6}
                   size="large"
                   style={{ width: '70%' }}
@@ -699,23 +703,23 @@ const Login = () => {
                   loading={resetLoading}
                   style={{ width: '30%' }}
                 >
-                  {countdown > 0 ? `${countdown}秒` : '重新发送'}
+                  {countdown > 0 ? `${countdown}${t('auth.seconds')}` : t('auth.resend')}
                 </Button>
               </Space.Compact>
             </Form.Item>
 
             <Form.Item
               name="new_password"
-              label="新密码"
+              label={t('auth.newPassword')}
               rules={[
-                { required: true, message: '请输入新密码' },
-                { min: 8, message: '密码长度至少8位' }
+                { required: true, message: t('auth.newPasswordRequired') },
+                { min: 8, message: t('auth.passwordMinLength') }
               ]}
             >
               <div>
                 <Input.Password
                   prefix={<LockOutlined />}
-                  placeholder="请输入新密码（至少8位）"
+                  placeholder={t('auth.newPasswordPlaceholder')}
                   size="large"
                   onChange={handlePasswordChange}
                 />
@@ -736,7 +740,7 @@ const Login = () => {
                     <span className={`strength-text strength-${
                       passwordStrength < 40 ? 'weak' : passwordStrength < 70 ? 'medium' : 'strong'
                     }`}>
-                      {passwordStrength < 40 ? '弱' : passwordStrength < 70 ? '中等' : '强'}
+                      {passwordStrength < 40 ? t('auth.weak') : passwordStrength < 70 ? t('auth.medium') : t('auth.strong')}
                     </span>
                   </div>
                 )}
@@ -745,22 +749,22 @@ const Login = () => {
 
             <Form.Item
               name="confirm_password"
-              label="确认密码"
+              label={t('auth.confirmPassword')}
               rules={[
-                { required: true, message: '请确认新密码' },
+                { required: true, message: t('auth.confirmPasswordRequired') },
                 ({ getFieldValue }) => ({
                   validator(_, value) {
                     if (!value || getFieldValue('new_password') === value) {
                       return Promise.resolve()
                     }
-                    return Promise.reject(new Error('两次输入的密码不一致'))
+                    return Promise.reject(new Error(t('auth.passwordMismatch')))
                   },
                 }),
               ]}
             >
               <Input.Password
                 prefix={<LockOutlined />}
-                placeholder="请再次输入新密码"
+                placeholder={t('auth.confirmPasswordPlaceholder')}
                 size="large"
               />
             </Form.Item>
@@ -768,7 +772,7 @@ const Login = () => {
             <Form.Item style={{ marginBottom: 0 }}>
               <Space style={{ width: '100%', justifyContent: 'space-between' }}>
                 <Button onClick={() => { setResetStep(1); setPasswordStrength(0) }} size="large">
-                  返回上一步
+                  {t('auth.previousStep')}
                 </Button>
                 <Button
                   type="primary"
@@ -778,7 +782,7 @@ const Login = () => {
                   size="large"
                   icon={!resetLoading && <CheckCircleOutlined />}
                 >
-                  {resetLoading ? '重置中...' : '确认重置'}
+                  {resetLoading ? t('auth.resetting') : t('auth.confirmReset')}
                 </Button>
               </Space>
             </Form.Item>

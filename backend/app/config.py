@@ -70,9 +70,31 @@ class Settings(BaseSettings):
     SMTP_PASSWORD: str = ""
     SMTP_FROM: str = ""
 
+    # Payment Gateways
+    # Stripe
+    STRIPE_SECRET_KEY: str = ""
+    STRIPE_PUBLISHABLE_KEY: str = ""
+    STRIPE_WEBHOOK_SECRET: str = ""
+
+    # PayPal
+    PAYPAL_CLIENT_ID: str = ""
+    PAYPAL_CLIENT_SECRET: str = ""
+    PAYPAL_ENVIRONMENT: str = "sandbox"  # sandbox or live
+
+    # Alipay
+    ALIPAY_APP_ID: str = ""
+    ALIPAY_PRIVATE_KEY: str = ""  # RSA private key
+    ALIPAY_PUBLIC_KEY: str = ""  # Alipay public key
+    ALIPAY_GATEWAY_URL: str = "https://openapi.alipaydev.com/gateway.do"  # sandbox URL
+
     class Config:
         env_file = ".env"
         case_sensitive = True
 
 
 settings = Settings()  # type: ignore[call-arg]
+
+
+def get_settings() -> Settings:
+    """Get application settings"""
+    return settings

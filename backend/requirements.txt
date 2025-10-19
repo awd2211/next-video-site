@@ -28,6 +28,9 @@ flower==2.0.1
 # File storage
 minio==7.2.18
 
+# Payment gateways
+stripe==13.0.1
+
 # Search
 elasticsearch==9.1.1
 

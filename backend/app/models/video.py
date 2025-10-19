@@ -25,6 +25,7 @@ if TYPE_CHECKING:
     from app.models.comment import Comment, Rating
     from app.models.content import Report
     from app.models.danmaku import Danmaku
+    from app.models.episode import Episode
     from app.models.series import Series
     from app.models.share import VideoShare
     from app.models.user_activity import Favorite, WatchHistory
@@ -205,6 +206,14 @@ class Video(Base):
     total_episodes: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
     series_status: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)  # ongoing, completed
 
+    # 🆕 Episode numbering (for TV series without seasons, e.g., Chinese dramas)
+    absolute_episode_number: Mapped[Optional[int]] = mapped_column(
+        Integer,
+        nullable=True,
+        index=True,
+        comment="绝对集数（用于不分季的剧集，如第25集）。有 Season/Episode 架构的剧集不使用此字段。"
+    )
+
     # Statistics
     view_count: Mapped[int] = mapped_column(Integer, default=0)
     like_count: Mapped[int] = mapped_column(Integer, default=0)
@@ -270,6 +279,9 @@ class Video(Base):
     watchlist: Mapped[list[Watchlist]] = relationship(
         "Watchlist", back_populates="video", cascade="all, delete-orphan"
     )  # 🆕 待看列表 (My List)
+    episode: Mapped[Optional["Episode"]] = relationship(
+        "Episode", back_populates="video", uselist=False
+    )  # 🆕 Season-Episode 架构（一对一关系）
 
     @property
     def compression_ratio(self) -> float:

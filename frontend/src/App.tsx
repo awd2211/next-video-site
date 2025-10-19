@@ -30,6 +30,9 @@ const Announcements = lazy(() => import('./pages/Announcements'))
 const MyList = lazy(() => import('./pages/MyList'))
 const SharedList = lazy(() => import('./pages/SharedList'))
 const OAuthCallback = lazy(() => import('./pages/OAuthCallback'))
+const Subscription = lazy(() => import('./pages/Subscription'))
+const Checkout = lazy(() => import('./pages/Checkout'))
+const AccountSubscription = lazy(() => import('./pages/AccountSubscription'))
 
 // Preload critical routes
 const preloadCriticalRoutes = () => {
@@ -87,6 +90,11 @@ function App() {
               <Route path="announcements" element={<Announcements />} />
               <Route path="my-list" element={<MyList />} />
               <Route path="shared/:token" element={<SharedList />} />
+
+              {/* Subscription & Payment Routes */}
+              <Route path="subscription" element={<Subscription />} />
+              <Route path="checkout" element={<Checkout />} />
+              <Route path="account/subscription" element={<AccountSubscription />} />
             </Route>
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />

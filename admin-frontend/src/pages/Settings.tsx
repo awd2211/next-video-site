@@ -41,6 +41,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { debounce } from 'lodash';
 import axios from '@/utils/axios';
 import NotificationSettings from '@/components/NotificationSettings';
+import PaymentGatewaySettings from '@/components/PaymentGatewaySettings';
 import './SettingsNotion.css';
 
 const { Panel } = Collapse;
@@ -277,6 +278,12 @@ const Settings = () => {
       key: 'backup',
       title: '💾 备份恢复',
       keywords: '备份 恢复 导出 导入 backup restore',
+      defaultOpen: false,
+    },
+    {
+      key: 'payment',
+      title: '💳 支付网关',
+      keywords: '支付 payment stripe paypal alipay 网关 gateway',
       defaultOpen: false,
     },
     {
@@ -849,7 +856,18 @@ const Settings = () => {
             </Panel>
           )}
 
-          {/* Panel 9: 其他设置 */}
+          {/* Panel 9: 支付网关配置 */}
+          {filteredSections.find((s) => s.key === 'payment') && (
+            <Panel header="💳 支付网关配置" key="payment" className="settings-panel">
+              <p className="panel-description">配置 Stripe、PayPal、支付宝等支付网关</p>
+
+              <Form.Item name="payment_gateway_config" noStyle>
+                <PaymentGatewaySettings />
+              </Form.Item>
+            </Panel>
+          )}
+
+          {/* Panel 10: 其他设置 */}
           {filteredSections.find((s) => s.key === 'other') && (
             <Panel header="⚙️ 其他设置" key="other" className="settings-panel">
               <p className="panel-description">维护模式、统计代码、自定义样式等</p>

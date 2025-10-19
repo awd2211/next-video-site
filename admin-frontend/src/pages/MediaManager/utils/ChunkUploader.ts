@@ -19,10 +19,10 @@ export interface UploadOptions {
 }
 
 export interface UploadSession {
-  uploadId: string
-  chunkSize: number
-  totalChunks: number
-  expiresAt: string
+  upload_id: string  // 后端返回的是 snake_case
+  chunk_size: number
+  total_chunks: number
+  expires_at: string
 }
 
 export class ChunkUploader {
@@ -116,8 +116,8 @@ export class ChunkUploader {
     })
 
     const session: UploadSession = response.data
-    this.uploadId = session.uploadId
-    this.totalChunks = session.totalChunks
+    this.uploadId = session.upload_id
+    this.totalChunks = session.total_chunks
 
     // 尝试从 localStorage 恢复进度
     const savedProgress = this.loadProgress()

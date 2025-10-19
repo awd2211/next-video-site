@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from 'react'
+import { useState, useMemo, useEffect, useRef } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import api from '@/services/api'
@@ -49,6 +49,9 @@ const Register = () => {
   const [captchaUrl, setCaptchaUrl] = useState('')
   const [captchaCode, setCaptchaCode] = useState('')
 
+  // 使用 ref 防止 StrictMode 导致的双重执行
+  const isInitialMount = useRef(true)
+
   // 计算密码强度
   const passwordStrength = useMemo(() => {
     if (!formData.password) return null
@@ -58,13 +61,23 @@ const Register = () => {
   // 加载验证码
   const loadCaptcha = async () => {
     try {
+      // Revoke old blob URL to free memory
+      if (captchaUrl) {
+        URL.revokeObjectURL(captchaUrl)
+      }
+
       const timestamp = new Date().getTime()
-      const url = `/api/v1/captcha/?t=${timestamp}`
-      const response = await fetch(url)
+      const response = await fetch(`/api/v1/captcha/?t=${timestamp}`)
+
+      // Get captcha ID from response headers
       const captchaId = response.headers.get('X-Captcha-ID')
       if (captchaId) {
         setCaptchaId(captchaId)
-        setCaptchaUrl(url)
+
+        // Create blob URL from image data to prevent multiple requests
+        const blob = await response.blob()
+        const imageUrl = URL.createObjectURL(blob)
+        setCaptchaUrl(imageUrl)
       }
     } catch (err) {
       console.error('Failed to load captcha:', err)
@@ -74,7 +87,18 @@ const Register = () => {
 
   // 初始加载验证码
   useEffect(() => {
-    loadCaptcha()
+    // 防止 StrictMode 双重执行导致验证码ID不匹配
+    if (isInitialMount.current) {
+      isInitialMount.current = false
+      loadCaptcha()
+    }
+
+    // Cleanup blob URL on unmount
+    return () => {
+      if (captchaUrl) {
+        URL.revokeObjectURL(captchaUrl)
+      }
+    }
   }, [])
 
   const handleSubmit = async (e: React.FormEvent) => {

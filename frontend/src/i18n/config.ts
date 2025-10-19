@@ -4,6 +4,10 @@ import LanguageDetector from 'i18next-browser-languagedetector';
 
 import enUS from './locales/en-US.json';
 import zhCN from './locales/zh-CN.json';
+import zhTW from './locales/zh-TW.json';
+import jaJP from './locales/ja-JP.json';
+import deDE from './locales/de-DE.json';
+import frFR from './locales/fr-FR.json';
 
 const resources = {
   'en-US': {
@@ -11,6 +15,18 @@ const resources = {
   },
   'zh-CN': {
     translation: zhCN,
+  },
+  'zh-TW': {
+    translation: zhTW,
+  },
+  'ja-JP': {
+    translation: jaJP,
+  },
+  'de-DE': {
+    translation: deDE,
+  },
+  'fr-FR': {
+    translation: frFR,
   },
 };
 

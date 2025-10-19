@@ -69,6 +69,8 @@ class SystemSettingsResponse(BaseModel):
     smtp_test_email: Optional[str]
     smtp_last_test_at: Optional[datetime]
     smtp_last_test_status: Optional[str]
+    # 支付网关配置
+    payment_gateway_config: Optional[Dict[str, Any]]
 
     class Config:
         from_attributes = True
@@ -124,6 +126,8 @@ class SystemSettingsUpdate(BaseModel):
     cache_config: Optional[Dict[str, Any]] = None
     # SMTP测试配置
     smtp_test_email: Optional[str] = None
+    # 支付网关配置
+    payment_gateway_config: Optional[Dict[str, Any]] = None
 
 
 async def get_or_create_settings(db: AsyncSession) -> SystemSettings:
@@ -305,3 +309,108 @@ async def reset_settings(
         print(f"Failed to send settings reset notification: {e}")
 
     return settings
+
+
+# 支付网关测试连接
+class PaymentGatewayTestRequest(BaseModel):
+    gateway: str  # stripe, paypal, alipay
+    config: Dict[str, Any]
+
+
+class PaymentGatewayTestResponse(BaseModel):
+    success: bool
+    message: str
+    details: Optional[Dict[str, Any]] = None
+
+
+@router.post("/settings/test-payment-gateway", response_model=PaymentGatewayTestResponse)
+async def test_payment_gateway(
+    test_request: PaymentGatewayTestRequest,
+    db: AsyncSession = Depends(get_db),
+    current_admin: AdminUser = Depends(get_current_admin_user),
+):
+    """测试支付网关连接"""
+    gateway = test_request.gateway.lower()
+    config = test_request.config
+
+    try:
+        if gateway == "stripe":
+            # 测试 Stripe 连接
+            import stripe
+            stripe.api_key = config.get("secret_key")
+
+            # 尝试获取账户信息
+            account = stripe.Account.retrieve()
+
+            return PaymentGatewayTestResponse(
+                success=True,
+                message=f"Stripe 连接成功！账户 ID: {account.id}",
+                details={
+                    "account_id": account.id,
+                    "email": account.email,
+                    "country": account.country,
+                    "charges_enabled": account.charges_enabled,
+                }
+            )
+
+        elif gateway == "paypal":
+            # 测试 PayPal 连接
+            from paypalrestsdk import Api
+
+            api = Api({
+                'mode': config.get("environment", "sandbox"),
+                'client_id': config.get("client_id"),
+                'client_secret': config.get("client_secret")
+            })
+
+            # 获取 access token 来验证凭证
+            token = api.get_access_token()
+
+            return PaymentGatewayTestResponse(
+                success=True,
+                message=f"PayPal 连接成功！环境: {config.get('environment', 'sandbox')}",
+                details={
+                    "environment": config.get("environment"),
+                    "token_obtained": bool(token),
+                }
+            )
+
+        elif gateway == "alipay":
+            # 测试支付宝连接（基本验证）
+            required_keys = ["app_id", "private_key", "public_key"]
+            missing_keys = [key for key in required_keys if not config.get(key)]
+
+            if missing_keys:
+                return PaymentGatewayTestResponse(
+                    success=False,
+                    message=f"配置不完整，缺少: {', '.join(missing_keys)}"
+                )
+
+            # 简单验证 App ID 格式
+            app_id = config.get("app_id")
+            if not app_id or len(app_id) < 10:
+                return PaymentGatewayTestResponse(
+                    success=False,
+                    message="App ID 格式无效"
+                )
+
+            return PaymentGatewayTestResponse(
+                success=True,
+                message=f"支付宝配置验证通过！App ID: {app_id[:8]}...",
+                details={
+                    "app_id_prefix": app_id[:8],
+                    "gateway_url": config.get("gateway_url"),
+                }
+            )
+
+        else:
+            return PaymentGatewayTestResponse(
+                success=False,
+                message=f"不支持的支付网关: {gateway}"
+            )
+
+    except Exception as e:
+        return PaymentGatewayTestResponse(
+            success=False,
+            message=f"连接失败: {str(e)}"
+        )

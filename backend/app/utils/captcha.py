@@ -27,6 +27,9 @@ class CaptchaManager:
         # Generate random captcha text (4 characters)
         import random
         import string
+        import logging
+
+        logger = logging.getLogger(__name__)
 
         captcha_text = "".join(
             random.choices(string.digits + string.ascii_uppercase, k=4)
@@ -39,6 +42,8 @@ class CaptchaManager:
         redis_client = await get_redis()
         cache_key = f"captcha:{captcha_id}"
         await redis_client.setex(cache_key, self.captcha_expire_seconds, captcha_text)
+
+        logger.info(f"验证码生成成功 (captcha_id={captcha_id}, text={captcha_text}, expire_seconds={self.captcha_expire_seconds})")
 
         # Generate captcha image
         image = self.image_captcha.generate(captcha_text)
@@ -57,7 +62,11 @@ class CaptchaManager:
         Returns:
             bool: True if valid, False otherwise
         """
+        import logging
+        logger = logging.getLogger(__name__)
+
         if not captcha_id or not user_input:
+            logger.warning(f"验证码验证失败: captcha_id或user_input为空 (captcha_id={captcha_id}, user_input={user_input})")
             return False
 
         redis_client = await get_redis()
@@ -67,6 +76,7 @@ class CaptchaManager:
         stored_text = await redis_client.get(cache_key)
 
         if not stored_text:
+            logger.warning(f"验证码验证失败: Redis中未找到验证码 (captcha_id={captcha_id}, cache_key={cache_key})")
             return False
 
         # Delete captcha after validation (one-time use)
@@ -76,7 +86,14 @@ class CaptchaManager:
         # Handle both bytes and str (Redis 6.x returns str directly)
         if isinstance(stored_text, bytes):
             stored_text = stored_text.decode("utf-8")
-        return stored_text.upper() == user_input.upper()
+
+        is_valid = stored_text.upper() == user_input.upper()
+        if is_valid:
+            logger.info(f"验证码验证成功 (captcha_id={captcha_id})")
+        else:
+            logger.warning(f"验证码验证失败: 验证码不匹配 (captcha_id={captcha_id}, expected={stored_text}, got={user_input})")
+
+        return is_valid
 
 
 # Singleton instance

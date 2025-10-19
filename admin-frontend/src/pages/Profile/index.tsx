@@ -7,6 +7,8 @@ import { UserOutlined, LockOutlined, MailOutlined, SaveOutlined, SafetyOutlined,
 import profileService, { type AdminProfile, type UpdateProfileRequest } from '../../services/profileService'
 import { get2FAStatus, disable2FA, regenerateBackupCodes, type TwoFactorStatus } from '../../services/twoFactorService'
 import TwoFactorSetup from '../../components/TwoFactorSetup'
+import { useLanguage } from '../../contexts/LanguageContext'
+import { useTheme } from '../../contexts/ThemeContext'
 
 const { Title, Text } = Typography
 const { TabPane } = Tabs
@@ -20,6 +22,10 @@ export default function Profile() {
   const [profile, setProfile] = useState<AdminProfile | null>(null)
   const [loading, setLoading] = useState(false)
   const [activeTab, setActiveTab] = useState('info')
+
+  // Context hooks for language and theme
+  const { setLanguage } = useLanguage()
+  const { setTheme } = useTheme()
 
   // 2FA state
   const [twoFactorStatus, setTwoFactorStatus] = useState<TwoFactorStatus | null>(null)
@@ -219,14 +225,28 @@ export default function Profile() {
       setLoading(true)
       const updated = await profileService.updatePreferences(values)
       setProfile(updated)
+
+      // Sync language and theme changes to context (which updates localStorage)
+      let needsReload = false
+
+      if (values.preferred_language && values.preferred_language !== profile?.preferred_language) {
+        setLanguage(values.preferred_language as 'zh-CN' | 'en-US')
+        needsReload = true
+      }
+
+      if (values.preferred_theme && values.preferred_theme !== profile?.preferred_theme) {
+        setTheme(values.preferred_theme as 'light' | 'dark')
+        needsReload = true
+      }
+
       message.success('偏好设置更新成功')
-      // 如果更改了语言或主题，可能需要触发页面刷新
-      if (values.preferred_language !== profile?.preferred_language ||
-          values.preferred_theme !== profile?.preferred_theme) {
-        message.info('语言或主题设置已更改，刷新页面以应用更改', 3)
+
+      // Reload page to apply all changes
+      if (needsReload) {
+        message.info('语言或主题设置已更改，正在刷新页面...', 2)
         setTimeout(() => {
           window.location.reload()
-        }, 3000)
+        }, 2000)
       }
     } catch (error: any) {
       message.error(error.response?.data?.detail || '更新偏好设置失败')

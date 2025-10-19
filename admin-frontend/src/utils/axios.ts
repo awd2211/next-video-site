@@ -13,6 +13,23 @@ const axiosInstance = axios.create({
   headers: {
     'Content-Type': 'application/json',
   },
+  // ✅ 修复：配置params序列化，支持FastAPI的数组格式
+  paramsSerializer: {
+    serialize: (params) => {
+      const searchParams = new URLSearchParams()
+      Object.entries(params).forEach(([key, value]) => {
+        if (Array.isArray(value)) {
+          // 数组参数：使用重复的参数名（FastAPI标准）
+          // 例如：media_ids=1&media_ids=2&media_ids=3
+          value.forEach(item => searchParams.append(key, String(item)))
+        } else if (value !== null && value !== undefined) {
+          // 普通参数
+          searchParams.append(key, String(value))
+        }
+      })
+      return searchParams.toString()
+    }
+  }
 })
 
 // Request interceptor - Add token to all requests

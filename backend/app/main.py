@@ -14,6 +14,11 @@ from sqlalchemy.exc import IntegrityError, OperationalError
 
 from app.admin import actors as admin_actors
 from app.admin import admin_notifications
+from app.admin import admin_payments
+from app.admin import admin_coupons
+from app.admin import admin_invoices
+from app.admin import admin_subscriptions
+from app.admin import subscription_plans as admin_subscription_plans
 from app.admin import dashboard_config as admin_dashboard
 from app.admin import ai_management as admin_ai
 from app.admin import ai_logs as admin_ai_logs
@@ -43,6 +48,8 @@ from app.admin import reports as admin_reports
 from app.admin import scheduling as admin_scheduling
 from app.admin import sentry_config as admin_sentry_config
 from app.admin import series as admin_series
+from app.admin import admin_seasons
+from app.admin import admin_episodes
 from app.admin import settings as admin_settings
 from app.admin import settings_enhanced as admin_settings_enhanced
 from app.admin import stats as admin_stats
@@ -81,6 +88,13 @@ from app.api import (
     videos,
     watchlist,
     websocket,
+)
+from app.api.v1 import (
+    subscriptions,
+    payments,
+    invoices,
+    coupons,
+    webhooks,
 )
 from app.config import settings
 from app.middleware.http_cache import HTTPCacheMiddleware
@@ -472,6 +486,33 @@ app.include_router(
     tags=["Public Sentry Config"],
 )
 
+# Payment and Subscription API routes
+app.include_router(
+    subscriptions.router,
+    prefix=f"{settings.API_V1_PREFIX}/subscriptions",
+    tags=["Subscriptions"],
+)
+app.include_router(
+    payments.router,
+    prefix=f"{settings.API_V1_PREFIX}/payments",
+    tags=["Payments"],
+)
+app.include_router(
+    invoices.router,
+    prefix=f"{settings.API_V1_PREFIX}/invoices",
+    tags=["Invoices"],
+)
+app.include_router(
+    coupons.router,
+    prefix=f"{settings.API_V1_PREFIX}/coupons",
+    tags=["Coupons"],
+)
+app.include_router(
+    webhooks.router,
+    prefix=f"{settings.API_V1_PREFIX}/webhooks",
+    tags=["Webhooks"],
+)
+
 # Admin API routes
 app.include_router(
     admin_videos.router,
@@ -584,6 +625,16 @@ app.include_router(
     tags=["Admin - Series"],
 )
 app.include_router(
+    admin_seasons.router,
+    prefix=f"{settings.API_V1_PREFIX}/admin",
+    tags=["Admin - Seasons"],
+)
+app.include_router(
+    admin_episodes.router,
+    prefix=f"{settings.API_V1_PREFIX}/admin",
+    tags=["Admin - Episodes"],
+)
+app.include_router(
     admin_image_upload.router,
     prefix=f"{settings.API_V1_PREFIX}/admin/images",
     tags=["Admin - Images"],
@@ -647,6 +698,33 @@ app.include_router(
     admin_batch_upload.router,
     prefix=f"{settings.API_V1_PREFIX}/admin/upload",
     tags=["Admin - Batch Upload"],
+)
+
+# Admin Payment System routes
+app.include_router(
+    admin_subscription_plans.router,
+    prefix=f"{settings.API_V1_PREFIX}/admin/subscription-plans",
+    tags=["Admin - Subscription Plans"],
+)
+app.include_router(
+    admin_subscriptions.router,
+    prefix=f"{settings.API_V1_PREFIX}/admin/subscriptions",
+    tags=["Admin - User Subscriptions"],
+)
+app.include_router(
+    admin_payments.router,
+    prefix=f"{settings.API_V1_PREFIX}/admin/payments",
+    tags=["Admin - Payments"],
+)
+app.include_router(
+    admin_coupons.router,
+    prefix=f"{settings.API_V1_PREFIX}/admin/coupons",
+    tags=["Admin - Coupons"],
+)
+app.include_router(
+    admin_invoices.router,
+    prefix=f"{settings.API_V1_PREFIX}/admin/invoices",
+    tags=["Admin - Invoices"],
 )
 app.include_router(
     admin_video_analytics.router,
