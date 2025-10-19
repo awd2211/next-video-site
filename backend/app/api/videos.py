@@ -2,7 +2,7 @@ import math
 from datetime import timedelta
 from typing import Optional
 
-from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query, Request
 from loguru import logger
 from sqlalchemy import desc, func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -22,12 +22,20 @@ from app.schemas.video import PaginatedResponse, VideoDetailResponse, VideoListR
 from app.utils.cache import Cache
 from app.utils.dependencies import get_current_user
 from app.utils.minio_client import minio_client
+from app.utils.rate_limit import limiter, RateLimitPresets
 
 router = APIRouter()
 
+# TODO(human): 为以下三个端点添加限流装饰器
+# 1. list_videos - 使用 RateLimitPresets.RELAXED
+# 2. get_trending_videos - 使用 RateLimitPresets.RELAXED
+# 3. get_video_detail (在文件后面) - 使用 RateLimitPresets.MODERATE
+# 参考格式: @limiter.limit(RateLimitPresets.RELAXED)
+# 记得在函数参数中添加 request: Request
 
 @router.get("", response_model=PaginatedResponse)
 async def list_videos(
+    request: Request,  # 限流器需要此参数
     page: int = Query(1, ge=1),
     page_size: int = Query(20, ge=1, le=100),
     video_type: Optional[str] = None,

@@ -35,6 +35,7 @@ from app.admin import logs as admin_logs
 from app.admin import media as admin_media
 from app.admin import media_share as admin_media_share
 from app.admin import media_version as admin_media_version
+from app.admin import metrics as admin_metrics
 from app.admin import operations as admin_operations
 from app.admin import profile as admin_profile
 from app.admin import rbac as admin_rbac
@@ -677,11 +678,27 @@ app.include_router(
     prefix=f"{settings.API_V1_PREFIX}/admin",
     tags=["Admin - Sentry Configuration"],
 )
+app.include_router(
+    admin_metrics.router,
+    prefix=f"{settings.API_V1_PREFIX}/admin",
+    tags=["Admin - Performance Metrics"],
+)
 
 
 @app.on_event("startup")
 async def startup_event():
     """应用启动事件"""
+    # 🆕 验证配置（启动时检查）
+    try:
+        from app.utils.config_validator import validate_startup_config
+
+        validate_startup_config()
+    except SystemExit:
+        # 配置验证失败，退出应用
+        raise
+    except Exception as e:
+        logger.error(f"Configuration validation error: {e}")
+
     # 启用慢查询监控（仅在非DEBUG模式或需要时启用）
     if not settings.DEBUG or True:  # 可以通过环境变量控制
         from app.middleware.query_monitor import setup_query_monitoring
@@ -716,7 +733,7 @@ async def health_check():
     Health check endpoint
     检查应用和依赖服务的健康状态
     """
-    from app.database import AsyncSessionLocal
+    from app.database import AsyncSessionLocal, get_pool_status
     from app.utils.cache import get_redis
 
     health_status = {"status": "healthy", "checks": {}, "version": "1.0.0"}
@@ -728,6 +745,18 @@ async def health_check():
         async with AsyncSessionLocal() as db:
             await db.execute(sql_select(1))
         health_status["checks"]["database"] = "ok"
+
+        # 🆕 添加连接池状态
+        pool_status = get_pool_status()
+        health_status["database_pool"] = pool_status
+
+        # ⚠️ 连接池使用率过高警告
+        usage_percent = (pool_status["checked_out"] / pool_status["total_connections"]) * 100
+        if usage_percent > 80:
+            health_status["warnings"] = health_status.get("warnings", [])
+            health_status["warnings"].append(
+                f"Database pool usage high: {usage_percent:.1f}%"
+            )
     except Exception as e:
         health_status["checks"]["database"] = f"error: {type(e).__name__}"
         health_status["status"] = "unhealthy"
