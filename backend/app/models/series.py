@@ -101,6 +101,17 @@ class Series(Base):
     # 排序和推荐
     display_order: Mapped[int] = mapped_column(Integer, default=0, index=True, comment="显示顺序")
     is_featured: Mapped[bool] = mapped_column(Boolean, default=False, index=True, comment="是否推荐")
+    is_trending: Mapped[bool] = mapped_column(Boolean, default=False, index=True, comment="热门标记")
+    is_pinned: Mapped[bool] = mapped_column(Boolean, default=False, index=True, comment="置顶标记")
+    quality_score: Mapped[int] = mapped_column(Integer, default=0, comment="质量评分 0-100")
+
+    # 发布管理
+    published_at: Mapped[Optional[datetime]] = mapped_column(
+        DateTime(timezone=True), nullable=True, comment="实际发布时间"
+    )
+    scheduled_publish_at: Mapped[Optional[datetime]] = mapped_column(
+        DateTime(timezone=True), nullable=True, index=True, comment="定时发布时间"
+    )
 
     # 元数据
     created_by: Mapped[Optional[int]] = mapped_column(

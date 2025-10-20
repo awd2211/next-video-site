@@ -338,3 +338,90 @@ beat_schedule = {
     },
 }
 """
+
+
+# ==================== Video & Series Scheduled Publishing ====================
+# 🆕 新增：基于模型字段的定时发布（不依赖ContentSchedule表）
+
+@celery_app.task(name="publish_scheduled_videos_and_series")
+def publish_scheduled_videos_and_series():
+    """
+    检查并发布Video和Series的scheduled_publish_at到期内容
+    每分钟执行一次
+    """
+    import asyncio
+    return asyncio.run(_publish_scheduled_content_async())
+
+
+async def _publish_scheduled_content_async():
+    """异步发布定时内容（Video + Series）"""
+    from app.models.video import Video, VideoStatus
+    from app.models.series import Series, SeriesStatus
+    from sqlalchemy import and_
+
+    async with AsyncSessionLocal() as db:
+        try:
+            now = datetime.now(timezone.utc)
+            videos_published = 0
+            series_published = 0
+
+            # 🎬 处理Video
+            video_result = await db.execute(
+                select(Video).where(
+                    and_(
+                        Video.scheduled_publish_at.isnot(None),
+                        Video.scheduled_publish_at <= now,
+                        Video.status == VideoStatus.DRAFT
+                    )
+                )
+            )
+            videos = list(video_result.scalars().all())
+
+            for video in videos:
+                video.status = VideoStatus.PUBLISHED
+                video.published_at = now
+                videos_published += 1
+                logger.info(f"✅ Auto-published video #{video.id}: {video.title}")
+
+            # 📺 处理Series
+            series_result = await db.execute(
+                select(Series).where(
+                    and_(
+                        Series.scheduled_publish_at.isnot(None),
+                        Series.scheduled_publish_at <= now,
+                        Series.status == SeriesStatus.DRAFT
+                    )
+                )
+            )
+            series_list = list(series_result.scalars().all())
+
+            for series in series_list:
+                series.status = SeriesStatus.PUBLISHED
+                series.published_at = now
+                series_published += 1
+                logger.info(f"✅ Auto-published series #{series.id}: {series.title}")
+
+            await db.commit()
+
+            total = videos_published + series_published
+            if total > 0:
+                logger.success(
+                    f"🎉 Published {videos_published} videos and {series_published} series"
+                )
+
+            return {
+                "success": True,
+                "videos_published": videos_published,
+                "series_published": series_published,
+                "total_published": total,
+                "timestamp": now.isoformat()
+            }
+
+        except Exception as e:
+            await db.rollback()
+            logger.exception(f"❌ Failed to publish scheduled content: {e}")
+            return {
+                "success": False,
+                "error": str(e)
+            }
+

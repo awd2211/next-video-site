@@ -10,6 +10,8 @@ export interface ServiceStatus {
 }
 
 export interface DatabaseHealth extends ServiceStatus {
+  database_name?: string;
+  database_version?: string;
   pool_size?: number;
   checked_out?: number;
   checked_in?: number;
@@ -24,6 +26,15 @@ export interface RedisHealth extends ServiceStatus {
   keys_count?: number;
 }
 
+export interface BucketInfo {
+  name: string;
+  creation_date?: string;
+  object_count?: number;
+  size_gb?: number;
+  size_bytes?: number;
+  error?: string;
+}
+
 export interface StorageHealth extends ServiceStatus {
   bucket_exists?: boolean;
   can_read?: boolean;
@@ -31,12 +42,28 @@ export interface StorageHealth extends ServiceStatus {
   total_gb?: number;
   utilization_percent?: number;
   object_count?: number;
+  buckets?: BucketInfo[];
+  buckets_count?: number;
+}
+
+export interface TaskInfo {
+  task_id: string;
+  task_name: string;
+  worker: string;
+  args?: string;
+  kwargs?: string;
 }
 
 export interface CeleryHealth extends ServiceStatus {
   workers_count: number;
   active_tasks: number;
   reserved_tasks?: number;
+  scheduled_tasks?: number;
+  total_succeeded?: number;
+  total_failed?: number;
+  active_task_list?: TaskInfo[];
+  reserved_task_list?: TaskInfo[];
+  registered_tasks?: string[];
 }
 
 export interface SystemResources {

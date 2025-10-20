@@ -103,6 +103,12 @@ class VideoListResponse(BaseModel):
     view_count: int
     created_at: datetime
     is_av1_available: bool = False  # Whether AV1 codec version is available
+    # Operation fields
+    is_featured: bool = False
+    is_trending: bool = False
+    is_pinned: bool = False
+    quality_score: int = 0
+    scheduled_publish_at: Optional[datetime] = None
 
     class Config:
         from_attributes = True
@@ -125,7 +131,6 @@ class VideoDetailResponse(VideoListResponse):
     favorite_count: int
     comment_count: int
     rating_count: int
-    is_featured: bool
     is_recommended: bool
     published_at: Optional[datetime] = None
 
@@ -172,7 +177,12 @@ class VideoCreate(BaseModel):
     tag_ids: List[int] = []
     actor_ids: List[int] = []
     director_ids: List[int] = []
-    
+    # Operation fields
+    is_trending: bool = False
+    is_pinned: bool = False
+    quality_score: int = Field(0, ge=0, le=100)
+    scheduled_publish_at: Optional[datetime] = None
+
     @field_validator("video_url", "trailer_url", "poster_url", "backdrop_url")
     @classmethod
     def validate_video_urls(cls, v: Optional[str]) -> Optional[str]:
@@ -203,7 +213,12 @@ class VideoUpdate(BaseModel):
     tag_ids: Optional[List[int]] = None
     actor_ids: Optional[List[int]] = None
     director_ids: Optional[List[int]] = None
-    
+    # Operation fields
+    is_trending: Optional[bool] = None
+    is_pinned: Optional[bool] = None
+    quality_score: Optional[int] = Field(None, ge=0, le=100)
+    scheduled_publish_at: Optional[datetime] = None
+
     @field_validator("video_url", "trailer_url", "poster_url", "backdrop_url")
     @classmethod
     def validate_video_urls(cls, v: Optional[str]) -> Optional[str]:

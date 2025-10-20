@@ -141,6 +141,13 @@ celery_app.conf.update(
             "schedule": crontab(day_of_month=1, hour=1, minute=0),  # 每月1号01:00
             "options": {"queue": "monitoring"},
         },
+        # ========== 定时发布任务 ==========
+        # 每分钟检查并发布到期的Video和Series
+        "publish-scheduled-content": {
+            "task": "publish_scheduled_videos_and_series",
+            "schedule": crontab(minute="*"),  # 每分钟
+            "options": {"expires": 50},  # 任务50秒后过期
+        },
     },
 )
 

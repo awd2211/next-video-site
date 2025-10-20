@@ -37,7 +37,12 @@ class SeriesCreate(BaseModel):
     status: SeriesStatus = SeriesStatus.DRAFT
     display_order: int = 0
     is_featured: bool = False
-    
+    # Operation fields
+    is_trending: bool = False
+    is_pinned: bool = False
+    quality_score: int = Field(0, ge=0, le=100)
+    scheduled_publish_at: Optional[datetime] = None
+
     @field_validator("cover_image")
     @classmethod
     def validate_cover_url(cls, v: Optional[str]) -> Optional[str]:
@@ -55,7 +60,12 @@ class SeriesUpdate(BaseModel):
     status: Optional[SeriesStatus] = None
     display_order: Optional[int] = None
     is_featured: Optional[bool] = None
-    
+    # Operation fields
+    is_trending: Optional[bool] = None
+    is_pinned: Optional[bool] = None
+    quality_score: Optional[int] = Field(None, ge=0, le=100)
+    scheduled_publish_at: Optional[datetime] = None
+
     @field_validator("cover_image")
     @classmethod
     def validate_cover_url(cls, v: Optional[str]) -> Optional[str]:
@@ -98,6 +108,12 @@ class SeriesListResponse(BaseModel):
     total_views: int = 0
     total_favorites: int = 0
     is_featured: bool = False
+    # Operation fields
+    is_trending: bool = False
+    is_pinned: bool = False
+    quality_score: int = 0
+    scheduled_publish_at: Optional[datetime] = None
+    published_at: Optional[datetime] = None
     created_at: datetime
 
     class Config:
@@ -118,6 +134,12 @@ class SeriesDetailResponse(BaseModel):
     total_favorites: int = 0
     display_order: int = 0
     is_featured: bool = False
+    # Operation fields
+    is_trending: bool = False
+    is_pinned: bool = False
+    quality_score: int = 0
+    scheduled_publish_at: Optional[datetime] = None
+    published_at: Optional[datetime] = None
     created_at: datetime
     updated_at: Optional[datetime] = None
     videos: List[SeriesVideoItem] = []

@@ -33,13 +33,15 @@ const ChunkedUploader = ({
   const CHUNK_SIZE = 5 * 1024 * 1024 // 5MB
 
   const initUpload = async (file: File) => {
+    const formData = new FormData()
+    formData.append('filename', file.name)
+    formData.append('file_size', file.size.toString())
+    formData.append('file_type', file.type)
+    formData.append('upload_type', 'video')
+
     const response = await axios.post(
       '/api/v1/admin/upload/init-multipart',
-      {
-        filename: file.name,
-        file_size: file.size,
-        file_type: file.type,
-      }
+      formData
     )
     return response.data
   }

@@ -3,10 +3,11 @@ import math
 from datetime import datetime, timezone
 from typing import Optional
 
-from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile, status
+from fastapi import APIRouter, Depends, File, HTTPException, Path, Query, UploadFile, status
 from loguru import logger
+from pydantic import BaseModel
 from slugify import slugify
-from sqlalchemy import func, or_, select
+from sqlalchemy import and_, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -35,6 +36,24 @@ from app.utils.sorting import apply_sorting, normalize_sort_field
 router = APIRouter()
 
 
+# ==================== Schemas ====================
+
+class DashboardStatsResponse(BaseModel):
+    """运营看板统计响应"""
+    total_videos: int
+    standalone_videos: int
+    series_videos: int
+    today_new: int
+    pending_review: int
+    scheduled_count: int
+    trending_count: int
+    pinned_count: int
+    featured_count: int
+    this_week_views: int
+
+
+# ==================== Routes ====================
+
 @router.get("", response_model=PaginatedResponse)
 async def admin_list_videos(
     page: int = Query(1, ge=1),
@@ -42,6 +61,13 @@ async def admin_list_videos(
     status: Optional[str] = None,
     video_type: Optional[str] = None,
     search: Optional[str] = None,
+    # 🆕 Operation filters
+    is_standalone: Optional[bool] = Query(None, description="仅显示独立视频(排除剧集关联视频)"),
+    is_trending: Optional[bool] = Query(None, description="筛选热门视频"),
+    is_pinned: Optional[bool] = Query(None, description="筛选置顶视频"),
+    is_featured: Optional[bool] = Query(None, description="筛选推荐视频"),
+    quality_score_min: Optional[int] = Query(None, ge=0, le=100, description="最低质量评分"),
+    scheduled_status: Optional[str] = Query(None, description="定时发布状态: pending, published"),
     sort_by: Optional[str] = Query(
         "created_at",
         description="排序字段: id, title, view_count, average_rating, created_at, updated_at, release_date",
@@ -54,7 +80,7 @@ async def admin_list_videos(
     db: AsyncSession = Depends(get_db),
     current_admin: AdminUser = Depends(get_current_admin_user),
 ):
-    """Admin: Get all videos with filters and sorting"""
+    """Admin: Get all videos with filters and sorting (Enhanced with operation filters)"""
     query = select(Video).options(
         selectinload(Video.video_categories).selectinload(VideoCategory.category),
         selectinload(Video.video_actors).selectinload(VideoActor.actor),
@@ -83,6 +109,43 @@ async def admin_list_videos(
                 Video.original_title.ilike(search_pattern),
             )
         )
+
+    # 🆕 Operation filters
+    if is_standalone is not None:
+        # Filter standalone videos (not linked to episodes)
+        if is_standalone:
+            # TODO: Add proper episode relationship check when Episode model is fully integrated
+            # For now, filter by video_type to exclude tv_series
+            query = query.filter(Video.video_type.in_(['MOVIE', 'DOCUMENTARY']))
+
+    if is_trending is not None:
+        query = query.filter(Video.is_trending == is_trending)
+
+    if is_pinned is not None:
+        query = query.filter(Video.is_pinned == is_pinned)
+
+    if is_featured is not None:
+        query = query.filter(Video.is_featured == is_featured)
+
+    if quality_score_min is not None:
+        query = query.filter(Video.quality_score >= quality_score_min)
+
+    if scheduled_status:
+        from datetime import datetime, timezone
+        now = datetime.now(timezone.utc)
+        if scheduled_status == "pending":
+            # Has scheduled_publish_at and it's in the future and status is DRAFT
+            query = query.filter(
+                Video.scheduled_publish_at.isnot(None),
+                Video.scheduled_publish_at > now,
+                Video.status == VideoStatus.DRAFT
+            )
+        elif scheduled_status == "published":
+            # Had scheduled_publish_at but already published
+            query = query.filter(
+                Video.scheduled_publish_at.isnot(None),
+                Video.status == VideoStatus.PUBLISHED
+            )
 
     # Count total
     count_query = select(func.count()).select_from(query.subquery())
@@ -229,9 +292,100 @@ async def admin_create_video(
     return new_video
 
 
+# ==================== Dashboard Stats ====================
+
+@router.get("/dashboard-stats", response_model=DashboardStatsResponse)
+async def get_dashboard_stats(
+    db: AsyncSession = Depends(get_db),
+    current_admin: AdminUser = Depends(get_current_admin_user),
+):
+    """获取运营看板统计数据"""
+    from datetime import timedelta
+
+    now = datetime.now(timezone.utc)
+    today_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
+    week_start = now - timedelta(days=7)
+
+    # Total videos
+    total_result = await db.execute(select(func.count(Video.id)))
+    total_videos = total_result.scalar() or 0
+
+    # Standalone videos (MOVIE + DOCUMENTARY)
+    standalone_result = await db.execute(
+        select(func.count(Video.id)).filter(
+            Video.video_type.in_(['MOVIE', 'DOCUMENTARY'])
+        )
+    )
+    standalone_videos = standalone_result.scalar() or 0
+
+    # Series videos (TV_SERIES + ANIME)
+    series_videos = total_videos - standalone_videos
+
+    # Today new videos
+    today_new_result = await db.execute(
+        select(func.count(Video.id)).filter(Video.created_at >= today_start)
+    )
+    today_new = today_new_result.scalar() or 0
+
+    # Pending review (DRAFT status)
+    pending_result = await db.execute(
+        select(func.count(Video.id)).filter(Video.status == VideoStatus.DRAFT)
+    )
+    pending_review = pending_result.scalar() or 0
+
+    # Scheduled videos (future scheduled_publish_at)
+    scheduled_result = await db.execute(
+        select(func.count(Video.id)).filter(
+            and_(
+                Video.scheduled_publish_at.isnot(None),
+                Video.scheduled_publish_at > now,
+                Video.status == VideoStatus.DRAFT
+            )
+        )
+    )
+    scheduled_count = scheduled_result.scalar() or 0
+
+    # Trending videos
+    trending_result = await db.execute(
+        select(func.count(Video.id)).filter(Video.is_trending == True)
+    )
+    trending_count = trending_result.scalar() or 0
+
+    # Pinned videos
+    pinned_result = await db.execute(
+        select(func.count(Video.id)).filter(Video.is_pinned == True)
+    )
+    pinned_count = pinned_result.scalar() or 0
+
+    # Featured videos
+    featured_result = await db.execute(
+        select(func.count(Video.id)).filter(Video.is_featured == True)
+    )
+    featured_count = featured_result.scalar() or 0
+
+    # This week's total views
+    week_views_result = await db.execute(
+        select(func.sum(Video.view_count)).filter(Video.created_at >= week_start)
+    )
+    this_week_views = week_views_result.scalar() or 0
+
+    return DashboardStatsResponse(
+        total_videos=total_videos,
+        standalone_videos=standalone_videos,
+        series_videos=series_videos,
+        today_new=today_new,
+        pending_review=pending_review,
+        scheduled_count=scheduled_count,
+        trending_count=trending_count,
+        pinned_count=pinned_count,
+        featured_count=featured_count,
+        this_week_views=this_week_views,
+    )
+
+
 @router.get("/{video_id}", response_model=VideoDetailResponse)
 async def admin_get_video(
-    video_id: int,
+    video_id: int = Path(..., ge=1, description="Video ID must be a positive integer"),
     db: AsyncSession = Depends(get_db),
     current_admin: AdminUser = Depends(get_current_admin_user),
 ):

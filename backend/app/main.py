@@ -61,6 +61,7 @@ from app.admin import two_factor as admin_two_factor
 from app.admin import upload as admin_upload
 from app.admin import users as admin_users
 from app.admin import videos as admin_videos
+from app.admin import videos_operations
 from app.api import (
     actors,
     announcements,
@@ -95,6 +96,7 @@ from app.api.v1 import (
     invoices,
     coupons,
     webhooks,
+    analytics,
 )
 from app.config import settings
 from app.middleware.http_cache import HTTPCacheMiddleware
@@ -512,8 +514,20 @@ app.include_router(
     prefix=f"{settings.API_V1_PREFIX}/webhooks",
     tags=["Webhooks"],
 )
+app.include_router(
+    analytics.router,
+    prefix=f"{settings.API_V1_PREFIX}/analytics",
+    tags=["Analytics"],
+)
 
 # Admin API routes
+# 🚨 IMPORTANT: videos_operations must be registered BEFORE admin_videos
+# to ensure specific routes like /dashboard-stats match before dynamic /{video_id}
+app.include_router(
+    videos_operations.router,
+    prefix=f"{settings.API_V1_PREFIX}/admin/videos",
+    tags=["Admin - Video Operations"],
+)
 app.include_router(
     admin_videos.router,
     prefix=f"{settings.API_V1_PREFIX}/admin/videos",

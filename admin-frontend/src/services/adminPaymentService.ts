@@ -217,7 +217,7 @@ export const getPaymentStats = async (): Promise<{
   success_rate: number;
   avg_transaction_value: number;
 }> => {
-  const { data } = await api.get('/api/v1/admin/payments/stats');
+  const { data } = await api.get('/api/v1/admin/payments/stats/overview');
   return data;
 };
 

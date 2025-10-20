@@ -94,7 +94,14 @@ axiosInstance.interceptors.response.use(
 
     // Handle 404 Not Found
     if (error.response?.status === 404) {
-      message.error('请求的资源不存在')
+      const url = error.config?.url || '未知'
+      console.warn(`[404] 资源不存在: ${url}`, error.response?.data)
+
+      // 只对非静态资源显示错误提示
+      if (!url.match(/\.(js|css|png|jpg|jpeg|gif|svg|ico|woff|woff2|ttf)$/i)) {
+        message.error(`请求的资源不存在: ${url}`)
+      }
+
       return Promise.reject(error)
     }
 

@@ -36,6 +36,7 @@ from app.models.scheduling import (  # 🆕 统一内容调度系统
 from app.models.permission_log import PermissionLog  # 🆕 权限审计日志
 from app.models.data_scope import Department, DataScope, AdminUserDepartment  # 🆕 数据范围权限
 from app.models.system_metrics import SystemMetrics, SystemAlert, SystemSLA  # 🆕 系统监控指标
+from app.models.web_vitals import WebVital, PagePerformance  # 🆕 Web Vitals性能监控
 from app.models.user import AdminUser, User
 from app.models.user_activity import Favorite, SearchHistory, WatchHistory
 from app.models.watchlist import Watchlist  # 🆕 待看列表 (My List)
@@ -138,4 +139,7 @@ __all__ = [
     "SystemMetrics",
     "SystemAlert",
     "SystemSLA",
+    # Web Vitals 性能监控 🆕
+    "WebVital",
+    "PagePerformance",
 ]

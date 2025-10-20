@@ -231,9 +231,15 @@ class Video(Base):
     search_vector: Mapped[Optional[Any]] = mapped_column(TSVECTOR, nullable=True)
 
     # Admin fields
-    is_featured: Mapped[bool] = mapped_column(Boolean, default=False)
+    is_featured: Mapped[bool] = mapped_column(Boolean, default=False, comment="推荐标记")
     is_recommended: Mapped[bool] = mapped_column(Boolean, default=False)
+    is_trending: Mapped[bool] = mapped_column(Boolean, default=False, index=True, comment="热门标记")
+    is_pinned: Mapped[bool] = mapped_column(Boolean, default=False, index=True, comment="置顶标记")
+    quality_score: Mapped[int] = mapped_column(Integer, default=0, comment="质量评分 0-100")
     sort_order: Mapped[int] = mapped_column(Integer, default=0)
+    scheduled_publish_at: Mapped[Optional[datetime]] = mapped_column(
+        DateTime(timezone=True), nullable=True, index=True, comment="定时发布时间"
+    )
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), index=True)
     updated_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), onupdate=func.now())
     published_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)

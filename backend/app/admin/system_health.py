@@ -5,6 +5,7 @@ Provides real-time system health metrics for admin dashboard
 
 from fastapi import APIRouter, Depends, Query, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import text
 from typing import Dict, Any, Optional, List
 import psutil
 import time
@@ -39,26 +40,44 @@ async def check_database_health(db: AsyncSession) -> Dict[str, Any]:
     try:
         # Test query
         start = time.time()
-        await db.execute("SELECT 1")
+        await db.execute(text("SELECT 1"))
         query_time = (time.time() - start) * 1000  # ms
+
+        # Get database name
+        result = await db.execute(text("SELECT current_database()"))
+        db_name = result.scalar()
+
+        # Get database version
+        version_result = await db.execute(text("SELECT version()"))
+        db_version = version_result.scalar()
+        # Extract just the version number (e.g., "PostgreSQL 14.5")
+        db_version_short = ' '.join(db_version.split()[:2]) if db_version else "Unknown"
 
         # Get pool status
         pool_status = get_pool_status()
 
         # Calculate pool utilization
-        total_connections = pool_status['pool_size'] + pool_status['overflow']
-        used_connections = pool_status['checked_out']
-        utilization = (used_connections / total_connections * 100) if total_connections > 0 else 0
+        # Use pool_size as base (fixed size), overflow is dynamic and can be negative
+        pool_size = pool_status['pool_size']
+        checked_out = pool_status['checked_out']
+        overflow = pool_status['overflow']
+
+        # Total active connections = checked_out (which includes overflow if any)
+        # Utilization = checked_out / pool_size * 100
+        # Note: can exceed 100% when using overflow connections
+        utilization = (checked_out / pool_size * 100) if pool_size > 0 else 0
 
         return {
             "status": "healthy" if query_time < 100 else "degraded",
             "response_time_ms": round(query_time, 2),
+            "database_name": db_name,
+            "database_version": db_version_short,
             "pool_size": pool_status['pool_size'],
-            "checked_out": pool_status['checked_out'],
+            "checked_out": checked_out,
             "checked_in": pool_status['checked_in'],
-            "overflow": pool_status['overflow'],
+            "overflow": max(0, overflow),  # Ensure overflow is non-negative for display
             "utilization_percent": round(utilization, 1),
-            "message": "Database connection healthy" if query_time < 100 else "Slow database response"
+            "message": f"Database '{db_name}' healthy" if query_time < 100 else "Slow database response"
         }
     except Exception as e:
         return {
@@ -112,25 +131,56 @@ async def check_minio_health() -> Dict[str, Any]:
         # minio_client is already imported as a singleton instance
 
         start = time.time()
-        # Check if bucket exists
-        bucket_exists = minio_client.bucket_exists("videos")
+
+        # List all buckets
+        buckets = minio_client.client.list_buckets()
+        bucket_list = []
+        total_objects = 0
+        total_size_gb = 0.0
+
+        for bucket in buckets:
+            try:
+                # Get objects in this bucket
+                objects = list(minio_client.client.list_objects(bucket.name, recursive=True))
+                bucket_size = sum(obj.size for obj in objects)
+                bucket_size_gb = bucket_size / (1024 ** 3)
+
+                bucket_info = {
+                    "name": bucket.name,
+                    "creation_date": bucket.creation_date.isoformat() if bucket.creation_date else None,
+                    "object_count": len(objects),
+                    "size_gb": round(bucket_size_gb, 3),
+                    "size_bytes": bucket_size,
+                }
+                bucket_list.append(bucket_info)
+
+                total_objects += len(objects)
+                total_size_gb += bucket_size_gb
+
+            except Exception as e:
+                logger.debug(f"Failed to get stats for bucket {bucket.name}: {e}")
+                bucket_list.append({
+                    "name": bucket.name,
+                    "creation_date": bucket.creation_date.isoformat() if bucket.creation_date else None,
+                    "error": str(e)
+                })
+
         response_time = (time.time() - start) * 1000  # ms
 
-        # Try to get bucket stats (this may not be available on all MinIO versions)
+        # Check if default bucket exists
+        bucket_exists = minio_client.client.bucket_exists(minio_client.bucket_name)
+
+        # Try to verify read access on default bucket
+        can_read = False
         try:
-            # List objects to verify read access
-            _ = list(minio_client.list_objects("videos", max_keys=1))
+            objects = minio_client.client.list_objects(minio_client.bucket_name)
+            try:
+                next(iter(objects))
+            except StopIteration:
+                pass
             can_read = True
         except Exception as e:
             logger.debug(f"MinIO read check failed: {e}")
-            can_read = False
-
-        # Get bucket usage statistics
-        usage_stats = {}
-        try:
-            usage_stats = minio_client.get_bucket_usage()
-        except Exception as e:
-            logger.debug(f"Failed to get bucket usage: {e}")
 
         # Build response
         response = {
@@ -138,19 +188,14 @@ async def check_minio_health() -> Dict[str, Any]:
             "response_time_ms": round(response_time, 2),
             "bucket_exists": bucket_exists,
             "can_read": can_read,
-            "message": "Storage service healthy" if bucket_exists else "Storage bucket not found"
+            "buckets": bucket_list,
+            "buckets_count": len(bucket_list),
+            "used_gb": round(total_size_gb, 2),
+            "object_count": total_objects,
+            "total_gb": 1000.0,  # Default 1TB, can be made configurable
+            "utilization_percent": round((total_size_gb / 1000.0) * 100, 2),
+            "message": f"Storage service healthy - {len(bucket_list)} bucket(s)" if bucket_exists else "Storage bucket not found"
         }
-
-        # Add usage stats if available
-        if usage_stats and not usage_stats.get("error"):
-            response["used_gb"] = usage_stats.get("total_size_gb", 0)
-            response["object_count"] = usage_stats.get("object_count", 0)
-            # Note: Total capacity might not be available without admin API access
-            # Using a default or config value as a fallback
-            response["total_gb"] = 1000.0  # Default 1TB, can be made configurable
-            response["utilization_percent"] = round(
-                (usage_stats.get("total_size_gb", 0) / 1000.0) * 100, 2
-            )
 
         return response
 
@@ -187,6 +232,9 @@ def check_celery_health() -> Dict[str, Any]:
                 "message": queue_stats.get("message", "Failed to get queue stats")
             }
 
+        # 获取任务统计（成功/失败）
+        task_stats = CeleryMonitor.get_task_stats()
+
         active_tasks = queue_stats.get("active_tasks", 0)
         workers_count = queue_stats.get("workers_count", 0)
 
@@ -206,6 +254,12 @@ def check_celery_health() -> Dict[str, Any]:
             "workers_count": workers_count,
             "active_tasks": active_tasks,
             "reserved_tasks": queue_stats.get("reserved_tasks", 0),
+            "scheduled_tasks": queue_stats.get("scheduled_tasks", 0),
+            "total_succeeded": task_stats.get("total_succeeded", 0),
+            "total_failed": task_stats.get("total_failed", 0),
+            "active_task_list": queue_stats.get("active_task_list", []),
+            "reserved_task_list": queue_stats.get("reserved_task_list", []),
+            "registered_tasks": queue_stats.get("registered_tasks", []),
             "message": message
         }
 
@@ -827,7 +881,7 @@ async def get_active_alerts_count(
     用于前端显示告警徽章数量
     """
     try:
-        from sqlalchemy import func, select as sql_select
+        from sqlalchemy import and_, func, select as sql_select
         from app.models.system_metrics import SystemAlert
 
         # 总活跃告警数
