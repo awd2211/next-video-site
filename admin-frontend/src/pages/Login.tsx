@@ -1,12 +1,13 @@
 import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Form, Input, Button, Card, Space, Switch, Checkbox, Divider, Modal, Steps, Progress, App } from 'antd'
-import { UserOutlined, LockOutlined, SafetyOutlined, ReloadOutlined, SunOutlined, MoonOutlined, VideoCameraOutlined, MailOutlined, ClockCircleOutlined, CheckCircleOutlined } from '@ant-design/icons'
+import { Form, Input, Button, Card, Space, Switch, Checkbox, Divider, Modal, Steps, Progress, App, Collapse, Skeleton } from 'antd'
+import { UserOutlined, LockOutlined, SafetyOutlined, ReloadOutlined, SunOutlined, MoonOutlined, VideoCameraOutlined, MailOutlined, ClockCircleOutlined, CheckCircleOutlined, GlobalOutlined, ExperimentOutlined, CopyOutlined } from '@ant-design/icons'
 import axios from 'axios'  // Use native axios for login, not the intercepted instance
 import { useTheme } from '../contexts/ThemeContext'
 import { useLanguage } from '../contexts/LanguageContext'
 import { useTranslation } from 'react-i18next'
 import { getColor, getTextColor } from '../utils/awsColorHelpers'
+import LanguageSwitcher from '../components/LanguageSwitcher'
 import './Login.css'
 
 const Login = () => {
@@ -368,21 +369,29 @@ const Login = () => {
 
   return (
     <div className={`login-container ${theme}`}>
-      {/* Theme toggle button */}
-      <div className="theme-toggle">
-        <Switch
-          checked={theme === 'dark'}
-          onChange={toggleTheme}
-          checkedChildren={<MoonOutlined />}
-          unCheckedChildren={<SunOutlined />}
-        />
+      {/* Theme and Language toggles */}
+      <div className="top-controls">
+        <Space size="middle">
+          <div className="language-switcher-wrapper">
+            <LanguageSwitcher />
+          </div>
+          <Switch
+            checked={theme === 'dark'}
+            onChange={toggleTheme}
+            checkedChildren={<MoonOutlined />}
+            unCheckedChildren={<SunOutlined />}
+          />
+        </Space>
       </div>
 
       <Card className="login-card">
         {/* Logo and Title */}
         <div className="login-header">
-          <div className="logo-container">
-            <VideoCameraOutlined className="logo-icon" />
+          <div className="logo-wrapper">
+            <div className="logo-container">
+              <VideoCameraOutlined className="logo-icon" />
+            </div>
+            <div className="logo-text">VideoSite</div>
           </div>
           <h1 className="login-title">{t('auth.pageTitle')}</h1>
           <p className="login-subtitle">{t('auth.pageSubtitle')}</p>
@@ -404,6 +413,7 @@ const Login = () => {
               rules={[{ required: true, message: t('auth.usernamePlaceholder') }]}
             >
               <Input
+                size="large"
                 prefix={<UserOutlined />}
                 placeholder={t('auth.usernamePlaceholder')}
                 autoComplete="username"
@@ -416,6 +426,7 @@ const Login = () => {
               rules={[{ required: true, message: t('auth.passwordPlaceholder') }]}
             >
               <Input.Password
+                size="large"
                 prefix={<LockOutlined />}
                 placeholder={t('auth.passwordPlaceholder')}
                 autoComplete="current-password"
@@ -432,25 +443,33 @@ const Login = () => {
             >
               <Space.Compact style={{ width: '100%' }}>
                 <Input
+                  size="large"
                   prefix={<SafetyOutlined />}
                   placeholder={t('auth.captchaPlaceholder')}
                   maxLength={4}
-                  style={{ width: '60%' }}
+                  style={{ width: '55%' }}
                   autoComplete="off"
                 />
                 <div
-                  className="captcha-image-container"
+                  className={`captcha-image-container ${captchaLoading ? 'loading' : ''}`}
                   onClick={loadCaptcha}
                   title={t('auth.clickToRefresh')}
                 >
                   {captchaLoading ? (
-                    <ReloadOutlined spin style={{ fontSize: 18, color: getColor('primary', theme) }} />
+                    <div className="captcha-skeleton">
+                      <Skeleton.Image active style={{ width: '100%', height: '40px' }} />
+                    </div>
                   ) : captchaUrl ? (
-                    <img
-                      src={captchaUrl}
-                      alt="验证码"
-                      style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                    />
+                    <>
+                      <img
+                        src={captchaUrl}
+                        alt="验证码"
+                        style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                      />
+                      <div className="captcha-refresh-hint">
+                        <ReloadOutlined />
+                      </div>
+                    </>
                   ) : (
                     <span style={{ color: getTextColor('disabled', theme), fontSize: 12 }}>{t('auth.captchaLoading')}</span>
                   )}
@@ -480,6 +499,7 @@ const Login = () => {
                 type="primary"
                 htmlType="submit"
                 block
+                size="large"
                 loading={loading}
                 className="login-button"
               >
@@ -489,22 +509,32 @@ const Login = () => {
           </Form>
         ) : (
           // 2FA verification form
-          <Form
-            name="twofa"
-            onFinish={handle2FAVerification}
-            autoComplete="off"
-            className="login-form"
-            layout="vertical"
-          >
-            <div style={{ textAlign: 'center', marginBottom: 24 }}>
-              <SafetyOutlined style={{ fontSize: 48, color: getColor('primary', theme) }} />
-              <h3 style={{ marginTop: 16, marginBottom: 8 }}>{t('auth.twoFactorAuth')}</h3>
-              <p style={{ color: getTextColor('secondary', theme) }}>
-                {t('auth.twoFactorDescription')}
-                <br />
-                <small>{t('auth.twoFactorBackupHint')}</small>
-              </p>
-            </div>
+          <div className="twofa-container">
+            <Steps
+              current={1}
+              size="small"
+              className="twofa-steps"
+              items={[
+                { title: t('auth.login'), icon: <UserOutlined /> },
+                { title: t('auth.twoFactorAuth'), icon: <SafetyOutlined /> },
+              ]}
+            />
+            <Form
+              name="twofa"
+              onFinish={handle2FAVerification}
+              autoComplete="off"
+              className="login-form"
+              layout="vertical"
+            >
+              <div style={{ textAlign: 'center', marginBottom: 24 }}>
+                <SafetyOutlined style={{ fontSize: 48, color: getColor('primary', theme) }} />
+                <h3 style={{ marginTop: 16, marginBottom: 8 }}>{t('auth.twoFactorAuth')}</h3>
+                <p style={{ color: getTextColor('secondary', theme) }}>
+                  {t('auth.twoFactorDescription')}
+                  <br />
+                  <small>{t('auth.twoFactorBackupHint')}</small>
+                </p>
+              </div>
 
             <Form.Item
               name="twofa_code"
@@ -558,22 +588,65 @@ const Login = () => {
               </Button>
             </Form.Item>
           </Form>
+          </div>
         )}
 
         <Divider className="login-divider" />
 
-        {/* Default account info */}
-        <div className="account-info">
-          <div className="account-info-title">{t('auth.testAccount')}</div>
-          <div className="account-info-item">
-            <span className="account-label">{t('auth.adminAccount')}</span>
-            <span className="account-value">admin / admin123456</span>
-          </div>
-          <div className="account-info-item">
-            <span className="account-label">{t('auth.editorAccount')}</span>
-            <span className="account-value">editor / editor123456</span>
-          </div>
-        </div>
+        {/* Test account info - collapsible */}
+        {(import.meta.env.DEV || import.meta.env.MODE === 'development') && (
+          <Collapse
+            className="test-account-collapse"
+            ghost
+            items={[
+              {
+                key: 'test-accounts',
+                label: (
+                  <Space>
+                    <ExperimentOutlined style={{ color: getColor('warning', theme) }} />
+                    <span style={{ fontWeight: 600 }}>{t('auth.testAccount')}</span>
+                  </Space>
+                ),
+                children: (
+                  <div className="account-info">
+                    <div className="account-info-item">
+                      <span className="account-label">{t('auth.adminAccount')}</span>
+                      <Space.Compact>
+                        <span className="account-value">admin / admin123456</span>
+                        <Button
+                          size="small"
+                          icon={<CopyOutlined />}
+                          onClick={() => {
+                            form.setFieldsValue({ username: 'admin', password: 'admin123456' })
+                            message.success(t('auth.accountFilled') || 'Account filled')
+                          }}
+                        >
+                          {t('auth.fillForm') || 'Fill'}
+                        </Button>
+                      </Space.Compact>
+                    </div>
+                    <div className="account-info-item">
+                      <span className="account-label">{t('auth.editorAccount')}</span>
+                      <Space.Compact>
+                        <span className="account-value">editor / editor123456</span>
+                        <Button
+                          size="small"
+                          icon={<CopyOutlined />}
+                          onClick={() => {
+                            form.setFieldsValue({ username: 'editor', password: 'editor123456' })
+                            message.success(t('auth.accountFilled') || 'Account filled')
+                          }}
+                        >
+                          {t('auth.fillForm') || 'Fill'}
+                        </Button>
+                      </Space.Compact>
+                    </div>
+                  </div>
+                ),
+              },
+            ]}
+          />
+        )}
 
         {/* Footer */}
         <div className="login-footer">
@@ -763,9 +836,9 @@ const Login = () => {
               ]}
             >
               <Input.Password
+                size="large"
                 prefix={<LockOutlined />}
                 placeholder={t('auth.confirmPasswordPlaceholder')}
-                size="large"
               />
             </Form.Item>
 

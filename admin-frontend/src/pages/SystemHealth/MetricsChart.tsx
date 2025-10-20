@@ -29,7 +29,7 @@ const MetricsChart = ({ metric, title, unit = '%', height = 200 }: MetricsChartP
   const { data, isLoading } = useQuery<MetricsHistory>({
     queryKey: ['metrics-history', metric],
     queryFn: async () => {
-      const response = await axios.get('/api/v1/admin/system/history', {
+      const response = await axios.get('/api/v1/admin/system-health/history', {
         params: { limit: 50 },
       });
       return response.data;

@@ -17,6 +17,9 @@ import {
   Select,
   Tabs,
   Button,
+  Modal,
+  Table,
+  Divider,
 } from 'antd';
 import {
   CheckCircleOutlined,
@@ -30,6 +33,7 @@ import {
   ApiOutlined,
   LineChartOutlined,
   DownloadOutlined,
+  EyeOutlined,
 } from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';
 import { getSystemHealth, type HealthData } from '@/services/systemHealthService';
@@ -43,6 +47,7 @@ const SystemHealth = () => {
   const [autoRefresh, setAutoRefresh] = useState(true);
   const [refreshInterval, setRefreshInterval] = useState(10000); // 10 seconds
   const [activeTab, setActiveTab] = useState('overview');
+  const [celeryModalVisible, setCeleryModalVisible] = useState(false);
 
   const { data, isLoading, error, refetch } = useQuery<HealthData>({
     queryKey: ['system-health'],
@@ -182,6 +187,16 @@ const SystemHealth = () => {
             }
           >
             <Descriptions column={1} size="small">
+              {data?.services.database.database_name && (
+                <Descriptions.Item label="Database">
+                  <Text strong style={{ fontSize: 12 }}>{data.services.database.database_name}</Text>
+                </Descriptions.Item>
+              )}
+              {data?.services.database.database_version && (
+                <Descriptions.Item label="Version">
+                  <Text type="secondary" style={{ fontSize: 11 }}>{data.services.database.database_version}</Text>
+                </Descriptions.Item>
+              )}
               <Descriptions.Item label={t('systemHealth.sla.columns.responseTime')}>
                 {data?.services.database.response_time_ms
                   ? `${data.services.database.response_time_ms.toFixed(2)} ms`
@@ -313,7 +328,39 @@ const SystemHealth = () => {
                   {data?.services.storage.bucket_exists ? t('systemHealth.bucket.exists') : t('systemHealth.bucket.notFound')}
                 </Tag>
               </Descriptions.Item>
+              {data?.services.storage.buckets_count !== undefined && (
+                <Descriptions.Item label="Buckets">
+                  <Badge count={data.services.storage.buckets_count} showZero style={{ backgroundColor: '#52c41a' }} />
+                </Descriptions.Item>
+              )}
             </Descriptions>
+
+            {/* Buckets List */}
+            {data?.services.storage.buckets && data.services.storage.buckets.length > 0 && (
+              <div style={{ marginTop: 12, paddingTop: 12, borderTop: '1px solid #f0f0f0' }}>
+                <Text type="secondary" style={{ fontSize: 12, fontWeight: 500 }}>Storage Buckets:</Text>
+                {data.services.storage.buckets.map((bucket, idx) => (
+                  <div key={idx} style={{ marginTop: 8, padding: '6px 8px', background: '#f5f5f5', borderRadius: 4 }}>
+                    <Space direction="vertical" size={2} style={{ width: '100%' }}>
+                      <Space size={4}>
+                        <HddOutlined style={{ fontSize: 12, color: '#1890ff' }} />
+                        <Text strong style={{ fontSize: 12 }}>{bucket.name}</Text>
+                      </Space>
+                      {bucket.error ? (
+                        <Text type="danger" style={{ fontSize: 11 }}>{bucket.error}</Text>
+                      ) : (
+                        <>
+                          <Text type="secondary" style={{ fontSize: 11 }}>
+                            {bucket.object_count?.toLocaleString() || 0} objects • {bucket.size_gb?.toFixed(3) || 0} GB
+                          </Text>
+                        </>
+                      )}
+                    </Space>
+                  </div>
+                ))}
+              </div>
+            )}
+
             {data?.services.storage.error && (
               <Alert
                 message={data.services.storage.error}
@@ -336,9 +383,19 @@ const SystemHealth = () => {
               </Space>
             }
             extra={
-              <Tag color={getStatusColor(data?.services.celery?.status || 'default')}>
-                {data?.services.celery?.status?.toUpperCase() || 'UNKNOWN'}
-              </Tag>
+              <Space>
+                <Tag color={getStatusColor(data?.services.celery?.status || 'default')}>
+                  {data?.services.celery?.status?.toUpperCase() || 'UNKNOWN'}
+                </Tag>
+                <Button
+                  type="link"
+                  size="small"
+                  icon={<EyeOutlined />}
+                  onClick={() => setCeleryModalVisible(true)}
+                >
+                  Details
+                </Button>
+              </Space>
             }
           >
             <Descriptions column={1} size="small">
@@ -353,15 +410,42 @@ const SystemHealth = () => {
                 />
               </Descriptions.Item>
               <Descriptions.Item label={t('systemHealth.labels.activeTasks')}>
-                {data?.services.celery?.active_tasks || 0}
+                <Badge count={data?.services.celery?.active_tasks || 0} showZero style={{ backgroundColor: '#1890ff' }} />
               </Descriptions.Item>
               <Descriptions.Item label={t('systemHealth.labels.reservedTasks')}>
                 {data?.services.celery?.reserved_tasks || 0}
               </Descriptions.Item>
-              <Descriptions.Item label={t('systemHealth.labels.status')}>
-                {data?.services.celery?.message || 'N/A'}
-              </Descriptions.Item>
+              {data?.services.celery?.scheduled_tasks !== undefined && (
+                <Descriptions.Item label="Scheduled">
+                  {data.services.celery.scheduled_tasks}
+                </Descriptions.Item>
+              )}
+              {data?.services.celery?.total_succeeded !== undefined && (
+                <Descriptions.Item label="Succeeded">
+                  <Text type="success">{data.services.celery.total_succeeded.toLocaleString()}</Text>
+                </Descriptions.Item>
+              )}
+              {data?.services.celery?.total_failed !== undefined && (
+                <Descriptions.Item label="Failed">
+                  <Text type="danger">{data.services.celery.total_failed.toLocaleString()}</Text>
+                </Descriptions.Item>
+              )}
             </Descriptions>
+
+            {/* Active Tasks List */}
+            {data?.services.celery?.active_task_list && data.services.celery.active_task_list.length > 0 && (
+              <div style={{ marginTop: 12, paddingTop: 12, borderTop: '1px solid #f0f0f0' }}>
+                <Text type="secondary" style={{ fontSize: 12, fontWeight: 500 }}>Active Tasks:</Text>
+                {data.services.celery.active_task_list.map((task, idx) => (
+                  <div key={idx} style={{ marginTop: 8, padding: '6px 8px', background: '#e6f7ff', borderRadius: 4 }}>
+                    <Space direction="vertical" size={2} style={{ width: '100%' }}>
+                      <Text strong style={{ fontSize: 11 }}>{task.task_name.split('.').pop()}</Text>
+                      <Text type="secondary" style={{ fontSize: 10 }}>ID: {task.task_id.substring(0, 8)}...</Text>
+                    </Space>
+                  </div>
+                ))}
+              </div>
+            )}
             {data?.services.celery?.error && (
               <Alert
                 message={data.services.celery.error}
@@ -601,6 +685,143 @@ const SystemHealth = () => {
           },
         ]}
       />
+
+      {/* Celery Task Queue Details Modal */}
+      <Modal
+        title={
+          <Space>
+            <ThunderboltOutlined />
+            <span>Celery Task Queue Details</span>
+          </Space>
+        }
+        open={celeryModalVisible}
+        onCancel={() => setCeleryModalVisible(false)}
+        width={900}
+        footer={[
+          <Button key="close" onClick={() => setCeleryModalVisible(false)}>
+            Close
+          </Button>,
+        ]}
+      >
+        {data?.services.celery && (
+          <div>
+            {/* Summary Statistics */}
+            <Row gutter={16} style={{ marginBottom: 24 }}>
+              <Col span={6}>
+                <Statistic
+                  title="Workers"
+                  value={data.services.celery.workers_count}
+                  valueStyle={{ color: data.services.celery.workers_count > 0 ? '#3f8600' : '#cf1322' }}
+                />
+              </Col>
+              <Col span={6}>
+                <Statistic
+                  title="Active Tasks"
+                  value={data.services.celery.active_tasks || 0}
+                  valueStyle={{ color: '#1890ff' }}
+                />
+              </Col>
+              <Col span={6}>
+                <Statistic
+                  title="Succeeded"
+                  value={data.services.celery.total_succeeded || 0}
+                  valueStyle={{ color: '#3f8600' }}
+                />
+              </Col>
+              <Col span={6}>
+                <Statistic
+                  title="Failed"
+                  value={data.services.celery.total_failed || 0}
+                  valueStyle={{ color: '#cf1322' }}
+                />
+              </Col>
+            </Row>
+
+            <Divider orientation="left">Active Tasks</Divider>
+            {data.services.celery.active_task_list && data.services.celery.active_task_list.length > 0 ? (
+              <Table
+                dataSource={data.services.celery.active_task_list}
+                columns={[
+                  {
+                    title: 'Task Name',
+                    dataIndex: 'task_name',
+                    key: 'task_name',
+                    render: (text: string) => <Text code>{text.split('.').pop()}</Text>,
+                  },
+                  {
+                    title: 'Task ID',
+                    dataIndex: 'task_id',
+                    key: 'task_id',
+                    render: (text: string) => <Text type="secondary">{text.substring(0, 12)}...</Text>,
+                  },
+                  {
+                    title: 'Worker',
+                    dataIndex: 'worker',
+                    key: 'worker',
+                  },
+                  {
+                    title: 'Args',
+                    dataIndex: 'args',
+                    key: 'args',
+                    render: (text: string) => <Text type="secondary" style={{ fontSize: 11 }}>{text}</Text>,
+                  },
+                ]}
+                pagination={false}
+                size="small"
+                rowKey="task_id"
+              />
+            ) : (
+              <Alert message="No active tasks" type="info" showIcon style={{ marginBottom: 16 }} />
+            )}
+
+            <Divider orientation="left">Reserved Tasks</Divider>
+            {data.services.celery.reserved_task_list && data.services.celery.reserved_task_list.length > 0 ? (
+              <Table
+                dataSource={data.services.celery.reserved_task_list}
+                columns={[
+                  {
+                    title: 'Task Name',
+                    dataIndex: 'task_name',
+                    key: 'task_name',
+                    render: (text: string) => <Text code>{text.split('.').pop()}</Text>,
+                  },
+                  {
+                    title: 'Task ID',
+                    dataIndex: 'task_id',
+                    key: 'task_id',
+                    render: (text: string) => <Text type="secondary">{text.substring(0, 12)}...</Text>,
+                  },
+                  {
+                    title: 'Worker',
+                    dataIndex: 'worker',
+                    key: 'worker',
+                  },
+                ]}
+                pagination={false}
+                size="small"
+                rowKey="task_id"
+              />
+            ) : (
+              <Alert message="No reserved tasks" type="info" showIcon style={{ marginBottom: 16 }} />
+            )}
+
+            <Divider orientation="left">Registered Tasks ({data.services.celery.registered_tasks?.length || 0})</Divider>
+            {data.services.celery.registered_tasks && data.services.celery.registered_tasks.length > 0 ? (
+              <div style={{ maxHeight: 300, overflow: 'auto' }}>
+                <Space direction="vertical" style={{ width: '100%' }}>
+                  {data.services.celery.registered_tasks.map((task, idx) => (
+                    <Tag key={idx} color="blue" style={{ margin: 4 }}>
+                      {task}
+                    </Tag>
+                  ))}
+                </Space>
+              </div>
+            ) : (
+              <Alert message="No registered tasks" type="warning" showIcon />
+            )}
+          </div>
+        )}
+      </Modal>
     </div>
   );
 };

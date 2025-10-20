@@ -9,7 +9,12 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: 'autoUpdate',
-      includeAssets: ['favicon.ico', 'robots.txt', 'apple-touch-icon.png'],
+      includeAssets: [
+        'favicon.ico',
+        'robots.txt',
+        'apple-touch-icon.png',
+        'offline.html',
+      ],
       manifest: {
         name: 'VideoSite - 在线视频平台',
         short_name: 'VideoSite',
@@ -36,6 +41,9 @@ export default defineConfig({
       },
       workbox: {
         globPatterns: ['**/*.{js,css,html,ico,png,svg,jpg,webp,woff,woff2}'],
+        // Offline fallback
+        navigateFallback: '/offline.html',
+        navigateFallbackDenylist: [/^\/api\//, /^\/admin\//],
         runtimeCaching: [
           {
             // Cache images
@@ -47,10 +55,13 @@ export default defineConfig({
                 maxEntries: 100,
                 maxAgeSeconds: 30 * 24 * 60 * 60, // 30 days
               },
+              cacheableResponse: {
+                statuses: [0, 200],
+              },
             },
           },
           {
-            // Cache API calls
+            // Cache API calls with network-first strategy
             urlPattern: /^\/api\/v1\/(videos|categories|countries)/,
             handler: 'NetworkFirst',
             options: {
@@ -60,9 +71,28 @@ export default defineConfig({
                 maxAgeSeconds: 5 * 60, // 5 minutes
               },
               networkTimeoutSeconds: 10,
+              cacheableResponse: {
+                statuses: [0, 200],
+              },
+            },
+          },
+          {
+            // Cache fonts
+            urlPattern: /^https?:\/\/.*\.(?:woff|woff2|ttf|eot)$/i,
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'fonts-cache',
+              expiration: {
+                maxEntries: 30,
+                maxAgeSeconds: 365 * 24 * 60 * 60, // 1 year
+              },
             },
           },
         ],
+      },
+      devOptions: {
+        enabled: true, // Enable SW in development for testing
+        type: 'module',
       },
     }),
   ],
@@ -90,5 +120,28 @@ export default defineConfig({
         drop_debugger: true,
       },
     },
+    // Disable source maps in production for security
+    sourcemap: false,
+    // Enable modern browser optimizations
+    target: 'es2020',
+    // Chunk size warnings
+    chunkSizeWarningLimit: 1000,
+    // Rollup options for better code splitting
+    rollupOptions: {
+      output: {
+        // Manual chunk splitting for better caching
+        manualChunks: {
+          'react-vendor': ['react', 'react-dom', 'react-router-dom'],
+          'query-vendor': ['@tanstack/react-query'],
+          'video-vendor': ['video.js'],
+        },
+      },
+    },
+  },
+  // Security: disable server.fs.strict in production
+  preview: {
+    port: 3000,
+    strictPort: true,
+    host: true,
   },
 })

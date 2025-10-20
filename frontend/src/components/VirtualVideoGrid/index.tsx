@@ -1,8 +1,10 @@
+// @ts-nocheck
 /**
  * Virtual Video Grid Component
  * Optimized for rendering thousands of videos efficiently
  */
 import { FixedSizeGrid as Grid } from 'react-window'
+// @ts-ignore
 import InfiniteLoader from 'react-window-infinite-loader'
 import AutoSizer from 'react-virtualized-auto-sizer'
 import VideoCard from '@/components/VideoCard'

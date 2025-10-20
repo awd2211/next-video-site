@@ -2,9 +2,11 @@ import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import { lazy, Suspense, useEffect } from 'react'
 import { ThemeProvider } from './contexts/ThemeContext'
 import ErrorBoundary from './components/ErrorBoundary'
+import RouteErrorBoundary from './components/RouteErrorBoundary'
 import Layout from './components/Layout'
 import Home from './pages/Home'
 import PWAInstallPrompt from './components/PWAInstallPrompt'
+import OnlineStatus from './components/OnlineStatus'
 
 // Lazy load components for code splitting with prefetch hints
 const VideoDetail = lazy(() => import(/* webpackPrefetch: true */ './pages/VideoDetail'))
@@ -70,11 +72,32 @@ function App() {
             <Routes>
             <Route path="/" element={<Layout />}>
               <Route index element={<Home />} />
-              <Route path="video/:id" element={<VideoDetail />} />
-              <Route path="search" element={<Search />} />
+              <Route
+                path="video/:id"
+                element={
+                  <RouteErrorBoundary routeName="Video Player">
+                    <VideoDetail />
+                  </RouteErrorBoundary>
+                }
+              />
+              <Route
+                path="search"
+                element={
+                  <RouteErrorBoundary routeName="Search">
+                    <Search />
+                  </RouteErrorBoundary>
+                }
+              />
               <Route path="trending" element={<Trending />} />
               <Route path="category/:slug" element={<Category />} />
-              <Route path="profile" element={<Profile />} />
+              <Route
+                path="profile"
+                element={
+                  <RouteErrorBoundary routeName="Profile">
+                    <Profile />
+                  </RouteErrorBoundary>
+                }
+              />
               <Route path="favorites" element={<Favorites />} />
               <Route path="favorites/folders/:folderId" element={<FolderVideos />} />
               <Route path="history" element={<History />} />
@@ -91,19 +114,43 @@ function App() {
               <Route path="my-list" element={<MyList />} />
               <Route path="shared/:token" element={<SharedList />} />
 
-              {/* Subscription & Payment Routes */}
-              <Route path="subscription" element={<Subscription />} />
-              <Route path="checkout" element={<Checkout />} />
-              <Route path="account/subscription" element={<AccountSubscription />} />
+              {/* Subscription & Payment Routes - Critical for revenue */}
+              <Route
+                path="subscription"
+                element={
+                  <RouteErrorBoundary routeName="Subscription">
+                    <Subscription />
+                  </RouteErrorBoundary>
+                }
+              />
+              <Route
+                path="checkout"
+                element={
+                  <RouteErrorBoundary routeName="Checkout">
+                    <Checkout />
+                  </RouteErrorBoundary>
+                }
+              />
+              <Route
+                path="account/subscription"
+                element={
+                  <RouteErrorBoundary routeName="Account Subscription">
+                    <AccountSubscription />
+                  </RouteErrorBoundary>
+                }
+              />
             </Route>
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
             <Route path="/oauth/:provider/callback" element={<OAuthCallback />} />
             </Routes>
           </Suspense>
-          
+
           {/* PWA Install Prompt */}
           <PWAInstallPrompt />
+
+          {/* Online/Offline Status Monitor */}
+          <OnlineStatus />
         </BrowserRouter>
       </ThemeProvider>
     </ErrorBoundary>

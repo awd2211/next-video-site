@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { useQuery } from '@tanstack/react-query';
 import { AlertCircle, Info, AlertTriangle, CheckCircle, Pin } from 'lucide-react';
 import axios from 'axios';

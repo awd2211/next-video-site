@@ -2,7 +2,6 @@ import React, { useEffect, useRef, useState, useCallback } from 'react'
 import videojs from 'video.js'
 import type Player from 'video.js/dist/types/player'
 import toast from 'react-hot-toast'
-import '@/types/videojs' // Import Video.js plugin type extensions
 import 'video.js/dist/video-js.css'
 import './VideoPlayer.css'
 import './VideoPlayer-YouTube.css'
