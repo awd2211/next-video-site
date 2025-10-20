@@ -143,7 +143,13 @@ const SubscriptionPlans = () => {
           yearly: 'purple',
           lifetime: 'gold',
         };
-        return <Tag color={colors[period as keyof typeof colors]}>{period.toUpperCase()}</Tag>;
+        const periodLabels = {
+          monthly: t('payment.plans.monthly'),
+          quarterly: t('payment.plans.quarterly'),
+          yearly: t('payment.plans.yearly'),
+          lifetime: t('payment.plans.lifetime'),
+        };
+        return <Tag color={colors[period as keyof typeof colors]}>{periodLabels[period as keyof typeof periodLabels]}</Tag>;
       },
     },
     {
@@ -346,10 +352,10 @@ const SubscriptionPlans = () => {
                 rules={[{ required: true }]}
               >
                 <Select>
-                  <Option value="sd">SD (480p)</Option>
-                  <Option value="hd">HD (720p)</Option>
-                  <Option value="fhd">Full HD (1080p)</Option>
-                  <Option value="4k">4K (2160p)</Option>
+                  <Option value="sd">{t('payment.plans.sd')}</Option>
+                  <Option value="hd">{t('payment.plans.hd')}</Option>
+                  <Option value="fhd">{t('payment.plans.fhd')}</Option>
+                  <Option value="4k">{t('payment.plans.4k')}</Option>
                 </Select>
               </Form.Item>
             </Col>
@@ -376,22 +382,22 @@ const SubscriptionPlans = () => {
           <Row gutter={16}>
             <Col span={6}>
               <Form.Item name="allow_downloads" valuePropName="checked">
-                <Switch checkedChildren={t('payment.plans.downloads')} unCheckedChildren="No" />
+                <Switch checkedChildren={t('payment.plans.downloads')} unCheckedChildren={t('payment.plans.no')} />
               </Form.Item>
             </Col>
             <Col span={6}>
               <Form.Item name="allow_offline" valuePropName="checked">
-                <Switch checkedChildren={t('payment.plans.offline')} unCheckedChildren="No" />
+                <Switch checkedChildren={t('payment.plans.offline')} unCheckedChildren={t('payment.plans.no')} />
               </Form.Item>
             </Col>
             <Col span={6}>
               <Form.Item name="ads_free" valuePropName="checked">
-                <Switch checkedChildren={t('payment.plans.adsFree')} unCheckedChildren="Ads" />
+                <Switch checkedChildren={t('payment.plans.adsFree')} unCheckedChildren={t('payment.plans.ads')} />
               </Form.Item>
             </Col>
             <Col span={6}>
               <Form.Item name="is_popular" valuePropName="checked">
-                <Switch checkedChildren={t('payment.plans.popular')} unCheckedChildren="Normal" />
+                <Switch checkedChildren={t('payment.plans.popular')} unCheckedChildren={t('payment.plans.normal')} />
               </Form.Item>
             </Col>
           </Row>
@@ -412,7 +418,7 @@ const SubscriptionPlans = () => {
             </Col>
             <Col span={12}>
               <Form.Item name="features_zh" label={t('payment.plans.featuresZh')}>
-                <TextArea rows={3} placeholder="功能1&#10;功能2&#10;功能3" />
+                <TextArea rows={3} placeholder={t('payment.plans.featurePlaceholder')} />
               </Form.Item>
             </Col>
           </Row>

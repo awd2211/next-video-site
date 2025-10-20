@@ -151,7 +151,11 @@
       "minutes": "minutes",
       "cores": "cores",
       "free": "free"
-    }
+    },
+    "enabled": "Enabled",
+    "disabled": "Disabled",
+    "activate": "Activate",
+    "deactivate": "Deactivate"
   },
   "settings": {
     "title": "⚙️ System Settings",
@@ -170,7 +174,7 @@
       "user": "User Settings",
       "upload": "Upload Settings",
       "email": "Email Service",
-      "security": "Security",
+      "security": "🔒 Security",
       "cache": "Cache Management",
       "backup": "Backup & Restore",
       "other": "Other Settings",
@@ -198,7 +202,9 @@
       "failed": "Failed",
       "notTested": "Not tested yet",
       "address": "Email Address",
-      "enterTestAddress": "Enter test email address"
+      "enterTestAddress": "Enter test email address",
+      "senderEmail": "Sender Email",
+      "senderName": "Sender Name"
     },
     "cache": {
       "title": "Cache Management",
@@ -1304,7 +1310,30 @@
     "testEmailFailed": "Test email failed",
     "testEmailSent": "Test email sent",
     "textContent": "Text Content",
-    "variables": "Available Variables"
+    "variables": "Available Variables",
+    "useTLS": "Use TLS",
+    "useSSL": "Use SSL",
+    "leaveEmptyIfNotChange": "Leave empty if not changing",
+    "enterPassword": "Enter password",
+    "enterAPIKey": "Enter API Key",
+    "sampleValue": "Sample",
+    "templateNamePlaceholder": "User Welcome Email",
+    "slugTooltip": "Unique identifier for program calls, e.g.: welcome_email",
+    "slugPlaceholder": "welcome_email",
+    "subjectPlaceholder": "Welcome to VideoSite - {{username}}",
+    "descriptionPlaceholder": "Template usage description",
+    "htmlContentTooltip": "Use {{variable}} syntax to insert variables",
+    "textContentPlaceholder": "Plain text version of email (optional)",
+    "variablesTooltip": "Enter variable names separated by commas, e.g.: username,email,verification_code",
+    "variablesPlaceholder": "username,email",
+    "fromEmailPlaceholder": "noreply@example.com",
+    "fromNamePlaceholder": "VideoSite",
+    "smtpHostPlaceholder": "smtp.gmail.com",
+    "smtpPortPlaceholder": "587",
+    "smtpUsernamePlaceholder": "your-email@gmail.com",
+    "mailgunDomainPlaceholder": "mg.example.com",
+    "mailgunBaseUrlPlaceholder": "https://api.mailgun.net/v3",
+    "testEmailPlaceholder": "test@example.com"
   },
   "reports": {
     "activeRate": "Active Rate",
@@ -1752,7 +1781,15 @@
       "deleteSuccess": "Subscription plan deleted successfully",
       "deleteError": "Failed to delete subscription plan",
       "activateSuccess": "Plan activated successfully",
-      "deactivateSuccess": "Plan deactivated successfully"
+      "deactivateSuccess": "Plan deactivated successfully",
+      "no": "No",
+      "ads": "Ads",
+      "normal": "Normal",
+      "sd": "SD (480p)",
+      "hd": "HD (720p)",
+      "fhd": "Full HD (1080p)",
+      "4k": "4K (2160p)",
+      "featurePlaceholder": "Feature 1\nFeature 2\nFeature 3"
     },
     "payments": {
       "title": "Payments",

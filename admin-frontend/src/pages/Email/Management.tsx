@@ -292,7 +292,7 @@ const EmailManagement: React.FC = () => {
               try {
                 const sampleVariables: Record<string, string> = {}
                 record.variables?.forEach((v) => {
-                  sampleVariables[v] = `{${v} 示例}`
+                  sampleVariables[v] = `{${v} ${t('email.sampleValue')}}`
                 })
                 const preview = await emailService.previewTemplate(
                   record.id,
@@ -508,7 +508,7 @@ const EmailManagement: React.FC = () => {
               { type: 'email', message: t('email.invalidEmail') },
             ]}
           >
-            <Input placeholder="noreply@example.com" />
+            <Input placeholder={t('email.fromEmailPlaceholder')} />
           </Form.Item>
 
           <Form.Item
@@ -516,7 +516,7 @@ const EmailManagement: React.FC = () => {
             label={t('email.fromName') || '发件人名称'}
             rules={[{ required: true, message: t('common.required') }]}
           >
-            <Input placeholder="VideoSite" />
+            <Input placeholder={t('email.fromNamePlaceholder')} />
           </Form.Item>
 
           {provider === 'smtp' ? (
@@ -526,7 +526,7 @@ const EmailManagement: React.FC = () => {
                 label={t('email.smtpHost') || 'SMTP 主机'}
                 rules={[{ required: true, message: t('common.required') }]}
               >
-                <Input placeholder="smtp.gmail.com" />
+                <Input placeholder={t('email.smtpHostPlaceholder')} />
               </Form.Item>
 
               <Form.Item
@@ -534,7 +534,7 @@ const EmailManagement: React.FC = () => {
                 label={t('email.smtpPort') || 'SMTP 端口'}
                 rules={[{ required: true, message: t('common.required') }]}
               >
-                <InputNumber style={{ width: '100%' }} placeholder="587" />
+                <InputNumber style={{ width: '100%' }} placeholder={t('email.smtpPortPlaceholder')} />
               </Form.Item>
 
               <Form.Item
@@ -542,7 +542,7 @@ const EmailManagement: React.FC = () => {
                 label={t('email.smtpUsername') || 'SMTP 用户名'}
                 rules={[{ required: true, message: t('common.required') }]}
               >
-                <Input placeholder="your-email@gmail.com" />
+                <Input placeholder={t('email.smtpUsernamePlaceholder')} />
               </Form.Item>
 
               <Form.Item
@@ -551,15 +551,15 @@ const EmailManagement: React.FC = () => {
                 rules={[{ required: !editingConfig, message: t('common.required') }]}
               >
                 <Input.Password
-                  placeholder={editingConfig ? '不修改请留空' : '请输入密码'}
+                  placeholder={editingConfig ? t('email.leaveEmptyIfNotChange') : t('email.enterPassword')}
                 />
               </Form.Item>
 
-              <Form.Item name="smtp_use_tls" label="使用 TLS" valuePropName="checked">
+              <Form.Item name="smtp_use_tls" label={t('email.useTLS')} valuePropName="checked">
                 <Switch defaultChecked />
               </Form.Item>
 
-              <Form.Item name="smtp_use_ssl" label="使用 SSL" valuePropName="checked">
+              <Form.Item name="smtp_use_ssl" label={t('email.useSSL')} valuePropName="checked">
                 <Switch />
               </Form.Item>
             </>
@@ -571,7 +571,7 @@ const EmailManagement: React.FC = () => {
                 rules={[{ required: !editingConfig, message: t('common.required') }]}
               >
                 <Input.Password
-                  placeholder={editingConfig ? '不修改请留空' : '请输入 API Key'}
+                  placeholder={editingConfig ? t('email.leaveEmptyIfNotChange') : t('email.enterAPIKey')}
                 />
               </Form.Item>
 
@@ -580,11 +580,11 @@ const EmailManagement: React.FC = () => {
                 label="Mailgun Domain"
                 rules={[{ required: true, message: t('common.required') }]}
               >
-                <Input placeholder="mg.example.com" />
+                <Input placeholder={t('email.mailgunDomainPlaceholder')} />
               </Form.Item>
 
               <Form.Item name="mailgun_base_url" label="Mailgun Base URL">
-                <Input placeholder="https://api.mailgun.net/v3" />
+                <Input placeholder={t('email.mailgunBaseUrlPlaceholder')} />
               </Form.Item>
             </>
           )}
@@ -621,7 +621,7 @@ const EmailManagement: React.FC = () => {
                 label={t('email.templateName') || '模板名称'}
                 rules={[{ required: true, message: t('common.required') }]}
               >
-                <Input placeholder="用户欢迎邮件" />
+                <Input placeholder={t('email.templateNamePlaceholder')} />
               </Form.Item>
             </Col>
             <Col span={12}>
@@ -629,10 +629,10 @@ const EmailManagement: React.FC = () => {
                 name="slug"
                 label={t('email.slug') || '标识符'}
                 rules={[{ required: true, message: t('common.required') }]}
-                tooltip="唯一标识符，用于程序调用，如：welcome_email"
+                tooltip={t('email.slugTooltip')}
               >
                 <Input
-                  placeholder="welcome_email"
+                  placeholder={t('email.slugPlaceholder')}
                   disabled={!!editingTemplate}
                 />
               </Form.Item>
@@ -644,17 +644,17 @@ const EmailManagement: React.FC = () => {
             label={t('email.subject') || '邮件主题'}
             rules={[{ required: true, message: t('common.required') }]}
           >
-            <Input placeholder="欢迎加入 VideoSite - {{username}}" />
+            <Input placeholder={t('email.subjectPlaceholder')} />
           </Form.Item>
 
           <Form.Item name="description" label={t('common.description') || '描述'}>
-            <TextArea rows={2} placeholder="模板用途说明" />
+            <TextArea rows={2} placeholder={t('email.descriptionPlaceholder')} />
           </Form.Item>
 
           <Form.Item
             label={t('email.htmlContent') || 'HTML 内容'}
             required
-            tooltip="使用 {{variable}} 语法插入变量"
+            tooltip={t('email.htmlContentTooltip')}
           >
             <ReactCodeMirror
               value={htmlContent}
@@ -666,15 +666,15 @@ const EmailManagement: React.FC = () => {
           </Form.Item>
 
           <Form.Item name="text_content" label={t('email.textContent') || '纯文本内容'}>
-            <TextArea rows={4} placeholder="邮件的纯文本版本（可选）" />
+            <TextArea rows={4} placeholder={t('email.textContentPlaceholder')} />
           </Form.Item>
 
           <Form.Item
             name="variables"
             label={t('email.variables') || '变量列表'}
-            tooltip="输入变量名，多个变量用逗号分隔，如：username,email,verification_code"
+            tooltip={t('email.variablesTooltip')}
           >
-            <Select mode="tags" placeholder="username,email" />
+            <Select mode="tags" placeholder={t('email.variablesPlaceholder')} />
           </Form.Item>
 
           <Form.Item name="is_active" label={t('common.active')} valuePropName="checked">
@@ -705,7 +705,7 @@ const EmailManagement: React.FC = () => {
               { type: 'email', message: t('email.invalidEmail') },
             ]}
           >
-            <Input placeholder="test@example.com" />
+            <Input placeholder={t('email.testEmailPlaceholder')} />
           </Form.Item>
         </Form>
       </Modal>
