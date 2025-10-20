@@ -69,3 +69,12 @@ uploads/
 
 # Docker
 docker-compose.override.yml
+
+# Celery
+celerybeat-schedule
+celerybeat.pid
+
+# Testing
+test-results/
+e2e/
+playwright-report/

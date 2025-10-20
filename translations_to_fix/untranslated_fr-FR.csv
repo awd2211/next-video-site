@@ -1,0 +1,7 @@
+﻿key,chinese,translation
+auth.enterVerificationCode,输入VérifierCodePourTerminéParamètres：,
+auth.passwordPlaceholder,Veuillez saisir密Code,
+auth.codeResent,VérifierCode已Renvoyer,
+auth.loginFailed,登录Échec，Veuillez vérifierNom d'utilisateur et密Code,
+auth.wrongCredentials,Nom d'utilisateurOu密CodeErreur,
+roles.deleteRoleWarning,"Confirmer la suppression du rôle""{{name}}""吗？Cette opération est irréversible.",
