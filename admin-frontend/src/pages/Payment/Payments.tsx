@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react';
-import { Table, Tag, Card, Row, Col, Statistic, Input, Select, Button, message, Popconfirm, Space } from 'antd';
+import { Table, Tag, Card, Row, Col, Statistic, Input, Select, Button, message, Popconfirm, Space, Tooltip } from 'antd';
 import { DollarOutlined, ReloadOutlined, SearchOutlined } from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';
 import * as paymentService from '../../services/adminPaymentService';
 import type { Payment } from '../../services/adminPaymentService';
 import type { ColumnsType } from 'antd/es/table';
+import RefundModal, { RefundFormData } from './components/RefundModal';
 
 const { Search } = Input;
 const { Option } = Select;
@@ -19,6 +20,9 @@ const Payments = () => {
   const [pageSize, setPageSize] = useState(10);
   const [filterStatus, setFilterStatus] = useState<string>();
   const [filterProvider, setFilterProvider] = useState<string>();
+  const [refundModalVisible, setRefundModalVisible] = useState(false);
+  const [selectedPayment, setSelectedPayment] = useState<Payment | null>(null);
+  const [refundLoading, setRefundLoading] = useState(false);
 
   useEffect(() => {
     fetchPayments();
@@ -54,14 +58,35 @@ const Payments = () => {
     }
   };
 
-  const handleRefund = async (id: number) => {
+  const handleOpenRefundModal = (payment: Payment) => {
+    setSelectedPayment(payment);
+    setRefundModalVisible(true);
+  };
+
+  const handleCloseRefundModal = () => {
+    setRefundModalVisible(false);
+    setSelectedPayment(null);
+  };
+
+  const handleRefund = async (refundData: RefundFormData) => {
+    if (!selectedPayment) return;
+
+    setRefundLoading(true);
     try {
-      await paymentService.refundPayment(id);
-      message.success(t('payment.payments.refundSuccess'));
+      await paymentService.refundPayment(selectedPayment.id, {
+        amount: refundData.amount,
+        reason: refundData.reason,
+        reason_detail: refundData.reason_detail,
+        admin_note: refundData.admin_note,
+      });
+      message.success(t('payment.payments.refundSuccess') || '退款成功');
       fetchPayments();
       fetchStats();
+      handleCloseRefundModal();
     } catch (error: any) {
-      message.error(error.response?.data?.detail || t('payment.payments.refundError'));
+      message.error(error.response?.data?.detail || t('payment.payments.refundError') || '退款失败');
+    } finally {
+      setRefundLoading(false);
     }
   };
 
@@ -117,27 +142,50 @@ const Payments = () => {
     {
       title: t('common.actions'),
       key: 'actions',
-      render: (_, record) => (
-        <Space size="small">
-          {record.status === 'succeeded' && !record.refunded_at && (
-            <Popconfirm
-              title={t('payment.payments.confirmRefund')}
-              onConfirm={() => handleRefund(record.id)}
-              okText={t('common.yes')}
-              cancelText={t('common.no')}
-            >
-              <Button type="link" size="small" danger>
-                {t('payment.payments.refund')}
+      width: 200,
+      render: (_, record) => {
+        const canRefund = record.status === 'succeeded' || record.status === 'partially_refunded';
+        const isFullyRefunded = record.status === 'refunded';
+        const refundedAmount = parseFloat(record.refund_amount || '0');
+        const totalAmount = parseFloat(record.amount);
+        const hasPartialRefund = refundedAmount > 0 && refundedAmount < totalAmount;
+
+        return (
+          <Space size="small" direction="vertical" style={{ width: '100%' }}>
+            {canRefund && !isFullyRefunded && (
+              <Button
+                type="link"
+                size="small"
+                danger
+                onClick={() => handleOpenRefundModal(record)}
+              >
+                {hasPartialRefund ? t('payment.payments.refundAgain') || '继续退款' : t('payment.payments.refund') || '退款'}
               </Button>
-            </Popconfirm>
-          )}
-          {record.refunded_at && (
-            <Tag color="orange">
-              {t('payment.payments.refunded')} {new Date(record.refunded_at).toLocaleDateString()}
-            </Tag>
-          )}
-        </Space>
-      ),
+            )}
+            {hasPartialRefund && (
+              <Tooltip title={`${t('payment.refund.alreadyRefunded')}: $${refundedAmount.toFixed(2)}`}>
+                <Tag color="orange">
+                  {t('payment.payments.partiallyRefunded') || '部分退款'}
+                </Tag>
+              </Tooltip>
+            )}
+            {isFullyRefunded && record.refunded_at && (
+              <Tooltip title={new Date(record.refunded_at).toLocaleString()}>
+                <Tag color="red">
+                  {t('payment.payments.fullyRefunded') || '已全额退款'}
+                </Tag>
+              </Tooltip>
+            )}
+            {record.refund_reason && (
+              <Tooltip title={record.refund_reason}>
+                <Tag color="blue" style={{ fontSize: '11px', cursor: 'pointer' }}>
+                  {t('payment.refund.viewReason') || '查看原因'}
+                </Tag>
+              </Tooltip>
+            )}
+          </Space>
+        );
+      },
     },
   ];
 
@@ -236,6 +284,18 @@ const Payments = () => {
           }}
         />
       </Card>
+
+      {selectedPayment && (
+        <RefundModal
+          visible={refundModalVisible}
+          paymentAmount={parseFloat(selectedPayment.amount)}
+          alreadyRefunded={parseFloat(selectedPayment.refund_amount || '0')}
+          currency={selectedPayment.currency}
+          onOk={handleRefund}
+          onCancel={handleCloseRefundModal}
+          loading={refundLoading}
+        />
+      )}
     </div>
   );
 };

@@ -681,7 +681,7 @@ app.include_router(
 )
 app.include_router(
     admin_system_health.router,
-    prefix=f"{settings.API_V1_PREFIX}/admin/system",
+    prefix=f"{settings.API_V1_PREFIX}/admin/system-health",
     tags=["Admin - System Health"],
 )
 app.include_router(

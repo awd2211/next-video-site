@@ -180,7 +180,23 @@ body.resizing * {
   position: relative;
 }
 
+/* 子菜单父项样式 - 与普通菜单项保持一致 */
+.ant-menu-dark.ant-menu-inline .ant-menu-submenu > .ant-menu-submenu-title {
+  margin: 3px 12px;
+  width: calc(100% - 24px);
+  height: 40px;
+  line-height: 40px;
+  border-radius: 8px;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+}
+
 .ant-menu-dark.ant-menu-inline .ant-menu-item:hover {
+  background: rgba(255, 255, 255, 0.1);
+  transform: translateX(2px);
+}
+
+.ant-menu-dark.ant-menu-inline .ant-menu-submenu > .ant-menu-submenu-title:hover {
   background: rgba(255, 255, 255, 0.1);
   transform: translateX(2px);
 }
@@ -507,7 +523,24 @@ body:not(.dark) .ant-menu:not(.ant-menu-dark) .ant-menu-item {
   position: relative;
 }
 
+/* 子菜单父项样式 - 明亮主题 */
+body:not(.dark) .ant-menu:not(.ant-menu-dark) .ant-menu-submenu > .ant-menu-submenu-title {
+  color: #37352f;
+  margin: 3px 12px;
+  width: calc(100% - 24px);
+  height: 40px;
+  line-height: 40px;
+  border-radius: 8px;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+}
+
 body:not(.dark) .ant-menu:not(.ant-menu-dark) .ant-menu-item:hover {
+  background: rgba(55, 53, 47, 0.06) !important;
+  transform: translateX(2px);
+}
+
+body:not(.dark) .ant-menu:not(.ant-menu-dark) .ant-menu-submenu > .ant-menu-submenu-title:hover {
   background: rgba(55, 53, 47, 0.06) !important;
   transform: translateX(2px);
 }

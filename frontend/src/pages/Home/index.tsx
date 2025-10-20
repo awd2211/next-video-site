@@ -13,7 +13,6 @@ import EmptyState from '@/components/EmptyState'
 import ErrorState from '@/components/ErrorState'
 import BackToTop from '@/components/BackToTop'
 import { useEffect, useRef } from 'react'
-import type { Video } from '@/types'
 
 const Home = () => {
   // Featured videos for hero carousel

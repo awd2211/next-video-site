@@ -145,36 +145,36 @@ export const getSubscriptionPlans = async (params?: {
   page_size?: number;
   is_active?: boolean;
 }): Promise<{ items: SubscriptionPlan[]; total: number }> => {
-  const { data } = await api.get('/admin/subscription-plans', { params });
+  const { data } = await api.get('/api/v1/admin/subscription-plans/', { params });
   return data;
 };
 
 export const getSubscriptionPlan = async (id: number): Promise<SubscriptionPlan> => {
-  const { data } = await api.get(`/admin/subscription-plans/${id}`);
+  const { data } = await api.get(`/api/v1/admin/subscription-plans/${id}`);
   return data;
 };
 
 export const createSubscriptionPlan = async (plan: Partial<SubscriptionPlan>): Promise<SubscriptionPlan> => {
-  const { data } = await api.post('/admin/subscription-plans', plan);
+  const { data } = await api.post('/api/v1/admin/subscription-plans/', plan);
   return data;
 };
 
 export const updateSubscriptionPlan = async (id: number, plan: Partial<SubscriptionPlan>): Promise<SubscriptionPlan> => {
-  const { data } = await api.put(`/admin/subscription-plans/${id}`, plan);
+  const { data } = await api.put(`/api/v1/admin/subscription-plans/${id}`, plan);
   return data;
 };
 
 export const deleteSubscriptionPlan = async (id: number): Promise<void> => {
-  await api.delete(`/admin/subscription-plans/${id}`);
+  await api.delete(`/api/v1/admin/subscription-plans/${id}`);
 };
 
 export const activateSubscriptionPlan = async (id: number): Promise<SubscriptionPlan> => {
-  const { data } = await api.post(`/admin/subscription-plans/${id}/activate`);
+  const { data } = await api.post(`/api/v1/admin/subscription-plans/${id}/activate`);
   return data;
 };
 
 export const deactivateSubscriptionPlan = async (id: number): Promise<SubscriptionPlan> => {
-  const { data } = await api.post(`/admin/subscription-plans/${id}/deactivate`);
+  const { data } = await api.post(`/api/v1/admin/subscription-plans/${id}/deactivate`);
   return data;
 };
 
@@ -186,17 +186,28 @@ export const getPayments = async (params?: {
   status?: string;
   payment_provider?: string;
 }): Promise<{ items: Payment[]; total: number }> => {
-  const { data } = await api.get('/admin/payments', { params });
+  const { data } = await api.get('/api/v1/admin/payments/', { params });
   return data;
 };
 
 export const getPayment = async (id: number): Promise<Payment> => {
-  const { data } = await api.get(`/admin/payments/${id}`);
+  const { data } = await api.get(`/api/v1/admin/payments/${id}`);
   return data;
 };
 
-export const refundPayment = async (id: number, reason?: string): Promise<Payment> => {
-  const { data } = await api.post(`/admin/payments/${id}/refund`, { reason });
+export const refundPayment = async (
+  id: number,
+  refundRequest: {
+    amount?: number;
+    reason?: string;
+    reason_detail?: string;
+    admin_note?: string;
+  }
+): Promise<Payment> => {
+  const { data } = await api.post(`/api/v1/admin/payments/${id}/refund`, {
+    payment_id: id,
+    ...refundRequest,
+  });
   return data;
 };
 
@@ -206,7 +217,7 @@ export const getPaymentStats = async (): Promise<{
   success_rate: number;
   avg_transaction_value: number;
 }> => {
-  const { data } = await api.get('/admin/payments/stats');
+  const { data } = await api.get('/api/v1/admin/payments/stats');
   return data;
 };
 
@@ -216,36 +227,36 @@ export const getCoupons = async (params?: {
   page_size?: number;
   status?: string;
 }): Promise<{ items: Coupon[]; total: number }> => {
-  const { data } = await api.get('/admin/coupons', { params });
+  const { data } = await api.get('/api/v1/admin/coupons/', { params });
   return data;
 };
 
 export const getCoupon = async (id: number): Promise<Coupon> => {
-  const { data } = await api.get(`/admin/coupons/${id}`);
+  const { data } = await api.get(`/api/v1/admin/coupons/${id}`);
   return data;
 };
 
 export const createCoupon = async (coupon: Partial<Coupon>): Promise<Coupon> => {
-  const { data } = await api.post('/admin/coupons', coupon);
+  const { data } = await api.post('/api/v1/admin/coupons/', coupon);
   return data;
 };
 
 export const updateCoupon = async (id: number, coupon: Partial<Coupon>): Promise<Coupon> => {
-  const { data } = await api.put(`/admin/coupons/${id}`, coupon);
+  const { data } = await api.put(`/api/v1/admin/coupons/${id}`, coupon);
   return data;
 };
 
 export const deleteCoupon = async (id: number): Promise<void> => {
-  await api.delete(`/admin/coupons/${id}`);
+  await api.delete(`/api/v1/admin/coupons/${id}`);
 };
 
 export const activateCoupon = async (id: number): Promise<Coupon> => {
-  const { data } = await api.post(`/admin/coupons/${id}/activate`);
+  const { data } = await api.post(`/api/v1/admin/coupons/${id}/activate`);
   return data;
 };
 
 export const deactivateCoupon = async (id: number): Promise<Coupon> => {
-  const { data } = await api.post(`/admin/coupons/${id}/deactivate`);
+  const { data } = await api.post(`/api/v1/admin/coupons/${id}/deactivate`);
   return data;
 };
 
@@ -256,27 +267,27 @@ export const getInvoices = async (params?: {
   user_id?: number;
   status?: string;
 }): Promise<{ items: Invoice[]; total: number }> => {
-  const { data } = await api.get('/admin/invoices', { params });
+  const { data } = await api.get('/api/v1/admin/invoices/', { params });
   return data;
 };
 
 export const getInvoice = async (id: number): Promise<Invoice> => {
-  const { data } = await api.get(`/admin/invoices/${id}`);
+  const { data } = await api.get(`/api/v1/admin/invoices/${id}`);
   return data;
 };
 
 export const updateInvoiceStatus = async (id: number, status: string): Promise<Invoice> => {
-  const { data } = await api.put(`/admin/invoices/${id}/status`, { status });
+  const { data } = await api.put(`/api/v1/admin/invoices/${id}/status`, { status });
   return data;
 };
 
 export const sendInvoice = async (id: number): Promise<{ success: boolean }> => {
-  const { data } = await api.post(`/admin/invoices/${id}/send`);
+  const { data } = await api.post(`/api/v1/admin/invoices/${id}/send`);
   return data;
 };
 
 export const voidInvoice = async (id: number): Promise<Invoice> => {
-  const { data } = await api.post(`/admin/invoices/${id}/void`);
+  const { data } = await api.post(`/api/v1/admin/invoices/${id}/void`);
   return data;
 };
 
@@ -288,12 +299,12 @@ export const getUserSubscriptions = async (params?: {
   plan_id?: number;
   status?: string;
 }): Promise<{ items: UserSubscription[]; total: number }> => {
-  const { data } = await api.get('/admin/subscriptions', { params });
+  const { data } = await api.get('/api/v1/admin/subscriptions/', { params });
   return data;
 };
 
 export const getUserSubscription = async (id: number): Promise<UserSubscription> => {
-  const { data } = await api.get(`/admin/subscriptions/${id}`);
+  const { data } = await api.get(`/api/v1/admin/subscriptions/${id}`);
   return data;
 };
 
@@ -301,19 +312,19 @@ export const cancelUserSubscription = async (
   id: number,
   cancel_immediately?: boolean
 ): Promise<UserSubscription> => {
-  const { data } = await api.post(`/admin/subscriptions/${id}/cancel`, {
+  const { data } = await api.post(`/api/v1/admin/subscriptions/${id}/cancel`, {
     cancel_immediately,
   });
   return data;
 };
 
 export const renewUserSubscription = async (id: number): Promise<UserSubscription> => {
-  const { data } = await api.post(`/admin/subscriptions/${id}/renew`);
+  const { data } = await api.post(`/api/v1/admin/subscriptions/${id}/renew`);
   return data;
 };
 
 export const getSubscriptionStats = async (): Promise<SubscriptionStats> => {
-  const { data } = await api.get('/admin/subscriptions/stats/overview');
+  const { data } = await api.get('/api/v1/admin/subscriptions/stats/overview');
   return data;
 };
 

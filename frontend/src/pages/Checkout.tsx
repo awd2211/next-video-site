@@ -4,7 +4,6 @@ import { useTranslation } from 'react-i18next';
 import { useMutation } from '@tanstack/react-query';
 import { createSubscription, type SubscriptionPlan } from '../services/subscription';
 import { validateCoupon } from '../services/coupon';
-import { createPaymentIntent } from '../services/payment';
 
 const Checkout: React.FC = () => {
   const { t } = useTranslation();

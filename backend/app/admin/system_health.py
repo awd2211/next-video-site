@@ -5,7 +5,7 @@ Provides real-time system health metrics for admin dashboard
 
 from fastapi import APIRouter, Depends, Query, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
-from typing import Dict, Any
+from typing import Dict, Any, Optional, List
 import psutil
 import time
 from datetime import datetime, timedelta
@@ -19,6 +19,9 @@ from app.utils.dependencies import get_current_admin_user
 from app.utils.cache import get_redis
 from app.utils.minio_client import minio_client
 from app.models.user import AdminUser
+from app.services.alert_service import AlertService, save_metrics_to_database
+from app.services.sla_service import SLAService, generate_hourly_sla, generate_daily_sla
+from app.utils.celery_monitor import CeleryMonitor
 
 router = APIRouter()
 
@@ -104,7 +107,7 @@ async def check_redis_health() -> Dict[str, Any]:
 
 
 async def check_minio_health() -> Dict[str, Any]:
-    """Check MinIO/S3 storage availability"""
+    """Check MinIO/S3 storage availability and usage"""
     try:
         # minio_client is already imported as a singleton instance
 
@@ -122,18 +125,98 @@ async def check_minio_health() -> Dict[str, Any]:
             logger.debug(f"MinIO read check failed: {e}")
             can_read = False
 
-        return {
+        # Get bucket usage statistics
+        usage_stats = {}
+        try:
+            usage_stats = minio_client.get_bucket_usage()
+        except Exception as e:
+            logger.debug(f"Failed to get bucket usage: {e}")
+
+        # Build response
+        response = {
             "status": "healthy" if bucket_exists and response_time < 200 else "degraded",
             "response_time_ms": round(response_time, 2),
             "bucket_exists": bucket_exists,
             "can_read": can_read,
             "message": "Storage service healthy" if bucket_exists else "Storage bucket not found"
         }
+
+        # Add usage stats if available
+        if usage_stats and not usage_stats.get("error"):
+            response["used_gb"] = usage_stats.get("total_size_gb", 0)
+            response["object_count"] = usage_stats.get("object_count", 0)
+            # Note: Total capacity might not be available without admin API access
+            # Using a default or config value as a fallback
+            response["total_gb"] = 1000.0  # Default 1TB, can be made configurable
+            response["utilization_percent"] = round(
+                (usage_stats.get("total_size_gb", 0) / 1000.0) * 100, 2
+            )
+
+        return response
+
     except Exception as e:
         return {
             "status": "unhealthy",
             "error": str(e),
             "message": "Storage service unavailable"
+        }
+
+
+def check_celery_health() -> Dict[str, Any]:
+    """Check Celery task queue health"""
+    try:
+        # 获取Celery健康状态
+        health_check = CeleryMonitor.check_health()
+
+        if not health_check.get("healthy"):
+            return {
+                "status": "unhealthy",
+                "workers_count": 0,
+                "active_tasks": 0,
+                "message": health_check.get("message", "Celery workers not available")
+            }
+
+        # 获取队列统计
+        queue_stats = CeleryMonitor.get_queue_stats()
+
+        if queue_stats.get("status") == "error":
+            return {
+                "status": "unhealthy",
+                "workers_count": 0,
+                "active_tasks": 0,
+                "message": queue_stats.get("message", "Failed to get queue stats")
+            }
+
+        active_tasks = queue_stats.get("active_tasks", 0)
+        workers_count = queue_stats.get("workers_count", 0)
+
+        # 判断状态
+        if workers_count == 0:
+            status = "unhealthy"
+            message = "No Celery workers available"
+        elif active_tasks > 100:
+            status = "warning"
+            message = f"High task backlog: {active_tasks} active tasks"
+        else:
+            status = "healthy"
+            message = "Celery task queue healthy"
+
+        return {
+            "status": status,
+            "workers_count": workers_count,
+            "active_tasks": active_tasks,
+            "reserved_tasks": queue_stats.get("reserved_tasks", 0),
+            "message": message
+        }
+
+    except Exception as e:
+        logger.error(f"Celery health check failed: {e}")
+        return {
+            "status": "unhealthy",
+            "workers_count": 0,
+            "active_tasks": 0,
+            "error": str(e),
+            "message": "Celery service unavailable"
         }
 
 
@@ -259,13 +342,15 @@ async def get_system_health(
     database = await check_database_health(db)
     redis = await check_redis_health()
     storage = await check_minio_health()
+    celery = check_celery_health()
     system = get_system_resources()
 
     # Calculate overall health
     service_statuses = [
         database.get('status'),
         redis.get('status'),
-        storage.get('status')
+        storage.get('status'),
+        celery.get('status')
     ]
 
     if all(s == 'healthy' for s in service_statuses):
@@ -281,10 +366,32 @@ async def get_system_health(
         "services": {
             "database": database,
             "redis": redis,
-            "storage": storage
+            "storage": storage,
+            "celery": celery
         },
         "system_resources": system
     }
+
+    # 保存指标到数据库并检查告警
+    try:
+        # 保存指标到数据库
+        await save_metrics_to_database(db, response)
+
+        # 检查并创建告警
+        alert_service = AlertService(db)
+        new_alerts = await alert_service.check_and_create_alerts(response)
+
+        # 获取告警统计
+        alert_stats = await alert_service.get_alert_statistics()
+
+        # 添加告警信息到响应
+        response["alerts"] = {
+            "statistics": alert_stats,
+            "new_alerts_count": len(new_alerts)
+        }
+
+    except Exception as e:
+        logger.error(f"Failed to save metrics or check alerts: {e}")
 
     # Cache the response
     try:
@@ -485,7 +592,7 @@ def format_uptime(seconds: float) -> str:
     hours = int((seconds % 86400) // 3600)
     minutes = int((seconds % 3600) // 60)
     secs = int(seconds % 60)
-    
+
     parts = []
     if days > 0:
         parts.append(f"{days}d")
@@ -495,5 +602,468 @@ def format_uptime(seconds: float) -> str:
         parts.append(f"{minutes}m")
     if secs > 0 or not parts:
         parts.append(f"{secs}s")
-    
+
     return " ".join(parts)
+
+
+# ============ Alert Management Endpoints ============
+
+
+@router.get("/alerts")
+async def get_alerts(
+    db: AsyncSession = Depends(get_db),
+    current_admin: AdminUser = Depends(get_current_admin_user),
+    status: str = Query("active", description="Alert status filter (active/resolved/all)"),
+    alert_type: Optional[str] = Query(None, description="Alert type filter"),
+    severity: Optional[str] = Query(None, description="Severity filter (critical/warning)"),
+    page: int = Query(1, ge=1, description="Page number"),
+    page_size: int = Query(20, ge=1, le=100, description="Page size")
+):
+    """
+    获取告警列表
+
+    支持按状态、类型、严重程度过滤和分页
+    """
+    from sqlalchemy import and_, or_
+    from app.models.system_metrics import SystemAlert
+
+    try:
+        # 构建查询条件
+        conditions = []
+
+        if status != "all":
+            conditions.append(SystemAlert.status == status)
+
+        if alert_type:
+            conditions.append(SystemAlert.alert_type == alert_type)
+
+        if severity:
+            conditions.append(SystemAlert.severity == severity)
+
+        # 查询总数
+        from sqlalchemy import func, select as sql_select
+        count_stmt = sql_select(func.count(SystemAlert.id))
+        if conditions:
+            count_stmt = count_stmt.where(and_(*conditions))
+
+        total = await db.scalar(count_stmt)
+
+        # 查询数据
+        stmt = sql_select(SystemAlert)
+        if conditions:
+            stmt = stmt.where(and_(*conditions))
+
+        stmt = stmt.order_by(
+            SystemAlert.severity.desc(),
+            SystemAlert.triggered_at.desc()
+        ).offset((page - 1) * page_size).limit(page_size)
+
+        result = await db.execute(stmt)
+        alerts = result.scalars().all()
+
+        # 转换为字典格式
+        alert_list = []
+        for alert in alerts:
+            alert_list.append({
+                "id": alert.id,
+                "alert_type": alert.alert_type,
+                "severity": alert.severity,
+                "title": alert.title,
+                "message": alert.message,
+                "metric_name": alert.metric_name,
+                "metric_value": alert.metric_value,
+                "threshold_value": alert.threshold_value,
+                "status": alert.status,
+                "triggered_at": alert.triggered_at.isoformat(),
+                "resolved_at": alert.resolved_at.isoformat() if alert.resolved_at else None,
+                "acknowledged_by": alert.acknowledged_by,
+                "acknowledged_at": alert.acknowledged_at.isoformat() if alert.acknowledged_at else None,
+                "notes": alert.notes,
+                "context": alert.context,
+                "created_at": alert.created_at.isoformat(),
+                "updated_at": alert.updated_at.isoformat() if alert.updated_at else None
+            })
+
+        return {
+            "items": alert_list,
+            "total": total or 0,
+            "page": page,
+            "page_size": page_size,
+            "pages": (total + page_size - 1) // page_size if total else 0
+        }
+
+    except Exception as e:
+        logger.error(f"Failed to get alerts: {e}")
+        raise HTTPException(status_code=500, detail="Failed to retrieve alerts")
+
+
+@router.get("/alerts/statistics")
+async def get_alert_statistics(
+    db: AsyncSession = Depends(get_db),
+    current_admin: AdminUser = Depends(get_current_admin_user)
+):
+    """
+    获取告警统计信息
+
+    返回活跃告警数、严重告警数、警告数等统计数据
+    """
+    try:
+        alert_service = AlertService(db)
+        stats = await alert_service.get_alert_statistics()
+
+        return {
+            "timestamp": datetime.utcnow().isoformat(),
+            "statistics": stats
+        }
+
+    except Exception as e:
+        logger.error(f"Failed to get alert statistics: {e}")
+        raise HTTPException(status_code=500, detail="Failed to retrieve alert statistics")
+
+
+@router.post("/alerts/{alert_id}/acknowledge")
+async def acknowledge_alert(
+    alert_id: int,
+    db: AsyncSession = Depends(get_db),
+    current_admin: AdminUser = Depends(get_current_admin_user),
+    notes: Optional[str] = Query(None, description="处理备注")
+):
+    """
+    确认告警
+
+    管理员确认已知晓该告警并正在处理
+    """
+    try:
+        alert_service = AlertService(db)
+        alert = await alert_service.acknowledge_alert(
+            alert_id=alert_id,
+            admin_user_id=current_admin.id,
+            notes=notes
+        )
+
+        if not alert:
+            raise HTTPException(status_code=404, detail="Alert not found")
+
+        return {
+            "success": True,
+            "message": "Alert acknowledged successfully",
+            "alert": {
+                "id": alert.id,
+                "title": alert.title,
+                "acknowledged_by": alert.acknowledged_by,
+                "acknowledged_at": alert.acknowledged_at.isoformat() if alert.acknowledged_at else None,
+                "notes": alert.notes
+            }
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Failed to acknowledge alert: {e}")
+        raise HTTPException(status_code=500, detail="Failed to acknowledge alert")
+
+
+@router.post("/alerts/{alert_id}/resolve")
+async def resolve_alert(
+    alert_id: int,
+    db: AsyncSession = Depends(get_db),
+    current_admin: AdminUser = Depends(get_current_admin_user),
+    notes: Optional[str] = Query(None, description="解决备注")
+):
+    """
+    手动解决告警
+
+    管理员手动将告警标记为已解决
+    """
+    try:
+        from sqlalchemy import select as sql_select
+        from app.models.system_metrics import SystemAlert
+
+        stmt = sql_select(SystemAlert).where(SystemAlert.id == alert_id)
+        result = await db.execute(stmt)
+        alert = result.scalar_one_or_none()
+
+        if not alert:
+            raise HTTPException(status_code=404, detail="Alert not found")
+
+        alert.status = "resolved"
+        alert.resolved_at = datetime.utcnow()
+        alert.updated_at = datetime.utcnow()
+
+        if notes:
+            alert.notes = notes if not alert.notes else f"{alert.notes}\n解决备注: {notes}"
+
+        await db.commit()
+        await db.refresh(alert)
+
+        return {
+            "success": True,
+            "message": "Alert resolved successfully",
+            "alert": {
+                "id": alert.id,
+                "title": alert.title,
+                "status": alert.status,
+                "resolved_at": alert.resolved_at.isoformat() if alert.resolved_at else None,
+                "notes": alert.notes
+            }
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Failed to resolve alert: {e}")
+        await db.rollback()
+        raise HTTPException(status_code=500, detail="Failed to resolve alert")
+
+
+@router.get("/alerts/active/count")
+async def get_active_alerts_count(
+    db: AsyncSession = Depends(get_db),
+    current_admin: AdminUser = Depends(get_current_admin_user)
+):
+    """
+    获取活跃告警数量（快速接口）
+
+    用于前端显示告警徽章数量
+    """
+    try:
+        from sqlalchemy import func, select as sql_select
+        from app.models.system_metrics import SystemAlert
+
+        # 总活跃告警数
+        total_stmt = sql_select(func.count(SystemAlert.id)).where(
+            SystemAlert.status == "active"
+        )
+        total = await db.scalar(total_stmt)
+
+        # 严重告警数
+        critical_stmt = sql_select(func.count(SystemAlert.id)).where(
+            and_(
+                SystemAlert.status == "active",
+                SystemAlert.severity == "critical"
+            )
+        )
+        critical = await db.scalar(critical_stmt)
+
+        return {
+            "total": total or 0,
+            "critical": critical or 0
+        }
+
+    except Exception as e:
+        logger.error(f"Failed to get active alerts count: {e}")
+        raise HTTPException(status_code=500, detail="Failed to retrieve alert count")
+
+
+# ============ SLA Management Endpoints ============
+
+
+@router.get("/sla/report")
+async def get_sla_report(
+    db: AsyncSession = Depends(get_db),
+    current_admin: AdminUser = Depends(get_current_admin_user),
+    period_type: str = Query("daily", description="Period type (hourly/daily/weekly/monthly)"),
+    limit: int = Query(30, ge=1, le=365, description="Number of records to return")
+):
+    """
+    获取SLA报告
+
+    返回指定周期类型的历史SLA记录
+    """
+    try:
+        sla_service = SLAService(db)
+        sla_records = await sla_service.get_sla_report(period_type, limit)
+
+        # 转换为字典格式
+        records = []
+        for record in sla_records:
+            records.append({
+                "id": record.id,
+                "period_start": record.period_start.isoformat(),
+                "period_end": record.period_end.isoformat(),
+                "period_type": record.period_type,
+                "uptime_seconds": record.uptime_seconds,
+                "downtime_seconds": record.downtime_seconds,
+                "uptime_percentage": record.uptime_percentage,
+                "total_requests": record.total_requests,
+                "successful_requests": record.successful_requests,
+                "failed_requests": record.failed_requests,
+                "success_rate": record.success_rate,
+                "avg_response_time_ms": record.avg_response_time_ms,
+                "p50_response_time_ms": record.p50_response_time_ms,
+                "p95_response_time_ms": record.p95_response_time_ms,
+                "p99_response_time_ms": record.p99_response_time_ms,
+                "max_response_time_ms": record.max_response_time_ms,
+                "total_alerts": record.total_alerts,
+                "critical_alerts": record.critical_alerts,
+                "warning_alerts": record.warning_alerts,
+                "avg_cpu_usage": record.avg_cpu_usage,
+                "avg_memory_usage": record.avg_memory_usage,
+                "avg_disk_usage": record.avg_disk_usage,
+                "created_at": record.created_at.isoformat(),
+            })
+
+        return {
+            "period_type": period_type,
+            "count": len(records),
+            "records": records
+        }
+
+    except Exception as e:
+        logger.error(f"Failed to get SLA report: {e}")
+        raise HTTPException(status_code=500, detail="Failed to retrieve SLA report")
+
+
+@router.get("/sla/summary")
+async def get_sla_summary(
+    db: AsyncSession = Depends(get_db),
+    current_admin: AdminUser = Depends(get_current_admin_user),
+    days: int = Query(30, ge=1, le=365, description="Number of days to summarize")
+):
+    """
+    获取SLA汇总统计
+
+    返回指定天数内的SLA汇总数据
+    """
+    try:
+        period_end = datetime.utcnow()
+        period_start = period_end - timedelta(days=days)
+
+        sla_service = SLAService(db)
+        summary = await sla_service.get_sla_summary(period_start, period_end)
+
+        return summary
+
+    except Exception as e:
+        logger.error(f"Failed to get SLA summary: {e}")
+        raise HTTPException(status_code=500, detail="Failed to retrieve SLA summary")
+
+
+@router.post("/sla/generate")
+async def generate_sla_report(
+    db: AsyncSession = Depends(get_db),
+    current_admin: AdminUser = Depends(get_current_admin_user),
+    period_type: str = Query("hourly", description="Period type (hourly/daily)")
+):
+    """
+    手动生成SLA报告
+
+    立即生成指定周期的SLA报告
+    """
+    try:
+        if period_type == "hourly":
+            sla_record = await generate_hourly_sla(db)
+        elif period_type == "daily":
+            sla_record = await generate_daily_sla(db)
+        else:
+            raise HTTPException(
+                status_code=400,
+                detail="Invalid period type. Use 'hourly' or 'daily'"
+            )
+
+        if not sla_record:
+            raise HTTPException(
+                status_code=500,
+                detail="Failed to generate SLA report. No metrics data available."
+            )
+
+        return {
+            "success": True,
+            "message": f"{period_type.capitalize()} SLA report generated successfully",
+            "sla": {
+                "id": sla_record.id,
+                "period_start": sla_record.period_start.isoformat(),
+                "period_end": sla_record.period_end.isoformat(),
+                "uptime_percentage": sla_record.uptime_percentage,
+                "avg_response_time_ms": sla_record.avg_response_time_ms,
+                "total_alerts": sla_record.total_alerts,
+                "critical_alerts": sla_record.critical_alerts,
+            }
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Failed to generate SLA report: {e}")
+        raise HTTPException(status_code=500, detail="Failed to generate SLA report")
+
+
+@router.get("/sla/current")
+async def get_current_sla(
+    db: AsyncSession = Depends(get_db),
+    current_admin: AdminUser = Depends(get_current_admin_user)
+):
+    """
+    获取当前实时SLA状态
+
+    计算并返回当天到目前为止的SLA指标
+    """
+    try:
+        now = datetime.utcnow()
+        # 今天凌晨
+        period_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
+        period_end = now
+
+        sla_service = SLAService(db)
+
+        # 临时计算当前SLA（不保存到数据库）
+        from sqlalchemy import select, and_
+        from app.models.system_metrics import SystemMetrics, SystemAlert
+        import statistics
+
+        # 查询今天的指标
+        stmt = select(SystemMetrics).where(
+            and_(
+                SystemMetrics.timestamp >= period_start,
+                SystemMetrics.timestamp < period_end
+            )
+        ).order_by(SystemMetrics.timestamp)
+
+        result = await db.execute(stmt)
+        metrics = list(result.scalars().all())
+
+        if not metrics:
+            return {
+                "period_start": period_start.isoformat(),
+                "period_end": period_end.isoformat(),
+                "uptime_percentage": 100.0,
+                "message": "No metrics data available for today"
+            }
+
+        # 简单计算
+        unhealthy_count = sum(1 for m in metrics if m.overall_status == "unhealthy")
+        uptime_percentage = ((len(metrics) - unhealthy_count) / len(metrics) * 100) if metrics else 100.0
+
+        # 计算平均响应时间
+        db_times = [m.db_response_time_ms for m in metrics if m.db_response_time_ms is not None]
+        avg_db_response = statistics.mean(db_times) if db_times else None
+
+        # 查询今天的告警
+        alert_stmt = select(func.count(SystemAlert.id)).where(
+            SystemAlert.triggered_at >= period_start
+        )
+        total_alerts = await db.scalar(alert_stmt)
+
+        critical_stmt = select(func.count(SystemAlert.id)).where(
+            and_(
+                SystemAlert.triggered_at >= period_start,
+                SystemAlert.severity == "critical"
+            )
+        )
+        critical_alerts = await db.scalar(critical_stmt)
+
+        return {
+            "period_start": period_start.isoformat(),
+            "period_end": period_end.isoformat(),
+            "elapsed_hours": round((period_end - period_start).total_seconds() / 3600, 2),
+            "uptime_percentage": round(uptime_percentage, 4),
+            "metrics_collected": len(metrics),
+            "avg_db_response_time_ms": round(avg_db_response, 2) if avg_db_response else None,
+            "total_alerts": total_alerts or 0,
+            "critical_alerts": critical_alerts or 0,
+            "status": "healthy" if uptime_percentage >= 99.9 else "degraded" if uptime_percentage >= 99.0 else "poor"
+        }
+
+    except Exception as e:
+        logger.error(f"Failed to get current SLA: {e}")
+        raise HTTPException(status_code=500, detail="Failed to retrieve current SLA")

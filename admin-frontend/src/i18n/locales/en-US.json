@@ -35,7 +35,11 @@
     "subscriptionPlans": "Subscription Plans",
     "subscriptions": "Subscriptions",
     "payments": "Payments",
-    "coupons": "Coupons"
+    "coupons": "Coupons",
+    "sentryConfig": "Sentry Config",
+    "systemHealthOverview": "System Overview",
+    "systemHealthAlerts": "Alert Management",
+    "systemHealthSLA": "SLA Reports"
   },
   "breadcrumb": {
     "home": "Dashboard",
@@ -115,7 +119,7 @@
     "quickFilters": "Quick Filters",
     "clearFilters": "Clear Filters",
     "filtersCleared": "Filters cleared",
-    "filters": "Filters",
+    "filters": "Filters:",
     "autoRefresh": "Auto Refresh",
     "autoRefreshOn": "Auto Refresh: ON",
     "autoRefreshOff": "Auto Refresh: OFF",
@@ -131,7 +135,7 @@
     "error": "Error",
     "time": "Time",
     "filter": "Filter",
-    "totalItems": "Total {{total}} items",
+    "totalItems": "Total {total} items",
     "success": "Success",
     "failed": "Failed",
     "timeout": "Timeout",
@@ -139,10 +143,18 @@
     "completion": "Completion",
     "yes": "Yes",
     "no": "No",
-    "copyAll": "Copy All"
+    "copyAll": "Copy All",
+    "saved": "Saved",
+    "saving": "Saving...",
+    "units": {
+      "hours": "hours",
+      "minutes": "minutes",
+      "cores": "cores",
+      "free": "free"
+    }
   },
   "settings": {
-    "title": "Settings",
+    "title": "⚙️ System Settings",
     "searchPlaceholder": "Search settings...",
     "groups": {
       "basic": "Basic Settings",
@@ -161,7 +173,16 @@
       "security": "Security",
       "cache": "Cache Management",
       "backup": "Backup & Restore",
-      "other": "Other Settings"
+      "other": "Other Settings",
+      "siteAndSeo": "🌐 Site & SEO",
+      "videoAndUpload": "📹 Video & Upload",
+      "userAndCommunity": "💬 User & Community",
+      "emailService": "📧 Email Service",
+      "notifications": "🔔 Notifications",
+      "cacheManagement": "🗄️ Cache Management",
+      "backupAndRestore": "💾 Backup & Restore",
+      "paymentGateway": "💳 Payment Gateway",
+      "otherSettings": "⚙️ Other Settings"
     },
     "email": {
       "testEmail": "Send Test Email",
@@ -175,7 +196,9 @@
       "testStatus": "Test Status",
       "success": "Success",
       "failed": "Failed",
-      "notTested": "Not tested yet"
+      "notTested": "Not tested yet",
+      "address": "Email Address",
+      "enterTestAddress": "Enter test email address"
     },
     "cache": {
       "title": "Cache Management",
@@ -195,7 +218,11 @@
       "clearFailed": "Failed to clear cache",
       "keysCleared": "{{count}} keys cleared",
       "allCleared": "All cache cleared",
-      "selectPattern": "Select cache pattern to clear"
+      "selectPattern": "Select cache pattern to clear",
+      "cleared": "Cache cleared",
+      "statsFailed": "Failed to get cache statistics",
+      "clearedCount": "Cleared ${count} cache keys",
+      "last7Days": "Last 7 Days Statistics:"
     },
     "backup": {
       "title": "Backup & Restore",
@@ -211,12 +238,20 @@
       "confirmRestore": "Confirm to restore settings? This will override current settings.",
       "selectFile": "Select backup file",
       "backupTime": "Backup Time",
-      "downloadJson": "Download as JSON"
+      "downloadJson": "Download as JSON",
+      "downloaded": "Backup file downloaded",
+      "exportFailed": "Export backup failed",
+      "invalidFormat": "Invalid backup file format",
+      "confirmRestoreTitle": "Confirm restore settings?",
+      "confirmRestoreContent": "This will overwrite current settings. Continue?"
     },
     "actions": {
       "saveAll": "Save All Settings",
       "resetDefaults": "Reset to Defaults",
-      "confirmReset": "Confirm to reset all settings to defaults? This action cannot be undone."
+      "confirmReset": "Confirm to reset all settings to defaults? This action cannot be undone.",
+      "clearCache": "Clear Cache",
+      "exportBackup": "Export Backup",
+      "importBackup": "Import Backup"
     },
     "payment": {
       "enableGateway": "Enable Payment Gateway",
@@ -227,6 +262,84 @@
       "privateKey": "Private Key",
       "publicKey": "Public Key (Alipay)",
       "gatewayUrl": "Gateway URL"
+    },
+    "resetSuccess": "Reset to default values",
+    "descriptions": {
+      "siteAndSeo": "Configure site information and SEO settings",
+      "videoAndUpload": "Configure video review, quality, transcoding and upload limits",
+      "userAndCommunity": "Configure user registration, verification and comment features",
+      "emailService": "Configure SMTP or Mailgun email service",
+      "security": "Configure login security, captcha, session timeout",
+      "notifications": "Configure notification methods, sounds, desktop notifications and quiet hours",
+      "cacheManagement": "Manage Redis cache and view statistics",
+      "backupAndRestore": "Export and import system settings",
+      "paymentGateway": "Configure payment gateways like Stripe, PayPal, Alipay",
+      "otherSettings": "Maintenance mode, analytics code, custom styles",
+      "sendTestEmail": "Send test email to verify SMTP configuration",
+      "viewCacheStats": "View cache hit rate and performance metrics"
+    },
+    "placeholders": {
+      "siteIntro": "Site introduction",
+      "keywordsExample": "video,watch online,movies",
+      "overrideDefaultTitle": "Override default title",
+      "seDescription": "Search engine description",
+      "keywordsComma": "keyword1,keyword2,keyword3",
+      "selectTranscodeFormats": "Select formats to transcode",
+      "enterFormatAndEnter": "Enter format and press Enter",
+      "maintenanceMessage": "Website is under maintenance, please visit later"
+    },
+    "labels": {
+      "keywords": "Keywords",
+      "requireManualReview": "Require manual review",
+      "defaultQuality": "Default Quality",
+      "enableTranscoding": "Enable Transcoding",
+      "transcodeFormats": "Transcode Formats",
+      "maxVideoSize": "Max Video Size (MB)",
+      "maxImageSize": "Max Image Size (MB)",
+      "allowedVideoFormats": "Allowed Video Formats",
+      "allowedImageFormats": "Allowed Image Formats",
+      "requireEmailVerification": "Require email verification",
+      "defaultAvatarUrl": "Default Avatar URL",
+      "maxFavorites": "Max Favorites",
+      "enableComments": "Enable Comments",
+      "commentsRequireReview": "Comments require review",
+      "allowGuestComments": "Allow guest comments",
+      "maxCommentLength": "Max Comment Length",
+      "lastTest": "Last test: ",
+      "maxLoginAttempts": "Max Login Attempts",
+      "lockoutDuration": "Lockout Duration (minutes)",
+      "sessionTimeout": "Session Timeout (seconds)",
+      "totalHits": "Total Hits",
+      "totalMisses": "Total Misses",
+      "avgHitRate": "Avg Hit Rate",
+      "hits": "hits",
+      "misses": "misses",
+      "hitRate": "hit rate",
+      "maintenanceMessage": "Maintenance Message",
+      "analyticsCode": "Analytics Code (Google Analytics, etc.)",
+      "customCss": "Custom CSS",
+      "customJs": "Custom JavaScript",
+      "seoTitle": "SEO Title",
+      "seoDescription": "SEO Description",
+      "seoKeywords": "SEO Keywords",
+      "autoApprove": "Auto Approve",
+      "allowRegistration": "Allow Registration",
+      "enableCaptcha": "Enable Captcha",
+      "maintenanceMode": "Maintenance Mode"
+    },
+    "tooltips": {
+      "autoApproveUploads": "Auto-approve new uploaded videos when enabled",
+      "commentsModeration": "Comments need admin approval before display when enabled",
+      "enableCaptcha": "Require captcha on login when enabled",
+      "maintenanceMode": "Display maintenance page when enabled"
+    },
+    "units": {
+      "characters": "characters",
+      "seconds": "seconds"
+    },
+    "fields": {
+      "siteName": "Site Name",
+      "siteUrl": "Site URL"
     }
   },
   "dashboard": {
@@ -414,7 +527,10 @@
     "exportBackupFailed": "Failed to export backup",
     "confirmDeleteSelected": "Confirm delete {{count}} selected item(s)?",
     "confirmDelete": "Confirm delete?",
-    "loadFailed": "Failed to load data"
+    "loadFailed": "Failed to load data",
+    "saveFailed": "Save failed",
+    "allSettingsSaved": "All settings saved",
+    "checkForm": "Please check form fields"
   },
   "ai": {
     "title": "AI Management",
@@ -692,7 +808,8 @@
     "services": {
       "database": "Database (PostgreSQL)",
       "redis": "Redis Cache",
-      "storage": "Object Storage (MinIO)"
+      "storage": "Object Storage (MinIO)",
+      "celery": "Task Queue (Celery)"
     },
     "systemResources": "System Resources",
     "tabs": {
@@ -725,7 +842,8 @@
       "cores": "cores",
       "frequency": "Frequency",
       "free": "free",
-      "unlimited": "unlimited"
+      "unlimited": "unlimited",
+      "title": "System Resources"
     },
     "network": {
       "title": "Network Statistics",
@@ -750,7 +868,10 @@
       "systemDegraded": "System Status: DEGRADED",
       "systemUnhealthy": "System Status: UNHEALTHY",
       "issuesDetected": "Some services are experiencing issues. Please check the details below.",
-      "allHealthy": "All systems operational"
+      "allHealthy": "All systems operational",
+      "healthy": "HEALTHY",
+      "degraded": "DEGRADED",
+      "unhealthy": "UNHEALTHY"
     },
     "intervals": {
       "5seconds": "5 seconds",
@@ -767,6 +888,169 @@
       "loadFailed": "Failed to load system health",
       "unknownError": "Unknown error",
       "noHistoryData": "No historical data available yet"
+    },
+    "sla": {
+      "columns": {
+        "responseTime": "Response Time",
+        "period": "Period",
+        "avg": "Avg",
+        "alerts": "Alerts",
+        "total": "Total",
+        "resourceUsage": "Resource Usage"
+      },
+      "title": "SLA Reports",
+      "actions": {
+        "generateHourly": "Generate Hourly",
+        "generateDaily": "Generate Daily"
+      },
+      "todayTitle": "Today's SLA (Real-time)",
+      "uptime": "Uptime",
+      "elapsedTime": "Elapsed Time",
+      "avgResponseTime": "Avg Response Time",
+      "summaryPrefix": "Summary (Last",
+      "summarySuffix": "Days)",
+      "averageUptime": "Average Uptime",
+      "totalDowntime": "Total Downtime",
+      "totalAlerts": "Total Alerts",
+      "tabs": {
+        "tableView": "Table View",
+        "charts": "Charts"
+      },
+      "periodTypeLabel": "Period Type:",
+      "periodTypes": {
+        "hourly": "Hourly",
+        "daily": "Daily",
+        "weekly": "Weekly",
+        "monthly": "Monthly"
+      },
+      "limitLabel": "Limit:",
+      "charts": {
+        "uptimeTrend": "Uptime Trend",
+        "responseTimeTrend": "Response Time Trend",
+        "target": "Target: 99.9%"
+      },
+      "messages": {
+        "generateSuccess": "SLA report generated successfully",
+        "generateFailed": "Failed to generate SLA report"
+      },
+      "summaryTitle": "Summary (Last {{days}} Days)",
+      "pagination": {
+        "total": "Total {{total}} records"
+      }
+    },
+    "labels": {
+      "poolSize": "Pool Size",
+      "checkedOut": "Checked Out",
+      "available": "Available",
+      "poolUtilization": "Pool Utilization",
+      "usedMemory": "Used Memory",
+      "maxMemory": "Max Memory",
+      "keysCount": "Keys Count",
+      "memoryUtilization": "Memory Utilization",
+      "storageUsed": "Storage Used",
+      "objects": "Objects",
+      "utilization": "Utilization",
+      "bucketStatus": "Bucket Status",
+      "workers": "Workers",
+      "activeTasks": "Active Tasks",
+      "reservedTasks": "Reserved Tasks",
+      "status": "Status"
+    },
+    "cpu": {
+      "title": "CPU Usage"
+    },
+    "memory": {
+      "title": "Memory Usage"
+    },
+    "disk": {
+      "title": "Disk Usage"
+    },
+    "processes": {
+      "title": "Processes",
+      "active": "Active processes"
+    },
+    "charts": {
+      "cpuTrend": "CPU Usage Trend",
+      "memoryTrend": "Memory Usage Trend",
+      "diskTrend": "Disk Usage Trend",
+      "dbResponseTime": "Database Response Time",
+      "redisResponseTime": "Redis Response Time",
+      "storageResponseTime": "Storage Response Time"
+    },
+    "bucket": {
+      "exists": "EXISTS",
+      "notFound": "NOT FOUND"
+    },
+    "actions": {
+      "viewDetails": "View Details"
+    },
+    "alertsSummary": {
+      "title": "Active Alerts: {{total}} ({{critical}} critical, {{warnings}} warnings)",
+      "description": "{{resolved}} alerts resolved in last 24 hours"
+    },
+    "metricsCollected": "{{count}} metrics collected",
+    "alerts": {
+      "title": "System Alerts",
+      "activeAlerts": "Active Alerts",
+      "critical": "Critical",
+      "warnings": "Warnings",
+      "resolved24h": "Resolved (24h)",
+      "columns": {
+        "severity": "Severity",
+        "type": "Type",
+        "title": "Title",
+        "message": "Message",
+        "metric": "Metric",
+        "triggeredAt": "Triggered At"
+      },
+      "severity": {
+        "info": "Info",
+        "warning": "Warning"
+      },
+      "status": {
+        "active": "Active",
+        "resolved": "Resolved",
+        "acknowledged": "Acknowledged"
+      },
+      "types": {
+        "cpu": "CPU",
+        "memory": "Memory",
+        "disk": "Disk",
+        "database": "Database",
+        "redis": "Redis",
+        "storage": "Storage",
+        "celery": "Celery"
+      },
+      "actions": {
+        "acknowledge": "Acknowledge",
+        "resolve": "Resolve"
+      },
+      "modals": {
+        "acknowledgeTitle": "Acknowledge Alert",
+        "resolveTitle": "Resolve Alert",
+        "alert": "Alert: ",
+        "message": "Message: ",
+        "addNotes": "Add notes (optional)",
+        "addResolutionNotes": "Add resolution notes (optional)"
+      },
+      "details": {
+        "alertId": "Alert ID",
+        "metricName": "Metric Name",
+        "resolvedAt": "Resolved At",
+        "acknowledgedBy": "Acknowledged By",
+        "acknowledgedAt": "Acknowledged At",
+        "notes": "Notes",
+        "context": "Context"
+      },
+      "messages": {
+        "acknowledgeSuccess": "Alert acknowledged successfully",
+        "acknowledgeFailed": "Failed to acknowledge alert",
+        "resolveSuccess": "Alert resolved successfully",
+        "resolveFailed": "Failed to resolve alert"
+      },
+      "pagination": {
+        "total": "Total {{total}} alerts"
+      }
     }
   },
   "logs": {
@@ -862,7 +1146,43 @@
     "today": "Today",
     "last30Days": "Last 30 Days",
     "autoRefresh": "Auto Refresh",
-    "metadata": "Metadata"
+    "metadata": "Metadata",
+    "tabs": {
+      "system": "System Logs",
+      "operation": "Operation Logs",
+      "login": "Login Logs",
+      "error": "Error Logs"
+    },
+    "table": {
+      "admin": "Admin",
+      "module": "Module",
+      "action": "Action",
+      "description": "Description",
+      "ipAddress": "IP Address",
+      "time": "Time",
+      "details": "Details",
+      "device": "Device",
+      "errorMessage": "Error Message"
+    },
+    "modal": {
+      "operationDetails": "Operation Log Details",
+      "loginDetails": "Login Log Details",
+      "systemDetails": "System Log Details",
+      "errorDetails": "Error Log Details"
+    },
+    "stats": {
+      "todayOperations": "Today's Operations",
+      "todayLogins": "Today's Logins",
+      "todayErrors": "Today's Errors",
+      "activeAdmins": "Active Admins"
+    },
+    "actions": {
+      "markResolved": "Mark as Resolved",
+      "resolve": "Resolve"
+    },
+    "placeholder": {
+      "addNote": "Add handling note or remark..."
+    }
   },
   "email": {
     "addConfiguration": "Add Configuration",
@@ -1416,5 +1736,289 @@
       "avgSubscriptionValue": "Avg Subscription Value",
       "filterByStatus": "Filter by Status"
     }
+  },
+  "episode": {
+    "title": "Episode Management",
+    "sections": {
+      "basic": "Basic Settings",
+      "openingEnding": "Opening & Ending"
+    },
+    "table": {
+      "episodeNumber": "Episode No.",
+      "title": "Title",
+      "description": "Description",
+      "status": "Status",
+      "permission": "Permission",
+      "likes": "Likes",
+      "comments": "Comments",
+      "createTime": "Created At"
+    },
+    "status": {
+      "draft": "Draft",
+      "published": "Published",
+      "archived": "Archived",
+      "set": "Set",
+      "notSet": "Not Set"
+    },
+    "permission": {
+      "free": "Free",
+      "freeWatch": "Free Watch",
+      "vipOnly": "VIP Only"
+    },
+    "recommended": "Recommended",
+    "form": {
+      "titlePrefix": "Title Prefix",
+      "titleSuffix": "Title Suffix",
+      "startNumber": "Start Episode Number",
+      "description": "Episode Description",
+      "videoId": "Video ID",
+      "openingEndTime": "Opening End Time (seconds)",
+      "endingStartTime": "Ending Start Time (seconds)",
+      "releaseDate": "Release Date",
+      "openingStartTime": "Opening Start Time (seconds)"
+    },
+    "unit": {
+      "episode": " "
+    },
+    "prefix": {
+      "episode": "Episode "
+    },
+    "placeholder": {
+      "openingTime": "e.g.: 90",
+      "endingTime": "e.g.: 2700",
+      "episodeNumber": "e.g.: 10",
+      "videoId": "Enter video ID",
+      "firstEpisode": "e.g.: 1 for first episode",
+      "episodeTitle": "e.g.: Episode 1, Winter is Coming"
+    },
+    "actions": {
+      "batchDelete": "Batch Delete",
+      "selectVideo": "Select Video",
+      "createEpisode": "Create Episode",
+      "autoGenerateTitle": "Auto Generate Title"
+    },
+    "message": {
+      "createSuccess": "Created successfully",
+      "saveFailed": "Save failed",
+      "deleteSuccess": "Deleted successfully",
+      "deleteFailed": "Delete failed",
+      "loadFailed": "Load failed",
+      "loadVideosFailed": "Failed to load video list",
+      "batchDeleteFailed": "Batch delete failed",
+      "batchPublishFailed": "Batch publish failed",
+      "setFailed": "Setting failed",
+      "selectToDelete": "Please select episodes to delete",
+      "selectToPublish": "Please select episodes to publish",
+      "batchSetOpeningEnding": "Will set the same opening/ending markers for {count} selected episodes",
+      "updateSuccess": "Updated successfully",
+      "updateOrderFailed": "Failed to update order",
+      "orderUpdated": "Order updated",
+      "batchAddFailed": "Batch add failed",
+      "setSuccess": "Set successfully",
+      "selectForOpeningEnding": "Please select episodes to set opening/ending",
+      "batchPublishSuccess": "Batch publish successful",
+      "batchAddSuccess": "Successfully added {count} episodes"
+    },
+    "validation": {
+      "numberGreaterThanZero": "Episode number must be greater than 0"
+    },
+    "template": {
+      "episodeNum": "Episode {num}"
+    },
+    "confirm": {
+      "deleteSelected": "Confirm delete selected episodes?",
+      "publishSelected": "Confirm publish selected episodes?",
+      "deleteSingle": "Confirm delete this episode?"
+    },
+    "modal": {
+      "batchAddTitle": "Batch Add Videos as Episodes",
+      "batchSetOpeningEnding": "Batch Set Opening/Ending Markers"
+    }
+  },
+  "profile": {
+    "title": "Profile",
+    "loading": "Loading...",
+    "role": {
+      "superadmin": "Super Admin",
+      "editor": "Content Editor"
+    },
+    "tabs": {
+      "basicInfo": "Basic Info",
+      "changePassword": "Change Password",
+      "changeEmail": "Change Email",
+      "preferences": "Preferences",
+      "security": "Security"
+    },
+    "form": {
+      "username": "Username",
+      "email": "Email",
+      "role": "Role",
+      "createdAt": "Created At",
+      "lastLogin": "Last Login",
+      "notRecorded": "Not recorded",
+      "editProfile": "Edit Profile",
+      "fullName": "Full Name",
+      "avatarUrl": "Avatar URL",
+      "currentPassword": "Current Password",
+      "newPassword": "New Password",
+      "confirmPassword": "Confirm New Password",
+      "currentEmail": "Current Email",
+      "newEmail": "New Email Address",
+      "passwordForVerification": "Current Password",
+      "timezone": "Timezone",
+      "preferredLanguage": "Preferred Language",
+      "theme": "Theme"
+    },
+    "placeholder": {
+      "enterFullName": "Enter your full name",
+      "enterAvatarUrl": "Enter avatar image URL",
+      "enterCurrentPassword": "Enter current password",
+      "enterNewPassword": "Enter new password (at least 6 characters)",
+      "reenterNewPassword": "Re-enter new password",
+      "enterNewEmail": "Enter new email address",
+      "enterPasswordForVerification": "Enter current password for verification",
+      "selectTimezone": "Select timezone",
+      "selectLanguage": "Select language",
+      "selectTheme": "Select theme"
+    },
+    "button": {
+      "saveChanges": "Save Changes",
+      "changePassword": "Change Password",
+      "changeEmail": "Change Email",
+      "savePreferences": "Save Preferences",
+      "reset": "Reset"
+    },
+    "message": {
+      "loadProfileFailed": "Failed to load profile",
+      "profileUpdateSuccess": "Profile updated successfully",
+      "profileUpdateFailed": "Failed to update profile",
+      "passwordChangeSuccess": "Password changed successfully, please re-login",
+      "passwordChangeFailed": "Failed to change password",
+      "emailChangeSuccess": "Email changed successfully",
+      "emailChangeFailed": "Failed to change email",
+      "preferencesUpdateSuccess": "Preferences updated successfully",
+      "preferencesUpdateFailed": "Failed to update preferences",
+      "languageOrThemeChanged": "Language or theme changed, refreshing page...",
+      "enterPassword": "Please enter password"
+    },
+    "validation": {
+      "fullNameMaxLength": "Full name must not exceed 200 characters",
+      "avatarUrlMaxLength": "Avatar URL must not exceed 500 characters",
+      "validUrl": "Please enter a valid URL",
+      "currentPasswordRequired": "Please enter current password",
+      "passwordMinLength": "Password must be at least 6 characters",
+      "newPasswordRequired": "Please enter new password",
+      "passwordMaxLength": "Password must not exceed 100 characters",
+      "confirmPasswordRequired": "Please confirm new password",
+      "passwordMismatch": "Passwords do not match",
+      "newEmailRequired": "Please enter new email address",
+      "validEmail": "Please enter a valid email address",
+      "passwordRequiredForEmail": "Please enter current password to verify identity"
+    },
+    "extra": {
+      "emailVerificationRequired": "For security reasons, changing email requires verifying your current password"
+    },
+    "preference": {
+      "title": "User Preferences",
+      "description": "Personalize your experience",
+      "subtitle": "Customize your timezone, language and theme preferences",
+      "timezoneExtra": "Set your timezone, this will affect date and time display",
+      "languageExtra": "Choose your preferred interface language",
+      "themeExtra": "Choose your interface theme"
+    },
+    "timezone": {
+      "utc": "UTC (Coordinated Universal Time)",
+      "shanghai": "Asia/Shanghai (China Standard Time GMT+8)",
+      "tokyo": "Asia/Tokyo (Japan Standard Time GMT+9)",
+      "seoul": "Asia/Seoul (Korea Standard Time GMT+9)",
+      "hongKong": "Asia/Hong_Kong (Hong Kong Time GMT+8)",
+      "newYork": "America/New_York (Eastern Time GMT-5)",
+      "losAngeles": "America/Los_Angeles (Pacific Time GMT-8)",
+      "chicago": "America/Chicago (Central Time GMT-6)",
+      "london": "Europe/London (UK Time GMT+0)",
+      "paris": "Europe/Paris (Central European Time GMT+1)",
+      "berlin": "Europe/Berlin (Germany Time GMT+1)",
+      "sydney": "Australia/Sydney (Australian Eastern Time GMT+10)"
+    },
+    "language": {
+      "enUS": "English (US)",
+      "zhCN": "Simplified Chinese"
+    },
+    "theme": {
+      "light": "Light Theme",
+      "dark": "Dark Theme"
+    },
+    "twoFactor": {
+      "title": "Two-Factor Authentication (2FA)",
+      "enhanceSecurity": "Enhance Account Security",
+      "description": "Two-factor authentication provides an additional layer of security for your account. Even if your password is compromised, attackers cannot access your account.",
+      "status": "2FA Status:",
+      "enabled": "✓ Enabled",
+      "disabled": "Disabled",
+      "switchEnabled": "Enabled",
+      "switchDisabled": "Disabled",
+      "enabledAt": "Enabled At:",
+      "unknown": "Unknown",
+      "backupCodesRemaining": "Backup Codes Remaining:",
+      "backupCodesCount": " codes",
+      "regenerateBackupCodes": "Regenerate Backup Codes",
+      "disableTitle": "Disable Two-Factor Authentication",
+      "disableWarning": "Warning",
+      "disableDescription": "Disabling two-factor authentication will reduce your account security",
+      "disableConfirmLabel": "Enter password to confirm",
+      "disableConfirmPlaceholder": "Enter your password",
+      "disableButton": "Disable",
+      "disableSuccess": "2FA disabled",
+      "disableFailed": "Failed to disable 2FA",
+      "regenerateTitle": "Regenerate Backup Codes",
+      "regenerateContent": "Regenerating backup codes will invalidate the old backup codes.",
+      "regeneratePrompt": "Please enter your password to continue:",
+      "regeneratePasswordPlaceholder": "Enter password",
+      "regeneratePasswordRequired": "Please enter password",
+      "newBackupCodesTitle": "New Backup Codes",
+      "newBackupCodesAlert": "Please save these new backup codes",
+      "newBackupCodesDescription": "Old backup codes are now invalid, each backup code can only be used once",
+      "copyAllBackupCodes": "Copy All",
+      "backupCodesCopied": "Copied to clipboard",
+      "regenerateFailed": "Failed to regenerate backup codes"
+    },
+    "status": {
+      "enabled": "Enabled",
+      "disabled": "Disabled"
+    }
+  },
+  "sentry": {
+    "title": "Sentry Configuration",
+    "description": "Manage frontend error monitoring and performance tracking configuration",
+    "dsn": "Sentry DSN",
+    "dsnRequired": "Please enter Sentry DSN",
+    "validUrl": "Please enter a valid URL",
+    "dsnTooltip": "Get DSN from Sentry project settings",
+    "dsnPlaceholder": "Enter Sentry DSN",
+    "versionNumber": "Version Number",
+    "attachStacktrace": "Attach Stack Trace",
+    "samplingConfig": "Sampling Configuration",
+    "performanceSamplingRate": "Performance Sampling Rate",
+    "performanceSamplingTooltip": "Set performance monitoring sampling rate (0-1)",
+    "sessionReplaySamplingRate": "Session Replay Sampling Rate",
+    "sessionReplayTooltip": "Set session replay sampling rate",
+    "errorReplaySamplingRate": "Error Replay Sampling Rate",
+    "errorReplayTooltip": "Replay sampling rate when errors occur",
+    "filterConfig": "Filter Configuration",
+    "ignoreErrors": "Ignored Errors",
+    "ignoreErrorsTooltip": "Configure error patterns to ignore",
+    "ignoreErrorsPlaceholder": "One error pattern per line",
+    "allowedUrls": "Allowed URLs",
+    "allowedUrlsTooltip": "Only report errors from these URLs",
+    "allowedUrlsPlaceholder": "One URL pattern per line",
+    "deniedUrls": "Denied URLs",
+    "deniedUrlsTooltip": "Do not report errors from these URLs",
+    "deniedUrlsPlaceholder": "One URL pattern per line",
+    "configDescription": "Configuration Description",
+    "optionalDescription": "Optional configuration note",
+    "confirmDelete": "Are you sure you want to delete this Sentry configuration? This action cannot be undone.",
+    "selectEnvironment": "Please select environment",
+    "newConfig": "New Sentry Configuration",
+    "editConfig": "Edit Sentry Configuration"
   }
 }

@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
+import { useTranslation } from 'react-i18next'
 import {
   Card,
   Tabs,
@@ -109,11 +110,13 @@ interface ErrorLog {
 }
 
 const Logs = () => {
+  const { t } = useTranslation()
+
   const [activeTab, setActiveTab] = useState('operation')
 
   return (
     <div>
-      <h2 style={{ marginBottom: 24 }}>系统日志</h2>
+      <h2 style={{ marginBottom: 24 }}>{t('logs.tabs.system')}</h2>
 
       <Card>
         <Tabs
@@ -125,7 +128,7 @@ const Logs = () => {
               label: (
                 <span>
                   <FileTextOutlined />
-                  操作日志
+                  {t('logs.tabs.operation')}
                 </span>
               ),
               children: <OperationLogsTab />,
@@ -135,7 +138,7 @@ const Logs = () => {
               label: (
                 <span>
                   <LoginOutlined />
-                  登录日志
+                  {t('logs.tabs.login')}
                 </span>
               ),
               children: <LoginLogsTab />,
@@ -145,7 +148,7 @@ const Logs = () => {
               label: (
                 <span>
                   <SafetyOutlined />
-                  系统日志
+                  {t('logs.tabs.system')}
                 </span>
               ),
               children: <SystemLogsTab />,
@@ -155,7 +158,7 @@ const Logs = () => {
               label: (
                 <span>
                   <BugOutlined />
-                  错误日志
+                  {t('logs.tabs.error')}
                 </span>
               ),
               children: <ErrorLogsTab />,
@@ -219,7 +222,7 @@ const OperationLogsTab = () => {
       setSelectedLog(response.data)
       setDetailVisible(true)
     } catch (error: any) {
-      message.error(error.response?.data?.detail || '获取日志详情失败')
+      message.error(error.response?.data?.detail || t('logs.message.fetchDetailsFailed'))
     }
   }
 
@@ -231,20 +234,20 @@ const OperationLogsTab = () => {
       width: 80,
     },
     {
-      title: '管理员',
+      title: t('logs.table.admin'),
       dataIndex: ['admin_user', 'username'],
       key: 'admin_user',
       width: 120,
     },
     {
-      title: '模块',
+      title: t('logs.table.module'),
       dataIndex: 'module',
       key: 'module',
       width: 120,
       render: (text: string) => <AWSTag type="info">{text}</AWSTag>,
     },
     {
-      title: '操作',
+      title: t('logs.table.action'),
       dataIndex: 'action',
       key: 'action',
       width: 100,
@@ -259,26 +262,26 @@ const OperationLogsTab = () => {
       },
     },
     {
-      title: '描述',
+      title: t('logs.table.description'),
       dataIndex: 'description',
       key: 'description',
       ellipsis: true,
     },
     {
-      title: 'IP地址',
+      title: t('logs.table.ipAddress'),
       dataIndex: 'ip_address',
       key: 'ip_address',
       width: 140,
     },
     {
-      title: '时间',
+      title: t('logs.table.time'),
       dataIndex: 'created_at',
       key: 'created_at',
       width: 180,
       render: (date: string) => formatAWSDate(date, 'YYYY-MM-DD HH:mm:ss'),
     },
     {
-      title: '操作',
+      title: t('logs.table.action'),
       key: 'actions',
       width: 100,
       fixed: 'right' as const,
@@ -289,7 +292,7 @@ const OperationLogsTab = () => {
           icon={<EyeOutlined />}
           onClick={() => handleViewDetail(record.id)}
         >
-          详情
+          {t('logs.table.details')}
         </Button>
       ),
     },
@@ -301,7 +304,7 @@ const OperationLogsTab = () => {
         <Row gutter={16}>
           <Col span={8}>
             <Input
-              placeholder="搜索描述或IP地址"
+              placeholder=t('logs.search.placeholder')
               prefix={<SearchOutlined />}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
@@ -310,7 +313,7 @@ const OperationLogsTab = () => {
           </Col>
           <Col span={4}>
             <Select
-              placeholder="选择模块"
+              placeholder=t('logs.filter.selectModule')
               style={{ width: '100%' }}
               value={module}
               onChange={setModule}
@@ -325,7 +328,7 @@ const OperationLogsTab = () => {
           </Col>
           <Col span={4}>
             <Select
-              placeholder="选择操作"
+              placeholder=t('logs.filter.selectAction')
               style={{ width: '100%' }}
               value={action}
               onChange={setAction}
@@ -355,7 +358,7 @@ const OperationLogsTab = () => {
 
         <Space>
           <Button icon={<ReloadOutlined />} onClick={() => refetch()}>
-            刷新
+            {t('common.refresh')}
           </Button>
         </Space>
       </Space>
@@ -372,18 +375,18 @@ const OperationLogsTab = () => {
           total: data?.total || 0,
           showSizeChanger: false,
           showQuickJumper: true,
-          showTotal: (total) => `共 ${total} 条`,
+          showTotal: (total) => t('common.total', { count: total }),
           onChange: (newPage) => setPage(newPage),
         }}
       />
 
       <Modal
-        title="操作日志详情"
+        title=t('logs.modal.operationDetails')
         open={detailVisible}
         onCancel={() => setDetailVisible(false)}
         footer={[
           <Button key="close" onClick={() => setDetailVisible(false)}>
-            关闭
+            {t('common.close')}
           </Button>,
         ]}
         width={800}
@@ -391,23 +394,23 @@ const OperationLogsTab = () => {
         {selectedLog && (
           <Descriptions column={2} bordered>
             <Descriptions.Item label="ID">{selectedLog.id}</Descriptions.Item>
-            <Descriptions.Item label="管理员">
+            <Descriptions.Item label=t('logs.table.admin')>
               {selectedLog.admin_user?.username || '-'}
             </Descriptions.Item>
-            <Descriptions.Item label="模块">{selectedLog.module}</Descriptions.Item>
-            <Descriptions.Item label="操作">{selectedLog.action}</Descriptions.Item>
-            <Descriptions.Item label="描述" span={2}>
+            <Descriptions.Item label=t('logs.table.module')>{selectedLog.module}</Descriptions.Item>
+            <Descriptions.Item label=t('logs.table.action')>{selectedLog.action}</Descriptions.Item>
+            <Descriptions.Item label=t('logs.table.description') span={2}>
               {selectedLog.description}
             </Descriptions.Item>
-            <Descriptions.Item label="IP地址">{selectedLog.ip_address || '-'}</Descriptions.Item>
-            <Descriptions.Item label="请求方法">{selectedLog.request_method || '-'}</Descriptions.Item>
-            <Descriptions.Item label="请求URL" span={2}>
+            <Descriptions.Item label=t('logs.table.ipAddress')>{selectedLog.ip_address || '-'}</Descriptions.Item>
+            <Descriptions.Item label=t('logs.details.requestMethod')>{selectedLog.request_method || '-'}</Descriptions.Item>
+            <Descriptions.Item label=t('logs.details.requestUrl') span={2}>
               {selectedLog.request_url || '-'}
             </Descriptions.Item>
             <Descriptions.Item label="User Agent" span={2}>
               {selectedLog.user_agent || '-'}
             </Descriptions.Item>
-            <Descriptions.Item label="请求数据" span={2}>
+            <Descriptions.Item label=t('logs.details.requestData') span={2}>
               {selectedLog.request_data ? (
                 <pre style={{ maxHeight: 300, overflow: 'auto', background: '#f5f5f5', padding: 8 }}>
                   {JSON.stringify(JSON.parse(selectedLog.request_data), null, 2)}
@@ -416,7 +419,7 @@ const OperationLogsTab = () => {
                 '-'
               )}
             </Descriptions.Item>
-            <Descriptions.Item label="创建时间" span={2}>
+            <Descriptions.Item label=t('logs.details.createTime') span={2}>
               {formatAWSDate(selectedLog.created_at, 'YYYY-MM-DD HH:mm:ss')}
             </Descriptions.Item>
           </Descriptions>
@@ -464,7 +467,7 @@ const LoginLogsTab = () => {
       width: 80,
     },
     {
-      title: '用户类型',
+      title: t('logs.details.userType'),
       dataIndex: 'user_type',
       key: 'user_type',
       width: 100,
@@ -473,21 +476,21 @@ const LoginLogsTab = () => {
       ),
     },
     {
-      title: '用户名',
+      title: t('logs.details.username'),
       dataIndex: 'username',
       key: 'username',
       width: 120,
       render: (text: string) => text || '-',
     },
     {
-      title: '邮箱',
+      title: t('logs.details.email'),
       dataIndex: 'email',
       key: 'email',
       width: 180,
       ellipsis: true,
     },
     {
-      title: '状态',
+      title: t('logs.details.status'),
       dataIndex: 'status',
       key: 'status',
       width: 100,
@@ -501,33 +504,33 @@ const LoginLogsTab = () => {
       },
     },
     {
-      title: '失败原因',
+      title: t('logs.details.failureReason'),
       dataIndex: 'failure_reason',
       key: 'failure_reason',
       ellipsis: true,
       render: (text: string) => text || '-',
     },
     {
-      title: 'IP地址',
+      title: t('logs.table.ipAddress'),
       dataIndex: 'ip_address',
       key: 'ip_address',
       width: 140,
     },
     {
-      title: '设备',
+      title: t('logs.table.device'),
       dataIndex: 'device_type',
       key: 'device_type',
       width: 100,
     },
     {
-      title: '时间',
+      title: t('logs.table.time'),
       dataIndex: 'created_at',
       key: 'created_at',
       width: 180,
       render: (date: string) => formatAWSDate(date, 'YYYY-MM-DD HH:mm:ss'),
     },
     {
-      title: '操作',
+      title: t('logs.table.action'),
       key: 'actions',
       width: 100,
       fixed: 'right' as const,
@@ -541,7 +544,7 @@ const LoginLogsTab = () => {
             setDetailVisible(true)
           }}
         >
-          详情
+          {t('logs.table.details')}
         </Button>
       ),
     },
@@ -553,7 +556,7 @@ const LoginLogsTab = () => {
         <Row gutter={16}>
           <Col span={8}>
             <Input
-              placeholder="搜索用户名或邮箱"
+              placeholder=t('logs.search.usernameOrEmail')
               prefix={<SearchOutlined />}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
@@ -562,27 +565,27 @@ const LoginLogsTab = () => {
           </Col>
           <Col span={4}>
             <Select
-              placeholder="用户类型"
+              placeholder=t('logs.details.userType')
               style={{ width: '100%' }}
               value={userType}
               onChange={setUserType}
               allowClear
             >
-              <Option value="user">用户</Option>
-              <Option value="admin">管理员</Option>
+              <Option value="user">{t('logs.details.user')}</Option>
+              <Option value="admin">{t('logs.table.admin')}</Option>
             </Select>
           </Col>
           <Col span={4}>
             <Select
-              placeholder="状态"
+              placeholder=t('logs.details.status')
               style={{ width: '100%' }}
               value={status}
               onChange={setStatus}
               allowClear
             >
-              <Option value="success">成功</Option>
-              <Option value="failed">失败</Option>
-              <Option value="blocked">被拦截</Option>
+              <Option value="success">{t('logs.status.success')}</Option>
+              <Option value="failed">{t('logs.status.failed')}</Option>
+              <Option value="blocked">{t('logs.status.blocked')}</Option>
             </Select>
           </Col>
           <Col span={8}>
@@ -602,7 +605,7 @@ const LoginLogsTab = () => {
 
         <Space>
           <Button icon={<ReloadOutlined />} onClick={() => refetch()}>
-            刷新
+            {t('common.refresh')}
           </Button>
         </Space>
       </Space>
@@ -619,18 +622,18 @@ const LoginLogsTab = () => {
           total: data?.total || 0,
           showSizeChanger: false,
           showQuickJumper: true,
-          showTotal: (total) => `共 ${total} 条`,
+          showTotal: (total) => t('common.total', { count: total }),
           onChange: (newPage) => setPage(newPage),
         }}
       />
 
       <Modal
-        title="登录日志详情"
+        title=t('logs.modal.loginDetails')
         open={detailVisible}
         onCancel={() => setDetailVisible(false)}
         footer={[
           <Button key="close" onClick={() => setDetailVisible(false)}>
-            关闭
+            {t('common.close')}
           </Button>,
         ]}
         width={800}
@@ -638,20 +641,20 @@ const LoginLogsTab = () => {
         {selectedLog && (
           <Descriptions column={2} bordered>
             <Descriptions.Item label="ID">{selectedLog.id}</Descriptions.Item>
-            <Descriptions.Item label="用户类型">{selectedLog.user_type}</Descriptions.Item>
-            <Descriptions.Item label="用户名">{selectedLog.username || '-'}</Descriptions.Item>
-            <Descriptions.Item label="邮箱">{selectedLog.email || '-'}</Descriptions.Item>
-            <Descriptions.Item label="状态">{selectedLog.status}</Descriptions.Item>
-            <Descriptions.Item label="失败原因">{selectedLog.failure_reason || '-'}</Descriptions.Item>
-            <Descriptions.Item label="IP地址">{selectedLog.ip_address}</Descriptions.Item>
-            <Descriptions.Item label="地理位置">{selectedLog.location || '-'}</Descriptions.Item>
-            <Descriptions.Item label="设备类型">{selectedLog.device_type}</Descriptions.Item>
-            <Descriptions.Item label="浏览器">{selectedLog.browser}</Descriptions.Item>
-            <Descriptions.Item label="操作系统" span={2}>{selectedLog.os}</Descriptions.Item>
+            <Descriptions.Item label=t('logs.details.userType')>{selectedLog.user_type}</Descriptions.Item>
+            <Descriptions.Item label=t('logs.details.username')>{selectedLog.username || '-'}</Descriptions.Item>
+            <Descriptions.Item label=t('logs.details.email')>{selectedLog.email || '-'}</Descriptions.Item>
+            <Descriptions.Item label=t('logs.details.status')>{selectedLog.status}</Descriptions.Item>
+            <Descriptions.Item label=t('logs.details.failureReason')>{selectedLog.failure_reason || '-'}</Descriptions.Item>
+            <Descriptions.Item label=t('logs.table.ipAddress')>{selectedLog.ip_address}</Descriptions.Item>
+            <Descriptions.Item label=t('logs.details.location')>{selectedLog.location || '-'}</Descriptions.Item>
+            <Descriptions.Item label=t('logs.details.deviceType')>{selectedLog.device_type}</Descriptions.Item>
+            <Descriptions.Item label=t('logs.details.browser')>{selectedLog.browser}</Descriptions.Item>
+            <Descriptions.Item label=t('logs.details.os') span={2}>{selectedLog.os}</Descriptions.Item>
             <Descriptions.Item label="User Agent" span={2}>
               {selectedLog.user_agent}
             </Descriptions.Item>
-            <Descriptions.Item label="时间" span={2}>
+            <Descriptions.Item label=t('logs.table.time') span={2}>
               {formatAWSDate(selectedLog.created_at, 'YYYY-MM-DD HH:mm:ss')}
             </Descriptions.Item>
           </Descriptions>
@@ -707,7 +710,7 @@ const SystemLogsTab = () => {
       width: 80,
     },
     {
-      title: '级别',
+      title: t('logs.details.level'),
       dataIndex: 'level',
       key: 'level',
       width: 100,
@@ -722,39 +725,39 @@ const SystemLogsTab = () => {
       },
     },
     {
-      title: '分类',
+      title: t('logs.details.category'),
       dataIndex: 'category',
       key: 'category',
       width: 120,
     },
     {
-      title: '事件',
+      title: t('logs.details.event'),
       dataIndex: 'event',
       key: 'event',
       width: 150,
     },
     {
-      title: '消息',
+      title: t('logs.details.message'),
       dataIndex: 'message',
       key: 'message',
       ellipsis: true,
     },
     {
-      title: '来源',
+      title: t('logs.details.source'),
       dataIndex: 'source',
       key: 'source',
       width: 150,
       render: (text: string) => text || '-',
     },
     {
-      title: '时间',
+      title: t('logs.table.time'),
       dataIndex: 'created_at',
       key: 'created_at',
       width: 180,
       render: (date: string) => formatAWSDate(date, 'YYYY-MM-DD HH:mm:ss'),
     },
     {
-      title: '操作',
+      title: t('logs.table.action'),
       key: 'actions',
       width: 100,
       fixed: 'right' as const,
@@ -768,7 +771,7 @@ const SystemLogsTab = () => {
             setDetailVisible(true)
           }}
         >
-          详情
+          {t('logs.table.details')}
         </Button>
       ),
     },
@@ -780,7 +783,7 @@ const SystemLogsTab = () => {
         <Row gutter={16}>
           <Col span={8}>
             <Input
-              placeholder="搜索事件或消息"
+              placeholder=t('logs.search.eventOrMessage')
               prefix={<SearchOutlined />}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
@@ -789,7 +792,7 @@ const SystemLogsTab = () => {
           </Col>
           <Col span={4}>
             <Select
-              placeholder="级别"
+              placeholder=t('logs.details.level')
               style={{ width: '100%' }}
               value={level}
               onChange={setLevel}
@@ -803,7 +806,7 @@ const SystemLogsTab = () => {
           </Col>
           <Col span={4}>
             <Select
-              placeholder="分类"
+              placeholder=t('logs.details.category')
               style={{ width: '100%' }}
               value={category}
               onChange={setCategory}
@@ -833,7 +836,7 @@ const SystemLogsTab = () => {
 
         <Space>
           <Button icon={<ReloadOutlined />} onClick={() => refetch()}>
-            刷新
+            {t('common.refresh')}
           </Button>
         </Space>
       </Space>
@@ -850,18 +853,18 @@ const SystemLogsTab = () => {
           total: data?.total || 0,
           showSizeChanger: false,
           showQuickJumper: true,
-          showTotal: (total) => `共 ${total} 条`,
+          showTotal: (total) => t('common.total', { count: total }),
           onChange: (newPage) => setPage(newPage),
         }}
       />
 
       <Modal
-        title="系统日志详情"
+        title=t('logs.modal.systemDetails')
         open={detailVisible}
         onCancel={() => setDetailVisible(false)}
         footer={[
           <Button key="close" onClick={() => setDetailVisible(false)}>
-            关闭
+            {t('common.close')}
           </Button>,
         ]}
         width={800}
@@ -869,12 +872,12 @@ const SystemLogsTab = () => {
         {selectedLog && (
           <Descriptions column={2} bordered>
             <Descriptions.Item label="ID">{selectedLog.id}</Descriptions.Item>
-            <Descriptions.Item label="级别">{selectedLog.level.toUpperCase()}</Descriptions.Item>
-            <Descriptions.Item label="分类">{selectedLog.category}</Descriptions.Item>
-            <Descriptions.Item label="事件">{selectedLog.event}</Descriptions.Item>
-            <Descriptions.Item label="消息" span={2}>{selectedLog.message}</Descriptions.Item>
-            <Descriptions.Item label="来源" span={2}>{selectedLog.source || '-'}</Descriptions.Item>
-            <Descriptions.Item label="详细信息" span={2}>
+            <Descriptions.Item label=t('logs.details.level')>{selectedLog.level.toUpperCase()}</Descriptions.Item>
+            <Descriptions.Item label=t('logs.details.category')>{selectedLog.category}</Descriptions.Item>
+            <Descriptions.Item label=t('logs.details.event')>{selectedLog.event}</Descriptions.Item>
+            <Descriptions.Item label=t('logs.details.message') span={2}>{selectedLog.message}</Descriptions.Item>
+            <Descriptions.Item label=t('logs.details.source') span={2}>{selectedLog.source || '-'}</Descriptions.Item>
+            <Descriptions.Item label=t('logs.details.detailedInfo') span={2}>
               {selectedLog.details ? (
                 <pre style={{ maxHeight: 300, overflow: 'auto', background: '#f5f5f5', padding: 8 }}>
                   {JSON.stringify(JSON.parse(selectedLog.details), null, 2)}
@@ -883,7 +886,7 @@ const SystemLogsTab = () => {
                 '-'
               )}
             </Descriptions.Item>
-            <Descriptions.Item label="时间" span={2}>
+            <Descriptions.Item label=t('logs.table.time') span={2}>
               {formatAWSDate(selectedLog.created_at, 'YYYY-MM-DD HH:mm:ss')}
             </Descriptions.Item>
           </Descriptions>
@@ -941,12 +944,12 @@ const ErrorLogsTab = () => {
       await axios.put(`/api/v1/admin/logs/errors/${selectedLog.id}/resolve`, {
         admin_notes: adminNotes,
       })
-      message.success('错误已标记为已解决')
+      message.success(t('logs.message.markedResolved'))
       setResolveVisible(false)
       setAdminNotes('')
       refetch()
     } catch (error: any) {
-      message.error(error.response?.data?.detail || '操作失败')
+      message.error(error.response?.data?.detail || t('logs.message.operationFailed'))
     }
   }
 
@@ -958,7 +961,7 @@ const ErrorLogsTab = () => {
       width: 80,
     },
     {
-      title: '级别',
+      title: t('logs.details.level'),
       dataIndex: 'level',
       key: 'level',
       width: 100,
@@ -971,19 +974,19 @@ const ErrorLogsTab = () => {
       },
     },
     {
-      title: '错误类型',
+      title: t('logs.details.errorType'),
       dataIndex: 'error_type',
       key: 'error_type',
       width: 150,
     },
     {
-      title: '错误消息',
+      title: t('logs.table.errorMessage'),
       dataIndex: 'error_message',
       key: 'error_message',
       ellipsis: true,
     },
     {
-      title: '请求URL',
+      title: t('logs.details.requestUrl'),
       dataIndex: 'request_url',
       key: 'request_url',
       width: 200,
@@ -991,34 +994,34 @@ const ErrorLogsTab = () => {
       render: (text: string) => text || '-',
     },
     {
-      title: '状态码',
+      title: t('logs.details.statusCode'),
       dataIndex: 'status_code',
       key: 'status_code',
       width: 100,
       render: (code: number) => code || '-',
     },
     {
-      title: '解决状态',
+      title: t('logs.details.resolveStatus'),
       dataIndex: 'resolved',
       key: 'resolved',
       width: 100,
       render: (resolved: boolean) => (
         resolved ? (
-          <Badge status="success" text="已解决" />
+          <Badge status="success" text=t('logs.status.resolved') />
         ) : (
-          <Badge status="error" text="未解决" />
+          <Badge status="error" text=t('logs.status.unresolved') />
         )
       ),
     },
     {
-      title: '时间',
+      title: t('logs.table.time'),
       dataIndex: 'created_at',
       key: 'created_at',
       width: 180,
       render: (date: string) => formatAWSDate(date, 'YYYY-MM-DD HH:mm:ss'),
     },
     {
-      title: '操作',
+      title: t('logs.table.action'),
       key: 'actions',
       width: 150,
       fixed: 'right' as const,
@@ -1033,7 +1036,7 @@ const ErrorLogsTab = () => {
               setDetailVisible(true)
             }}
           >
-            详情
+            {t('logs.table.details')}
           </Button>
           {!record.resolved && (
             <Button
@@ -1045,7 +1048,7 @@ const ErrorLogsTab = () => {
                 setResolveVisible(true)
               }}
             >
-              解决
+              {t('logs.actions.resolve')}
             </Button>
           )}
         </Space>
@@ -1059,7 +1062,7 @@ const ErrorLogsTab = () => {
         <Row gutter={16}>
           <Col span={6}>
             <Input
-              placeholder="搜索错误消息"
+              placeholder=t('logs.search.errorMessage')
               prefix={<SearchOutlined />}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
@@ -1068,7 +1071,7 @@ const ErrorLogsTab = () => {
           </Col>
           <Col span={3}>
             <Select
-              placeholder="级别"
+              placeholder=t('logs.details.level')
               style={{ width: '100%' }}
               value={level}
               onChange={setLevel}
@@ -1080,7 +1083,7 @@ const ErrorLogsTab = () => {
           </Col>
           <Col span={4}>
             <Select
-              placeholder="错误类型"
+              placeholder=t('logs.details.errorType')
               style={{ width: '100%' }}
               value={errorType}
               onChange={setErrorType}
@@ -1095,14 +1098,14 @@ const ErrorLogsTab = () => {
           </Col>
           <Col span={3}>
             <Select
-              placeholder="解决状态"
+              placeholder=t('logs.details.resolveStatus')
               style={{ width: '100%' }}
               value={resolved}
               onChange={setResolved}
               allowClear
             >
-              <Option value={true}>已解决</Option>
-              <Option value={false}>未解决</Option>
+              <Option value={true}>{t('logs.status.resolved')}</Option>
+              <Option value={false}>{t('logs.status.unresolved')}</Option>
             </Select>
           </Col>
           <Col span={8}>
@@ -1122,7 +1125,7 @@ const ErrorLogsTab = () => {
 
         <Space>
           <Button icon={<ReloadOutlined />} onClick={() => refetch()}>
-            刷新
+            {t('common.refresh')}
           </Button>
         </Space>
       </Space>
@@ -1139,18 +1142,18 @@ const ErrorLogsTab = () => {
           total: data?.total || 0,
           showSizeChanger: false,
           showQuickJumper: true,
-          showTotal: (total) => `共 ${total} 条`,
+          showTotal: (total) => t('common.total', { count: total }),
           onChange: (newPage) => setPage(newPage),
         }}
       />
 
       <Modal
-        title="错误日志详情"
+        title=t('logs.modal.errorDetails')
         open={detailVisible}
         onCancel={() => setDetailVisible(false)}
         footer={[
           <Button key="close" onClick={() => setDetailVisible(false)}>
-            关闭
+            {t('common.close')}
           </Button>,
         ]}
         width={1000}
@@ -1158,22 +1161,22 @@ const ErrorLogsTab = () => {
         {selectedLog && (
           <Descriptions column={2} bordered>
             <Descriptions.Item label="ID">{selectedLog.id}</Descriptions.Item>
-            <Descriptions.Item label="级别">{selectedLog.level.toUpperCase()}</Descriptions.Item>
-            <Descriptions.Item label="错误类型">{selectedLog.error_type}</Descriptions.Item>
-            <Descriptions.Item label="状态码">{selectedLog.status_code || '-'}</Descriptions.Item>
-            <Descriptions.Item label="错误消息" span={2}>{selectedLog.error_message}</Descriptions.Item>
-            <Descriptions.Item label="请求方法">{selectedLog.request_method || '-'}</Descriptions.Item>
-            <Descriptions.Item label="请求URL">{selectedLog.request_url || '-'}</Descriptions.Item>
-            <Descriptions.Item label="IP地址">{selectedLog.ip_address || '-'}</Descriptions.Item>
+            <Descriptions.Item label=t('logs.details.level')>{selectedLog.level.toUpperCase()}</Descriptions.Item>
+            <Descriptions.Item label=t('logs.details.errorType')>{selectedLog.error_type}</Descriptions.Item>
+            <Descriptions.Item label=t('logs.details.statusCode')>{selectedLog.status_code || '-'}</Descriptions.Item>
+            <Descriptions.Item label=t('logs.table.errorMessage') span={2}>{selectedLog.error_message}</Descriptions.Item>
+            <Descriptions.Item label=t('logs.details.requestMethod')>{selectedLog.request_method || '-'}</Descriptions.Item>
+            <Descriptions.Item label=t('logs.details.requestUrl')>{selectedLog.request_url || '-'}</Descriptions.Item>
+            <Descriptions.Item label=t('logs.table.ipAddress')>{selectedLog.ip_address || '-'}</Descriptions.Item>
             <Descriptions.Item label="User Agent">{selectedLog.user_agent || '-'}</Descriptions.Item>
-            <Descriptions.Item label="解决状态">{selectedLog.resolved ? '已解决' : '未解决'}</Descriptions.Item>
-            <Descriptions.Item label="解决时间">
+            <Descriptions.Item label=t('logs.details.resolveStatus')>{selectedLog.resolved ? t('logs.status.resolved') : t('logs.status.unresolved')}</Descriptions.Item>
+            <Descriptions.Item label=t('logs.details.resolveTime')>
               {selectedLog.resolved_at ? formatAWSDate(selectedLog.resolved_at, 'YYYY-MM-DD HH:mm:ss') : '-'}
             </Descriptions.Item>
-            <Descriptions.Item label="管理员备注" span={2}>
+            <Descriptions.Item label=t('logs.details.adminNote') span={2}>
               {selectedLog.admin_notes || '-'}
             </Descriptions.Item>
-            <Descriptions.Item label="堆栈跟踪" span={2}>
+            <Descriptions.Item label=t('logs.details.stackTrace') span={2}>
               {selectedLog.traceback ? (
                 <pre style={{ maxHeight: 400, overflow: 'auto', background: '#f5f5f5', padding: 8, fontSize: 12 }}>
                   {selectedLog.traceback}
@@ -1182,7 +1185,7 @@ const ErrorLogsTab = () => {
                 '-'
               )}
             </Descriptions.Item>
-            <Descriptions.Item label="创建时间" span={2}>
+            <Descriptions.Item label=t('logs.details.createTime') span={2}>
               {formatAWSDate(selectedLog.created_at, 'YYYY-MM-DD HH:mm:ss')}
             </Descriptions.Item>
           </Descriptions>
@@ -1190,24 +1193,24 @@ const ErrorLogsTab = () => {
       </Modal>
 
       <Modal
-        title="标记错误为已解决"
+        title=t('logs.actions.markResolved')
         open={resolveVisible}
         onCancel={() => {
           setResolveVisible(false)
           setAdminNotes('')
         }}
         onOk={handleResolve}
-        okText="确认"
-        cancelText="取消"
+        okText=t('common.confirm')
+        cancelText=t('common.cancel')
       >
         <Space direction="vertical" style={{ width: '100%' }}>
           <div>
-            <label>管理员备注（可选）：</label>
+            <label>{t('logs.details.adminNoteOptional')}</label>
             <Input.TextArea
               rows={4}
               value={adminNotes}
               onChange={(e) => setAdminNotes(e.target.value)}
-              placeholder="添加处理说明或备注..."
+              placeholder={t('logs.placeholder.addNote')}
             />
           </div>
         </Space>

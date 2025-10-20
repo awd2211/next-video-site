@@ -11,6 +11,7 @@ interface BadgeData {
   pendingVideos: number;
   pendingUsers: number;
   pendingBanners: number;
+  activeAlerts: number;
 }
 
 interface MenuBadgeContextType {
@@ -39,6 +40,7 @@ export const MenuBadgeProvider = ({ children }: MenuBadgeProviderProps) => {
     pendingVideos: 0,
     pendingUsers: 0,
     pendingBanners: 0,
+    activeAlerts: 0,
   });
   const [loading, setLoading] = useState(false);
 
@@ -47,7 +49,7 @@ export const MenuBadgeProvider = ({ children }: MenuBadgeProviderProps) => {
       setLoading(true);
       
       // 并行获取各类待处理数量
-      const [commentsRes, videosRes] = await Promise.allSettled([
+      const [commentsRes, videosRes, alertsRes] = await Promise.allSettled([
         // 待审核评论
         axios.get('/api/v1/admin/comments', {
           params: { page: 1, page_size: 1, status: 'pending' }
@@ -56,19 +58,25 @@ export const MenuBadgeProvider = ({ children }: MenuBadgeProviderProps) => {
         axios.get('/api/v1/admin/videos', {
           params: { page: 1, page_size: 1, status: 'DRAFT' }
         }),
+        // 活跃告警数量
+        axios.get('/api/v1/admin/system-health/alerts/active/count'),
       ]);
 
       setBadges({
-        pendingComments: 
-          commentsRes.status === 'fulfilled' 
-            ? commentsRes.value.data?.total || 0 
+        pendingComments:
+          commentsRes.status === 'fulfilled'
+            ? commentsRes.value.data?.total || 0
             : 0,
-        pendingVideos: 
-          videosRes.status === 'fulfilled' 
-            ? videosRes.value.data?.total || 0 
+        pendingVideos:
+          videosRes.status === 'fulfilled'
+            ? videosRes.value.data?.total || 0
             : 0,
         pendingUsers: 0, // 可以添加待审核用户逻辑
         pendingBanners: 0,
+        activeAlerts:
+          alertsRes.status === 'fulfilled'
+            ? alertsRes.value.data?.count || 0
+            : 0,
       });
     } catch (error) {
       console.error('Failed to fetch menu badges:', error);

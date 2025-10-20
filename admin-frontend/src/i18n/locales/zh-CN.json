@@ -35,7 +35,11 @@
     "subscriptionPlans": "订阅计划",
     "subscriptions": "订阅管理",
     "payments": "支付记录",
-    "coupons": "优惠券"
+    "coupons": "优惠券",
+    "sentryConfig": "Sentry配置",
+    "systemHealthOverview": "系统监控总览",
+    "systemHealthAlerts": "告警管理",
+    "systemHealthSLA": "SLA 报告"
   },
   "breadcrumb": {
     "home": "控制台",
@@ -64,7 +68,7 @@
   "common": {
     "edit": "编辑",
     "delete": "删除",
-    "confirm": "确认",
+    "confirm": "确定",
     "cancel": "取消",
     "save": "保存",
     "submit": "提交",
@@ -80,7 +84,7 @@
     "loading": "加载中...",
     "noData": "暂无数据",
     "total": "共",
-    "items": "项",
+    "items": "条",
     "logout": "退出登录",
     "adminPanel": "管理面板",
     "profile": "个人资料",
@@ -115,7 +119,7 @@
     "quickFilters": "快速筛选",
     "clearFilters": "清空筛选",
     "filtersCleared": "筛选已清空",
-    "filters": "筛选器",
+    "filters": "筛选条件：",
     "autoRefresh": "自动刷新",
     "autoRefreshOn": "自动刷新: 开",
     "autoRefreshOff": "自动刷新: 关",
@@ -131,7 +135,7 @@
     "error": "错误",
     "time": "时间",
     "filter": "筛选",
-    "totalItems": "共 {{total}} 条",
+    "totalItems": "共 {total} 条",
     "success": "成功",
     "failed": "失败",
     "timeout": "超时",
@@ -139,10 +143,18 @@
     "completion": "完成",
     "yes": "是",
     "no": "否",
-    "copyAll": "复制全部"
+    "copyAll": "复制全部",
+    "saved": "已保存",
+    "saving": "正在保存...",
+    "units": {
+      "hours": "小时",
+      "minutes": "分钟",
+      "cores": "核心",
+      "free": "可用"
+    }
   },
   "settings": {
-    "title": "系统设置",
+    "title": "⚙️ 系统设置",
     "searchPlaceholder": "搜索设置...",
     "groups": {
       "basic": "基础设置",
@@ -161,7 +173,16 @@
       "security": "安全配置",
       "cache": "缓存管理",
       "backup": "备份与恢复",
-      "other": "其他设置"
+      "other": "其他设置",
+      "siteAndSeo": "🌐 网站与 SEO",
+      "videoAndUpload": "📹 视频与上传",
+      "userAndCommunity": "💬 用户与社区",
+      "emailService": "📧 邮件服务",
+      "notifications": "🔔 通知设置",
+      "cacheManagement": "🗄️ 缓存管理",
+      "backupAndRestore": "💾 备份与恢复",
+      "paymentGateway": "💳 支付网关配置",
+      "otherSettings": "⚙️ 其他设置"
     },
     "email": {
       "testEmail": "发送测试邮件",
@@ -175,7 +196,9 @@
       "testStatus": "测试状态",
       "success": "成功",
       "failed": "失败",
-      "notTested": "尚未测试"
+      "notTested": "尚未测试",
+      "address": "邮箱地址",
+      "enterTestAddress": "输入测试邮箱地址"
     },
     "cache": {
       "title": "缓存管理",
@@ -195,7 +218,11 @@
       "clearFailed": "缓存清除失败",
       "keysCleared": "已清除 {{count}} 个键",
       "allCleared": "已清除所有缓存",
-      "selectPattern": "选择要清除的缓存模式"
+      "selectPattern": "选择要清除的缓存模式",
+      "cleared": "已清除缓存",
+      "statsFailed": "获取缓存统计失败",
+      "clearedCount": "已清除 ${response.data.cleared_keys} 个缓存键",
+      "last7Days": "最近 7 天统计："
     },
     "backup": {
       "title": "备份与恢复",
@@ -211,12 +238,20 @@
       "confirmRestore": "确认恢复设置？这将覆盖当前设置。",
       "selectFile": "选择备份文件",
       "backupTime": "备份时间",
-      "downloadJson": "下载为JSON"
+      "downloadJson": "下载为JSON",
+      "downloaded": "备份文件已下载",
+      "exportFailed": "导出备份失败",
+      "invalidFormat": "备份文件格式错误",
+      "confirmRestoreTitle": "确认恢复设置？",
+      "confirmRestoreContent": "此操作将覆盖当前设置，是否继续？"
     },
     "actions": {
       "saveAll": "保存所有设置",
       "resetDefaults": "重置为默认值",
-      "confirmReset": "确认将所有设置重置为默认值？此操作不可撤销。"
+      "confirmReset": "确认将所有设置重置为默认值？此操作不可撤销。",
+      "clearCache": "清除缓存",
+      "exportBackup": "导出备份",
+      "importBackup": "导入备份"
     },
     "payment": {
       "enableGateway": "启用支付网关",
@@ -227,6 +262,84 @@
       "privateKey": "私钥",
       "publicKey": "公钥（支付宝）",
       "gatewayUrl": "网关地址"
+    },
+    "resetSuccess": "已重置为默认值",
+    "descriptions": {
+      "siteAndSeo": "配置网站基本信息和搜索引擎优化设置",
+      "videoAndUpload": "配置视频审核、清晰度、转码和上传限制",
+      "userAndCommunity": "配置用户注册、验证和评论功能",
+      "emailService": "配置 SMTP 或 Mailgun 邮件服务",
+      "security": "配置登录安全、验证码、会话超时等",
+      "notifications": "配置通知方式、声音、桌面通知和免打扰时段",
+      "cacheManagement": "管理Redis缓存并查看统计信息",
+      "backupAndRestore": "导出和导入系统设置",
+      "paymentGateway": "配置 Stripe、PayPal、支付宝等支付网关",
+      "otherSettings": "维护模式、统计代码、自定义样式等",
+      "sendTestEmail": "发送测试邮件以验证 SMTP 配置是否正确",
+      "viewCacheStats": "查看缓存命中率和性能指标"
+    },
+    "placeholders": {
+      "siteIntro": "网站简介",
+      "keywordsExample": "视频,在线观看,电影",
+      "overrideDefaultTitle": "覆盖默认标题",
+      "seDescription": "搜索引擎描述",
+      "keywordsComma": "关键词1,关键词2,关键词3",
+      "selectTranscodeFormats": "选择需要转码的格式",
+      "enterFormatAndEnter": "输入格式后按回车",
+      "maintenanceMessage": "网站正在维护中，请稍后访问"
+    },
+    "labels": {
+      "keywords": "关键词",
+      "requireManualReview": "需要人工审核",
+      "defaultQuality": "默认清晰度",
+      "enableTranscoding": "启用转码",
+      "transcodeFormats": "转码格式",
+      "maxVideoSize": "视频最大大小 (MB)",
+      "maxImageSize": "图片最大大小 (MB)",
+      "allowedVideoFormats": "允许的视频格式",
+      "allowedImageFormats": "允许的图片格式",
+      "requireEmailVerification": "需要邮箱验证",
+      "defaultAvatarUrl": "默认头像 URL",
+      "maxFavorites": "最大收藏数",
+      "enableComments": "启用评论功能",
+      "commentsRequireReview": "评论需要审核",
+      "allowGuestComments": "允许游客评论",
+      "maxCommentLength": "评论最大长度",
+      "lastTest": "最后测试: ",
+      "maxLoginAttempts": "登录最大尝试次数",
+      "lockoutDuration": "锁定时长 (分钟)",
+      "sessionTimeout": "会话超时 (秒)",
+      "totalHits": "总命中数",
+      "totalMisses": "总未命中数",
+      "avgHitRate": "平均命中率",
+      "hits": "命中",
+      "misses": "未命中",
+      "hitRate": "命中率",
+      "maintenanceMessage": "维护提示信息",
+      "analyticsCode": "统计代码 (Google Analytics 等)",
+      "customCss": "自定义 CSS",
+      "customJs": "自定义 JavaScript",
+      "seoTitle": "SEO 标题",
+      "seoDescription": "SEO 描述",
+      "seoKeywords": "SEO 关键词",
+      "autoApprove": "自动审核通过",
+      "allowRegistration": "允许用户注册",
+      "enableCaptcha": "启用验证码",
+      "maintenanceMode": "维护模式"
+    },
+    "tooltips": {
+      "autoApproveUploads": "开启后新上传的视频自动通过审核",
+      "commentsModeration": "开启后评论需要管理员审核才能显示",
+      "enableCaptcha": "开启后登录时需要输入验证码",
+      "maintenanceMode": "开启后前台将显示维护页面"
+    },
+    "units": {
+      "characters": "字符",
+      "seconds": "秒"
+    },
+    "fields": {
+      "siteName": "网站名称",
+      "siteUrl": "网站URL"
     }
   },
   "dashboard": {
@@ -414,7 +527,10 @@
     "exportBackupFailed": "导出备份失败",
     "confirmDeleteSelected": "确认删除选中的{{count}}项吗？",
     "confirmDelete": "确认删除？",
-    "loadFailed": "加载数据失败"
+    "loadFailed": "加载数据失败",
+    "saveFailed": "保存失败",
+    "allSettingsSaved": "所有设置已保存",
+    "checkForm": "请检查表单填写"
   },
   "ai": {
     "title": "AI管理",
@@ -692,7 +808,8 @@
     "services": {
       "database": "数据库 (PostgreSQL)",
       "redis": "Redis 缓存",
-      "storage": "对象存储 (MinIO)"
+      "storage": "对象存储 (MinIO)",
+      "celery": "任务队列 (Celery)"
     },
     "systemResources": "系统资源",
     "tabs": {
@@ -725,14 +842,15 @@
       "cores": "核心",
       "frequency": "频率",
       "free": "空闲",
-      "unlimited": "无限制"
+      "unlimited": "无限制",
+      "title": "系统资源"
     },
     "network": {
       "title": "网络统计",
-      "dataSent": "发送数据",
-      "dataReceived": "接收数据",
-      "packetsSent": "发送数据包",
-      "packetsReceived": "接收数据包",
+      "dataSent": "已发送数据",
+      "dataReceived": "已接收数据",
+      "packetsSent": "已发送数据包",
+      "packetsReceived": "已接收数据包",
       "errorsIn": "接收错误",
       "errorsOut": "发送错误",
       "dropsIn": "接收丢包",
@@ -750,7 +868,10 @@
       "systemDegraded": "系统状态：降级",
       "systemUnhealthy": "系统状态：异常",
       "issuesDetected": "部分服务出现问题，请查看下方详情。",
-      "allHealthy": "所有系统运行正常"
+      "allHealthy": "所有系统运行正常",
+      "healthy": "健康",
+      "degraded": "降级",
+      "unhealthy": "不健康"
     },
     "intervals": {
       "5seconds": "5 秒",
@@ -767,6 +888,169 @@
       "loadFailed": "加载系统健康状态失败",
       "unknownError": "未知错误",
       "noHistoryData": "暂无历史数据"
+    },
+    "sla": {
+      "columns": {
+        "responseTime": "响应时间",
+        "period": "时段",
+        "avg": "平均",
+        "alerts": "告警",
+        "total": "总计",
+        "resourceUsage": "资源使用"
+      },
+      "title": "SLA 报告",
+      "actions": {
+        "generateHourly": "生成小时报告",
+        "generateDaily": "生成日报"
+      },
+      "todayTitle": "今日 SLA（实时）",
+      "uptime": "正常运行时间",
+      "elapsedTime": "已运行时长",
+      "avgResponseTime": "平均响应时间",
+      "summaryPrefix": "汇总（最近",
+      "summarySuffix": "天）",
+      "averageUptime": "平均正常运行时间",
+      "totalDowntime": "总停机时间",
+      "totalAlerts": "总告警数",
+      "tabs": {
+        "tableView": "表格视图",
+        "charts": "图表"
+      },
+      "periodTypeLabel": "时段类型：",
+      "periodTypes": {
+        "hourly": "小时",
+        "daily": "每日",
+        "weekly": "每周",
+        "monthly": "每月"
+      },
+      "limitLabel": "限制：",
+      "charts": {
+        "uptimeTrend": "正常运行趋势",
+        "responseTimeTrend": "响应时间趋势",
+        "target": "目标：99.9%"
+      },
+      "messages": {
+        "generateSuccess": "SLA 报告已生成",
+        "generateFailed": "生成 SLA 报告失败"
+      },
+      "summaryTitle": "汇总（最近 {{days}} 天）",
+      "pagination": {
+        "total": "共 {{total}} 条记录"
+      }
+    },
+    "labels": {
+      "poolSize": "连接池大小",
+      "checkedOut": "已签出",
+      "available": "可用",
+      "poolUtilization": "连接池利用率",
+      "usedMemory": "已用内存",
+      "maxMemory": "最大内存",
+      "keysCount": "键数量",
+      "memoryUtilization": "内存利用率",
+      "storageUsed": "已用存储",
+      "objects": "对象数量",
+      "utilization": "利用率",
+      "bucketStatus": "存储桶状态",
+      "workers": "工作进程",
+      "activeTasks": "活跃任务",
+      "reservedTasks": "预留任务",
+      "status": "状态"
+    },
+    "cpu": {
+      "title": "CPU 使用率"
+    },
+    "memory": {
+      "title": "内存使用率"
+    },
+    "disk": {
+      "title": "磁盘使用率"
+    },
+    "processes": {
+      "title": "进程",
+      "active": "活跃进程"
+    },
+    "charts": {
+      "cpuTrend": "CPU 使用趋势",
+      "memoryTrend": "内存使用趋势",
+      "diskTrend": "磁盘使用趋势",
+      "dbResponseTime": "数据库响应时间",
+      "redisResponseTime": "Redis 响应时间",
+      "storageResponseTime": "存储响应时间"
+    },
+    "bucket": {
+      "exists": "存在",
+      "notFound": "未找到"
+    },
+    "actions": {
+      "viewDetails": "查看详情"
+    },
+    "alertsSummary": {
+      "title": "活跃告警：{{total}} 个（{{critical}} 个严重，{{warnings}} 个警告）",
+      "description": "过去24小时已解决 {{resolved}} 个告警"
+    },
+    "metricsCollected": "{{count}} 个指标已采集",
+    "alerts": {
+      "title": "系统告警",
+      "activeAlerts": "活跃告警",
+      "critical": "严重",
+      "warnings": "警告",
+      "resolved24h": "已解决(24小时)",
+      "columns": {
+        "severity": "严重程度",
+        "type": "类型",
+        "title": "标题",
+        "message": "消息",
+        "metric": "指标",
+        "triggeredAt": "触发时间"
+      },
+      "severity": {
+        "info": "信息",
+        "warning": "警告"
+      },
+      "status": {
+        "active": "活跃",
+        "resolved": "已解决",
+        "acknowledged": "已确认"
+      },
+      "types": {
+        "cpu": "CPU",
+        "memory": "内存",
+        "disk": "磁盘",
+        "database": "数据库",
+        "redis": "Redis",
+        "storage": "存储",
+        "celery": "Celery"
+      },
+      "actions": {
+        "acknowledge": "确认",
+        "resolve": "解决"
+      },
+      "modals": {
+        "acknowledgeTitle": "确认告警",
+        "resolveTitle": "解决告警",
+        "alert": "告警：",
+        "message": "消息：",
+        "addNotes": "添加备注（可选）",
+        "addResolutionNotes": "添加解决备注（可选）"
+      },
+      "details": {
+        "alertId": "告警ID",
+        "metricName": "指标名称",
+        "resolvedAt": "解决时间",
+        "acknowledgedBy": "确认人",
+        "acknowledgedAt": "确认时间",
+        "notes": "备注",
+        "context": "上下文"
+      },
+      "messages": {
+        "acknowledgeSuccess": "告警已确认",
+        "acknowledgeFailed": "确认告警失败",
+        "resolveSuccess": "告警已解决",
+        "resolveFailed": "解决告警失败"
+      },
+      "pagination": {
+        "total": "共 {{total}} 条告警"
+      }
     }
   },
   "logs": {
@@ -862,7 +1146,43 @@
     "today": "今天",
     "last30Days": "最近30天",
     "autoRefresh": "自动刷新",
-    "metadata": "元数据"
+    "metadata": "元数据",
+    "tabs": {
+      "system": "系统日志",
+      "operation": "操作日志",
+      "login": "登录日志",
+      "error": "错误日志"
+    },
+    "table": {
+      "admin": "管理员",
+      "module": "模块",
+      "action": "操作",
+      "description": "描述",
+      "ipAddress": "IP地址",
+      "time": "时间",
+      "details": "详情",
+      "device": "设备",
+      "errorMessage": "错误消息"
+    },
+    "modal": {
+      "operationDetails": "操作日志详情",
+      "loginDetails": "登录日志详情",
+      "systemDetails": "系统日志详情",
+      "errorDetails": "错误日志详情"
+    },
+    "stats": {
+      "todayOperations": "今日操作",
+      "todayLogins": "今日登录",
+      "todayErrors": "今日错误",
+      "activeAdmins": "活跃管理员"
+    },
+    "actions": {
+      "markResolved": "标记错误为已解决",
+      "resolve": "解决"
+    },
+    "placeholder": {
+      "addNote": "添加处理说明或备注..."
+    }
   },
   "email": {
     "addConfiguration": "添加配置",
@@ -1416,5 +1736,289 @@
       "avgSubscriptionValue": "平均订阅价值",
       "filterByStatus": "按状态筛选"
     }
+  },
+  "episode": {
+    "title": "剧集管理",
+    "sections": {
+      "basic": "基本设置",
+      "openingEnding": "片头片尾"
+    },
+    "table": {
+      "episodeNumber": "集号",
+      "title": "标题",
+      "description": "简介",
+      "status": "状态",
+      "permission": "权限",
+      "likes": "点赞",
+      "comments": "评论",
+      "createTime": "创建时间"
+    },
+    "status": {
+      "draft": "草稿",
+      "published": "已发布",
+      "archived": "已归档",
+      "set": "已设置",
+      "notSet": "未设置"
+    },
+    "permission": {
+      "free": "免费",
+      "freeWatch": "免费观看",
+      "vipOnly": "VIP专享"
+    },
+    "recommended": "推荐",
+    "form": {
+      "titlePrefix": "标题前缀",
+      "titleSuffix": "标题后缀",
+      "startNumber": "起始集号",
+      "description": "剧集简介",
+      "videoId": "关联视频ID",
+      "openingEndTime": "片头结束时间（秒）",
+      "endingStartTime": "片尾开始时间（秒）",
+      "releaseDate": "上线时间",
+      "openingStartTime": "片头开始时间（秒）"
+    },
+    "unit": {
+      "episode": "集"
+    },
+    "prefix": {
+      "episode": "第"
+    },
+    "placeholder": {
+      "openingTime": "如：90",
+      "endingTime": "如：2700",
+      "episodeNumber": "如：10",
+      "videoId": "请输入视频ID",
+      "firstEpisode": "如：1 表示第一集",
+      "episodeTitle": "如：第一集、凛冬将至"
+    },
+    "actions": {
+      "batchDelete": "批量删除",
+      "selectVideo": "选择视频",
+      "createEpisode": "创建剧集",
+      "autoGenerateTitle": "自动生成标题"
+    },
+    "message": {
+      "createSuccess": "创建成功",
+      "saveFailed": "保存失败",
+      "deleteSuccess": "删除成功",
+      "deleteFailed": "删除失败",
+      "loadFailed": "加载失败",
+      "loadVideosFailed": "加载视频列表失败",
+      "batchDeleteFailed": "批量删除失败",
+      "batchPublishFailed": "批量发布失败",
+      "setFailed": "设置失败",
+      "selectToDelete": "请选择要删除的剧集",
+      "selectToPublish": "请选择要发布的剧集",
+      "batchSetOpeningEnding": "将对选中的 {selectedRowKeys.length} 集设置相同的片头片尾标记",
+      "updateSuccess": "更新成功",
+      "updateOrderFailed": "更新顺序失败",
+      "orderUpdated": "顺序已更新",
+      "batchAddFailed": "批量添加失败",
+      "setSuccess": "设置成功",
+      "selectForOpeningEnding": "请选择要设置片头片尾的剧集",
+      "batchPublishSuccess": "批量发布成功",
+      "batchAddSuccess": "成功添加 {count} 集"
+    },
+    "validation": {
+      "numberGreaterThanZero": "集号必须大于0"
+    },
+    "template": {
+      "episodeNum": "第 {num} 集"
+    },
+    "confirm": {
+      "deleteSelected": "确定要删除选中的剧集吗？",
+      "publishSelected": "确认发布选中的剧集吗？",
+      "deleteSingle": "确定要删除此剧集吗？"
+    },
+    "modal": {
+      "batchAddTitle": "批量添加视频为剧集",
+      "batchSetOpeningEnding": "批量设置片头片尾标记"
+    }
+  },
+  "profile": {
+    "title": "个人资料",
+    "loading": "加载中...",
+    "role": {
+      "superadmin": "超级管理员",
+      "editor": "内容编辑者"
+    },
+    "tabs": {
+      "basicInfo": "基本信息",
+      "changePassword": "修改密码",
+      "changeEmail": "修改邮箱",
+      "preferences": "偏好设置",
+      "security": "安全设置"
+    },
+    "form": {
+      "username": "用户名",
+      "email": "邮箱",
+      "role": "角色",
+      "createdAt": "创建时间",
+      "lastLogin": "最后登录",
+      "notRecorded": "未记录",
+      "editProfile": "编辑资料",
+      "fullName": "全名",
+      "avatarUrl": "头像URL",
+      "currentPassword": "当前密码",
+      "newPassword": "新密码",
+      "confirmPassword": "确认新密码",
+      "currentEmail": "当前邮箱",
+      "newEmail": "新邮箱地址",
+      "passwordForVerification": "当前密码",
+      "timezone": "时区",
+      "preferredLanguage": "首选语言",
+      "theme": "主题"
+    },
+    "placeholder": {
+      "enterFullName": "输入您的全名",
+      "enterAvatarUrl": "输入头像图片URL",
+      "enterCurrentPassword": "输入当前密码",
+      "enterNewPassword": "输入新密码（至少6个字符）",
+      "reenterNewPassword": "再次输入新密码",
+      "enterNewEmail": "输入新的邮箱地址",
+      "enterPasswordForVerification": "输入当前密码进行验证",
+      "selectTimezone": "选择时区",
+      "selectLanguage": "选择语言",
+      "selectTheme": "选择主题"
+    },
+    "button": {
+      "saveChanges": "保存修改",
+      "changePassword": "修改密码",
+      "changeEmail": "修改邮箱",
+      "savePreferences": "保存偏好设置",
+      "reset": "重置"
+    },
+    "message": {
+      "loadProfileFailed": "加载个人资料失败",
+      "profileUpdateSuccess": "个人资料更新成功",
+      "profileUpdateFailed": "更新个人资料失败",
+      "passwordChangeSuccess": "密码修改成功，建议重新登录",
+      "passwordChangeFailed": "修改密码失败",
+      "emailChangeSuccess": "邮箱修改成功",
+      "emailChangeFailed": "修改邮箱失败",
+      "preferencesUpdateSuccess": "偏好设置更新成功",
+      "preferencesUpdateFailed": "更新偏好设置失败",
+      "languageOrThemeChanged": "语言或主题设置已更改，正在刷新页面...",
+      "enterPassword": "请输入密码"
+    },
+    "validation": {
+      "fullNameMaxLength": "全名最多200个字符",
+      "avatarUrlMaxLength": "头像URL最多500个字符",
+      "validUrl": "请输入有效的URL",
+      "currentPasswordRequired": "请输入当前密码",
+      "passwordMinLength": "密码至少6个字符",
+      "newPasswordRequired": "请输入新密码",
+      "passwordMaxLength": "密码最多100个字符",
+      "confirmPasswordRequired": "请确认新密码",
+      "passwordMismatch": "两次输入的密码不一致",
+      "newEmailRequired": "请输入新邮箱地址",
+      "validEmail": "请输入有效的邮箱地址",
+      "passwordRequiredForEmail": "请输入当前密码以验证身份"
+    },
+    "extra": {
+      "emailVerificationRequired": "为了安全起见，修改邮箱需要验证您的当前密码"
+    },
+    "preference": {
+      "title": "用户偏好设置",
+      "description": "个性化您的体验",
+      "subtitle": "自定义您的时区、语言和主题偏好",
+      "timezoneExtra": "设置您所在的时区，将影响日期和时间的显示",
+      "languageExtra": "选择您的首选界面语言",
+      "themeExtra": "选择您的界面主题"
+    },
+    "timezone": {
+      "utc": "UTC (协调世界时)",
+      "shanghai": "Asia/Shanghai (中国标准时间 GMT+8)",
+      "tokyo": "Asia/Tokyo (日本标准时间 GMT+9)",
+      "seoul": "Asia/Seoul (韩国标准时间 GMT+9)",
+      "hongKong": "Asia/Hong_Kong (香港时间 GMT+8)",
+      "newYork": "America/New_York (美国东部时间 GMT-5)",
+      "losAngeles": "America/Los_Angeles (美国太平洋时间 GMT-8)",
+      "chicago": "America/Chicago (美国中部时间 GMT-6)",
+      "london": "Europe/London (英国时间 GMT+0)",
+      "paris": "Europe/Paris (欧洲中部时间 GMT+1)",
+      "berlin": "Europe/Berlin (德国时间 GMT+1)",
+      "sydney": "Australia/Sydney (澳大利亚东部时间 GMT+10)"
+    },
+    "language": {
+      "enUS": "English (US)",
+      "zhCN": "简体中文"
+    },
+    "theme": {
+      "light": "浅色主题",
+      "dark": "深色主题"
+    },
+    "twoFactor": {
+      "title": "双因素认证 (2FA)",
+      "enhanceSecurity": "增强账户安全",
+      "description": "双因素认证为您的账户提供额外的安全保护。即使密码被泄露，攻击者也无法访问您的账户。",
+      "status": "2FA 状态：",
+      "enabled": "✓ 已启用",
+      "disabled": "未启用",
+      "switchEnabled": "已启用",
+      "switchDisabled": "已禁用",
+      "enabledAt": "启用时间：",
+      "unknown": "未知",
+      "backupCodesRemaining": "剩余备份码：",
+      "backupCodesCount": " 个",
+      "regenerateBackupCodes": "重新生成备份码",
+      "disableTitle": "禁用双因素认证",
+      "disableWarning": "警告",
+      "disableDescription": "禁用双因素认证将降低您账户的安全性",
+      "disableConfirmLabel": "输入密码以确认",
+      "disableConfirmPlaceholder": "输入您的密码",
+      "disableButton": "禁用",
+      "disableSuccess": "2FA 已禁用",
+      "disableFailed": "禁用2FA失败",
+      "regenerateTitle": "重新生成备份码",
+      "regenerateContent": "重新生成备份码将使旧的备份码失效。",
+      "regeneratePrompt": "请输入您的密码以继续：",
+      "regeneratePasswordPlaceholder": "输入密码",
+      "regeneratePasswordRequired": "请输入密码",
+      "newBackupCodesTitle": "新的备份码",
+      "newBackupCodesAlert": "请保存这些新的备份码",
+      "newBackupCodesDescription": "旧的备份码已失效，每个备份码只能使用一次",
+      "copyAllBackupCodes": "复制全部",
+      "backupCodesCopied": "已复制到剪贴板",
+      "regenerateFailed": "重新生成备份码失败"
+    },
+    "status": {
+      "enabled": "已启用",
+      "disabled": "未启用"
+    }
+  },
+  "sentry": {
+    "title": "Sentry配置",
+    "description": "管理前端错误监控和性能追踪配置",
+    "dsn": "Sentry DSN",
+    "dsnRequired": "请输入Sentry DSN",
+    "validUrl": "请输入有效的URL",
+    "dsnTooltip": "从 Sentry 项目设置中获取 DSN",
+    "dsnPlaceholder": "输入 Sentry DSN",
+    "versionNumber": "版本号",
+    "attachStacktrace": "附加堆栈跟踪",
+    "samplingConfig": "采样率配置",
+    "performanceSamplingRate": "性能采样率",
+    "performanceSamplingTooltip": "设置性能监控的采样率（0-1之间）",
+    "sessionReplaySamplingRate": "会话重放采样率",
+    "sessionReplayTooltip": "设置会话重放的采样率",
+    "errorReplaySamplingRate": "错误重放采样率",
+    "errorReplayTooltip": "发生错误时的重放采样率",
+    "filterConfig": "过滤配置",
+    "ignoreErrors": "忽略的错误",
+    "ignoreErrorsTooltip": "配置要忽略的错误模式",
+    "ignoreErrorsPlaceholder": "每行一个错误模式",
+    "allowedUrls": "允许的URL",
+    "allowedUrlsTooltip": "只报告来自这些URL的错误",
+    "allowedUrlsPlaceholder": "每行一个URL模式",
+    "deniedUrls": "拒绝的URL",
+    "deniedUrlsTooltip": "不报告来自这些URL的错误",
+    "deniedUrlsPlaceholder": "每行一个URL模式",
+    "configDescription": "配置描述",
+    "optionalDescription": "可选的配置说明",
+    "confirmDelete": "确定要删除这个 Sentry 配置吗？此操作不可恢复。",
+    "selectEnvironment": "请选择环境",
+    "newConfig": "新建 Sentry 配置",
+    "editConfig": "编辑 Sentry 配置"
   }
 }

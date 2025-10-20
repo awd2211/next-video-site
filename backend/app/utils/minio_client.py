@@ -396,6 +396,46 @@ class MinIOClient:
             logger.error(f"Error listing files: {e}", exc_info=True)
             return []
 
+    def get_bucket_usage(self) -> dict:
+        """
+        获取存储桶使用情况统计
+
+        Returns:
+            dict: 包含总大小、对象数量等信息
+        """
+        try:
+            total_size = 0
+            object_count = 0
+
+            # 列出所有对象并累加大小
+            objects = self.client.list_objects(
+                self.bucket_name,
+                recursive=True,
+            )
+
+            for obj in objects:
+                total_size += obj.size
+                object_count += 1
+
+            # 转换为 GB
+            total_size_gb = total_size / (1024 ** 3)
+
+            return {
+                "total_size_bytes": total_size,
+                "total_size_gb": round(total_size_gb, 2),
+                "object_count": object_count,
+                "bucket_name": self.bucket_name
+            }
+
+        except S3Error as e:
+            logger.error(f"Error getting bucket usage: {e}", exc_info=True)
+            return {
+                "total_size_bytes": 0,
+                "total_size_gb": 0,
+                "object_count": 0,
+                "error": str(e)
+            }
+
     def download_file(self, object_name: str, local_path: str) -> bool:
         """
         从MinIO下载文件到本地路径

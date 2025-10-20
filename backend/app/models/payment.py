@@ -58,6 +58,27 @@ class Currency(str, Enum):
     JPY = "JPY"
 
 
+class RefundReason(str, Enum):
+    """退款原因"""
+    USER_REQUEST = "user_request"        # 用户申请
+    SERVICE_QUALITY = "service_quality"  # 服务质量问题
+    TECHNICAL_ISSUE = "technical_issue"  # 技术故障
+    DUPLICATE_PAYMENT = "duplicate_payment"  # 重复支付
+    FRAUD = "fraud"                      # 欺诈订单
+    OTHER = "other"                      # 其他原因
+
+
+class RefundRequestStatus(str, Enum):
+    """退款申请状态"""
+    PENDING = "pending"                # 待审批
+    FIRST_APPROVED = "first_approved"  # 一审通过
+    APPROVED = "approved"              # 审批通过（二审通过）
+    REJECTED = "rejected"              # 审批拒绝
+    PROCESSING = "processing"          # 处理中
+    COMPLETED = "completed"            # 已完成
+    FAILED = "failed"                  # 退款失败
+
+
 class Payment(Base):
     """
     支付记录表
@@ -125,6 +146,7 @@ class Payment(Base):
     user: Mapped[User] = relationship("User", back_populates="payments")
     subscription: Mapped[Optional[UserSubscription]] = relationship("UserSubscription", back_populates="payments")
     invoice: Mapped[Optional[Invoice]] = relationship("Invoice", back_populates="payment")
+    refund_requests: Mapped[list["RefundRequest"]] = relationship("RefundRequest", back_populates="payment", foreign_keys="[RefundRequest.payment_id]")
 
 
 class PaymentMethod(Base):
@@ -162,3 +184,131 @@ class PaymentMethod(Base):
 
     # 关系
     user: Mapped[User] = relationship("User", back_populates="payment_methods")
+
+
+class RefundRequest(Base):
+    """
+    退款申请表
+
+    实现双重审批机制的退款流程
+    """
+
+    __tablename__ = "refund_requests"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+
+    # 关联关系
+    payment_id: Mapped[int] = mapped_column(
+        Integer,
+        ForeignKey("payments.id"),
+        nullable=False,
+        index=True,
+        comment="关联支付记录"
+    )
+    requested_by: Mapped[int] = mapped_column(
+        Integer,
+        ForeignKey("admin_users.id"),
+        nullable=False,
+        comment="申请人（管理员ID）"
+    )
+    first_approver_id: Mapped[Optional[int]] = mapped_column(
+        Integer,
+        ForeignKey("admin_users.id"),
+        comment="一审审批人ID"
+    )
+    second_approver_id: Mapped[Optional[int]] = mapped_column(
+        Integer,
+        ForeignKey("admin_users.id"),
+        comment="二审审批人ID"
+    )
+
+    # 退款信息
+    refund_amount: Mapped[Decimal] = mapped_column(
+        Numeric(10, 2),
+        nullable=False,
+        comment="申请退款金额"
+    )
+    refund_reason: Mapped[RefundReason] = mapped_column(
+        SQLEnum(RefundReason),
+        nullable=False,
+        index=True,
+        comment="退款原因类别"
+    )
+    reason_detail: Mapped[Optional[str]] = mapped_column(
+        Text,
+        comment="退款原因详细说明"
+    )
+    admin_note: Mapped[Optional[str]] = mapped_column(
+        Text,
+        comment="管理员内部备注"
+    )
+
+    # 审批状态
+    status: Mapped[RefundRequestStatus] = mapped_column(
+        SQLEnum(RefundRequestStatus),
+        default=RefundRequestStatus.PENDING,
+        nullable=False,
+        index=True,
+        comment="审批状态"
+    )
+
+    # 审批记录
+    first_approval_note: Mapped[Optional[str]] = mapped_column(
+        Text,
+        comment="一审审批意见"
+    )
+    first_approved_at: Mapped[Optional[datetime]] = mapped_column(
+        DateTime(timezone=True),
+        comment="一审通过时间"
+    )
+
+    second_approval_note: Mapped[Optional[str]] = mapped_column(
+        Text,
+        comment="二审审批意见"
+    )
+    second_approved_at: Mapped[Optional[datetime]] = mapped_column(
+        DateTime(timezone=True),
+        comment="二审通过时间"
+    )
+
+    rejection_note: Mapped[Optional[str]] = mapped_column(
+        Text,
+        comment="拒绝原因"
+    )
+    rejected_at: Mapped[Optional[datetime]] = mapped_column(
+        DateTime(timezone=True),
+        comment="拒绝时间"
+    )
+
+    # 处理结果
+    processed_at: Mapped[Optional[datetime]] = mapped_column(
+        DateTime(timezone=True),
+        comment="实际处理时间"
+    )
+    completed_at: Mapped[Optional[datetime]] = mapped_column(
+        DateTime(timezone=True),
+        comment="完成时间"
+    )
+    failure_reason: Mapped[Optional[str]] = mapped_column(
+        Text,
+        comment="失败原因"
+    )
+
+    # 时间戳
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        server_default=func.now(),
+        index=True,
+        comment="创建时间"
+    )
+    updated_at: Mapped[Optional[datetime]] = mapped_column(
+        DateTime(timezone=True),
+        onupdate=func.now(),
+        comment="更新时间"
+    )
+
+    # 关系（使用字符串避免循环导入）
+    payment: Mapped["Payment"] = relationship("Payment", foreign_keys=[payment_id])
+    requester: Mapped["AdminUser"] = relationship("AdminUser", foreign_keys=[requested_by])
+    first_approver: Mapped[Optional["AdminUser"]] = relationship("AdminUser", foreign_keys=[first_approver_id])
+    second_approver: Mapped[Optional["AdminUser"]] = relationship("AdminUser", foreign_keys=[second_approver_id])

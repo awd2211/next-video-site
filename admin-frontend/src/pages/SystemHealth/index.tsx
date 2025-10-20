@@ -32,85 +32,11 @@ import {
   DownloadOutlined,
 } from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';
-import axios from '@/utils/axios';
+import { getSystemHealth, type HealthData } from '@/services/systemHealthService';
 import MetricsChart from './MetricsChart';
 import { exportHealthReport } from './exportUtils';
 
 const { Title, Text } = Typography;
-
-interface ServiceStatus {
-  status: 'healthy' | 'degraded' | 'unhealthy';
-  response_time_ms?: number;
-  message?: string;
-  error?: string;
-}
-
-interface DatabaseHealth extends ServiceStatus {
-  pool_size?: number;
-  checked_out?: number;
-  checked_in?: number;
-  overflow?: number;
-  utilization_percent?: number;
-}
-
-interface RedisHealth extends ServiceStatus {
-  used_memory_mb?: number;
-  max_memory_mb?: number | string;
-  memory_utilization_percent?: number;
-  keys_count?: number;
-}
-
-interface StorageHealth extends ServiceStatus {
-  bucket_exists?: boolean;
-  can_read?: boolean;
-}
-
-interface SystemResources {
-  cpu?: {
-    usage_percent: number;
-    cores: number;
-    frequency_mhz?: number;
-    status: 'healthy' | 'warning' | 'critical';
-  };
-  memory?: {
-    used_gb: number;
-    total_gb: number;
-    available_gb: number;
-    usage_percent: number;
-    status: 'healthy' | 'warning' | 'critical';
-  };
-  disk?: {
-    used_gb: number;
-    total_gb: number;
-    free_gb: number;
-    usage_percent: number;
-    status: 'healthy' | 'warning' | 'critical';
-  };
-  network?: {
-    bytes_sent_gb: number;
-    bytes_recv_gb: number;
-    packets_sent: number;
-    packets_recv: number;
-    errors_in: number;
-    errors_out: number;
-    drops_in: number;
-    drops_out: number;
-  };
-  processes?: {
-    count: number;
-  };
-}
-
-interface HealthData {
-  timestamp: string;
-  overall_status: 'healthy' | 'degraded' | 'unhealthy';
-  services: {
-    database: DatabaseHealth;
-    redis: RedisHealth;
-    storage: StorageHealth;
-  };
-  system_resources: SystemResources;
-}
 
 const SystemHealth = () => {
   const { t } = useTranslation();
@@ -120,10 +46,7 @@ const SystemHealth = () => {
 
   const { data, isLoading, error, refetch } = useQuery<HealthData>({
     queryKey: ['system-health'],
-    queryFn: async () => {
-      const response = await axios.get('/api/v1/admin/system/health');
-      return response.data;
-    },
+    queryFn: () => getSystemHealth(true),
     refetchInterval: autoRefresh ? refreshInterval : false,
     refetchIntervalInBackground: true,
   });
@@ -243,12 +166,12 @@ const SystemHealth = () => {
       {/* Services Health */}
       <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
         {/* Database */}
-        <Col xs={24} lg={8}>
+        <Col xs={24} lg={6}>
           <Card
             title={
               <Space>
                 <DatabaseOutlined />
-                <span>Database (PostgreSQL)</span>
+                <span>{t('systemHealth.services.database')}</span>
                 {getStatusIcon(data?.services.database.status || 'unknown')}
               </Space>
             }
@@ -259,21 +182,21 @@ const SystemHealth = () => {
             }
           >
             <Descriptions column={1} size="small">
-              <Descriptions.Item label="Response Time">
+              <Descriptions.Item label={t('systemHealth.sla.columns.responseTime')}>
                 {data?.services.database.response_time_ms
                   ? `${data.services.database.response_time_ms.toFixed(2)} ms`
                   : '-'}
               </Descriptions.Item>
-              <Descriptions.Item label="Pool Size">
+              <Descriptions.Item label={t('systemHealth.labels.poolSize')}>
                 {data?.services.database.pool_size || '-'}
               </Descriptions.Item>
-              <Descriptions.Item label="Checked Out">
+              <Descriptions.Item label={t('systemHealth.labels.checkedOut')}>
                 {data?.services.database.checked_out || 0}
               </Descriptions.Item>
-              <Descriptions.Item label="Available">
+              <Descriptions.Item label={t('systemHealth.labels.available')}>
                 {data?.services.database.checked_in || 0}
               </Descriptions.Item>
-              <Descriptions.Item label="Pool Utilization">
+              <Descriptions.Item label={t('systemHealth.labels.poolUtilization')}>
                 <Progress
                   percent={data?.services.database.utilization_percent || 0}
                   size="small"
@@ -293,12 +216,12 @@ const SystemHealth = () => {
         </Col>
 
         {/* Redis */}
-        <Col xs={24} lg={8}>
+        <Col xs={24} lg={6}>
           <Card
             title={
               <Space>
                 <ThunderboltOutlined />
-                <span>Redis Cache</span>
+                <span>{t('systemHealth.services.redis')}</span>
                 {getStatusIcon(data?.services.redis.status || 'unknown')}
               </Space>
             }
@@ -309,27 +232,27 @@ const SystemHealth = () => {
             }
           >
             <Descriptions column={1} size="small">
-              <Descriptions.Item label="Response Time">
+              <Descriptions.Item label={t('systemHealth.sla.columns.responseTime')}>
                 {data?.services.redis.response_time_ms
                   ? `${data.services.redis.response_time_ms.toFixed(2)} ms`
                   : '-'}
               </Descriptions.Item>
-              <Descriptions.Item label="Used Memory">
+              <Descriptions.Item label={t('systemHealth.labels.usedMemory')}>
                 {data?.services.redis.used_memory_mb
                   ? `${data.services.redis.used_memory_mb.toFixed(2)} MB`
                   : '-'}
               </Descriptions.Item>
-              <Descriptions.Item label="Max Memory">
+              <Descriptions.Item label={t('systemHealth.labels.maxMemory')}>
                 {typeof data?.services.redis.max_memory_mb === 'number'
                   ? `${data.services.redis.max_memory_mb.toFixed(2)} MB`
                   : data?.services.redis.max_memory_mb || '-'}
               </Descriptions.Item>
-              <Descriptions.Item label="Keys Count">
+              <Descriptions.Item label={t('systemHealth.labels.keysCount')}>
                 {data?.services.redis.keys_count?.toLocaleString() || 0}
               </Descriptions.Item>
               {data?.services.redis.memory_utilization_percent !== null &&
                 data?.services.redis.memory_utilization_percent !== undefined && (
-                  <Descriptions.Item label="Memory Utilization">
+                  <Descriptions.Item label={t('systemHealth.labels.memoryUtilization')}>
                     <Progress
                       percent={data.services.redis.memory_utilization_percent}
                       size="small"
@@ -345,12 +268,12 @@ const SystemHealth = () => {
         </Col>
 
         {/* Storage */}
-        <Col xs={24} lg={8}>
+        <Col xs={24} lg={6}>
           <Card
             title={
               <Space>
                 <CloudOutlined />
-                <span>Object Storage (MinIO)</span>
+                <span>{t('systemHealth.services.storage')}</span>
                 {getStatusIcon(data?.services.storage.status || 'unknown')}
               </Space>
             }
@@ -361,19 +284,33 @@ const SystemHealth = () => {
             }
           >
             <Descriptions column={1} size="small">
-              <Descriptions.Item label="Response Time">
+              <Descriptions.Item label={t('systemHealth.sla.columns.responseTime')}>
                 {data?.services.storage.response_time_ms
                   ? `${data.services.storage.response_time_ms.toFixed(2)} ms`
                   : '-'}
               </Descriptions.Item>
-              <Descriptions.Item label="Bucket Exists">
+              {data?.services.storage.used_gb !== undefined && (
+                <Descriptions.Item label={t('systemHealth.labels.storageUsed')}>
+                  {data.services.storage.used_gb.toFixed(2)} GB
+                </Descriptions.Item>
+              )}
+              {data?.services.storage.object_count !== undefined && (
+                <Descriptions.Item label={t('systemHealth.labels.objects')}>
+                  {data.services.storage.object_count.toLocaleString()}
+                </Descriptions.Item>
+              )}
+              {data?.services.storage.utilization_percent !== undefined && (
+                <Descriptions.Item label={t('systemHealth.labels.utilization')}>
+                  <Progress
+                    percent={data.services.storage.utilization_percent}
+                    size="small"
+                    status={getProgressStatus(data.services.storage.utilization_percent)}
+                  />
+                </Descriptions.Item>
+              )}
+              <Descriptions.Item label={t('systemHealth.labels.bucketStatus')}>
                 <Tag color={data?.services.storage.bucket_exists ? 'success' : 'error'}>
-                  {data?.services.storage.bucket_exists ? 'YES' : 'NO'}
-                </Tag>
-              </Descriptions.Item>
-              <Descriptions.Item label="Read Access">
-                <Tag color={data?.services.storage.can_read ? 'success' : 'warning'}>
-                  {data?.services.storage.can_read ? 'OK' : 'LIMITED'}
+                  {data?.services.storage.bucket_exists ? t('systemHealth.bucket.exists') : t('systemHealth.bucket.notFound')}
                 </Tag>
               </Descriptions.Item>
             </Descriptions>
@@ -387,7 +324,77 @@ const SystemHealth = () => {
             )}
           </Card>
         </Col>
+
+        {/* Celery */}
+        <Col xs={24} lg={6}>
+          <Card
+            title={
+              <Space>
+                <ThunderboltOutlined />
+                <span>{t('systemHealth.services.celery')}</span>
+                {getStatusIcon(data?.services.celery?.status || 'unknown')}
+              </Space>
+            }
+            extra={
+              <Tag color={getStatusColor(data?.services.celery?.status || 'default')}>
+                {data?.services.celery?.status?.toUpperCase() || 'UNKNOWN'}
+              </Tag>
+            }
+          >
+            <Descriptions column={1} size="small">
+              <Descriptions.Item label={t('systemHealth.labels.workers')}>
+                <Badge
+                  count={data?.services.celery?.workers_count || 0}
+                  showZero
+                  style={{
+                    backgroundColor:
+                      (data?.services.celery?.workers_count || 0) > 0 ? '#52c41a' : '#f5222d',
+                  }}
+                />
+              </Descriptions.Item>
+              <Descriptions.Item label={t('systemHealth.labels.activeTasks')}>
+                {data?.services.celery?.active_tasks || 0}
+              </Descriptions.Item>
+              <Descriptions.Item label={t('systemHealth.labels.reservedTasks')}>
+                {data?.services.celery?.reserved_tasks || 0}
+              </Descriptions.Item>
+              <Descriptions.Item label={t('systemHealth.labels.status')}>
+                {data?.services.celery?.message || 'N/A'}
+              </Descriptions.Item>
+            </Descriptions>
+            {data?.services.celery?.error && (
+              <Alert
+                message={data.services.celery.error}
+                type="error"
+                showIcon
+                style={{ marginTop: 8 }}
+              />
+            )}
+          </Card>
+        </Col>
       </Row>
+
+      {/* Alerts Summary */}
+      {data?.alerts && data.alerts.statistics.active_total > 0 && (
+        <Alert
+          message={t('systemHealth.alertsSummary.title', {
+            total: data.alerts.statistics.active_total,
+            critical: data.alerts.statistics.critical,
+            warnings: data.alerts.statistics.warning,
+          })}
+          description={t('systemHealth.alertsSummary.description', {
+            resolved: data.alerts.statistics.resolved_24h,
+          })}
+          type={data.alerts.statistics.critical > 0 ? 'error' : 'warning'}
+          showIcon
+          style={{ marginBottom: 24 }}
+          action={
+            <Button size="small" type="link" href="#/system-health/alerts">
+              {t('systemHealth.actions.viewDetails')}
+            </Button>
+          }
+        />
+      )}
 
       {/* Tabs for Overview and Trends */}
       <Tabs
@@ -398,7 +405,7 @@ const SystemHealth = () => {
             key: 'overview',
             label: (
               <span>
-                <ApiOutlined /> Overview
+                <ApiOutlined /> {t('systemHealth.tabs.overview')}
               </span>
             ),
             children: (
@@ -406,11 +413,11 @@ const SystemHealth = () => {
                 {/* System Resources */}
                 <Row gutter={[16, 16]} style={{ marginBottom: 16 }}>
                   <Col span={24}>
-                    <Card title={<Space><HddOutlined /> System Resources</Space>}>
+                    <Card title={<Space><HddOutlined /> {t('systemHealth.resources.title')}</Space>}>
                       <Row gutter={[24, 24]}>
                         {/* CPU */}
                         <Col xs={24} md={6}>
-                          <Card type="inner" title="CPU Usage">
+                          <Card type="inner" title={t('systemHealth.cpu.title')}>
                             <Statistic
                               value={data?.system_resources.cpu?.usage_percent || 0}
                               suffix="%"
@@ -429,7 +436,7 @@ const SystemHealth = () => {
                               style={{ marginTop: 16 }}
                             />
                             <div style={{ marginTop: 8, fontSize: 12, color: '#999' }}>
-                              {data?.system_resources.cpu?.cores || 0} cores
+                              {data?.system_resources.cpu?.cores || 0} {t('common.units.cores')}
                               {data?.system_resources.cpu?.frequency_mhz &&
                                 ` @ ${data.system_resources.cpu.frequency_mhz} MHz`}
                             </div>
@@ -438,7 +445,7 @@ const SystemHealth = () => {
 
                         {/* Memory */}
                         <Col xs={24} md={6}>
-                          <Card type="inner" title="Memory Usage">
+                          <Card type="inner" title={t('systemHealth.memory.title')}>
                             <Statistic
                               value={data?.system_resources.memory?.usage_percent || 0}
                               suffix="%"
@@ -465,7 +472,7 @@ const SystemHealth = () => {
 
                         {/* Disk */}
                         <Col xs={24} md={6}>
-                          <Card type="inner" title="Disk Usage">
+                          <Card type="inner" title={t('systemHealth.disk.title')}>
                             <Statistic
                               value={data?.system_resources.disk?.usage_percent || 0}
                               suffix="%"
@@ -484,20 +491,20 @@ const SystemHealth = () => {
                               style={{ marginTop: 16 }}
                             />
                             <div style={{ marginTop: 8, fontSize: 12, color: '#999' }}>
-                              {data?.system_resources.disk?.free_gb?.toFixed(2) || 0} GB free
+                              {data?.system_resources.disk?.free_gb?.toFixed(2) || 0} GB {t('common.units.free')}
                             </div>
                           </Card>
                         </Col>
 
                         {/* Processes */}
                         <Col xs={24} md={6}>
-                          <Card type="inner" title="Processes">
+                          <Card type="inner" title={t('systemHealth.processes.title')}>
                             <Statistic
                               value={data?.system_resources.processes?.count || 0}
                               valueStyle={{ color: '#1890ff' }}
                             />
                             <div style={{ marginTop: 24, fontSize: 12, color: '#999' }}>
-                              Active processes
+                              {t('systemHealth.processes.active')}
                             </div>
                           </Card>
                         </Col>
@@ -510,11 +517,11 @@ const SystemHealth = () => {
                 {data?.system_resources.network && (
                   <Row gutter={[16, 16]}>
                     <Col span={24}>
-                      <Card title="Network Statistics">
+                      <Card title={t('systemHealth.network.title')}>
                         <Row gutter={[16, 16]}>
                           <Col xs={12} md={6}>
                             <Statistic
-                              title="Data Sent"
+                              title={t('systemHealth.network.dataSent')}
                               value={data.system_resources.network.bytes_sent_gb}
                               suffix="GB"
                               precision={2}
@@ -522,7 +529,7 @@ const SystemHealth = () => {
                           </Col>
                           <Col xs={12} md={6}>
                             <Statistic
-                              title="Data Received"
+                              title={t('systemHealth.network.dataReceived')}
                               value={data.system_resources.network.bytes_recv_gb}
                               suffix="GB"
                               precision={2}
@@ -530,14 +537,14 @@ const SystemHealth = () => {
                           </Col>
                           <Col xs={12} md={6}>
                             <Statistic
-                              title="Packets Sent"
+                              title={t('systemHealth.network.packetsSent')}
                               value={data.system_resources.network.packets_sent}
                               formatter={(value) => value.toLocaleString()}
                             />
                           </Col>
                           <Col xs={12} md={6}>
                             <Statistic
-                              title="Packets Received"
+                              title={t('systemHealth.network.packetsReceived')}
                               value={data.system_resources.network.packets_recv}
                               formatter={(value) => value.toLocaleString()}
                             />
@@ -554,38 +561,38 @@ const SystemHealth = () => {
             key: 'trends',
             label: (
               <span>
-                <LineChartOutlined /> Trends
+                <LineChartOutlined /> {t('systemHealth.tabs.trends')}
               </span>
             ),
             children: (
               <Row gutter={[16, 16]}>
                 <Col xs={24} lg={12}>
-                  <MetricsChart metric="cpu_usage" title="CPU Usage Trend" unit="%" />
+                  <MetricsChart metric="cpu_usage" title={t('systemHealth.charts.cpuTrend')} unit="%" />
                 </Col>
                 <Col xs={24} lg={12}>
-                  <MetricsChart metric="memory_usage" title="Memory Usage Trend" unit="%" />
+                  <MetricsChart metric="memory_usage" title={t('systemHealth.charts.memoryTrend')} unit="%" />
                 </Col>
                 <Col xs={24} lg={12}>
-                  <MetricsChart metric="disk_usage" title="Disk Usage Trend" unit="%" />
+                  <MetricsChart metric="disk_usage" title={t('systemHealth.charts.diskTrend')} unit="%" />
                 </Col>
                 <Col xs={24} lg={12}>
                   <MetricsChart
                     metric="db_response_time"
-                    title="Database Response Time"
+                    title={t('systemHealth.charts.dbResponseTime')}
                     unit=" ms"
                   />
                 </Col>
                 <Col xs={24} lg={12}>
                   <MetricsChart
                     metric="redis_response_time"
-                    title="Redis Response Time"
+                    title={t('systemHealth.charts.redisResponseTime')}
                     unit=" ms"
                   />
                 </Col>
                 <Col xs={24} lg={12}>
                   <MetricsChart
                     metric="storage_response_time"
-                    title="Storage Response Time"
+                    title={t('systemHealth.charts.storageResponseTime')}
                     unit=" ms"
                   />
                 </Col>

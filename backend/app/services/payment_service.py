@@ -19,7 +19,7 @@ from app.models.payment import (
     Currency,
 )
 from app.models.user import User
-from app.schemas.payment import PaymentIntentRequest, PaymentConfirmRequest, RefundRequest
+from app.schemas.payment import PaymentIntentRequest, PaymentConfirmRequest, RefundRequestCreate
 from app.services.payment_gateway import (
     PaymentGateway,
     PaymentGatewayFactory,
@@ -172,7 +172,7 @@ class PaymentService:
         return payment
 
     async def create_refund(
-        self, user_id: int, request: RefundRequest, gateway_config: PaymentGatewayConfig
+        self, user_id: int, request: RefundRequestCreate, gateway_config: PaymentGatewayConfig
     ) -> Dict[str, Any]:
         """
         创建退款

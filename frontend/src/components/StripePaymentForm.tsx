@@ -4,7 +4,7 @@ import {
   useStripe,
   useElements,
 } from '@stripe/react-stripe-js';
-import { useTranslation } from 'react-i18n';
+import { useTranslation } from 'react-i18next';
 
 interface StripePaymentFormProps {
   amount: number;

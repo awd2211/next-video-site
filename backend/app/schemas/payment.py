@@ -12,6 +12,8 @@ from app.models.payment import (
     PaymentStatus,
     PaymentType,
     Currency,
+    RefundReason,
+    RefundRequestStatus,
 )
 
 
@@ -91,11 +93,91 @@ class PaymentConfirmRequest(BaseModel):
     payment_method_id: Optional[str] = Field(None, description="支付方式ID")
 
 
-class RefundRequest(BaseModel):
-    """退款请求"""
+class DirectRefundRequest(BaseModel):
+    """直接退款请求（旧系统，仅用于兼容）"""
     payment_id: int = Field(..., description="支付ID")
     amount: Optional[Decimal] = Field(None, gt=0, description="退款金额 (None表示全额退款)")
-    reason: Optional[str] = Field(None, max_length=500, description="退款原因")
+    reason: Optional[RefundReason] = Field(None, description="退款原因类别")
+    reason_detail: Optional[str] = Field(None, max_length=500, description="退款原因详细说明")
+    admin_note: Optional[str] = Field(None, max_length=1000, description="管理员内部备注")
+
+
+# ==================== RefundRequest Schemas (审批流程) ====================
+
+class RefundRequestCreate(BaseModel):
+    """创建退款审批申请"""
+    payment_id: int = Field(..., description="支付ID")
+    refund_amount: Decimal = Field(..., gt=0, description="申请退款金额")
+    refund_reason: RefundReason = Field(..., description="退款原因类别")
+    reason_detail: Optional[str] = Field(None, max_length=500, description="退款原因详细说明")
+    admin_note: Optional[str] = Field(None, max_length=1000, description="管理员内部备注")
+
+
+class RefundRequestUpdate(BaseModel):
+    """更新退款审批申请"""
+    refund_amount: Optional[Decimal] = Field(None, gt=0, description="申请退款金额")
+    refund_reason: Optional[RefundReason] = Field(None, description="退款原因类别")
+    reason_detail: Optional[str] = Field(None, max_length=500, description="退款原因详细说明")
+    admin_note: Optional[str] = Field(None, max_length=1000, description="管理员内部备注")
+
+
+class RefundRequestApprove(BaseModel):
+    """审批退款申请"""
+    approval_note: str = Field(..., max_length=1000, description="审批意见")
+
+
+class RefundRequestReject(BaseModel):
+    """拒绝退款申请"""
+    rejection_note: str = Field(..., max_length=1000, description="拒绝原因")
+
+
+class RefundRequestResponse(BaseModel):
+    """退款审批申请响应"""
+    id: int
+    payment_id: int
+    requested_by: int
+    first_approver_id: Optional[int] = None
+    second_approver_id: Optional[int] = None
+
+    refund_amount: Decimal
+    refund_reason: RefundReason
+    reason_detail: Optional[str] = None
+    admin_note: Optional[str] = None
+
+    status: RefundRequestStatus
+
+    first_approval_note: Optional[str] = None
+    first_approved_at: Optional[datetime] = None
+
+    second_approval_note: Optional[str] = None
+    second_approved_at: Optional[datetime] = None
+
+    rejection_note: Optional[str] = None
+    rejected_at: Optional[datetime] = None
+
+    processed_at: Optional[datetime] = None
+    completed_at: Optional[datetime] = None
+    failure_reason: Optional[str] = None
+
+    created_at: datetime
+    updated_at: Optional[datetime] = None
+
+    class Config:
+        from_attributes = True
+
+
+class RefundRequestWithDetails(RefundRequestResponse):
+    """退款审批申请详情（包含关联信息）"""
+    payment: Optional[PaymentResponse] = None
+    requester: Optional[dict] = None  # AdminUser 信息
+    first_approver: Optional[dict] = None
+    second_approver: Optional[dict] = None
+
+
+class RefundRequestListResponse(BaseModel):
+    """退款审批申请列表响应"""
+    items: List[RefundRequestResponse]
+    total: int
 
 
 class RefundResponse(BaseModel):
@@ -103,6 +185,8 @@ class RefundResponse(BaseModel):
     success: bool
     refund_id: Optional[str] = None
     amount: Optional[Decimal] = None
+    total_refunded: Optional[Decimal] = None
+    payment_status: Optional[str] = None
     failure_message: Optional[str] = None
     refunded_at: Optional[datetime] = None
 

@@ -82,34 +82,34 @@ const Subscription: React.FC = () => {
 
   if (plansLoading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-gray-900 flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">{t('common.loading')}</p>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-600 mx-auto mb-4"></div>
+          <p className="text-gray-300">{t('common.loading')}</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-gray-900 py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="text-center mb-12">
-          <h1 className="text-4xl font-bold text-gray-900 mb-4">
+          <h1 className="text-4xl font-bold text-white mb-4">
             {t('subscription.chooseYourPlan')}
           </h1>
-          <p className="text-xl text-gray-600 max-w-2xl mx-auto">
+          <p className="text-xl text-gray-400 max-w-2xl mx-auto">
             {t('subscription.planDescription')}
           </p>
         </div>
 
         {/* Current Subscription Alert */}
         {currentSubscription && (
-          <div className="mb-8 bg-blue-50 border border-blue-200 rounded-lg p-4 max-w-3xl mx-auto">
+          <div className="mb-8 bg-blue-900/20 border border-blue-700 rounded-lg p-4 max-w-3xl mx-auto">
             <div className="flex items-center">
               <svg
-                className="h-5 w-5 text-blue-600 mr-3"
+                className="h-5 w-5 text-blue-400 mr-3"
                 fill="currentColor"
                 viewBox="0 0 20 20"
               >
@@ -120,7 +120,7 @@ const Subscription: React.FC = () => {
                 />
               </svg>
               <div className="flex-1">
-                <p className="text-sm text-blue-800">
+                <p className="text-sm text-blue-200">
                   {t('subscription.currentlySubscribed', {
                     plan: currentSubscription.plan?.name_en,
                   })}
@@ -128,7 +128,7 @@ const Subscription: React.FC = () => {
               </div>
               <button
                 onClick={() => navigate('/account/subscription')}
-                className="text-sm text-blue-600 hover:text-blue-800 font-medium"
+                className="text-sm text-blue-400 hover:text-blue-300 font-medium"
               >
                 {t('subscription.manageSubscription')}
               </button>
@@ -138,7 +138,7 @@ const Subscription: React.FC = () => {
 
         {/* Billing Period Selector */}
         <div className="flex justify-center mb-12">
-          <div className="inline-flex rounded-lg border border-gray-300 bg-white p-1">
+          <div className="inline-flex rounded-lg border border-gray-700 bg-gray-800 p-1">
             {['monthly', 'quarterly', 'yearly', 'lifetime'].map((period) => (
               <button
                 key={period}
@@ -149,13 +149,13 @@ const Subscription: React.FC = () => {
                 }
                 className={`px-6 py-2 rounded-md text-sm font-medium transition-colors ${
                   selectedBillingPeriod === period
-                    ? 'bg-blue-600 text-white'
-                    : 'text-gray-700 hover:text-gray-900'
+                    ? 'bg-red-600 text-white'
+                    : 'text-gray-300 hover:text-white'
                 }`}
               >
                 {getBillingPeriodLabel(period)}
                 {period === 'yearly' && (
-                  <span className="ml-2 text-xs bg-green-100 text-green-800 px-2 py-0.5 rounded">
+                  <span className="ml-2 text-xs bg-green-900/40 text-green-400 px-2 py-0.5 rounded">
                     {t('subscription.save20')}
                   </span>
                 )}
@@ -172,13 +172,13 @@ const Subscription: React.FC = () => {
             return (
               <div
                 key={plan.id}
-                className={`relative bg-white rounded-2xl shadow-lg overflow-hidden transition-transform hover:scale-105 ${
-                  plan.is_popular ? 'ring-2 ring-blue-600' : ''
+                className={`relative bg-gray-800 rounded-2xl shadow-lg overflow-hidden transition-transform hover:scale-105 ${
+                  plan.is_popular ? 'ring-2 ring-red-600' : ''
                 }`}
               >
                 {/* Popular Badge */}
                 {plan.is_popular && (
-                  <div className="absolute top-0 right-0 bg-blue-600 text-white px-4 py-1 text-sm font-medium rounded-bl-lg">
+                  <div className="absolute top-0 right-0 bg-red-600 text-white px-4 py-1 text-sm font-medium rounded-bl-lg">
                     {t('subscription.mostPopular')}
                   </div>
                 )}
@@ -192,20 +192,20 @@ const Subscription: React.FC = () => {
 
                 <div className="p-8">
                   {/* Plan Name */}
-                  <h3 className="text-2xl font-bold text-gray-900 mb-2">
+                  <h3 className="text-2xl font-bold text-white mb-2">
                     {plan.name_en}
                   </h3>
 
                   {/* Plan Description */}
-                  <p className="text-gray-600 mb-6">{plan.description_en}</p>
+                  <p className="text-gray-400 mb-6">{plan.description_en}</p>
 
                   {/* Price */}
                   <div className="mb-6">
-                    <span className="text-4xl font-bold text-gray-900">
+                    <span className="text-4xl font-bold text-white">
                       {formatPrice(plan)}
                     </span>
                     {plan.billing_period !== 'lifetime' && (
-                      <span className="text-gray-600 ml-2">
+                      <span className="text-gray-400 ml-2">
                         / {getBillingPeriodLabel(plan.billing_period)}
                       </span>
                     )}
@@ -227,7 +227,7 @@ const Subscription: React.FC = () => {
                           d="M5 13l4 4L19 7"
                         />
                       </svg>
-                      <span className="text-gray-700">
+                      <span className="text-gray-300">
                         {t('subscription.videoQuality', {
                           quality: plan.max_video_quality.toUpperCase(),
                         })}
@@ -247,7 +247,7 @@ const Subscription: React.FC = () => {
                           d="M5 13l4 4L19 7"
                         />
                       </svg>
-                      <span className="text-gray-700">
+                      <span className="text-gray-300">
                         {t('subscription.concurrentStreams', {
                           count: plan.max_concurrent_streams,
                         })}
@@ -268,7 +268,7 @@ const Subscription: React.FC = () => {
                             d="M5 13l4 4L19 7"
                           />
                         </svg>
-                        <span className="text-gray-700">
+                        <span className="text-gray-300">
                           {t('subscription.allowDownloads')}
                         </span>
                       </li>
@@ -288,7 +288,7 @@ const Subscription: React.FC = () => {
                             d="M5 13l4 4L19 7"
                           />
                         </svg>
-                        <span className="text-gray-700">
+                        <span className="text-gray-300">
                           {t('subscription.freeTrial', { days: plan.trial_days })}
                         </span>
                       </li>
@@ -300,8 +300,8 @@ const Subscription: React.FC = () => {
                     onClick={() => handleSelectPlan(plan)}
                     className={`w-full py-3 px-6 rounded-lg font-semibold transition-colors ${
                       plan.is_popular
-                        ? 'bg-blue-600 hover:bg-blue-700 text-white'
-                        : 'bg-gray-100 hover:bg-gray-200 text-gray-900'
+                        ? 'bg-red-600 hover:bg-red-700 text-white'
+                        : 'bg-gray-700 hover:bg-gray-600 text-white'
                     }`}
                   >
                     {currentSubscription?.plan_id === plan.id
@@ -316,27 +316,27 @@ const Subscription: React.FC = () => {
 
         {/* FAQ Section */}
         <div className="mt-16 max-w-3xl mx-auto">
-          <h2 className="text-2xl font-bold text-gray-900 text-center mb-8">
+          <h2 className="text-2xl font-bold text-white text-center mb-8">
             {t('subscription.faqTitle')}
           </h2>
           <div className="space-y-4">
-            <details className="bg-white rounded-lg p-6 shadow">
-              <summary className="font-semibold text-gray-900 cursor-pointer">
+            <details className="bg-gray-800 rounded-lg p-6 shadow">
+              <summary className="font-semibold text-white cursor-pointer">
                 {t('subscription.faq1Question')}
               </summary>
-              <p className="mt-4 text-gray-600">{t('subscription.faq1Answer')}</p>
+              <p className="mt-4 text-gray-400">{t('subscription.faq1Answer')}</p>
             </details>
-            <details className="bg-white rounded-lg p-6 shadow">
-              <summary className="font-semibold text-gray-900 cursor-pointer">
+            <details className="bg-gray-800 rounded-lg p-6 shadow">
+              <summary className="font-semibold text-white cursor-pointer">
                 {t('subscription.faq2Question')}
               </summary>
-              <p className="mt-4 text-gray-600">{t('subscription.faq2Answer')}</p>
+              <p className="mt-4 text-gray-400">{t('subscription.faq2Answer')}</p>
             </details>
-            <details className="bg-white rounded-lg p-6 shadow">
-              <summary className="font-semibold text-gray-900 cursor-pointer">
+            <details className="bg-gray-800 rounded-lg p-6 shadow">
+              <summary className="font-semibold text-white cursor-pointer">
                 {t('subscription.faq3Question')}
               </summary>
-              <p className="mt-4 text-gray-600">{t('subscription.faq3Answer')}</p>
+              <p className="mt-4 text-gray-400">{t('subscription.faq3Answer')}</p>
             </details>
           </div>
         </div>

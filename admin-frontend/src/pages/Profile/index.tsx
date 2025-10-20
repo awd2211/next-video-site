@@ -9,11 +9,13 @@ import { get2FAStatus, disable2FA, regenerateBackupCodes, type TwoFactorStatus }
 import TwoFactorSetup from '../../components/TwoFactorSetup'
 import { useLanguage } from '../../contexts/LanguageContext'
 import { useTheme } from '../../contexts/ThemeContext'
+import { useTranslation } from 'react-i18next'
 
 const { Title, Text } = Typography
 const { TabPane } = Tabs
 
 export default function Profile() {
+  const { t } = useTranslation()
   const [profileForm] = Form.useForm()
   const [passwordForm] = Form.useForm()
   const [emailForm] = Form.useForm()
@@ -50,7 +52,7 @@ export default function Profile() {
         preferred_theme: data.preferred_theme || 'light',
       })
     } catch (error: any) {
-      message.error(error.response?.data?.detail || '加载个人资料失败')
+      message.error(error.response?.data?.detail || t('profile.message.loadProfileFailed'))
     } finally {
       setLoading(false)
     }
@@ -79,19 +81,19 @@ export default function Profile() {
   // Handle disable 2FA
   const handleDisable2FA = async () => {
     if (!disablePassword) {
-      message.error('请输入密码')
+      message.error(t('profile.message.enterPassword'))
       return
     }
 
     try {
       setLoading(true)
       await disable2FA(disablePassword)
-      message.success('2FA 已禁用')
+      message.success(t('profile.twoFactor.disableSuccess'))
       setDisablePasswordModal(false)
       setDisablePassword('')
       await load2FAStatus()
     } catch (error: any) {
-      message.error(error.response?.data?.detail || '禁用2FA失败')
+      message.error(error.response?.data?.detail || t('profile.twoFactor.disableFailed'))
     } finally {
       setLoading(false)
     }
@@ -100,33 +102,33 @@ export default function Profile() {
   // Handle regenerate backup codes
   const handleRegenerateBackupCodes = () => {
     Modal.confirm({
-      title: '重新生成备份码',
+      title: t('profile.twoFactor.regenerateTitle'),
       content: (
         <div>
-          <p>重新生成备份码将使旧的备份码失效。</p>
-          <p>请输入您的密码以继续：</p>
+          <p>{t('profile.twoFactor.regenerateContent')}</p>
+          <p>{t('profile.twoFactor.regeneratePrompt')}</p>
           <Input.Password
-            placeholder="输入密码"
+            placeholder={t('profile.twoFactor.regeneratePasswordPlaceholder')}
             onChange={(e) => setDisablePassword(e.target.value)}
           />
         </div>
       ),
       onOk: async () => {
         if (!disablePassword) {
-          message.error('请输入密码')
+          message.error(t('profile.twoFactor.regeneratePasswordRequired'))
           return Promise.reject()
         }
 
         try {
           const response = await regenerateBackupCodes(disablePassword)
           Modal.info({
-            title: '新的备份码',
+            title: t('profile.twoFactor.newBackupCodesTitle'),
             width: 600,
             content: (
               <div>
                 <Alert
-                  message="请保存这些新的备份码"
-                  description="旧的备份码已失效，每个备份码只能使用一次"
+                  message={t('profile.twoFactor.newBackupCodesAlert')}
+                  description={t('profile.twoFactor.newBackupCodesDescription')}
                   type="warning"
                   showIcon
                   style={{ marginBottom: 16 }}
@@ -150,11 +152,11 @@ export default function Profile() {
                   icon={<CopyOutlined />}
                   onClick={() => {
                     navigator.clipboard.writeText(response.backup_codes.join('\n'))
-                    message.success('已复制到剪贴板')
+                    message.success(t('profile.twoFactor.backupCodesCopied'))
                   }}
                   style={{ marginTop: 16 }}
                 >
-                  复制全部
+                  {t('profile.twoFactor.copyAllBackupCodes')}
                 </Button>
               </div>
             ),
@@ -162,7 +164,7 @@ export default function Profile() {
           setDisablePassword('')
           await load2FAStatus()
         } catch (error: any) {
-          message.error(error.response?.data?.detail || '重新生成备份码失败')
+          message.error(error.response?.data?.detail || t('profile.twoFactor.regenerateFailed'))
           return Promise.reject()
         }
       },
@@ -175,9 +177,9 @@ export default function Profile() {
       setLoading(true)
       const updated = await profileService.updateProfile(values)
       setProfile(updated)
-      message.success('个人资料更新成功')
+      message.success(t('profile.message.profileUpdateSuccess'))
     } catch (error: any) {
-      message.error(error.response?.data?.detail || '更新个人资料失败')
+      message.error(error.response?.data?.detail || t('profile.message.profileUpdateFailed'))
     } finally {
       setLoading(false)
     }
@@ -191,10 +193,10 @@ export default function Profile() {
         old_password: values.old_password,
         new_password: values.new_password,
       })
-      message.success('密码修改成功，建议重新登录')
+      message.success(t('profile.message.passwordChangeSuccess'))
       passwordForm.resetFields()
     } catch (error: any) {
-      message.error(error.response?.data?.detail || '修改密码失败')
+      message.error(error.response?.data?.detail || t('profile.message.passwordChangeFailed'))
     } finally {
       setLoading(false)
     }
@@ -209,11 +211,11 @@ export default function Profile() {
         password: values.password,
       })
       setProfile(updated)
-      message.success('邮箱修改成功')
+      message.success(t('profile.message.emailChangeSuccess'))
       emailForm.resetFields()
       setActiveTab('info')
     } catch (error: any) {
-      message.error(error.response?.data?.detail || '修改邮箱失败')
+      message.error(error.response?.data?.detail || t('profile.message.emailChangeFailed'))
     } finally {
       setLoading(false)
     }
@@ -239,17 +241,17 @@ export default function Profile() {
         needsReload = true
       }
 
-      message.success('偏好设置更新成功')
+      message.success(t('profile.message.preferencesUpdateSuccess'))
 
       // Reload page to apply all changes
       if (needsReload) {
-        message.info('语言或主题设置已更改，正在刷新页面...', 2)
+        message.info(t('profile.message.languageOrThemeChanged'), 2)
         setTimeout(() => {
           window.location.reload()
         }, 2000)
       }
     } catch (error: any) {
-      message.error(error.response?.data?.detail || '更新偏好设置失败')
+      message.error(error.response?.data?.detail || t('profile.message.preferencesUpdateFailed'))
     } finally {
       setLoading(false)
     }
@@ -258,14 +260,14 @@ export default function Profile() {
   if (!profile) {
     return (
       <div style={{ padding: '24px', textAlign: 'center' }}>
-        <Text>加载中...</Text>
+        <Text>{t('profile.loading')}</Text>
       </div>
     )
   }
 
   return (
     <div style={{ padding: '24px' }}>
-      <Title level={2}>个人资料</Title>
+      <Title level={2}>{t('profile.title')}</Title>
 
       <Card style={{ marginTop: '24px' }}>
         {/* 头部信息卡片 */}
@@ -293,7 +295,7 @@ export default function Profile() {
                 <MailOutlined /> {profile.email}
               </Text>
               <Text style={{ color: 'rgba(255,255,255,0.9)' }}>
-                {profile.is_superadmin ? '超级管理员' : '内容编辑者'}
+                {profile.is_superadmin ? t('profile.role.superadmin') : t('profile.role.editor')}
               </Text>
             </Space>
           </div>
@@ -302,24 +304,24 @@ export default function Profile() {
         {/* 标签页 */}
         <Tabs activeKey={activeTab} onChange={setActiveTab}>
           {/* 基本信息标签 */}
-          <TabPane tab="基本信息" key="info">
+          <TabPane tab={t('profile.tabs.basicInfo')} key="info">
             <Descriptions bordered column={2} style={{ marginBottom: '24px' }}>
-              <Descriptions.Item label="用户名">{profile.username}</Descriptions.Item>
-              <Descriptions.Item label="邮箱">{profile.email}</Descriptions.Item>
-              <Descriptions.Item label="角色">
-                {profile.is_superadmin ? '超级管理员' : '内容编辑者'}
+              <Descriptions.Item label={t('profile.form.username')}>{profile.username}</Descriptions.Item>
+              <Descriptions.Item label={t('profile.form.email')}>{profile.email}</Descriptions.Item>
+              <Descriptions.Item label={t('profile.form.role')}>
+                {profile.is_superadmin ? t('profile.role.superadmin') : t('profile.role.editor')}
               </Descriptions.Item>
-              <Descriptions.Item label="创建时间">
+              <Descriptions.Item label={t('profile.form.createdAt')}>
                 {new Date(profile.created_at).toLocaleString('zh-CN')}
               </Descriptions.Item>
-              <Descriptions.Item label="最后登录">
+              <Descriptions.Item label={t('profile.form.lastLogin')}>
                 {profile.last_login_at
                   ? new Date(profile.last_login_at).toLocaleString('zh-CN')
-                  : '未记录'}
+                  : t('profile.form.notRecorded')}
               </Descriptions.Item>
             </Descriptions>
 
-            <Title level={4}>编辑资料</Title>
+            <Title level={4}>{t('profile.form.editProfile')}</Title>
             <Form
               form={profileForm}
               layout="vertical"
@@ -327,22 +329,22 @@ export default function Profile() {
               style={{ maxWidth: '600px' }}
             >
               <Form.Item
-                label="全名"
+                label={t('profile.form.fullName')}
                 name="full_name"
-                rules={[{ max: 200, message: '全名最多200个字符' }]}
+                rules={[{ max: 200, message: t('profile.validation.fullNameMaxLength') }]}
               >
-                <Input placeholder="输入您的全名" prefix={<UserOutlined />} />
+                <Input placeholder={t('profile.placeholder.enterFullName')} prefix={<UserOutlined />} />
               </Form.Item>
 
               <Form.Item
-                label="头像URL"
+                label={t('profile.form.avatarUrl')}
                 name="avatar"
                 rules={[
-                  { max: 500, message: '头像URL最多500个字符' },
-                  { type: 'url', message: '请输入有效的URL' }
+                  { max: 500, message: t('profile.validation.avatarUrlMaxLength') },
+                  { type: 'url', message: t('profile.validation.validUrl') }
                 ]}
               >
-                <Input placeholder="输入头像图片URL" />
+                <Input placeholder={t('profile.placeholder.enterAvatarUrl')} />
               </Form.Item>
 
               <Form.Item>
@@ -353,14 +355,14 @@ export default function Profile() {
                   icon={<SaveOutlined />}
                   style={{ background: '#0073bb' }}
                 >
-                  保存修改
+                  {t('profile.button.saveChanges')}
                 </Button>
               </Form.Item>
             </Form>
           </TabPane>
 
           {/* 修改密码标签 */}
-          <TabPane tab="修改密码" key="password">
+          <TabPane tab={t('profile.tabs.changePassword')} key="password">
             <Form
               form={passwordForm}
               layout="vertical"
@@ -368,52 +370,52 @@ export default function Profile() {
               style={{ maxWidth: '600px' }}
             >
               <Form.Item
-                label="当前密码"
+                label={t('profile.form.currentPassword')}
                 name="old_password"
                 rules={[
-                  { required: true, message: '请输入当前密码' },
-                  { min: 6, message: '密码至少6个字符' }
+                  { required: true, message: t('profile.validation.currentPasswordRequired') },
+                  { min: 6, message: t('profile.validation.passwordMinLength') }
                 ]}
               >
                 <Input.Password
-                  placeholder="输入当前密码"
+                  placeholder={t('profile.placeholder.enterCurrentPassword')}
                   prefix={<LockOutlined />}
                 />
               </Form.Item>
 
               <Form.Item
-                label="新密码"
+                label={t('profile.form.newPassword')}
                 name="new_password"
                 rules={[
-                  { required: true, message: '请输入新密码' },
-                  { min: 6, message: '密码至少6个字符' },
-                  { max: 100, message: '密码最多100个字符' }
+                  { required: true, message: t('profile.validation.newPasswordRequired') },
+                  { min: 6, message: t('profile.validation.passwordMinLength') },
+                  { max: 100, message: t('profile.validation.passwordMaxLength') }
                 ]}
               >
                 <Input.Password
-                  placeholder="输入新密码（至少6个字符）"
+                  placeholder={t('profile.placeholder.enterNewPassword')}
                   prefix={<LockOutlined />}
                 />
               </Form.Item>
 
               <Form.Item
-                label="确认新密码"
+                label={t('profile.form.confirmPassword')}
                 name="confirm_password"
                 dependencies={['new_password']}
                 rules={[
-                  { required: true, message: '请确认新密码' },
+                  { required: true, message: t('profile.validation.confirmPasswordRequired') },
                   ({ getFieldValue }) => ({
                     validator(_, value) {
                       if (!value || getFieldValue('new_password') === value) {
                         return Promise.resolve()
                       }
-                      return Promise.reject(new Error('两次输入的密码不一致'))
+                      return Promise.reject(new Error(t('profile.validation.passwordMismatch')))
                     },
                   }),
                 ]}
               >
                 <Input.Password
-                  placeholder="再次输入新密码"
+                  placeholder={t('profile.placeholder.reenterNewPassword')}
                   prefix={<LockOutlined />}
                 />
               </Form.Item>
@@ -427,10 +429,10 @@ export default function Profile() {
                     icon={<SaveOutlined />}
                     style={{ background: '#ff9900' }}
                   >
-                    修改密码
+                    {t('profile.button.changePassword')}
                   </Button>
                   <Button onClick={() => passwordForm.resetFields()}>
-                    重置
+                    {t('profile.button.reset')}
                   </Button>
                 </Space>
               </Form.Item>
@@ -438,14 +440,14 @@ export default function Profile() {
           </TabPane>
 
           {/* 修改邮箱标签 */}
-          <TabPane tab="修改邮箱" key="email">
+          <TabPane tab={t('profile.tabs.changeEmail')} key="email">
             <Form
               form={emailForm}
               layout="vertical"
               onFinish={handleChangeEmail}
               style={{ maxWidth: '600px' }}
             >
-              <Form.Item label="当前邮箱">
+              <Form.Item label={t('profile.form.currentEmail')}>
                 <Input
                   value={profile.email}
                   disabled
@@ -454,29 +456,29 @@ export default function Profile() {
               </Form.Item>
 
               <Form.Item
-                label="新邮箱地址"
+                label={t('profile.form.newEmail')}
                 name="new_email"
                 rules={[
-                  { required: true, message: '请输入新邮箱地址' },
-                  { type: 'email', message: '请输入有效的邮箱地址' }
+                  { required: true, message: t('profile.validation.newEmailRequired') },
+                  { type: 'email', message: t('profile.validation.validEmail') }
                 ]}
               >
                 <Input
-                  placeholder="输入新的邮箱地址"
+                  placeholder={t('profile.placeholder.enterNewEmail')}
                   prefix={<MailOutlined />}
                 />
               </Form.Item>
 
               <Form.Item
-                label="当前密码"
+                label={t('profile.form.passwordForVerification')}
                 name="password"
-                extra="为了安全起见，修改邮箱需要验证您的当前密码"
+                extra={t('profile.extra.emailVerificationRequired')}
                 rules={[
-                  { required: true, message: '请输入当前密码以验证身份' }
+                  { required: true, message: t('profile.validation.passwordRequiredForEmail') }
                 ]}
               >
                 <Input.Password
-                  placeholder="输入当前密码进行验证"
+                  placeholder={t('profile.placeholder.enterPasswordForVerification')}
                   prefix={<LockOutlined />}
                 />
               </Form.Item>
@@ -490,10 +492,10 @@ export default function Profile() {
                     icon={<SaveOutlined />}
                     style={{ background: '#1d8102' }}
                   >
-                    修改邮箱
+                    {t('profile.button.changeEmail')}
                   </Button>
                   <Button onClick={() => emailForm.resetFields()}>
-                    重置
+                    {t('profile.button.reset')}
                   </Button>
                 </Space>
               </Form.Item>
@@ -501,11 +503,11 @@ export default function Profile() {
           </TabPane>
 
           {/* 偏好设置标签 */}
-          <TabPane tab={<span><SettingOutlined /> 偏好设置</span>} key="preferences">
-            <Title level={4}>用户偏好设置</Title>
+          <TabPane tab={<span><SettingOutlined /> {t('profile.tabs.preferences')}</span>} key="preferences">
+            <Title level={4}>{t('profile.preference.title')}</Title>
             <Alert
-              message="个性化您的体验"
-              description="自定义您的时区、语言和主题偏好"
+              message={t('profile.preference.description')}
+              description={t('profile.preference.subtitle')}
               type="info"
               showIcon
               style={{ marginBottom: 24 }}
@@ -518,50 +520,50 @@ export default function Profile() {
               style={{ maxWidth: '600px' }}
             >
               <Form.Item
-                label="时区"
+                label={t('profile.form.timezone')}
                 name="timezone"
-                extra="设置您所在的时区，将影响日期和时间的显示"
+                extra={t('profile.preference.timezoneExtra')}
               >
                 <Select
                   showSearch
-                  placeholder="选择时区"
+                  placeholder={t('profile.placeholder.selectTimezone')}
                   optionFilterProp="children"
                   prefix={<GlobalOutlined />}
                 >
-                  <Select.Option value="UTC">UTC (协调世界时)</Select.Option>
-                  <Select.Option value="Asia/Shanghai">Asia/Shanghai (中国标准时间 GMT+8)</Select.Option>
-                  <Select.Option value="Asia/Tokyo">Asia/Tokyo (日本标准时间 GMT+9)</Select.Option>
-                  <Select.Option value="Asia/Seoul">Asia/Seoul (韩国标准时间 GMT+9)</Select.Option>
-                  <Select.Option value="Asia/Hong_Kong">Asia/Hong_Kong (香港时间 GMT+8)</Select.Option>
-                  <Select.Option value="America/New_York">America/New_York (美国东部时间 GMT-5)</Select.Option>
-                  <Select.Option value="America/Los_Angeles">America/Los_Angeles (美国太平洋时间 GMT-8)</Select.Option>
-                  <Select.Option value="America/Chicago">America/Chicago (美国中部时间 GMT-6)</Select.Option>
-                  <Select.Option value="Europe/London">Europe/London (英国时间 GMT+0)</Select.Option>
-                  <Select.Option value="Europe/Paris">Europe/Paris (欧洲中部时间 GMT+1)</Select.Option>
-                  <Select.Option value="Europe/Berlin">Europe/Berlin (德国时间 GMT+1)</Select.Option>
-                  <Select.Option value="Australia/Sydney">Australia/Sydney (澳大利亚东部时间 GMT+10)</Select.Option>
+                  <Select.Option value="UTC">{t('profile.timezone.utc')}</Select.Option>
+                  <Select.Option value="Asia/Shanghai">{t('profile.timezone.shanghai')}</Select.Option>
+                  <Select.Option value="Asia/Tokyo">{t('profile.timezone.tokyo')}</Select.Option>
+                  <Select.Option value="Asia/Seoul">{t('profile.timezone.seoul')}</Select.Option>
+                  <Select.Option value="Asia/Hong_Kong">{t('profile.timezone.hongKong')}</Select.Option>
+                  <Select.Option value="America/New_York">{t('profile.timezone.newYork')}</Select.Option>
+                  <Select.Option value="America/Los_Angeles">{t('profile.timezone.losAngeles')}</Select.Option>
+                  <Select.Option value="America/Chicago">{t('profile.timezone.chicago')}</Select.Option>
+                  <Select.Option value="Europe/London">{t('profile.timezone.london')}</Select.Option>
+                  <Select.Option value="Europe/Paris">{t('profile.timezone.paris')}</Select.Option>
+                  <Select.Option value="Europe/Berlin">{t('profile.timezone.berlin')}</Select.Option>
+                  <Select.Option value="Australia/Sydney">{t('profile.timezone.sydney')}</Select.Option>
                 </Select>
               </Form.Item>
 
               <Form.Item
-                label="首选语言"
+                label={t('profile.form.preferredLanguage')}
                 name="preferred_language"
-                extra="选择您的首选界面语言"
+                extra={t('profile.preference.languageExtra')}
               >
-                <Select placeholder="选择语言">
-                  <Select.Option value="en-US">English (US)</Select.Option>
-                  <Select.Option value="zh-CN">简体中文</Select.Option>
+                <Select placeholder={t('profile.placeholder.selectLanguage')}>
+                  <Select.Option value="en-US">{t('profile.language.enUS')}</Select.Option>
+                  <Select.Option value="zh-CN">{t('profile.language.zhCN')}</Select.Option>
                 </Select>
               </Form.Item>
 
               <Form.Item
-                label="主题"
+                label={t('profile.form.theme')}
                 name="preferred_theme"
-                extra="选择您的界面主题"
+                extra={t('profile.preference.themeExtra')}
               >
-                <Select placeholder="选择主题" suffixIcon={<BgColorsOutlined />}>
-                  <Select.Option value="light">浅色主题</Select.Option>
-                  <Select.Option value="dark">深色主题</Select.Option>
+                <Select placeholder={t('profile.placeholder.selectTheme')} suffixIcon={<BgColorsOutlined />}>
+                  <Select.Option value="light">{t('profile.theme.light')}</Select.Option>
+                  <Select.Option value="dark">{t('profile.theme.dark')}</Select.Option>
                 </Select>
               </Form.Item>
 
@@ -573,10 +575,10 @@ export default function Profile() {
                     loading={loading}
                     icon={<SaveOutlined />}
                   >
-                    保存偏好设置
+                    {t('profile.button.savePreferences')}
                   </Button>
                   <Button onClick={() => preferencesForm.resetFields()}>
-                    重置
+                    {t('profile.button.reset')}
                   </Button>
                 </Space>
               </Form.Item>
@@ -584,11 +586,11 @@ export default function Profile() {
           </TabPane>
 
           {/* 安全设置标签 */}
-          <TabPane tab={<span><SafetyOutlined /> 安全设置</span>} key="security">
-            <Title level={4}>双因素认证 (2FA)</Title>
+          <TabPane tab={<span><SafetyOutlined /> {t('profile.tabs.security')}</span>} key="security">
+            <Title level={4}>{t('profile.twoFactor.title')}</Title>
             <Alert
-              message="增强账户安全"
-              description="双因素认证为您的账户提供额外的安全保护。即使密码被泄露，攻击者也无法访问您的账户。"
+              message={t('profile.twoFactor.enhanceSecurity')}
+              description={t('profile.twoFactor.description')}
               type="info"
               showIcon
               style={{ marginBottom: 24 }}
@@ -599,12 +601,12 @@ export default function Profile() {
                 <Space direction="vertical" size="large" style={{ width: '100%' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <div>
-                      <Text strong>2FA 状态：</Text>
+                      <Text strong>{t('profile.twoFactor.status')}</Text>
                       <Text style={{ marginLeft: 8 }}>
                         {twoFactorStatus.enabled ? (
-                          <span style={{ color: '#52c41a' }}>✓ 已启用</span>
+                          <span style={{ color: '#52c41a' }}>{t('profile.twoFactor.enabled')}</span>
                         ) : (
-                          <span style={{ color: '#d9d9d9' }}>未启用</span>
+                          <span style={{ color: '#d9d9d9' }}>{t('profile.twoFactor.disabled')}</span>
                         )}
                       </Text>
                     </div>
@@ -617,26 +619,26 @@ export default function Profile() {
                           setDisablePasswordModal(true)
                         }
                       }}
-                      checkedChildren="已启用"
-                      unCheckedChildren="已禁用"
+                      checkedChildren={t('profile.twoFactor.switchEnabled')}
+                      unCheckedChildren={t('profile.twoFactor.switchDisabled')}
                     />
                   </div>
 
                   {twoFactorStatus.enabled && (
                     <>
                       <div>
-                        <Text type="secondary">启用时间：</Text>
+                        <Text type="secondary">{t('profile.twoFactor.enabledAt')}</Text>
                         <Text style={{ marginLeft: 8 }}>
                           {twoFactorStatus.verified_at
                             ? new Date(twoFactorStatus.verified_at).toLocaleString('zh-CN')
-                            : '未知'}
+                            : t('profile.twoFactor.unknown')}
                         </Text>
                       </div>
 
                       <div>
-                        <Text type="secondary">剩余备份码：</Text>
+                        <Text type="secondary">{t('profile.twoFactor.backupCodesRemaining')}</Text>
                         <Text style={{ marginLeft: 8 }}>
-                          {twoFactorStatus.backup_codes_remaining} 个
+                          {twoFactorStatus.backup_codes_remaining}{t('profile.twoFactor.backupCodesCount')}
                         </Text>
                       </div>
 
@@ -644,7 +646,7 @@ export default function Profile() {
                         onClick={handleRegenerateBackupCodes}
                         icon={<SafetyOutlined />}
                       >
-                        重新生成备份码
+                        {t('profile.twoFactor.regenerateBackupCodes')}
                       </Button>
                     </>
                   )}
@@ -667,27 +669,27 @@ export default function Profile() {
 
       {/* Disable 2FA Modal */}
       <Modal
-        title="禁用双因素认证"
+        title={t('profile.twoFactor.disableTitle')}
         open={disablePasswordModal}
         onOk={handleDisable2FA}
         onCancel={() => {
           setDisablePasswordModal(false)
           setDisablePassword('')
         }}
-        okText="禁用"
-        cancelText="取消"
+        okText={t('profile.twoFactor.disableButton')}
+        cancelText={t('common.cancel')}
         okButtonProps={{ danger: true, loading }}
       >
         <Alert
-          message="警告"
-          description="禁用双因素认证将降低您账户的安全性"
+          message={t('profile.twoFactor.disableWarning')}
+          description={t('profile.twoFactor.disableDescription')}
           type="warning"
           showIcon
           style={{ marginBottom: 16 }}
         />
-        <Form.Item label="输入密码以确认">
+        <Form.Item label={t('profile.twoFactor.disableConfirmLabel')}>
           <Input.Password
-            placeholder="输入您的密码"
+            placeholder={t('profile.twoFactor.disableConfirmPlaceholder')}
             value={disablePassword}
             onChange={(e) => setDisablePassword(e.target.value)}
           />

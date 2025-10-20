@@ -40,7 +40,7 @@ export const PWAInstallPrompt = () => {
     await deferredPrompt.prompt()
 
     // Wait for user choice
-    const { outcome } = await deferredPrompt.userChoice
+    await deferredPrompt.userChoice
 
     // Clean up
     setDeferredPrompt(null)

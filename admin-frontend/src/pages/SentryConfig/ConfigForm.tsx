@@ -107,21 +107,21 @@ const ConfigForm: React.FC<ConfigFormProps> = ({ config, onSuccess, onCancel }) 
     >
       {/* 基础配置 */}
       <Form.Item
-        label="Sentry DSN"
+        label={t('sentry.dsn')}
         name="dsn"
         rules={[
-          { required: true, message: t('请输入 Sentry DSN') },
-          { type: 'url', message: t('请输入有效的 URL') },
+          { required: true, message: t('sentry.dsnRequired') },
+          { type: 'url', message: t('sentry.validUrl') },
         ]}
-        tooltip="从 Sentry 项目设置中获取 DSN"
+        tooltip={t('sentry.dsnTooltip')}
       >
-        <Input placeholder="https://xxx@xxx.ingest.sentry.io/xxx" />
+        <Input placeholder={t('sentry.dsnPlaceholder')} />
       </Form.Item>
 
       <Form.Item
         label={t('环境')}
         name="environment"
-        rules={[{ required: true, message: t('请选择环境') }]}
+        rules={[{ required: true, message: t('sentry.selectEnvironment') }]}
       >
         <Select>
           <Select.Option value="production">Production</Select.Option>
@@ -130,7 +130,7 @@ const ConfigForm: React.FC<ConfigFormProps> = ({ config, onSuccess, onCancel }) 
         </Select>
       </Form.Item>
 
-      <Form.Item label={t('版本号')} name="release_version">
+      <Form.Item label={t('sentry.versionNumber')} name="release_version">
         <Input placeholder="1.0.0" />
       </Form.Item>
 
@@ -164,7 +164,7 @@ const ConfigForm: React.FC<ConfigFormProps> = ({ config, onSuccess, onCancel }) 
         </Form.Item>
 
         <Form.Item
-          label={t('附加堆栈')}
+          label={t('sentry.attachStacktrace')}
           name="attach_stacktrace"
           valuePropName="checked"
           style={{ marginBottom: 0 }}
@@ -175,11 +175,11 @@ const ConfigForm: React.FC<ConfigFormProps> = ({ config, onSuccess, onCancel }) 
 
       {/* 采样率配置 */}
       <Collapse defaultActiveKey={['sampling']} style={{ marginBottom: '16px' }}>
-        <Panel header={t('采样率配置')} key="sampling">
+        <Panel header={t('sentry.samplingConfig')} key="sampling">
           <Form.Item
-            label={t('性能监控采样率')}
+            label={t('sentry.performanceSamplingRate')}
             name="traces_sample_rate"
-            tooltip="0-1 之间，1 表示 100%"
+            tooltip={t('sentry.performanceSamplingTooltip')}
           >
             <Slider
               min={0}
@@ -190,9 +190,9 @@ const ConfigForm: React.FC<ConfigFormProps> = ({ config, onSuccess, onCancel }) 
           </Form.Item>
 
           <Form.Item
-            label={t('会话回放采样率')}
+            label={t('sentry.sessionReplaySamplingRate')}
             name="replays_session_sample_rate"
-            tooltip="正常会话的回放采样率"
+            tooltip={t('sentry.sessionReplayTooltip')}
           >
             <Slider
               min={0}
@@ -203,9 +203,9 @@ const ConfigForm: React.FC<ConfigFormProps> = ({ config, onSuccess, onCancel }) 
           </Form.Item>
 
           <Form.Item
-            label={t('错误回放采样率')}
+            label={t('sentry.errorReplaySamplingRate')}
             name="replays_on_error_sample_rate"
-            tooltip="发生错误时的回放采样率"
+            tooltip={t('sentry.errorReplayTooltip')}
           >
             <Slider
               min={0}
@@ -217,44 +217,44 @@ const ConfigForm: React.FC<ConfigFormProps> = ({ config, onSuccess, onCancel }) 
         </Panel>
 
         {/* 过滤配置 */}
-        <Panel header={t('过滤配置（高级）')} key="filters">
+        <Panel header={t('sentry.filterConfig')} key="filters">
           <Form.Item
-            label={t('忽略的错误')}
+            label={t('sentry.ignoreErrors')}
             name="ignore_errors"
-            tooltip={'JSON 数组格式，如：["ResizeObserver", "NetworkError"]'}
+            tooltip={t('sentry.ignoreErrorsTooltip')}
           >
             <TextArea
               rows={3}
-              placeholder='["ResizeObserver loop limit exceeded", "NetworkError"]'
+              placeholder={t('sentry.ignoreErrorsPlaceholder')}
             />
           </Form.Item>
 
           <Form.Item
-            label={t('允许的 URL')}
+            label={t('sentry.allowedUrls')}
             name="allowed_urls"
-            tooltip="JSON 数组格式，只上报这些 URL 的错误"
+            tooltip={t('sentry.allowedUrlsTooltip')}
           >
             <TextArea
               rows={3}
-              placeholder='["https://example.com", "https://cdn.example.com"]'
+              placeholder={t('sentry.allowedUrlsPlaceholder')}
             />
           </Form.Item>
 
           <Form.Item
-            label={t('拒绝的 URL')}
+            label={t('sentry.deniedUrls')}
             name="denied_urls"
-            tooltip="JSON 数组格式，不上报这些 URL 的错误"
+            tooltip={t('sentry.deniedUrlsTooltip')}
           >
             <TextArea
               rows={3}
-              placeholder='["https://ads.example.com", "https://tracker.com"]'
+              placeholder={t('sentry.deniedUrlsPlaceholder')}
             />
           </Form.Item>
         </Panel>
       </Collapse>
 
-      <Form.Item label={t('配置说明')} name="description">
-        <TextArea rows={3} placeholder={t('可选的配置说明')} />
+      <Form.Item label={t('sentry.configDescription')} name="description">
+        <TextArea rows={3} placeholder={t('sentry.optionalDescription')} />
       </Form.Item>
 
       {/* 表单按钮 */}

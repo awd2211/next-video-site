@@ -5,6 +5,7 @@
  */
 
 import { useState, useCallback, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   Form,
   Collapse,
@@ -50,6 +51,7 @@ const { Option } = Select;
 const { Text } = Typography;
 
 const Settings = () => {
+  const { t } = useTranslation();
   const [form] = Form.useForm();
   const [searchValue, setSearchValue] = useState('');
   const [savedFields, setSavedFields] = useState<Set<string>>(new Set());
@@ -83,7 +85,7 @@ const Settings = () => {
       queryClient.invalidateQueries({ queryKey: ['system-settings'] });
     },
     onError: (error: any) => {
-      message.error(error.response?.data?.detail || '保存失败');
+      message.error(error.response?.data?.detail || t('message.saveFailed'));
     },
   });
 
@@ -124,9 +126,9 @@ const Settings = () => {
       const values = await form.validateFields();
       setSaving(true);
       await updateMutation.mutateAsync(values);
-      message.success('所有设置已保存');
+      message.success(t('message.allSettingsSaved'));
     } catch (error) {
-      message.error('请检查表单填写');
+      message.error(t('message.checkForm'));
     } finally {
       setSaving(false);
     }
@@ -134,9 +136,9 @@ const Settings = () => {
 
   // 重置为默认值
   const handleReset = () => {
-    if (window.confirm('确定要重置所有设置为默认值吗？此操作不可恢复。')) {
+    if (window.confirm(t('settings.actions.confirmReset'))) {
       form.resetFields();
-      message.success('已重置为默认值');
+      message.success(t('settings.resetSuccess'));
     }
   };
 
@@ -147,12 +149,12 @@ const Settings = () => {
       await axios.post('/api/v1/admin/system/settings/test-email', {
         to_email: email
       });
-      message.success('测试邮件发送成功！请检查收件箱。');
+      message.success(t('settings.email.testSuccess'));
       setEmailTestModalVisible(false);
       // 刷新设置以显示最后测试状态
       queryClient.invalidateQueries({ queryKey: ['system-settings'] });
     } catch (error: any) {
-      message.error(error.response?.data?.detail || '测试邮件发送失败');
+      message.error(error.response?.data?.detail || t('settings.email.testFailed'));
     } finally {
       setEmailTestLoading(false);
     }
@@ -165,7 +167,7 @@ const Settings = () => {
       setCacheStats(response.data);
       setCacheStatsModalVisible(true);
     } catch (error: any) {
-      message.error('获取缓存统计失败');
+      message.error(t('settings.cache.statsFailed'));
     }
   };
 
@@ -176,12 +178,12 @@ const Settings = () => {
         patterns
       });
       if (response.data.cleared_keys === -1) {
-        message.success('所有缓存已清除');
+        message.success(t('settings.cache.allCleared'));
       } else {
-        message.success(`已清除 ${response.data.cleared_keys} 个缓存键`);
+        message.success(t('settings.cache.clearedCount', { count: response.data.cleared_keys }));
       }
     } catch (error: any) {
-      message.error('清除缓存失败');
+      message.error(t('settings.cache.clearFailed'));
     }
   };
 
@@ -197,9 +199,9 @@ const Settings = () => {
       link.download = `settings-backup-${new Date().toISOString().split('T')[0]}.json`;
       link.click();
       URL.revokeObjectURL(url);
-      message.success('备份文件已下载');
+      message.success(t('settings.backup.downloaded'));
     } catch (error: any) {
-      message.error('导出备份失败');
+      message.error(t('settings.backup.exportFailed'));
     }
   };
 
@@ -210,22 +212,22 @@ const Settings = () => {
       const backup_data = JSON.parse(text);
 
       Modal.confirm({
-        title: '确认恢复设置？',
-        content: '此操作将覆盖当前设置，是否继续？',
+        title: t('settings.backup.confirmRestoreTitle'),
+        content: t('settings.backup.confirmRestoreContent'),
         onOk: async () => {
           try {
             await axios.post('/api/v1/admin/system/settings/restore', {
               backup_data
             });
-            message.success('设置恢复成功');
+            message.success(t('settings.backup.restoreSuccess'));
             queryClient.invalidateQueries({ queryKey: ['system-settings'] });
           } catch (error: any) {
-            message.error('恢复设置失败');
+            message.error(t('settings.backup.restoreFailed'));
           }
         }
       });
     } catch (error: any) {
-      message.error('备份文件格式错误');
+      message.error(t('settings.backup.invalidFormat'));
     }
     return false; // 阻止自动上传
   };
@@ -234,61 +236,61 @@ const Settings = () => {
   const sections = [
     {
       key: 'site',
-      title: '🌐 网站与 SEO',
+      title: t('settings.sections.siteAndSeo'),
       keywords: '网站 site seo 搜索 优化',
       defaultOpen: true,
     },
     {
       key: 'video',
-      title: '📹 视频与上传',
+      title: t('settings.sections.videoAndUpload'),
       keywords: '视频 上传 video upload',
       defaultOpen: true,
     },
     {
       key: 'community',
-      title: '💬 用户与社区',
+      title: t('settings.sections.userAndCommunity'),
       keywords: '用户 评论 user comment community',
       defaultOpen: false,
     },
     {
       key: 'email',
-      title: '📧 邮件服务',
+      title: t('settings.sections.emailService'),
       keywords: '邮件 email smtp mailgun',
       defaultOpen: false,
     },
     {
       key: 'security',
-      title: '🔒 安全配置',
+      title: t('settings.sections.security'),
       keywords: '安全 security 验证码 captcha',
       defaultOpen: false,
     },
     {
       key: 'notifications',
-      title: '🔔 通知设置',
+      title: t('settings.sections.notifications'),
       keywords: '通知 notifications 声音 桌面 免打扰 sound desktop',
       defaultOpen: false,
     },
     {
       key: 'cache',
-      title: '🗄️ 缓存管理',
+      title: t('settings.sections.cacheManagement'),
       keywords: '缓存 cache redis 清除 统计',
       defaultOpen: false,
     },
     {
       key: 'backup',
-      title: '💾 备份恢复',
+      title: t('settings.sections.backupAndRestore'),
       keywords: '备份 恢复 导出 导入 backup restore',
       defaultOpen: false,
     },
     {
       key: 'payment',
-      title: '💳 支付网关',
+      title: t('settings.sections.paymentGateway'),
       keywords: '支付 payment stripe paypal alipay 网关 gateway',
       defaultOpen: false,
     },
     {
       key: 'other',
-      title: '⚙️ 其他设置',
+      title: t('settings.sections.otherSettings'),
       keywords: '其他 维护 other maintenance',
       defaultOpen: false,
     },
@@ -317,7 +319,7 @@ const Settings = () => {
             borderRadius: '4px'
           }}
         >
-          已保存
+          {t('common.saved')}
         </Tag>
       );
     }
@@ -327,7 +329,7 @@ const Settings = () => {
   if (isLoading) {
     return (
       <div>
-        <h2>⚙️ 系统设置</h2>
+        <h2>{t('settings.title')}</h2>
         <Skeleton active paragraph={{ rows: 10 }} />
       </div>
     );
@@ -337,10 +339,10 @@ const Settings = () => {
     <div className="settings-page-notion">
       {/* 页面头部 */}
       <div className="settings-header">
-        <h2>⚙️ 系统设置</h2>
+        <h2>{t('settings.title')}</h2>
         <Input
           size="large"
-          placeholder="搜索设置..."
+          placeholder={t('settings.searchPlaceholder')}
           prefix={<SearchOutlined />}
           value={searchValue}
           onChange={(e) => setSearchValue(e.target.value)}
@@ -372,7 +374,7 @@ const Settings = () => {
         <Card size="small" className="auto-save-indicator">
           <Space>
             <CheckCircleOutlined spin style={{ color: '#0073bb' }} />
-            <span>正在保存...</span>
+            <span>{t('common.saving')}</span>
           </Space>
         </Card>
       )}
@@ -393,15 +395,15 @@ const Settings = () => {
         >
           {/* Panel 1: 网站与 SEO */}
           {filteredSections.find((s) => s.key === 'site') && (
-            <Panel header="🌐 网站与 SEO" key="site" className="settings-panel">
-              <p className="panel-description">配置网站基本信息和搜索引擎优化设置</p>
+            <Panel header={t('settings.sections.siteAndSeo')} key="site" className="settings-panel">
+              <p className="panel-description">{t('settings.descriptions.siteAndSeo')}</p>
 
               <Row gutter={16}>
                 <Col span={12}>
                   <Form.Item
                     label={
                       <Space>
-                        <span>网站名称</span>
+                        <span>{t('settings.fields.siteName')}</span>
                         {renderSaveStatus('site_name')}
                       </Space>
                     }
@@ -415,7 +417,7 @@ const Settings = () => {
                   <Form.Item
                     label={
                       <Space>
-                        <span>网站URL</span>
+                        <span>{t('settings.fields.siteUrl')}</span>
                         {renderSaveStatus('site_url')}
                       </Space>
                     }
@@ -427,12 +429,12 @@ const Settings = () => {
                 </Col>
               </Row>
 
-              <Form.Item label="网站描述" name="site_description">
-                <TextArea rows={3} placeholder="网站简介" />
+              <Form.Item label={t('settings.fields.siteDescription')} name="site_description">
+                <TextArea rows={3} placeholder={t('settings.placeholders.siteIntro')} />
               </Form.Item>
 
-              <Form.Item label="关键词" name="site_keywords">
-                <Input placeholder="视频,在线观看,电影" />
+              <Form.Item label={t('settings.labels.keywords')} name="site_keywords">
+                <Input placeholder={t('settings.placeholders.keywordsExample')} />
               </Form.Item>
 
               <Row gutter={16}>
@@ -452,41 +454,41 @@ const Settings = () => {
                 SEO 优化设置
               </Divider>
 
-              <Form.Item label="SEO 标题" name="seo_title">
-                <Input placeholder="覆盖默认标题" />
+              <Form.Item label={t('settings.labels.seoTitle')} name="seo_title">
+                <Input placeholder={t('settings.placeholders.overrideDefaultTitle')} />
               </Form.Item>
 
-              <Form.Item label="SEO 描述" name="seo_description">
-                <TextArea rows={2} placeholder="搜索引擎描述" />
+              <Form.Item label={t('settings.labels.seoDescription')} name="seo_description">
+                <TextArea rows={2} placeholder={t('settings.placeholders.seDescription')} />
               </Form.Item>
 
-              <Form.Item label="SEO 关键词" name="seo_keywords">
-                <Input placeholder="关键词1,关键词2,关键词3" />
+              <Form.Item label={t('settings.labels.seoKeywords')} name="seo_keywords">
+                <Input placeholder={t('settings.placeholders.keywordsComma')} />
               </Form.Item>
             </Panel>
           )}
 
           {/* Panel 2: 视频与上传 */}
           {filteredSections.find((s) => s.key === 'video') && (
-            <Panel header="📹 视频与上传" key="video" className="settings-panel">
-              <p className="panel-description">配置视频审核、清晰度、转码和上传限制</p>
+            <Panel header={t('settings.sections.videoAndUpload')} key="video" className="settings-panel">
+              <p className="panel-description">{t('settings.descriptions.videoAndUpload')}</p>
 
               <Form.Item
                 label={
                   <Space>
-                    <span>自动审核通过</span>
+                    <span>{t('settings.labels.autoApprove')}</span>
                     {renderSaveStatus('video_auto_approve')}
                   </Space>
                 }
                 name="video_auto_approve"
                 valuePropName="checked"
-                tooltip="开启后新上传的视频自动通过审核"
+                tooltip={t('settings.tooltips.autoApproveUploads')}
               >
                 <Switch />
               </Form.Item>
 
               <Form.Item
-                label="需要人工审核"
+                label={t('settings.labels.requireManualReview')}
                 name="video_require_review"
                 valuePropName="checked"
               >
@@ -495,7 +497,7 @@ const Settings = () => {
 
               <Row gutter={16}>
                 <Col span={12}>
-                  <Form.Item label="默认清晰度" name="video_default_quality">
+                  <Form.Item label={t('settings.labels.defaultQuality')} name="video_default_quality">
                     <Select>
                       <Option value="360p">360p</Option>
                       <Option value="480p">480p</Option>
@@ -507,7 +509,7 @@ const Settings = () => {
                 </Col>
                 <Col span={12}>
                   <Form.Item
-                    label="启用转码"
+                    label={t('settings.labels.enableTranscoding')}
                     name="video_enable_transcode"
                     valuePropName="checked"
                   >
@@ -516,8 +518,8 @@ const Settings = () => {
                 </Col>
               </Row>
 
-              <Form.Item label="转码格式" name="video_transcode_formats">
-                <Select mode="multiple" placeholder="选择需要转码的格式">
+              <Form.Item label={t('settings.labels.transcodeFormats')} name="video_transcode_formats">
+                <Select mode="multiple" placeholder={t('settings.placeholders.selectTranscodeFormats')}>
                   <Option value="360p">360p</Option>
                   <Option value="480p">480p</Option>
                   <Option value="720p">720p</Option>
@@ -532,19 +534,19 @@ const Settings = () => {
 
               <Row gutter={16}>
                 <Col span={12}>
-                  <Form.Item label="视频最大大小 (MB)" name="upload_max_size">
+                  <Form.Item label={t('settings.labels.maxVideoSize')} name="upload_max_size">
                     <InputNumber min={1} max={10240} style={{ width: '100%' }} />
                   </Form.Item>
                 </Col>
                 <Col span={12}>
-                  <Form.Item label="图片最大大小 (MB)" name="image_max_size">
+                  <Form.Item label={t('settings.labels.maxImageSize')} name="image_max_size">
                     <InputNumber min={1} max={100} style={{ width: '100%' }} />
                   </Form.Item>
                 </Col>
               </Row>
 
-              <Form.Item label="允许的视频格式" name="upload_allowed_formats">
-                <Select mode="tags" placeholder="输入格式后按回车">
+              <Form.Item label={t('settings.labels.allowedVideoFormats')} name="upload_allowed_formats">
+                <Select mode="tags" placeholder={t('settings.placeholders.enterFormatAndEnter')}>
                   <Option value="mp4">mp4</Option>
                   <Option value="avi">avi</Option>
                   <Option value="mkv">mkv</Option>
@@ -553,8 +555,8 @@ const Settings = () => {
                 </Select>
               </Form.Item>
 
-              <Form.Item label="允许的图片格式" name="image_allowed_formats">
-                <Select mode="tags" placeholder="输入格式后按回车">
+              <Form.Item label={t('settings.labels.allowedImageFormats')} name="image_allowed_formats">
+                <Select mode="tags" placeholder={t('settings.placeholders.enterFormatAndEnter')}>
                   <Option value="jpg">jpg</Option>
                   <Option value="jpeg">jpeg</Option>
                   <Option value="png">png</Option>
@@ -567,13 +569,13 @@ const Settings = () => {
 
           {/* Panel 3: 用户与社区 */}
           {filteredSections.find((s) => s.key === 'community') && (
-            <Panel header="💬 用户与社区" key="community" className="settings-panel">
-              <p className="panel-description">配置用户注册、验证和评论功能</p>
+            <Panel header={t('settings.sections.userAndCommunity')} key="community" className="settings-panel">
+              <p className="panel-description">{t('settings.descriptions.userAndCommunity')}</p>
 
               <Form.Item
                 label={
                   <Space>
-                    <span>允许用户注册</span>
+                    <span>{t('settings.labels.allowRegistration')}</span>
                     {renderSaveStatus('user_enable_registration')}
                   </Space>
                 }
@@ -584,18 +586,18 @@ const Settings = () => {
               </Form.Item>
 
               <Form.Item
-                label="需要邮箱验证"
+                label={t('settings.labels.requireEmailVerification')}
                 name="user_require_email_verification"
                 valuePropName="checked"
               >
                 <Switch />
               </Form.Item>
 
-              <Form.Item label="默认头像 URL" name="user_default_avatar">
+              <Form.Item label={t('settings.labels.defaultAvatarUrl')} name="user_default_avatar">
                 <Input placeholder="https://example.com/avatar.png" />
               </Form.Item>
 
-              <Form.Item label="最大收藏数" name="user_max_favorites">
+              <Form.Item label={t('settings.labels.maxFavorites')} name="user_max_favorites">
                 <InputNumber min={100} max={10000} style={{ width: '100%' }} />
               </Form.Item>
 
@@ -603,33 +605,33 @@ const Settings = () => {
                 评论设置
               </Divider>
 
-              <Form.Item label="启用评论功能" name="comment_enable" valuePropName="checked">
+              <Form.Item label={t('settings.labels.enableComments')} name="comment_enable" valuePropName="checked">
                 <Switch />
               </Form.Item>
 
               <Form.Item
-                label="评论需要审核"
+                label={t('settings.labels.commentsRequireReview')}
                 name="comment_require_approval"
                 valuePropName="checked"
-                tooltip="开启后评论需要管理员审核才能显示"
+                tooltip={t('settings.tooltips.commentsModeration')}
               >
                 <Switch />
               </Form.Item>
 
               <Form.Item
-                label="允许游客评论"
+                label={t('settings.labels.allowGuestComments')}
                 name="comment_allow_guest"
                 valuePropName="checked"
               >
                 <Switch />
               </Form.Item>
 
-              <Form.Item label="评论最大长度" name="comment_max_length">
+              <Form.Item label={t('settings.labels.maxCommentLength')} name="comment_max_length">
                 <InputNumber
                   min={50}
                   max={5000}
                   style={{ width: '100%' }}
-                  addonAfter="字符"
+                  addonAfter={t('settings.units.characters')}
                 />
               </Form.Item>
             </Panel>
@@ -637,8 +639,8 @@ const Settings = () => {
 
           {/* Panel 4: 邮件服务 */}
           {filteredSections.find((s) => s.key === 'email') && (
-            <Panel header="📧 邮件服务" key="email" className="settings-panel">
-              <p className="panel-description">配置 SMTP 或 Mailgun 邮件服务</p>
+            <Panel header={t('settings.sections.emailService')} key="email" className="settings-panel">
+              <p className="panel-description">{t('settings.descriptions.emailService')}</p>
 
               <Card
                 size="small"
@@ -655,11 +657,11 @@ const Settings = () => {
                 </Space>
               </Card>
 
-              <Form.Item label="发件人邮箱" name="from_email">
+              <Form.Item label={t('settings.email.senderEmail')} name="from_email">
                 <Input placeholder="noreply@example.com" />
               </Form.Item>
 
-              <Form.Item label="发件人名称" name="from_name">
+              <Form.Item label={t('settings.email.senderName')} name="from_name">
                 <Input placeholder="VideoSite" />
               </Form.Item>
 
@@ -675,7 +677,7 @@ const Settings = () => {
                 }}
               >
                 <Space direction="vertical" style={{ width: '100%' }}>
-                  <Text type="secondary">发送测试邮件以验证 SMTP 配置是否正确</Text>
+                  <Text type="secondary">{t('settings.descriptions.sendTestEmail')}</Text>
                   <Button
                     icon={<MailOutlined />}
                     onClick={() => setEmailTestModalVisible(true)}
@@ -684,7 +686,7 @@ const Settings = () => {
                   </Button>
                   {settings?.smtp_last_test_at && (
                     <div style={{ marginTop: 8 }}>
-                      <Text type="secondary">最后测试: </Text>
+                      <Text type="secondary">{t('settings.labels.lastTest')}</Text>
                       <Text>{new Date(settings.smtp_last_test_at).toLocaleString()}</Text>
                       {' '}
                       <Tag color={settings.smtp_last_test_status === 'success' ? 'success' : 'error'}>
@@ -699,32 +701,32 @@ const Settings = () => {
 
           {/* Panel 5: 安全配置 */}
           {filteredSections.find((s) => s.key === 'security') && (
-            <Panel header="🔒 安全配置" key="security" className="settings-panel">
-              <p className="panel-description">配置登录安全、验证码、会话超时等</p>
+            <Panel header={t('settings.sections.security')} key="security" className="settings-panel">
+              <p className="panel-description">{t('settings.descriptions.security')}</p>
 
               <Form.Item
                 label={
                   <Space>
-                    <span>启用验证码</span>
+                    <span>{t('settings.labels.enableCaptcha')}</span>
                     {renderSaveStatus('security_enable_captcha')}
                   </Space>
                 }
                 name="security_enable_captcha"
                 valuePropName="checked"
-                tooltip="开启后登录时需要输入验证码"
+                tooltip={t('settings.tooltips.enableCaptcha')}
               >
                 <Switch />
               </Form.Item>
 
               <Row gutter={16}>
                 <Col span={12}>
-                  <Form.Item label="登录最大尝试次数" name="security_login_max_attempts">
+                  <Form.Item label={t('settings.labels.maxLoginAttempts')} name="security_login_max_attempts">
                     <InputNumber min={3} max={10} style={{ width: '100%' }} />
                   </Form.Item>
                 </Col>
                 <Col span={12}>
                   <Form.Item
-                    label="锁定时长 (分钟)"
+                    label={t('settings.labels.lockoutDuration')}
                     name="security_login_lockout_duration"
                   >
                     <InputNumber min={5} max={120} style={{ width: '100%' }} />
@@ -732,12 +734,12 @@ const Settings = () => {
                 </Col>
               </Row>
 
-              <Form.Item label="会话超时 (秒)" name="security_session_timeout">
+              <Form.Item label={t('settings.labels.sessionTimeout')} name="security_session_timeout">
                 <InputNumber
                   min={1800}
                   max={86400}
                   style={{ width: '100%' }}
-                  addonAfter="秒"
+                  addonAfter={t('settings.units.seconds')}
                 />
               </Form.Item>
             </Panel>
@@ -745,8 +747,8 @@ const Settings = () => {
 
           {/* Panel 6: 通知设置 */}
           {filteredSections.find((s) => s.key === 'notifications') && (
-            <Panel header="🔔 通知设置" key="notifications" className="settings-panel">
-              <p className="panel-description">配置通知方式、声音、桌面通知和免打扰时段</p>
+            <Panel header={t('settings.sections.notifications')} key="notifications" className="settings-panel">
+              <p className="panel-description">{t('settings.descriptions.notifications')}</p>
 
               <NotificationSettings />
             </Panel>
@@ -754,8 +756,8 @@ const Settings = () => {
 
           {/* Panel 7: 缓存管理 */}
           {filteredSections.find((s) => s.key === 'cache') && (
-            <Panel header="🗄️ 缓存管理" key="cache" className="settings-panel">
-              <p className="panel-description">管理Redis缓存并查看统计信息</p>
+            <Panel header={t('settings.sections.cacheManagement')} key="cache" className="settings-panel">
+              <p className="panel-description">{t('settings.descriptions.cacheManagement')}</p>
 
               <Card size="small" style={{ marginBottom: 16 }}>
                 <Space direction="vertical" style={{ width: '100%' }} size="middle">
@@ -767,13 +769,13 @@ const Settings = () => {
                     >
                       查看缓存统计
                     </Button>
-                    <Text type="secondary">查看缓存命中率和性能指标</Text>
+                    <Text type="secondary">{t('settings.descriptions.viewCacheStats')}</Text>
                   </div>
 
                   <Divider style={{ margin: '8px 0' }} />
 
                   <div>
-                    <Text strong>清除缓存</Text>
+                    <Text strong>{t('settings.actions.clearCache')}</Text>
                     <div style={{ marginTop: 8 }}>
                       <Space wrap>
                         <Button
@@ -811,13 +813,13 @@ const Settings = () => {
 
           {/* Panel 8: 备份与恢复 */}
           {filteredSections.find((s) => s.key === 'backup') && (
-            <Panel header="💾 备份与恢复" key="backup" className="settings-panel">
-              <p className="panel-description">导出和导入系统设置</p>
+            <Panel header={t('settings.sections.backupAndRestore')} key="backup" className="settings-panel">
+              <p className="panel-description">{t('settings.descriptions.backupAndRestore')}</p>
 
               <Card size="small">
                 <Space direction="vertical" style={{ width: '100%' }} size="large">
                   <div>
-                    <Text strong style={{ fontSize: 16 }}>导出备份</Text>
+                    <Text strong style={{ fontSize: 16 }}>{t('settings.actions.exportBackup')}</Text>
                     <div style={{ marginTop: 8 }}>
                       <Text type="secondary" style={{ display: 'block', marginBottom: 8 }}>
                         将当前所有设置导出为 JSON 文件
@@ -835,7 +837,7 @@ const Settings = () => {
                   <Divider style={{ margin: '8px 0' }} />
 
                   <div>
-                    <Text strong style={{ fontSize: 16 }}>导入备份</Text>
+                    <Text strong style={{ fontSize: 16 }}>{t('settings.actions.importBackup')}</Text>
                     <div style={{ marginTop: 8 }}>
                       <Text type="secondary" style={{ display: 'block', marginBottom: 8 }}>
                         从备份文件恢复设置（将覆盖当前设置）
@@ -858,8 +860,8 @@ const Settings = () => {
 
           {/* Panel 9: 支付网关配置 */}
           {filteredSections.find((s) => s.key === 'payment') && (
-            <Panel header="💳 支付网关配置" key="payment" className="settings-panel">
-              <p className="panel-description">配置 Stripe、PayPal、支付宝等支付网关</p>
+            <Panel header={t('settings.sections.paymentGateway')} key="payment" className="settings-panel">
+              <p className="panel-description">{t('settings.descriptions.paymentGateway')}</p>
 
               <Form.Item name="payment_gateway_config" noStyle>
                 <PaymentGatewaySettings />
@@ -869,32 +871,32 @@ const Settings = () => {
 
           {/* Panel 10: 其他设置 */}
           {filteredSections.find((s) => s.key === 'other') && (
-            <Panel header="⚙️ 其他设置" key="other" className="settings-panel">
-              <p className="panel-description">维护模式、统计代码、自定义样式等</p>
+            <Panel header={t('settings.sections.otherSettings')} key="other" className="settings-panel">
+              <p className="panel-description">{t('settings.descriptions.otherSettings')}</p>
 
               <Form.Item
                 label={
                   <Space>
-                    <span>维护模式</span>
+                    <span>{t('settings.labels.maintenanceMode')}</span>
                     {renderSaveStatus('maintenance_mode')}
                   </Space>
                 }
                 name="maintenance_mode"
                 valuePropName="checked"
-                tooltip="开启后前台将显示维护页面"
+                tooltip={t('settings.tooltips.maintenanceMode')}
               >
                 <Switch />
               </Form.Item>
 
-              <Form.Item label="维护提示信息" name="maintenance_message">
-                <TextArea rows={2} placeholder="网站正在维护中，请稍后访问" />
+              <Form.Item label={t('settings.labels.maintenanceMessage')} name="maintenance_message">
+                <TextArea rows={2} placeholder={t('settings.placeholders.maintenanceMessage')} />
               </Form.Item>
 
               <Divider orientation="left" plain>
                 高级配置
               </Divider>
 
-              <Form.Item label="统计代码 (Google Analytics 等)" name="analytics_code">
+              <Form.Item label={t('settings.labels.analyticsCode')} name="analytics_code">
                 <TextArea
                   rows={3}
                   placeholder="<!-- Google Analytics -->"
@@ -902,7 +904,7 @@ const Settings = () => {
                 />
               </Form.Item>
 
-              <Form.Item label="自定义 CSS" name="custom_css">
+              <Form.Item label={t('settings.labels.customCss')} name="custom_css">
                 <TextArea
                   rows={4}
                   placeholder=".custom { color: red; }"
@@ -910,7 +912,7 @@ const Settings = () => {
                 />
               </Form.Item>
 
-              <Form.Item label="自定义 JavaScript" name="custom_js">
+              <Form.Item label={t('settings.labels.customJs')} name="custom_js">
                 <TextArea
                   rows={4}
                   placeholder="console.log('custom');"
@@ -945,7 +947,7 @@ const Settings = () => {
 
       {/* 邮件测试模态框 */}
       <Modal
-        title="发送测试邮件"
+        title={t('settings.actions.sendTestEmail')}
         open={emailTestModalVisible}
         onCancel={() => setEmailTestModalVisible(false)}
         footer={null}
@@ -953,13 +955,13 @@ const Settings = () => {
         <Form onFinish={(values) => handleTestEmail(values.email)}>
           <Form.Item
             name="email"
-            label="邮箱地址"
+            label={t('settings.email.address')}
             rules={[
               { required: true, message: '请输入邮箱地址' },
               { type: 'email', message: '请输入有效的邮箱地址' }
             ]}
           >
-            <Input placeholder="输入测试邮箱地址" />
+            <Input placeholder={t('settings.email.enterTestAddress')} />
           </Form.Item>
           <Form.Item>
             <Space>
@@ -976,7 +978,7 @@ const Settings = () => {
 
       {/* 缓存统计模态框 */}
       <Modal
-        title="缓存统计"
+        title={t('settings.cache.stats')}
         open={cacheStatsModalVisible}
         onCancel={() => setCacheStatsModalVisible(false)}
         footer={null}
@@ -987,21 +989,21 @@ const Settings = () => {
             <Row gutter={16} style={{ marginBottom: 24 }}>
               <Col span={8}>
                 <Statistic
-                  title="总命中数"
+                  title={t('settings.labels.totalHits')}
                   value={cacheStats.summary.total_hits}
                   valueStyle={{ color: '#3f8600' }}
                 />
               </Col>
               <Col span={8}>
                 <Statistic
-                  title="总未命中数"
+                  title={t('settings.labels.totalMisses')}
                   value={cacheStats.summary.total_misses}
                   valueStyle={{ color: '#cf1322' }}
                 />
               </Col>
               <Col span={8}>
                 <Statistic
-                  title="平均命中率"
+                  title={t('settings.labels.avgHitRate')}
                   value={cacheStats.summary.average_hit_rate}
                   suffix="%"
                   valueStyle={{ color: '#1890ff' }}
@@ -1010,14 +1012,14 @@ const Settings = () => {
               </Col>
             </Row>
             <Divider />
-            <Text strong>最近 7 天统计：</Text>
+            <Text strong>{t('settings.cache.last7Days')}</Text>
             <div style={{ marginTop: 16 }}>
               {cacheStats.stats.map((stat: any) => (
                 <div key={stat.date} style={{ marginBottom: 8 }}>
                   <Text>{stat.date}: </Text>
-                  <Tag color="green">{stat.hits} 命中</Tag>
-                  <Tag color="red">{stat.misses} 未命中</Tag>
-                  <Tag color="blue">{stat.hit_rate}% 命中率</Tag>
+                  <Tag color="green">{stat.hits} {t('settings.labels.hits')}</Tag>
+                  <Tag color="red">{stat.misses} {t('settings.labels.misses')}</Tag>
+                  <Tag color="blue">{stat.hit_rate}% {t('settings.labels.hitRate')}</Tag>
                 </div>
               ))}
             </div>

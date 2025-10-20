@@ -19,6 +19,7 @@ celery_app = Celery(
         "app.tasks.scheduler_monitor",  # 调度任务监控器
         "app.tasks.transcode_av1",  # 转码任务（如果存在）
         "app.tasks.cleanup_temp_uploads",  # 🆕 临时文件清理任务
+        "app.tasks.generate_sla_reports",  # 🆕 SLA报告生成任务
     ],
 )
 
@@ -114,6 +115,31 @@ celery_app.conf.update(
             "task": "cleanup_orphaned_multipart_uploads",
             "schedule": crontab(hour=4, minute=0),
             "options": {"queue": "cleanup"},
+        },
+        # ========== SLA报告生成任务 ==========
+        # 每小时第5分钟生成小时SLA报告
+        "generate-hourly-sla": {
+            "task": "generate_hourly_sla_report",
+            "schedule": crontab(minute=5),  # 每小时的第5分钟
+            "options": {"queue": "monitoring"},
+        },
+        # 每天凌晨00:10生成日报
+        "generate-daily-sla": {
+            "task": "generate_daily_sla_report",
+            "schedule": crontab(hour=0, minute=10),  # 每天00:10
+            "options": {"queue": "monitoring"},
+        },
+        # 每周一凌晨00:30生成周报
+        "generate-weekly-sla": {
+            "task": "generate_weekly_sla_report",
+            "schedule": crontab(day_of_week=1, hour=0, minute=30),  # 每周一00:30
+            "options": {"queue": "monitoring"},
+        },
+        # 每月1号凌晨01:00生成月报
+        "generate-monthly-sla": {
+            "task": "generate_monthly_sla_report",
+            "schedule": crontab(day_of_month=1, hour=1, minute=0),  # 每月1号01:00
+            "options": {"queue": "monitoring"},
         },
     },
 )

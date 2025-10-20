@@ -43,6 +43,9 @@ import {
   CreditCardOutlined,
   GiftOutlined,
   WalletOutlined,
+  HeartOutlined,
+  BellOutlined,
+  LineChartOutlined as ChartOutlined,
 } from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';
 import Breadcrumb from '../components/Breadcrumb';
@@ -66,6 +69,7 @@ interface MenuItem {
   icon: React.ReactNode;
   label: string;
   badge?: number;
+  children?: MenuItem[];
 }
 
 interface MenuGroup {
@@ -301,9 +305,27 @@ const AdminLayout = () => {
       label: t('menu.groupSystem'),
       items: [
         {
-          key: '/system-health',
-          icon: <ApiOutlined />,
+          key: 'system-health-submenu',
+          icon: <HeartOutlined />,
           label: t('menu.systemHealth'),
+          children: [
+            {
+              key: '/system-health',
+              icon: <ApiOutlined />,
+              label: t('menu.systemHealthOverview') || 'Overview',
+            },
+            {
+              key: '/system-health/alerts',
+              icon: <BellOutlined />,
+              label: t('menu.systemHealthAlerts') || 'Alerts',
+              badge: badges.activeAlerts,
+            },
+            {
+              key: '/system-health/sla',
+              icon: <ChartOutlined />,
+              label: t('menu.systemHealthSLA') || 'SLA Reports',
+            },
+          ],
         },
         {
           key: '/email-management',
@@ -324,9 +346,13 @@ const AdminLayout = () => {
     },
   ];
 
-  // 扁平化所有菜单项（用于搜索）
+  // 扁平化所有菜单项（用于搜索）- 包括子菜单项
   const allMenuItems = useMemo(() => {
-    return menuGroups.flatMap((group) => group.items);
+    return menuGroups.flatMap((group) =>
+      group.items.flatMap((item) =>
+        item.children ? item.children : item
+      )
+    );
   }, [menuGroups]);
 
   // 搜索过滤后的菜单组
@@ -348,6 +374,17 @@ const AdminLayout = () => {
   const getSelectedKey = () => {
     const path = location.pathname;
     if (path === '/') return '/';
+
+    // 检查是否匹配完整路径（用于子菜单路由如 /system-health/alerts）
+    const fullPath = path.endsWith('/') ? path.slice(0, -1) : path;
+
+    // 查找是否有完全匹配的菜单项
+    const hasExactMatch = allMenuItems.some(item => item.key === fullPath);
+    if (hasExactMatch) {
+      return fullPath;
+    }
+
+    // 否则返回第一段路径
     const segments = path.split('/').filter(Boolean);
     return `/${segments[0]}`;
   };
@@ -372,22 +409,7 @@ const AdminLayout = () => {
   };
 
   // 渲染菜单项（带徽章）
-  const renderMenuItem = (item: MenuItem) => {
-    // 收起状态：只显示图标（通过 Tooltip 包裹）
-    if (collapsed) {
-      return {
-        key: item.key,
-        icon: null, // 不使用 icon 属性
-        label: (
-          <Tooltip title={item.label} placement="right">
-            <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              {item.icon}
-            </span>
-          </Tooltip>
-        ),
-      };
-    }
-
+  const renderMenuItem = (item: MenuItem): any => {
     // 展开状态：显示图标 + 文字 + 徽章
     const label = (
       <div className="menu-item-content">
@@ -405,6 +427,50 @@ const AdminLayout = () => {
       </div>
     );
 
+    // 有子菜单的情况
+    if (item.children && item.children.length > 0) {
+      // 收起状态：只显示父菜单图标
+      if (collapsed) {
+        return {
+          key: item.key,
+          icon: null,
+          label: (
+            <Tooltip title={item.label} placement="right">
+              <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                {item.icon}
+              </span>
+            </Tooltip>
+          ),
+          children: item.children.map((child) => renderMenuItem(child)),
+        };
+      }
+
+      // 展开状态：显示子菜单
+      return {
+        key: item.key,
+        icon: item.icon,
+        label,
+        children: item.children.map((child) => renderMenuItem(child)),
+      };
+    }
+
+    // 没有子菜单的普通菜单项
+    // 收起状态：只显示图标（通过 Tooltip 包裹）
+    if (collapsed) {
+      return {
+        key: item.key,
+        icon: null, // 不使用 icon 属性
+        label: (
+          <Tooltip title={item.label} placement="right">
+            <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              {item.icon}
+            </span>
+          </Tooltip>
+        ),
+      };
+    }
+
+    // 展开状态：显示图标 + 文字 + 徽章
     return {
       key: item.key,
       icon: item.icon,

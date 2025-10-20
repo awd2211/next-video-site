@@ -3,7 +3,7 @@
  * 提供 XSS 防护、输入清理、敏感词过滤等功能
  */
 
-import DOMPurify from 'dompurify'
+import DOMPurify, { type Config as DOMPurifyConfig } from 'dompurify'
 
 /**
  * 清理 HTML 内容，防止 XSS 攻击
@@ -13,17 +13,17 @@ import DOMPurify from 'dompurify'
  */
 export const sanitizeHTML = (
   dirty: string,
-  config?: DOMPurify.Config
+  config?: DOMPurifyConfig
 ): string => {
   // 默认配置：允许基本格式化标签，移除危险内容
-  const defaultConfig: DOMPurify.Config = {
+  const defaultConfig: DOMPurifyConfig = {
     ALLOWED_TAGS: ['b', 'i', 'em', 'strong', 'a', 'p', 'br'],
     ALLOWED_ATTR: ['href', 'target'],
     ALLOW_DATA_ATTR: false,
     ALLOWED_URI_REGEXP: /^(?:https?|mailto):/i,
   }
 
-  return DOMPurify.sanitize(dirty, { ...defaultConfig, ...config })
+  return DOMPurify.sanitize(dirty, { ...defaultConfig, ...config }) as unknown as string
 }
 
 /**
@@ -98,7 +98,7 @@ export const isValidUsername = (username: string): boolean => {
 /**
  * 敏感词列表（基础版本，实际项目应该从后端获取）
  */
-const SENSITIVE_WORDS = [
+const SENSITIVE_WORDS: string[] = [
   // 这里只是示例，实际应该从配置或API获取
   // '敏感词1', '敏感词2'
 ]

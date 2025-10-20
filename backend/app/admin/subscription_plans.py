@@ -25,8 +25,8 @@ router = APIRouter()
 
 @router.get("/", response_model=SubscriptionPlanListResponse)
 async def list_subscription_plans(
-    skip: int = Query(0, ge=0),
-    limit: int = Query(20, ge=1, le=100),
+    page: int = Query(1, ge=1, description="Page number (1-indexed)"),
+    page_size: int = Query(20, ge=1, le=100, description="Items per page"),
     is_active: Optional[bool] = Query(None, description="Filter by active status"),
     current_admin: AdminUser = Depends(get_current_admin_user),
     db: AsyncSession = Depends(get_db),
@@ -36,6 +36,10 @@ async def list_subscription_plans(
 
     管理员可以查看所有套餐，包括未激活的
     """
+    # 转换为 skip/limit
+    skip = (page - 1) * page_size
+    limit = page_size
+
     query = select(SubscriptionPlan)
 
     if is_active is not None:
@@ -47,7 +51,7 @@ async def list_subscription_plans(
 
     # 查询列表
     result = await db.execute(
-        query.order_by(desc(SubscriptionPlan.display_order), desc(SubscriptionPlan.id))
+        query.order_by(SubscriptionPlan.display_order, SubscriptionPlan.id)
         .offset(skip)
         .limit(limit)
     )
@@ -122,6 +126,7 @@ async def create_subscription_plan(
     return plan
 
 
+@router.put("/{plan_id}", response_model=SubscriptionPlanResponse)
 @router.patch("/{plan_id}", response_model=SubscriptionPlanResponse)
 async def update_subscription_plan(
     plan_id: int,

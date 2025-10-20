@@ -123,7 +123,6 @@ const getMimeTypesForExtension = (extension: string): string[] => {
     // 视频
     mp4: ['video/mp4'],
     webm: ['video/webm'],
-    ogg: ['video/ogg'],
     avi: ['video/x-msvideo'],
     mov: ['video/quicktime'],
     mkv: ['video/x-matroska'],

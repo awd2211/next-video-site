@@ -25,7 +25,7 @@ const AccountSubscription: React.FC = () => {
   });
 
   // 获取订阅历史
-  const { data: subscriptionsData } = useQuery({
+  const { data: _subscriptionsData } = useQuery({
     queryKey: ['my-subscriptions'],
     queryFn: getMySubscriptions,
   });
@@ -37,7 +37,7 @@ const AccountSubscription: React.FC = () => {
   });
 
   // 获取发票
-  const { data: invoicesData } = useQuery({
+  const { data: _invoicesData } = useQuery({
     queryKey: ['my-invoices'],
     queryFn: () => getInvoices({ limit: 10 }),
   });
@@ -75,7 +75,8 @@ const AccountSubscription: React.FC = () => {
     },
   });
 
-  const handleDownloadInvoice = async (invoiceId: number) => {
+  // TODO: Implement download
+  const _handleDownloadInvoice = async (invoiceId: number) => {
     try {
       const blob = await downloadInvoicePdf(invoiceId);
       const url = window.URL.createObjectURL(blob);

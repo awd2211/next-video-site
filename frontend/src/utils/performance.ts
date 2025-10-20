@@ -40,16 +40,17 @@ const sendToAnalytics = (metric: PerformanceMetric) => {
 /**
  * Initialize Web Vitals monitoring
  * Requires: pnpm add web-vitals
+ * Note: web-vitals v5 changed the API from get* to on*
  */
 export const initWebVitalsMonitoring = async () => {
   try {
-    const { getCLS, getFID, getFCP, getLCP, getTTFB } = await import('web-vitals')
+    const { onCLS, onINP, onFCP, onLCP, onTTFB } = await import('web-vitals')
 
-    getCLS(sendToAnalytics)
-    getFID(sendToAnalytics)
-    getFCP(sendToAnalytics)
-    getLCP(sendToAnalytics)
-    getTTFB(sendToAnalytics)
+    onCLS(sendToAnalytics)
+    onINP(sendToAnalytics) // FID was replaced by INP in v5
+    onFCP(sendToAnalytics)
+    onLCP(sendToAnalytics)
+    onTTFB(sendToAnalytics)
   } catch (error) {
     console.warn('Web Vitals library not installed. Run: pnpm add web-vitals')
   }

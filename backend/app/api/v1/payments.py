@@ -17,7 +17,7 @@ from app.schemas.payment import (
     PaymentConfirmRequest,
     PaymentResponse,
     PaymentListResponse,
-    RefundRequest,
+    RefundRequestCreate,
     RefundResponse,
     PaymentMethodCreate,
     PaymentMethodUpdate,
@@ -188,7 +188,7 @@ async def get_payment(
 @router.post("/{payment_id}/refund", response_model=RefundResponse)
 async def request_refund(
     payment_id: int,
-    request: RefundRequest,
+    request: RefundRequestCreate,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):

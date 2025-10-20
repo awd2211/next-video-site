@@ -139,10 +139,12 @@
     "completion": "完成",
     "yes": "是",
     "no": "否",
-    "copyAll": "复制全部"
+    "copyAll": "复制全部",
+    "saved": "TODO: 已保存",
+    "saving": "Enregistrement..."
   },
   "settings": {
-    "title": "Paramètres système",
+    "title": "⚙️ Paramètres système",
     "searchPlaceholder": "搜索设置...",
     "groups": {
       "basic": "基础设置",
@@ -161,7 +163,16 @@
       "security": "安全配置",
       "cache": "缓存管理",
       "backup": "备份与恢复",
-      "other": "其他设置"
+      "other": "其他设置",
+      "siteAndSeo": "TODO: 🌐 网站与 SEO",
+      "videoAndUpload": "TODO: 📹 视频与上传",
+      "userAndCommunity": "TODO: 💬 用户与社区",
+      "emailService": "TODO: 📧 邮件服务",
+      "notifications": "TODO: 🔔 通知设置",
+      "cacheManagement": "TODO: 🗄️ 缓存管理",
+      "backupAndRestore": "TODO: 💾 备份与恢复",
+      "paymentGateway": "TODO: 💳 支付网关配置",
+      "otherSettings": "TODO: ⚙️ 其他设置"
     },
     "email": {
       "testEmail": "发送测试邮件",
@@ -175,7 +186,9 @@
       "testStatus": "测试状态",
       "success": "成功",
       "failed": "失败",
-      "notTested": "尚未测试"
+      "notTested": "尚未测试",
+      "address": "TODO: 邮箱地址",
+      "enterTestAddress": "TODO: 输入测试邮箱地址"
     },
     "cache": {
       "title": "缓存管理",
@@ -195,7 +208,11 @@
       "clearFailed": "缓存清除失败",
       "keysCleared": "已清除 {{count}} 个键",
       "allCleared": "已清除所有缓存",
-      "selectPattern": "选择要清除的缓存模式"
+      "selectPattern": "选择要清除的缓存模式",
+      "cleared": "TODO: 已清除缓存",
+      "statsFailed": "TODO: 获取缓存统计失败",
+      "clearedCount": "TODO: 已清除 ${response.data.cleared_keys} 个缓存键",
+      "last7Days": "Statistiques des 7 derniers jours :"
     },
     "backup": {
       "title": "备份与恢复",
@@ -211,12 +228,20 @@
       "confirmRestore": "确认恢复设置？这将覆盖当前设置。",
       "selectFile": "选择备份文件",
       "backupTime": "备份时间",
-      "downloadJson": "下载为JSON"
+      "downloadJson": "下载为JSON",
+      "downloaded": "TODO: 备份文件已下载",
+      "exportFailed": "TODO: 导出备份失败",
+      "invalidFormat": "TODO: 备份文件格式错误",
+      "confirmRestoreTitle": "TODO: 确认恢复设置？",
+      "confirmRestoreContent": "TODO: 此操作将覆盖当前设置，是否继续？"
     },
     "actions": {
       "saveAll": "保存所有设置",
       "resetDefaults": "重置为默认值",
-      "confirmReset": "确认将所有设置重置为默认值？此操作不可撤销。"
+      "confirmReset": "确认将所有设置重置为默认值？此操作不可撤销。",
+      "clearCache": "Vider le cache",
+      "exportBackup": "Exporter la sauvegarde",
+      "importBackup": "Importer la sauvegarde"
     },
     "payment": {
       "enableGateway": "启用支付网关",
@@ -227,6 +252,84 @@
       "privateKey": "私钥",
       "publicKey": "公钥（支付宝）",
       "gatewayUrl": "网关地址"
+    },
+    "resetSuccess": "TODO: 已重置为默认值",
+    "descriptions": {
+      "siteAndSeo": "TODO: 配置网站基本信息和搜索引擎优化设置",
+      "videoAndUpload": "TODO: 配置视频审核、清晰度、转码和上传限制",
+      "userAndCommunity": "TODO: 配置用户注册、验证和评论功能",
+      "emailService": "TODO: 配置 SMTP 或 Mailgun 邮件服务",
+      "security": "TODO: 配置登录安全、验证码、会话超时等",
+      "notifications": "TODO: 配置通知方式、声音、桌面通知和免打扰时段",
+      "cacheManagement": "TODO: 管理Redis缓存并查看统计信息",
+      "backupAndRestore": "TODO: 导出和导入系统设置",
+      "paymentGateway": "TODO: 配置 Stripe、PayPal、支付宝等支付网关",
+      "otherSettings": "TODO: 维护模式、统计代码、自定义样式等",
+      "sendTestEmail": "TODO: 发送测试邮件以验证 SMTP 配置是否正确",
+      "viewCacheStats": "TODO: 查看缓存命中率和性能指标"
+    },
+    "placeholders": {
+      "siteIntro": "TODO: 网站简介",
+      "keywordsExample": "TODO: 视频,在线观看,电影",
+      "overrideDefaultTitle": "TODO: 覆盖默认标题",
+      "seDescription": "TODO: 搜索引擎描述",
+      "keywordsComma": "TODO: 关键词1,关键词2,关键词3",
+      "selectTranscodeFormats": "TODO: 选择需要转码的格式",
+      "enterFormatAndEnter": "TODO: 输入格式后按回车",
+      "maintenanceMessage": "TODO: 网站正在维护中，请稍后访问"
+    },
+    "labels": {
+      "keywords": "TODO: 关键词",
+      "requireManualReview": "TODO: 需要人工审核",
+      "defaultQuality": "TODO: 默认清晰度",
+      "enableTranscoding": "TODO: 启用转码",
+      "transcodeFormats": "TODO: 转码格式",
+      "maxVideoSize": "TODO: 视频最大大小 (MB)",
+      "maxImageSize": "TODO: 图片最大大小 (MB)",
+      "allowedVideoFormats": "TODO: 允许的视频格式",
+      "allowedImageFormats": "TODO: 允许的图片格式",
+      "requireEmailVerification": "TODO: 需要邮箱验证",
+      "defaultAvatarUrl": "TODO: 默认头像 URL",
+      "maxFavorites": "TODO: 最大收藏数",
+      "enableComments": "TODO: 启用评论功能",
+      "commentsRequireReview": "TODO: 评论需要审核",
+      "allowGuestComments": "TODO: 允许游客评论",
+      "maxCommentLength": "TODO: 评论最大长度",
+      "lastTest": "TODO: 最后测试: ",
+      "maxLoginAttempts": "TODO: 登录最大尝试次数",
+      "lockoutDuration": "TODO: 锁定时长 (分钟)",
+      "sessionTimeout": "TODO: 会话超时 (秒)",
+      "totalHits": "TODO: 总命中数",
+      "totalMisses": "TODO: 总未命中数",
+      "avgHitRate": "TODO: 平均命中率",
+      "hits": "TODO: 命中",
+      "misses": "TODO: 未命中",
+      "hitRate": "TODO: 命中率",
+      "maintenanceMessage": "TODO: 维护提示信息",
+      "analyticsCode": "TODO: 统计代码 (Google Analytics 等)",
+      "customCss": "TODO: 自定义 CSS",
+      "customJs": "TODO: 自定义 JavaScript",
+      "seoTitle": "Titre SEO",
+      "seoDescription": "Description SEO",
+      "seoKeywords": "Mots-clés SEO",
+      "autoApprove": "Approbation automatique",
+      "allowRegistration": "Autoriser l'inscription",
+      "enableCaptcha": "Activer le captcha",
+      "maintenanceMode": "Mode maintenance"
+    },
+    "tooltips": {
+      "autoApproveUploads": "TODO: 开启后新上传的视频自动通过审核",
+      "commentsModeration": "TODO: 开启后评论需要管理员审核才能显示",
+      "enableCaptcha": "TODO: 开启后登录时需要输入验证码",
+      "maintenanceMode": "TODO: 开启后前台将显示维护页面"
+    },
+    "units": {
+      "characters": "TODO: 字符",
+      "seconds": "TODO: 秒"
+    },
+    "fields": {
+      "siteName": "Nom du site",
+      "siteUrl": "URL du site"
     }
   },
   "dashboard": {
@@ -414,7 +517,10 @@
     "exportBackupFailed": "导出备份失败",
     "confirmDeleteSelected": "确认删除选中的{{count}}项吗？",
     "confirmDelete": "确认删除？",
-    "loadFailed": "加载数据失败"
+    "loadFailed": "加载数据失败",
+    "saveFailed": "TODO: 保存失败",
+    "allSettingsSaved": "TODO: 所有设置已保存",
+    "checkForm": "TODO: 请检查表单填写"
   },
   "ai": {
     "title": "Gestion de l'IA",

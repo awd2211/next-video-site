@@ -31,6 +31,8 @@ const Profile = lazy(() => import('./pages/Profile'))
 const AIManagement = lazy(() => import('./pages/AIManagement'))
 const AILogsHub = lazy(() => import('./pages/AIManagement/AILogsHub'))
 const SystemHealth = lazy(() => import('./pages/SystemHealth'))
+const SystemAlerts = lazy(() => import('./pages/SystemHealth/Alerts'))
+const SLAReportPage = lazy(() => import('./pages/SystemHealth/SLAReport'))
 const UserDetail = lazy(() => import('./pages/Users/Detail'))
 const RolesList = lazy(() => import('./pages/Roles/List'))
 const ReportsDashboard = lazy(() => import('./pages/Reports/Dashboard'))
@@ -123,6 +125,8 @@ function App() {
                 <Route path="ai-management" element={<AIManagement />} />
                 <Route path="ai-logs" element={<AILogsHub />} />
                 <Route path="system-health" element={<SystemHealth />} />
+                <Route path="system-health/alerts" element={<SystemAlerts />} />
+                <Route path="system-health/sla" element={<SLAReportPage />} />
                 <Route path="roles" element={<RolesList />} />
                 <Route path="reports" element={<ReportsDashboard />} />
                 <Route path="email-management" element={<EmailManagement />} />

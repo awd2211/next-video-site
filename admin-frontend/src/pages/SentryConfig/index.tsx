@@ -72,7 +72,7 @@ const SentryConfigPage: React.FC = () => {
     confirm({
       title: t('确认删除'),
       icon: <ExclamationCircleOutlined />,
-      content: t('确定要删除这个 Sentry 配置吗？此操作不可恢复。'),
+      content: t('sentry.confirmDelete'),
       okText: t('删除'),
       okType: 'danger',
       cancelText: t('取消'),
@@ -202,10 +202,10 @@ const SentryConfigPage: React.FC = () => {
         <div style={{ marginBottom: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <div>
             <Title level={4} style={{ margin: 0 }}>
-              Sentry 错误监控配置
+              {t('sentry.title')}
             </Title>
             <Text type="secondary" style={{ fontSize: '14px' }}>
-              管理前端错误监控和性能追踪配置
+              {t('sentry.description')}
             </Text>
           </div>
           <Button
@@ -232,7 +232,7 @@ const SentryConfigPage: React.FC = () => {
 
       {/* 创建/编辑表单模态框 */}
       <Modal
-        title={editingConfig ? t('编辑 Sentry 配置') : t('新建 Sentry 配置')}
+        title={editingConfig ? t('sentry.editConfig') : t('sentry.newConfig')}
         open={isModalOpen}
         onCancel={handleCloseForm}
         footer={null}

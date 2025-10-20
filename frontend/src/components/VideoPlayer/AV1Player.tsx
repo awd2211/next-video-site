@@ -7,7 +7,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import videojs from 'video.js';
 import 'video.js/dist/video-js.css';
-import { supportsAV1, getBestVideoUrl, getCodecName, getBrowserInfo } from '@/utils/codecSupport';
+import { supportsAV1, getBestVideoUrl, getCodecName } from '@/utils/codecSupport';
 import type Player from 'video.js/dist/types/player';
 
 interface AV1PlayerProps {
@@ -42,7 +42,7 @@ export const AV1Player: React.FC<AV1PlayerProps> = ({
     if (!videoRef.current) return;
 
     // 检测浏览器AV1支持
-    const browserInfo = getBrowserInfo();
+    // const browserInfo = getBrowserInfo(); // TODO: Use browser info for analytics
 
     // 初始化Video.js播放器
     const player = videojs(videoRef.current, {

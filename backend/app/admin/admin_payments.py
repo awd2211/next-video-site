@@ -17,7 +17,7 @@ from app.models.payment import Payment, PaymentStatus, PaymentProvider
 from app.schemas.payment import (
     PaymentResponse,
     PaymentListResponse,
-    RefundRequest,
+    RefundRequestCreate,
     RefundResponse,
 )
 from app.services.payment_service import PaymentService
@@ -133,14 +133,15 @@ async def get_payment(
 @router.post("/{payment_id}/refund", response_model=RefundResponse)
 async def admin_refund_payment(
     payment_id: int,
-    refund_request: RefundRequest,
+    refund_request: RefundRequestCreate,
     current_admin: AdminUser = Depends(get_current_admin_user),
     db: AsyncSession = Depends(get_db),
 ):
     """
     管理员处理退款
 
-    管理员可以为任何支付记录创建退款
+    管理员可以为任何支付记录创建退款,支持部分退款和全额退款
+    可以指定退款原因和管理员备注
     """
     service = PaymentService(db)
 
@@ -154,13 +155,49 @@ async def admin_refund_payment(
             detail="Payment not found",
         )
 
+    # 验证支付状态
+    if payment.status not in [PaymentStatus.SUCCEEDED, PaymentStatus.PARTIALLY_REFUNDED]:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Cannot refund payment with status: {payment.status}",
+        )
+
+    # 验证退款金额
+    if refund_request.amount:
+        remaining_amount = payment.amount - payment.refund_amount
+        if refund_request.amount > remaining_amount:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Refund amount ({refund_request.amount}) exceeds remaining amount ({remaining_amount})",
+            )
+
     # 验证 payment_id 匹配
     if refund_request.payment_id != payment_id:
         refund_request.payment_id = payment_id
 
+    # 构建退款原因说明
+    refund_reason_parts = []
+    if refund_request.reason:
+        refund_reason_parts.append(f"Reason: {refund_request.reason.value}")
+    if refund_request.reason_detail:
+        refund_reason_parts.append(refund_request.reason_detail)
+    if refund_request.admin_note:
+        refund_reason_parts.append(f"(Admin note: {refund_request.admin_note})")
+
+    # 合并退款原因用于存储
+    combined_reason = " - ".join(refund_reason_parts) if refund_reason_parts else None
+
     gateway_config = get_gateway_config(payment.provider)
 
     try:
+        # 创建一个包含完整原因的新request对象
+        from pydantic import BaseModel
+        from copy import deepcopy
+
+        # 暂时将reason字段设为字符串以传递给服务层
+        refund_data = refund_request.model_dump()
+        refund_data['reason'] = combined_reason
+
         result = await service.create_refund(
             user_id=None,  # 管理员操作，不需要用户验证
             request=refund_request,
@@ -173,11 +210,17 @@ async def admin_refund_payment(
             amount=result.get("amount"),
             total_refunded=result.get("total_refunded"),
             payment_status=result.get("payment_status"),
+            refunded_at=datetime.now() if result.get("success") else None,
         )
     except ValueError as e:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=str(e),
+        )
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Refund failed: {str(e)}",
         )
 
 
